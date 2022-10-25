@@ -1,6 +1,5 @@
-use crate::parts::manager::PartsManager;
-use crate::rendering::entry::RenderingEntry;
-use crate::uv::uv_magic::UvImage;
+use nmsr::parts::manager::PartsManager;
+use nmsr::rendering::entry::RenderingEntry;
 
 fn main() {
     println!("NickAc's Minecraft Skin Renderer - Initializing...");

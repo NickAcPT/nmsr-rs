@@ -9,8 +9,9 @@ edition = "2021"
 image = "0.24.4"
 rayon = "1.5.3"
 
-#[profile.release]
-#lto = true
+[lib]
+name = "nmsr"
+path = "src/lib/lib.rs"
 
 [[bin]]
 name = "nmsr"

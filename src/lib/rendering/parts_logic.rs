@@ -1,5 +1,6 @@
+use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
-use crate::{PartsManager, UvImage};
+use crate::uv::uv_magic::UvImage;
 
 impl PartsManager {
     pub(crate) fn get_parts(&self, entry: &RenderingEntry) -> Vec<&UvImage> {

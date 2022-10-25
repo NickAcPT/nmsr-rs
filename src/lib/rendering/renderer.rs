@@ -1,11 +1,11 @@
+use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
-use crate::PartsManager;
 use image::{ImageBuffer, RgbaImage};
 use rayon::prelude::*;
 use std::ops::Deref;
 
 impl RenderingEntry {
-    pub(crate) fn render(&self, parts_manager: &PartsManager) -> RgbaImage {
+    pub fn render(&self, parts_manager: &PartsManager) -> RgbaImage {
         // Compute all the parts needed to be rendered
         let all_parts = parts_manager.get_parts(self);
 

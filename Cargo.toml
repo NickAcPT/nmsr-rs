@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 image = "0.24.4"
 rayon = "1.5.3"
+anyhow = "1.0.66"
 
 [lib]
 name = "nmsr"

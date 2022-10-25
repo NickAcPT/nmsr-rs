@@ -3,6 +3,7 @@ use crate::uv::utils::get_uv_max_depth;
 use crate::uv::Rgba16Image;
 use image::RgbaImage;
 
+#[derive(Debug)]
 pub struct UvImage {
     pub uv_image: Rgba16Image,
     pub max_depth: u16,

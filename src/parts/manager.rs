@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fs::ReadDir;
 use std::path::Path;
 
+#[derive(Debug)]
 pub struct PartsManager {
     pub all_parts: HashMap<String, UvImage>,
     pub model_parts: HashMap<String, UvImage>,

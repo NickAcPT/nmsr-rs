@@ -27,7 +27,7 @@ impl PartsManager {
         }
     }
 
-    fn load_model_specific_parts(root: &Path, mut model_parts: &mut HashMap<String, UvImage>) {
+    fn load_model_specific_parts(root: &Path, model_parts: &mut HashMap<String, UvImage>) {
         [PlayerModel::Alex, PlayerModel::Steve]
             .iter()
             .for_each(|model| {

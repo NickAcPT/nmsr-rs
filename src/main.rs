@@ -1,8 +1,10 @@
-use crate::parts::parts::PartsManager;
+use crate::parts::manager::PartsManager;
+use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
 
 mod parts;
 mod uv;
+mod rendering;
 
 fn main() {
     println!("NickAc's Minecraft Skin Renderer - Initializing...");
@@ -16,7 +18,7 @@ fn main() {
         end - start
     );
 
-    for (name, _) in parts_manager.all_parts {
-        println!("{}", name);
-    }
+    let entry = RenderingEntry::new(image::open("skin.png").unwrap().into_rgba8(), false);
+
+    entry.render(&parts_manager).save("out.png").expect("Image should have saved");
 }

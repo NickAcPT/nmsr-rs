@@ -1,5 +1,5 @@
 use crate::parts::player_model::PlayerModel;
-use crate::UvImage;
+use crate::uv::uv_magic::UvImage;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs::ReadDir;

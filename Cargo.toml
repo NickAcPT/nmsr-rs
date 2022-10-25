@@ -11,3 +11,7 @@ rayon = "1.5.3"
 
 #[profile.release]
 #lto = true
+
+[[bin]]
+name = "nmsr"
+path = "src/main.rs"

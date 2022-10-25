@@ -15,8 +15,8 @@ impl PartsManager {
         let root = Path::new(path);
         let directory = root.read_dir().expect("Path should be readable");
 
-        let mut all_parts = HashMap::<String, UvImage>::new();
-        let mut model_parts = HashMap::<String, UvImage>::new();
+        let mut all_parts = HashMap::<String, UvImage>::with_capacity(8);
+        let mut model_parts = HashMap::<String, UvImage>::with_capacity(8);
 
         Self::load_as_parts(directory, &mut all_parts, "");
         Self::load_model_specific_parts(root, &mut model_parts);

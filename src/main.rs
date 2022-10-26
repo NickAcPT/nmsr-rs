@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use anyhow::{Context, Result};
 use nmsr::parts::manager::PartsManager;
 use nmsr::rendering::entry::RenderingEntry;
@@ -9,9 +10,10 @@ fn main() -> Result<()> {
     let parts_manager = PartsManager::new("parts").with_context(|| "Failed to load parts")?;
     let end = std::time::Instant::now();
     println!(
-        "Loaded {} parts in {:?}",
+        "Loaded {} parts in {:?} ({:?} overlays)",
         parts_manager.all_parts.len() + parts_manager.model_parts.len(),
-        end - start
+        end - start,
+        parts_manager.borrow().model_overlays.len()
     );
 
     let entry = RenderingEntry::new(image::open("skin.png")?.into_rgba16(), true);

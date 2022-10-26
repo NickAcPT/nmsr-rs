@@ -17,19 +17,19 @@ pub struct PartsManager {
 impl PartsManager {
     pub fn new(path: &str) -> Result<PartsManager> {
         let root = Path::new(path);
-        let directory = root
-            .read_dir()
-            .with_context(|| format!("Failed to read directory {}", path));
 
         let mut all_parts = HashMap::<String, UvImage>::with_capacity(8);
         let mut model_parts = HashMap::<String, UvImage>::with_capacity(8);
         let mut model_overlays = HashMap::<String, UvImage>::with_capacity(8);
 
-        Self::load_as_parts(directory, &mut all_parts, "")?;
+        Self::load_as_parts(root, &mut all_parts, "")?;
         Self::load_model_specific_parts(root, &mut model_parts)?;
 
         let overlays_root = root.join("overlays");
-        Self::load_model_specific_parts(overlays_root.as_path(), &mut model_overlays)?;
+        let overlays_root_path = overlays_root.as_path();
+
+        Self::load_as_parts(overlays_root_path, &mut model_overlays, "")?;
+        Self::load_model_specific_parts(overlays_root_path, &mut model_overlays)?;
 
         Ok(PartsManager {
             all_parts,
@@ -44,23 +44,23 @@ impl PartsManager {
     ) -> Result<()> {
         for model in [PlayerModel::Alex, PlayerModel::Steve].iter() {
             let dir_name = model.get_dir_name();
-            let model_path = root
-                .join(dir_name)
-                .read_dir()
-                .with_context(|| format!("Failed to read model directory {}", dir_name));
 
-            Self::load_as_parts(model_path, model_parts, dir_name)?;
+            Self::load_as_parts(root.join(dir_name).as_path(), model_parts, dir_name)?;
         }
 
         Ok(())
     }
 
     fn load_as_parts(
-        directory: Result<ReadDir>,
+        dir: &Path,
         parts_map: &mut HashMap<String, UvImage>,
         path_prefix: &str,
     ) -> Result<()> {
-        let loaded_parts: Vec<_> = directory?
+        let directory = dir
+            .read_dir()
+            .with_context(|| format!("Failed to read directory {:?}", dir))?;
+
+        let loaded_parts: Vec<_> = directory
             .par_bridge()
             .map(|f| Ok(f?))
             .map(|f: Result<DirEntry>| Ok(f?.path()))
@@ -78,6 +78,8 @@ impl PartsManager {
             })
             .map(|o| -> Result<UvImage> {
                 let (name, image) = o?;
+                let name = name.chars().take_while(|p| !char::is_ascii_digit(p)).collect();
+
                 Ok(UvImage::new(name, image))
             })
             .collect();

@@ -13,8 +13,8 @@ impl RenderingEntry {
         let overlays = parts_manager.get_overlays(self, uv_image);
 
         for (x, y, pixel) in applied_uv.enumerate_pixels_mut() {
-            let alpha = pixel.0[3] / u16::MAX;
-            if alpha > 0 {
+            let alpha = pixel.0[3] as f32 / u16::MAX as f32;
+            if alpha > 0.5 {
                 for overlay in &overlays {
                     let overlay_pixel = overlay.uv_image.get_pixel(x, y);
                     pixel.blend(overlay_pixel);

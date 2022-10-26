@@ -1,16 +1,17 @@
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
-use image::{ImageBuffer, Pixel, RgbaImage};
+use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, RgbaImage};
 use rayon::prelude::*;
 use std::ops::{Deref, DerefMut};
 use crate::uv::Rgba16Image;
 use crate::uv::uv_magic::UvImage;
+use anyhow::Result;
 
 impl RenderingEntry {
     fn apply_uv_and_overlays(&self, parts_manager: &PartsManager, uv_image: &UvImage, skin: &Rgba16Image) -> Rgba16Image {
         let mut applied_uv = uv_image.apply(skin);
 
-        let overlays = parts_manager.get_overlays(self, uv_image);
+        let overlays = parts_manager.get_overlays(uv_image);
 
         for (x, y, pixel) in applied_uv.enumerate_pixels_mut() {
             let alpha = pixel.0[3] as f32 / u16::MAX as f32;
@@ -42,12 +43,16 @@ impl RenderingEntry {
         let (width, height) = (first_uv.width(), first_uv.height());
 
         // Order them by distance to the camera
-        applied_uvs.sort_by_key(|(uv, _)| uv.max_depth);
+        let mut pixels = applied_uvs.iter()
+            .flat_map(|(uv, applied)| applied.enumerate_pixels().map(move |(x, y, pixel)| (unsafe { uv.uv_image.unsafe_get_pixel(x, y) }.0[2], x, y, pixel)))
+            .collect::<Vec<_>>();
+
+        pixels.par_sort_by_key(|(depth, _, _, _)| *depth);
 
         // Merge final image
-        let mut final_image = ImageBuffer::new(width, height);
-        for (_, image) in applied_uvs {
-            image::imageops::overlay(&mut final_image, &image, 0, 0);
+        let mut final_image: Rgba16Image = ImageBuffer::new(width, height);
+        for (_, x, y, pixel) in pixels {
+            final_image.get_pixel_mut(x, y).blend(pixel);
         }
 
         // Return it

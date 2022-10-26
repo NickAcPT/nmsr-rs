@@ -1,5 +1,5 @@
 use crate::parts::player_model::PlayerModel;
-use image::RgbaImage;
+
 use crate::uv::Rgba16Image;
 
 pub struct RenderingEntry {

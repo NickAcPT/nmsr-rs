@@ -4,7 +4,7 @@ use crate::uv::Rgba16Image;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::fs::{DirEntry, ReadDir};
+use std::fs::{DirEntry};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]

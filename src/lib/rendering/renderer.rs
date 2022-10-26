@@ -1,8 +1,11 @@
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
-use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, RgbaImage};
+use image::GenericImageView;
+use image::ImageBuffer;
+use image::Pixel;
+
 use rayon::prelude::*;
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref};
 use crate::uv::Rgba16Image;
 use crate::uv::uv_magic::UvImage;
 use anyhow::{Context, Result};
@@ -31,7 +34,7 @@ impl RenderingEntry {
         let all_parts = parts_manager.get_parts(self);
 
         // Apply all the UVs
-        let mut applied_uvs: Vec<_> = all_parts
+        let applied_uvs: Vec<_> = all_parts
             .par_iter()
             .map(|p| (p.deref(), self.apply_uv_and_overlays(parts_manager, p, &self.skin)))
             .collect();

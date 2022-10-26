@@ -1,5 +1,5 @@
 use crate::uv::Rgba16Image;
-use image::{Pixel, Rgba, RgbaImage};
+use image::{Pixel, Rgba};
 use rayon::prelude::*;
 
 const COORDINATE_RESOLVE_SMOOTHING_SCALE: u32 = 32;

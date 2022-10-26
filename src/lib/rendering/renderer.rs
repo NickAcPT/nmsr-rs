@@ -4,14 +4,19 @@ use image::GenericImageView;
 use image::ImageBuffer;
 use image::Pixel;
 
-use rayon::prelude::*;
-use std::ops::{Deref};
-use crate::uv::Rgba16Image;
 use crate::uv::uv_magic::UvImage;
+use crate::uv::Rgba16Image;
 use anyhow::{Context, Result};
+use rayon::prelude::*;
+use std::ops::Deref;
 
 impl RenderingEntry {
-    fn apply_uv_and_overlays(&self, parts_manager: &PartsManager, uv_image: &UvImage, skin: &Rgba16Image) -> Rgba16Image {
+    fn apply_uv_and_overlays(
+        &self,
+        parts_manager: &PartsManager,
+        uv_image: &UvImage,
+        skin: &Rgba16Image,
+    ) -> Rgba16Image {
         let mut applied_uv = uv_image.apply(skin);
 
         let overlays = parts_manager.get_overlays(uv_image);
@@ -36,7 +41,12 @@ impl RenderingEntry {
         // Apply all the UVs
         let applied_uvs: Vec<_> = all_parts
             .par_iter()
-            .map(|p| (p.deref(), self.apply_uv_and_overlays(parts_manager, p, &self.skin)))
+            .map(|p| {
+                (
+                    p.deref(),
+                    self.apply_uv_and_overlays(parts_manager, p, &self.skin),
+                )
+            })
             .collect();
 
         // Get the image size
@@ -46,8 +56,18 @@ impl RenderingEntry {
         let (width, height) = (first_uv.width(), first_uv.height());
 
         // Order them by distance to the camera
-        let mut pixels = applied_uvs.iter()
-            .flat_map(|(uv, applied)| applied.enumerate_pixels().map(move |(x, y, pixel)| (unsafe { uv.uv_image.unsafe_get_pixel(x, y) }.0[2], x, y, pixel)))
+        let mut pixels = applied_uvs
+            .iter()
+            .flat_map(|(uv, applied)| {
+                applied.enumerate_pixels().map(move |(x, y, pixel)| {
+                    (
+                        unsafe { uv.uv_image.unsafe_get_pixel(x, y) }.0[2],
+                        x,
+                        y,
+                        pixel,
+                    )
+                })
+            })
             .collect::<Vec<_>>();
 
         pixels.par_sort_by_key(|(depth, _, _, _)| *depth);

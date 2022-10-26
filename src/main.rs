@@ -1,7 +1,7 @@
-use std::borrow::Borrow;
 use anyhow::{Context, Result};
 use nmsr::parts::manager::PartsManager;
 use nmsr::rendering::entry::RenderingEntry;
+use std::borrow::Borrow;
 
 fn main() -> Result<()> {
     println!("NickAc's Minecraft Skin Renderer - Initializing...");

@@ -4,7 +4,7 @@ use crate::uv::Rgba16Image;
 use anyhow::{Context, Result};
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::fs::{DirEntry};
+use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -34,7 +34,7 @@ impl PartsManager {
         Ok(PartsManager {
             all_parts,
             model_parts,
-            model_overlays
+            model_overlays,
         })
     }
 
@@ -78,7 +78,10 @@ impl PartsManager {
             })
             .map(|o| -> Result<UvImage> {
                 let (name, image) = o?;
-                let name = name.chars().take_while(|p| !char::is_ascii_digit(p)).collect();
+                let name = name
+                    .chars()
+                    .take_while(|p| !char::is_ascii_digit(p))
+                    .collect();
 
                 Ok(UvImage::new(name, image))
             })

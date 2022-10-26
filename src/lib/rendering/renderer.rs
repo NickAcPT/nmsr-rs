@@ -5,7 +5,7 @@ use rayon::prelude::*;
 use std::ops::{Deref, DerefMut};
 use crate::uv::Rgba16Image;
 use crate::uv::uv_magic::UvImage;
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 impl RenderingEntry {
     fn apply_uv_and_overlays(&self, parts_manager: &PartsManager, uv_image: &UvImage, skin: &Rgba16Image) -> Rgba16Image {
@@ -26,7 +26,7 @@ impl RenderingEntry {
         applied_uv
     }
 
-    pub fn render(&self, parts_manager: &PartsManager) -> Rgba16Image {
+    pub fn render(&self, parts_manager: &PartsManager) -> Result<Rgba16Image> {
         // Compute all the parts needed to be rendered
         let all_parts = parts_manager.get_parts(self);
 
@@ -39,7 +39,7 @@ impl RenderingEntry {
         // Get the image size
         let (_, first_uv) = applied_uvs
             .first()
-            .expect("There needs to be at least 1 image");
+            .with_context(|| "There needs to be at least 1 UV image part")?;
         let (width, height) = (first_uv.width(), first_uv.height());
 
         // Order them by distance to the camera
@@ -56,6 +56,6 @@ impl RenderingEntry {
         }
 
         // Return it
-        final_image
+        Ok(final_image)
     }
 }

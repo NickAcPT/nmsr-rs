@@ -1,11 +1,11 @@
-use crate::parts::player_model::PlayerModel;
-use crate::uv::uv_magic::UvImage;
-use crate::uv::Rgba16Image;
+use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16Image};
 use anyhow::{Context, Result};
 use rayon::prelude::*;
-use std::collections::HashMap;
-use std::fs::DirEntry;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashMap,
+    fs::DirEntry,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug)]
 pub struct PartsManager {

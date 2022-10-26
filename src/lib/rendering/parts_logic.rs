@@ -18,11 +18,10 @@ impl PartsManager {
             .collect()
     }
 
-    pub(crate) fn get_overlays(&self, uv: &UvImage) -> Vec<&UvImage> {
+    pub(crate) fn get_overlay(&self, uv: &UvImage) -> Option<&UvImage> {
         self.model_overlays
             .iter()
-            .filter(|(key, _)| key.deref().eq(&uv.name))
+            .find(|(key, _)| key.deref().eq(&uv.name))
             .map(|(_, uv)| uv)
-            .collect()
     }
 }

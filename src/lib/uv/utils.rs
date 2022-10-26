@@ -5,7 +5,7 @@ use rayon::prelude::*;
 const COORDINATE_RESOLVE_SMOOTHING_SCALE: u32 = 32;
 const TRANSPARENCY_CUTOFF: u16 = 250;
 
-pub fn apply_uv_map(input: &RgbaImage, uv_map: &Rgba16Image) -> RgbaImage {
+pub fn apply_uv_map(input: &Rgba16Image, uv_map: &Rgba16Image) -> Rgba16Image {
     // Generate a new image
     image::ImageBuffer::from_fn(uv_map.width(), uv_map.height(), |x, y| {
         // First we have to read the pixel
@@ -33,7 +33,7 @@ pub fn apply_uv_map(input: &RgbaImage, uv_map: &Rgba16Image) -> RgbaImage {
             );
             *input.get_pixel(u, v)
         } else {
-            Rgba([0u8, 0u8, 0u8, 0u8])
+            Rgba([0u16, 0u16, 0u16, 0u16])
         }
     })
 }

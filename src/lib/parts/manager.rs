@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 pub struct PartsManager {
     pub all_parts: HashMap<String, UvImage>,
     pub model_parts: HashMap<String, UvImage>,
+    pub model_overlays: HashMap<String, UvImage>,
 }
 
 impl PartsManager {
@@ -22,13 +23,18 @@ impl PartsManager {
 
         let mut all_parts = HashMap::<String, UvImage>::with_capacity(8);
         let mut model_parts = HashMap::<String, UvImage>::with_capacity(8);
+        let mut model_overlays = HashMap::<String, UvImage>::with_capacity(8);
 
         Self::load_as_parts(directory, &mut all_parts, "")?;
         Self::load_model_specific_parts(root, &mut model_parts)?;
 
+        let overlays_root = root.join("overlays");
+        Self::load_model_specific_parts(overlays_root.as_path(), &mut model_overlays)?;
+
         Ok(PartsManager {
             all_parts,
             model_parts,
+            model_overlays
         })
     }
 
@@ -70,14 +76,14 @@ impl PartsManager {
                     image::open(path)?.into_rgba16(),
                 ))
             })
-            .map(|o| -> Result<(String, UvImage)> {
+            .map(|o| -> Result<UvImage> {
                 let (name, image) = o?;
-                Ok((name, UvImage::new(image)))
+                Ok(UvImage::new(name, image))
             })
             .collect();
 
-        for (name, image) in loaded_parts.into_iter().flatten() {
-            parts_map.insert(format!("{}{}", path_prefix, name), image);
+        for image in loaded_parts.into_iter().flatten() {
+            parts_map.insert(format!("{}{}", path_prefix, &image.name), image);
         }
 
         Ok(())

@@ -14,7 +14,7 @@ fn main() -> Result<()> {
         end - start
     );
 
-    let entry = RenderingEntry::new(image::open("skin.png")?.into_rgba8(), false);
+    let entry = RenderingEntry::new(image::open("skin.png")?.into_rgba16(), true);
 
     entry.render(&parts_manager).save("out.png")?;
 

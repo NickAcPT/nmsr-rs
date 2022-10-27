@@ -3,7 +3,6 @@ use anyhow::{Context, Result};
 use rayon::prelude::*;
 use std::{
     collections::HashMap,
-    fs::DirEntry,
     path::{Path, PathBuf},
 };
 

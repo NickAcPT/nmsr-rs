@@ -22,8 +22,14 @@ impl RenderingEntry {
             let alpha = pixel.0[3];
             if alpha > 0 {
                 if let Some(overlay) = overlay {
-                    let overlay_pixel = overlay.uv_image.get_pixel(x, y);
-                    pixel.blend(overlay_pixel);
+                    let pixel_channels = pixel.channels_mut();
+                    let overlay_channels = overlay.uv_image.get_pixel(x, y).channels();
+
+                    for i in 0..3 {
+                        pixel_channels[i] = (((pixel_channels[i] as f32 / u16::MAX as f32)
+                            * (overlay_channels[i] as f32 / u16::MAX as f32))
+                            * u16::MAX as f32) as u16;
+                    }
                 }
             }
         }
@@ -36,7 +42,7 @@ impl RenderingEntry {
         let all_parts = parts_manager.get_parts(self);
 
         // Apply all the UVs
-        let applied_uvs: Vec<_> = all_parts
+        let mut applied_uvs: Vec<_> = all_parts
             .par_iter()
             .map(|p| {
                 (
@@ -45,6 +51,9 @@ impl RenderingEntry {
                 )
             })
             .collect();
+
+        // Sort by UV name first to make sure it's deterministic
+        applied_uvs.sort_by_key(|(uv, _)| &uv.name);
 
         // Get the image size
         let (_, first_uv) = applied_uvs

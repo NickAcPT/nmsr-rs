@@ -19,7 +19,7 @@ impl PartsManager {
 
         let mut all_parts = HashMap::<String, UvImage>::with_capacity(8);
         let mut model_parts = HashMap::<String, UvImage>::with_capacity(8);
-        let mut model_overlays = HashMap::<String, UvImage>::with_capacity(8);
+        let mut model_overlays = HashMap::<String, UvImage>::with_capacity(16);
 
         Self::load_as_parts(root, &mut all_parts, "")?;
         Self::load_model_specific_parts(root, &mut model_parts)?;
@@ -76,17 +76,18 @@ impl PartsManager {
             })
             .map(|o| -> Result<UvImage> {
                 let (name, image) = o?;
-                let name = name
+                let name: String = name
                     .chars()
-                    .take_while(|p| !char::is_ascii_digit(p))
+                    .take_while(|p| !char::is_ascii_digit(p) && !char::is_ascii_punctuation(p))
                     .collect();
+                let name = format!("{}{}", path_prefix, name);
 
                 Ok(UvImage::new(name, image))
             })
             .collect();
 
         for image in loaded_parts.into_iter().flatten() {
-            parts_map.insert(format!("{}{}", path_prefix, &image.name), image);
+            parts_map.insert(image.name.to_owned(), image);
         }
 
         Ok(())

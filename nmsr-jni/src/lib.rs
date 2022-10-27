@@ -1,13 +1,13 @@
 mod error_handling;
 
-use std::io::{BufWriter, Cursor};
+use crate::error_handling::{get_string_or_throw, unwrap_or_throw_java_exception};
 use image::ImageOutputFormat::Png;
-use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::{jboolean, jbyteArray, jlong, JNI_TRUE};
+use jni::JNIEnv;
 use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::rendering::entry::RenderingEntry;
-use crate::error_handling::{unwrap_or_throw_java_exception, get_string_or_throw};
+use std::io::{BufWriter, Cursor};
 
 #[no_mangle]
 pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_initialize(
@@ -38,15 +38,22 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_renderS
     let slim_arms = slim_arms == JNI_TRUE;
 
     // Get the skin bytes from the Java array
-    let skin_bytes = unwrap_or_throw_java_exception!(env, env.convert_byte_array(skin_bytes), empty_byte_array);
+    let skin_bytes =
+        unwrap_or_throw_java_exception!(env, env.convert_byte_array(skin_bytes), empty_byte_array);
     // Load the skin as an image from the bytes
-    let skin_image = unwrap_or_throw_java_exception!(env, image::load_from_memory(skin_bytes.as_slice()), empty_byte_array).into_rgba16();
+    let skin_image = unwrap_or_throw_java_exception!(
+        env,
+        image::load_from_memory(skin_bytes.as_slice()),
+        empty_byte_array
+    )
+    .into_rgba16();
 
     // Create a new rendering entry
     let entry = RenderingEntry::new(skin_image, slim_arms);
 
     // Render the skin
-    let render = unwrap_or_throw_java_exception!(env, entry.render(parts_manager), empty_byte_array);
+    let render =
+        unwrap_or_throw_java_exception!(env, entry.render(parts_manager), empty_byte_array);
     let mut render_bytes = Vec::new();
 
     // Write the image to a byte array
@@ -56,7 +63,11 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_renderS
     }
 
     // Create a new Java byte array from the output bytes
-    unwrap_or_throw_java_exception!(env, env.byte_array_from_slice(render_bytes.as_slice()), empty_byte_array)
+    unwrap_or_throw_java_exception!(
+        env,
+        env.byte_array_from_slice(render_bytes.as_slice()),
+        empty_byte_array
+    )
 }
 
 #[no_mangle]

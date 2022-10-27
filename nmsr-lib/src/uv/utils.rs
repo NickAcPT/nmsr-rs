@@ -2,7 +2,7 @@ use crate::uv::Rgba16Image;
 use image::{Pixel, Rgba};
 use rayon::prelude::*;
 
-const COORDINATE_RESOLVE_SMOOTHING_SCALE: u32 = 32;
+const COORDINATE_RESOLVE_SMOOTHING_SCALE: u32 = 64;
 const TRANSPARENCY_CUTOFF: u16 = 250;
 
 pub fn apply_uv_map(input: &Rgba16Image, uv_map: &Rgba16Image) -> Rgba16Image {

@@ -62,8 +62,7 @@ impl PartsManager {
 
         let loaded_parts: Vec<_> = directory
             .par_bridge()
-            .map(|f| Ok(f?))
-            .map(|f: Result<DirEntry>| Ok(f?.path()))
+            .map(|f| Ok(f?.path()))
             .filter(|e: &Result<PathBuf>| e.as_ref().map(|f| f.is_file()).unwrap_or(false))
             .map(|p| -> Result<(String, Rgba16Image)> {
                 let path = p?;

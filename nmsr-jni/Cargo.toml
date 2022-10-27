@@ -1,0 +1,14 @@
+[package]
+name = "nmsr-jni"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nmsr-lib = { path = "../nmsr-lib" }
+jni = "0.20.0"
+image = "0.24.4"
+
+[lib]
+crate_type = ["cdylib"]

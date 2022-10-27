@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
-use nmsr::parts::manager::PartsManager;
-use nmsr::rendering::entry::RenderingEntry;
+use nmsr_lib::parts::manager::PartsManager;
+use nmsr_lib::rendering::entry::RenderingEntry;
 use std::borrow::Borrow;
 
 fn main() -> Result<()> {

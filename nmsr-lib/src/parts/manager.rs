@@ -11,9 +11,22 @@ pub struct PartsManager {
     pub all_parts: HashMap<String, UvImage>,
     pub model_parts: HashMap<String, UvImage>,
     pub model_overlays: HashMap<String, UvImage>,
+    pub environment_background: Option<Rgba16Image>,
 }
 
 impl PartsManager {
+    const ENVIRONMENT_BACKGROUND_NAME: &'static str = "environment_background";
+
+    fn is_part_file(path: impl AsRef<Path>) -> Result<bool> {
+        let path = path.as_ref();
+        Ok(path
+            .file_name()
+            .with_context(|| format!("Unable to get file name of {:?}", path))?
+            .to_str()
+            .with_context(|| format!("Unable to get convert file name of {:?} to_str", path))?
+            .ends_with(".png"))
+    }
+
     pub fn new(path: &str) -> Result<PartsManager> {
         let root = Path::new(path);
 
@@ -30,10 +43,13 @@ impl PartsManager {
         Self::load_as_parts(overlays_root_path, &mut model_overlays, "")?;
         Self::load_model_specific_parts(overlays_root_path, &mut model_overlays)?;
 
+        let environment_background = Self::load_environment_background(root)?;
+
         Ok(PartsManager {
             all_parts,
             model_parts,
             model_overlays,
+            environment_background,
         })
     }
 
@@ -63,6 +79,14 @@ impl PartsManager {
             .par_bridge()
             .map(|f| Ok(f?.path()))
             .filter(|e: &Result<PathBuf>| e.as_ref().map(|f| f.is_file()).unwrap_or(false))
+            .filter(|e| {
+                if let Ok(ref v) = e {
+                    // If this produces an error you cant do anything because filter does not give you the ability to change the type
+                    Self::is_part_file(v).unwrap_or(false)
+                } else {
+                    false
+                }
+            })
             .map(|p| -> Result<(String, Rgba16Image)> {
                 let path = p?;
                 Ok((
@@ -91,5 +115,15 @@ impl PartsManager {
         }
 
         Ok(())
+    }
+
+    fn load_environment_background(root: &Path) -> Result<Option<Rgba16Image>> {
+        let path = &root.join(Self::ENVIRONMENT_BACKGROUND_NAME).with_extension("png");
+        if path.exists() {
+            let image = image::open(path).with_context(|| format!("Failed to open {:?}", path))?;
+            Ok(Some(image.into_rgba16()))
+        } else {
+            Ok(None)
+        }
     }
 }

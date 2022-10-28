@@ -26,9 +26,11 @@ impl RenderingEntry {
                     let overlay_channels = overlay.uv_image.get_pixel(x, y).channels();
 
                     for i in 0..4 {
-                        pixel_channels[i] = (((pixel_channels[i] as f32 / u16::MAX as f32)
-                            * (overlay_channels[i] as f32 / u16::MAX as f32))
-                            * u16::MAX as f32) as u16;
+                        let original_percent = (pixel_channels[i] as f32) / u16::MAX as f32;
+                        let overlay_percent = (overlay_channels[i] as f32) / u16::MAX as f32;
+
+                        pixel_channels[i] =
+                            ((original_percent * overlay_percent) * (u16::MAX as f32)) as u16;
                     }
                 }
             }

@@ -3,7 +3,7 @@ use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
-use image::{GenericImageView, ImageBuffer, Pixel};
+use image::{imageops, GenericImageView, ImageBuffer, Pixel};
 use rayon::prelude::*;
 use std::ops::Deref;
 
@@ -25,7 +25,7 @@ impl RenderingEntry {
                     let pixel_channels = pixel.channels_mut();
                     let overlay_channels = overlay.uv_image.get_pixel(x, y).channels();
 
-                    for i in 0..3 {
+                    for i in 0..4 {
                         pixel_channels[i] = (((pixel_channels[i] as f32 / u16::MAX as f32)
                             * (overlay_channels[i] as f32 / u16::MAX as f32))
                             * u16::MAX as f32) as u16;
@@ -57,7 +57,6 @@ impl RenderingEntry {
 
         // Get the image size
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
-        let (width, height) = (first_uv.width(), first_uv.height());
 
         let mut pixels = applied_uvs
             .iter()
@@ -76,7 +75,13 @@ impl RenderingEntry {
         pixels.sort_by_key(|(depth, _, _, _)| *depth);
 
         // Merge final image
+        let (width, height) = (first_uv.width(), first_uv.height());
         let mut final_image: Rgba16Image = ImageBuffer::new(width, height);
+
+        if let Some(environment) = &parts_manager.environment_background {
+            imageops::replace(&mut final_image, environment, 0, 0);
+        }
+
         for (_, x, y, pixel) in pixels {
             let alpha = pixel.0[3];
             if alpha > 0 {

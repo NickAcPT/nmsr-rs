@@ -17,7 +17,7 @@ impl PartsManager {
     fn is_part_file(path: impl AsRef<Path>) -> Result<bool> {
         let path = path.as_ref();
         let name = path
-            .file_name()
+            .file_stem()
             .and_then(|f| f.to_str())
             .ok_or_else(|| NMSRError::InvalidPath(path.to_path_buf()))?;
 
@@ -35,10 +35,12 @@ impl PartsManager {
         Self::load_model_specific_parts(root, &mut model_parts)?;
 
         let overlays_root = root.join("overlays");
-        let overlays_root_path = overlays_root.as_path();
+        if overlays_root.exists() {
+            let overlays_root_path = overlays_root.as_path();
 
-        Self::load_as_parts(overlays_root_path, &mut model_overlays, "")?;
-        Self::load_model_specific_parts(overlays_root_path, &mut model_overlays)?;
+            Self::load_as_parts(overlays_root_path, &mut model_overlays, "")?;
+            Self::load_model_specific_parts(overlays_root_path, &mut model_overlays)?;
+        }
 
         let environment_background = Self::load_environment_background(root)?;
 
@@ -68,12 +70,14 @@ impl PartsManager {
         parts_map: &mut HashMap<String, UvImage>,
         path_prefix: &str,
     ) -> Result<()> {
-        let directory = dir.read_dir().map_err(NMSRError::IoError)?;
+        let directory = dir.read_dir().map_err(|e| NMSRError::IoError(e, format!("Unable to read {:?}", &dir)))?;
 
         let mut part_entries = vec![];
 
         for dir_entry in directory {
-            let entry = dir_entry.map(|e| e.path()).map_err(NMSRError::IoError)?;
+            let entry = dir_entry.as_ref()
+                .map_err(|err| NMSRError::UnspecifiedIoError(format!("Unable to read path {:?} ({})", &dir_entry.as_ref(), err)))
+                .map(|e| e.path())?;
 
             // Skip non part files
             if !Self::is_part_file(&entry)? {
@@ -94,9 +98,7 @@ impl PartsManager {
             part_entries.push((name, entry));
         }
 
-        let mut loaded_parts = vec![];
-
-        part_entries
+        let loaded_parts: Vec<_> = part_entries
             .par_iter()
             .map(|(name, entry)| {
                 let image = image::open(&entry)
@@ -113,7 +115,7 @@ impl PartsManager {
                     Ok(uv_image)
                 },
             )
-            .collect_into_vec(&mut loaded_parts);
+            .collect();
 
         for part in loaded_parts {
             let part = part?;

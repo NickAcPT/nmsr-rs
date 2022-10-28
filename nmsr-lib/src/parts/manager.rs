@@ -70,13 +70,22 @@ impl PartsManager {
         parts_map: &mut HashMap<String, UvImage>,
         path_prefix: &str,
     ) -> Result<()> {
-        let directory = dir.read_dir().map_err(|e| NMSRError::IoError(e, format!("Unable to read {:?}", &dir)))?;
+        let directory = dir
+            .read_dir()
+            .map_err(|e| NMSRError::IoError(e, format!("Unable to read {:?}", &dir)))?;
 
         let mut part_entries = vec![];
 
         for dir_entry in directory {
-            let entry = dir_entry.as_ref()
-                .map_err(|err| NMSRError::UnspecifiedIoError(format!("Unable to read path {:?} ({})", &dir_entry.as_ref(), err)))
+            let entry = dir_entry
+                .as_ref()
+                .map_err(|err| {
+                    NMSRError::UnspecifiedIoError(format!(
+                        "Unable to read path {:?} ({})",
+                        &dir_entry.as_ref(),
+                        err
+                    ))
+                })
                 .map(|e| e.path())?;
 
             // Skip non part files

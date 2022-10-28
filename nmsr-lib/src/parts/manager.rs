@@ -1,10 +1,7 @@
+use crate::errors::{NMSRError, Result};
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16Image};
-use anyhow::{Context, Result};
 use rayon::prelude::*;
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::Path};
 
 #[derive(Debug)]
 pub struct PartsManager {
@@ -19,12 +16,12 @@ impl PartsManager {
 
     fn is_part_file(path: impl AsRef<Path>) -> Result<bool> {
         let path = path.as_ref();
-        Ok(path
+        let name = path
             .file_name()
-            .with_context(|| format!("Unable to get file name of {:?}", path))?
-            .to_str()
-            .with_context(|| format!("Unable to get convert file name of {:?} to_str", path))?
-            .ends_with(".png"))
+            .and_then(|f| f.to_str())
+            .ok_or_else(|| NMSRError::InvalidPath(path.to_path_buf()))?;
+
+        Ok(path.is_file() && name != PartsManager::ENVIRONMENT_BACKGROUND_NAME)
     }
 
     pub fn new(path: &str) -> Result<PartsManager> {
@@ -71,56 +68,67 @@ impl PartsManager {
         parts_map: &mut HashMap<String, UvImage>,
         path_prefix: &str,
     ) -> Result<()> {
-        let directory = dir
-            .read_dir()
-            .with_context(|| format!("Failed to read directory {:?}", dir))?;
+        let directory = dir.read_dir().map_err(NMSRError::IoError)?;
 
-        let loaded_parts: Vec<_> = directory
-            .par_bridge()
-            .map(|f| Ok(f?.path()))
-            .filter(|e: &Result<PathBuf>| e.as_ref().map(|f| f.is_file()).unwrap_or(false))
-            .filter(|e| {
-                if let Ok(ref v) = e {
-                    // If this produces an error you cant do anything because filter does not give you the ability to change the type
-                    Self::is_part_file(v).unwrap_or(false)
-                } else {
-                    false
-                }
-            })
-            .map(|p| -> Result<(String, Rgba16Image)> {
-                let path = p?;
-                Ok((
-                    path.file_name()
-                        .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?
-                        .to_str()
-                        .ok_or_else(|| anyhow::anyhow!("Failed to convert to str"))?
-                        .to_owned(),
-                    image::open(path)?.into_rgba16(),
-                ))
-            })
-            .map(|o| -> Result<UvImage> {
-                let (name, image) = o?;
-                let name: String = name
-                    .chars()
-                    .take_while(|p| !char::is_ascii_digit(p) && !char::is_ascii_punctuation(p))
-                    .collect();
-                let name = format!("{}{}", path_prefix, name);
+        let mut part_entries = vec![];
 
-                Ok(UvImage::new(name, image))
-            })
-            .collect();
+        for dir_entry in directory {
+            let entry = dir_entry.map(|e| e.path()).map_err(NMSRError::IoError)?;
 
-        for image in loaded_parts.into_iter().flatten() {
-            parts_map.insert(image.name.to_owned(), image);
+            // Skip non part files
+            if !Self::is_part_file(&entry)? {
+                continue;
+            }
+
+            // Compute map entry key
+            let name: String = entry
+                .file_name()
+                .and_then(|f| f.to_str())
+                .ok_or_else(|| NMSRError::InvalidPath(entry.to_owned()))?
+                .chars()
+                .take_while(|p| !char::is_ascii_digit(p) && !char::is_ascii_punctuation(p))
+                .collect();
+
+            let name = format!("{}{}", path_prefix, name);
+
+            part_entries.push((name, entry));
+        }
+
+        let mut loaded_parts = vec![];
+
+        part_entries
+            .par_iter()
+            .map(|(name, entry)| {
+                let image = image::open(&entry)
+                    .map_err(NMSRError::ImageError)?
+                    .into_rgba16();
+
+                Ok((name, image))
+            })
+            .map(
+                |result: Result<(&String, Rgba16Image)>| -> Result<UvImage> {
+                    let (name, image) = result?;
+                    let uv_image = UvImage::new(name.to_owned(), image);
+
+                    Ok(uv_image)
+                },
+            )
+            .collect_into_vec(&mut loaded_parts);
+
+        for part in loaded_parts {
+            let part = part?;
+            parts_map.insert(part.name.to_owned(), part);
         }
 
         Ok(())
     }
 
     fn load_environment_background(root: &Path) -> Result<Option<Rgba16Image>> {
-        let path = &root.join(Self::ENVIRONMENT_BACKGROUND_NAME).with_extension("png");
+        let path = &root
+            .join(Self::ENVIRONMENT_BACKGROUND_NAME)
+            .with_extension("png");
         if path.exists() {
-            let image = image::open(path).with_context(|| format!("Failed to open {:?}", path))?;
+            let image = image::open(path).map_err(NMSRError::ImageError)?;
             Ok(Some(image.into_rgba16()))
         } else {
             Ok(None)

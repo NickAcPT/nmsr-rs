@@ -1,8 +1,8 @@
+use crate::errors::{NMSRError, Result};
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
-use anyhow::{Context, Result};
 use image::{GenericImageView, ImageBuffer, Pixel};
 use rayon::prelude::*;
 use std::ops::Deref;
@@ -56,9 +56,7 @@ impl RenderingEntry {
         applied_uvs.sort_by_key(|(uv, _)| &uv.name);
 
         // Get the image size
-        let (_, first_uv) = applied_uvs
-            .first()
-            .with_context(|| "There needs to be at least 1 UV image part")?;
+        let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
         let (width, height) = (first_uv.width(), first_uv.height());
 
         let mut pixels = applied_uvs

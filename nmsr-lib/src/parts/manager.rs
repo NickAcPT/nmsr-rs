@@ -1,6 +1,5 @@
 use crate::errors::{NMSRError, Result};
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16Image};
-use rayon::prelude::*;
 use std::{collections::HashMap, path::Path};
 
 #[derive(Debug)]
@@ -108,7 +107,7 @@ impl PartsManager {
         }
 
         let loaded_parts: Vec<_> = part_entries
-            .par_iter()
+            .iter()
             .map(|(name, entry)| {
                 let image = image::open(&entry)
                     .map_err(NMSRError::ImageError)?

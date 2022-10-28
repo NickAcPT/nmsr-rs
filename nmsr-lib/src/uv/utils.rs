@@ -1,6 +1,5 @@
 use crate::uv::Rgba16Image;
 use image::{Pixel, Rgba};
-use rayon::prelude::*;
 
 const COORDINATE_RESOLVE_SMOOTHING_SCALE: u32 = 64;
 const TRANSPARENCY_CUTOFF: u16 = 250;
@@ -51,10 +50,6 @@ fn resolve_coordinate(value: u16, is_u: bool, max_size: u32) -> u32 {
 }
 
 pub fn get_uv_max_depth(image: &Rgba16Image) -> u16 {
-    let points = image
-        .pixels()
-        .par_bridge()
-        .map(|&p| p.0[2])
-        .collect::<Vec<_>>();
+    let points = image.pixels().map(|&p| p.0[2]).collect::<Vec<_>>();
     *points.iter().max().unwrap_or(&0)
 }

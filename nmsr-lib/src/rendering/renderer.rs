@@ -4,7 +4,6 @@ use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
 use image::{imageops, GenericImageView, ImageBuffer, Pixel};
-use rayon::prelude::*;
 use std::ops::Deref;
 
 impl RenderingEntry {
@@ -45,7 +44,7 @@ impl RenderingEntry {
 
         // Apply all the UVs
         let mut applied_uvs: Vec<_> = all_parts
-            .par_iter()
+            .iter()
             .map(|p| {
                 (
                     p.deref(),

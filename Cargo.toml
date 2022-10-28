@@ -3,5 +3,5 @@
 members = [
     "nmsr-lib",
     "nmsr-jni",
-    "nmsr-rs"
+    "nmsr-aas"
 ]

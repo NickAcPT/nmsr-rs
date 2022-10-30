@@ -45,8 +45,7 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_renderS
         env,
         image::load_from_memory(skin_bytes.as_slice()),
         empty_byte_array
-    )
-    .into_rgba16();
+    ).into_rgba8();
 
     // Create a new rendering entry
     let entry = RenderingEntry::new(skin_image, slim_arms);

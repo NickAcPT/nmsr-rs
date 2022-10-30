@@ -7,6 +7,7 @@ authors = ["NickAcPT"]
 [dependencies]
 image = { version = "0.24.4", features = ["png"], default-features = false }
 thiserror = "1.0.37"
+ears-rs = { path = "../../ears-rs" }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

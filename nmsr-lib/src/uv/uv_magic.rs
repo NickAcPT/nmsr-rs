@@ -1,6 +1,6 @@
 use crate::{uv::utils::apply_uv_map, uv::utils::get_uv_max_depth, uv::Rgba16Image};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UvImage {
     pub name: String,
     pub uv_image: Rgba16Image,

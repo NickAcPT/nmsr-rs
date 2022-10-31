@@ -2,7 +2,7 @@ use crate::errors::{NMSRError, Result};
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16Image};
 use std::{collections::HashMap, path::Path};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PartsManager {
     pub all_parts: HashMap<String, UvImage>,
     pub model_parts: HashMap<String, UvImage>,

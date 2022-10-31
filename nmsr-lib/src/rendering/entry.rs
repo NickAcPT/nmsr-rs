@@ -1,7 +1,7 @@
-use image::buffer::ConvertBuffer;
-use image::RgbaImage;
 use crate::parts::player_model::PlayerModel;
 use crate::uv::Rgba16Image;
+use image::buffer::ConvertBuffer;
+use image::RgbaImage;
 
 pub struct RenderingEntry {
     pub skin: Rgba16Image,

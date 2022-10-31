@@ -2,18 +2,10 @@ mod mojang_requests;
 mod routes;
 mod utils;
 
-use actix_web::{
-    App,
-    HttpServer,
-    middleware::Logger,
-    web::Data,
-};
+use crate::{utils::errors::NMSRaaSError, utils::Result};
+use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use nmsr_lib::parts::manager::PartsManager;
-use routes::{index_route::index, get_skin_route::get_skin};
-use crate::{
-    utils::errors::NMSRaaSError,
-    utils::Result,
-};
+use routes::{get_skin_route::get_skin, index_route::index};
 
 #[actix_web::main]
 async fn main() -> Result<()> {
@@ -29,5 +21,10 @@ async fn main() -> Result<()> {
             .service(get_skin)
     });
     println!("Starting server on http://127.0.0.1:8080");
-    server.bind(("0.0.0.0", 8080)).map_err(NMSRaaSError::IOError)?.run().await.map_err(NMSRaaSError::IOError)
+    server
+        .bind(("0.0.0.0", 8080))
+        .map_err(NMSRaaSError::IOError)?
+        .run()
+        .await
+        .map_err(NMSRaaSError::IOError)
 }

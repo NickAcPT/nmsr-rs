@@ -1,12 +1,12 @@
-use actix_web::web::Bytes;
 use crate::mojang_requests;
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
+use actix_web::web::Bytes;
 
 #[derive(Debug, Clone)]
 pub(crate) enum PlayerRenderInput {
     PlayerUuid(uuid::Uuid),
-    TextureHash(String)
+    TextureHash(String),
 }
 
 impl TryFrom<String> for PlayerRenderInput {
@@ -28,7 +28,7 @@ impl PlayerRenderInput {
     pub(crate) async fn get_skin_bytes(&self) -> Result<Bytes> {
         let hash = match self {
             PlayerRenderInput::PlayerUuid(id) => mojang_requests::get_skin_hash(*id).await?,
-            PlayerRenderInput::TextureHash(hash) => hash.to_owned()
+            PlayerRenderInput::TextureHash(hash) => hash.to_owned(),
         };
 
         mojang_requests::get_skin_bytes(hash).await

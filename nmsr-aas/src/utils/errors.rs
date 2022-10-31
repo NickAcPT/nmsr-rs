@@ -15,8 +15,8 @@ pub(crate) enum NMSRaaSError {
     Base64DecodeError(#[from] base64::DecodeError),
     #[error("Failed to decode textures property from player game profile")]
     InvalidJsonError(#[from] serde_json::Error),
-    #[error("Invalid hash skin url")]
-    InvalidHashSkinUrl,
+    #[error("Invalid skin hash url: {0}")]
+    InvalidHashSkinUrl(String),
     #[error("Invalid skin: {0}")]
     InvalidImageError(#[from] image::ImageError),
     #[error("NMSR error: {0}")]

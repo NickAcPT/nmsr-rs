@@ -1,13 +1,13 @@
-use actix_web::{get, HttpResponse, Responder, web};
-use actix_web::web::Buf;
-use nmsr_lib::parts::manager::PartsManager;
 use crate::routes::model::PlayerRenderInput;
-use crate::utils::Result;
-use nmsr_lib::rendering::entry::RenderingEntry;
 use crate::utils::errors::NMSRaaSError;
-use std::io::{BufWriter, Cursor};
+use crate::utils::Result;
+use actix_web::web::Buf;
+use actix_web::{get, web, HttpResponse, Responder};
 use image::ImageFormat::Png;
+use nmsr_lib::parts::manager::PartsManager;
+use nmsr_lib::rendering::entry::RenderingEntry;
 use serde::Deserialize;
+use std::io::{BufWriter, Cursor};
 
 #[derive(Deserialize, Default)]
 pub(crate) struct GetSkinInfo {
@@ -15,15 +15,22 @@ pub(crate) struct GetSkinInfo {
 }
 
 #[get("/skin/{player}")]
-pub(crate) async fn get_skin(path: web::Path<String>, skin_info: web::Query<GetSkinInfo>, parts_manager: web::Data<PartsManager>) -> Result<impl Responder> {
+pub(crate) async fn get_skin(
+    path: web::Path<String>,
+    skin_info: web::Query<GetSkinInfo>,
+    parts_manager: web::Data<PartsManager>,
+) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
 
     let skin = player.get_skin_bytes().await?;
-    let skin_image = image::load_from_memory(skin.chunk()).map_err(NMSRaaSError::InvalidImageError)?;
+    let skin_image =
+        image::load_from_memory(skin.chunk()).map_err(NMSRaaSError::InvalidImageError)?;
 
     let entry = RenderingEntry::new(skin_image.into_rgba8(), skin_info.alex);
 
-    let render = entry.render(parts_manager.as_ref()).map_err(NMSRaaSError::NMSRError)?;
+    let render = entry
+        .render(parts_manager.as_ref())
+        .map_err(NMSRaaSError::NMSRError)?;
 
     let mut render_bytes = Vec::new();
 
@@ -33,7 +40,7 @@ pub(crate) async fn get_skin(path: web::Path<String>, skin_info: web::Query<GetS
         render.write_to(&mut writer, Png)?;
     }
 
-    Ok(HttpResponse::Ok().body(
-        render_bytes
-    ))
+    Ok(HttpResponse::Ok()
+        .content_type("image/png")
+        .body(render_bytes))
 }

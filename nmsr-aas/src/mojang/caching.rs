@@ -23,8 +23,8 @@ pub(crate) struct MojangCacheManager {
     resolved_uuid_to_skin_hash_cache: HashMap<Uuid, CachedUuidToSkinHash>,
 }
 
-const SKIN_CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24 * 7); // 7 days ( 60 seconds * 60 minutes * 24 hours * 7 days )
-const UUID_TO_SKIN_HASH_CACHE_EXPIRE: Duration = Duration::from_secs(60); // 1 minute ( 60 seconds )
+const SKIN_CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24 * 7); // 7 days ( 60 seconds * 60 [minutes] * 24 [hours] * 7 [days] )
+const UUID_TO_SKIN_HASH_CACHE_EXPIRE: Duration = Duration::from_secs(60 * 15); // 15 minutes ( 60 seconds * 15 [minutes] )
 
 impl MojangCacheManager {
     pub(crate) fn cleanup_old_files(&self) -> Result<()> {

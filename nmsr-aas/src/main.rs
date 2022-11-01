@@ -2,6 +2,7 @@ mod mojang;
 mod routes;
 mod utils;
 
+use std::sync::Mutex;
 use crate::mojang::caching::MojangCacheManager;
 use crate::utils::Result;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
@@ -32,11 +33,12 @@ async fn main() -> Result<()> {
     info!("Starting server...");
 
     let server = HttpServer::new(move || {
+        let manager = cache_manager.clone();
         App::new()
             .wrap(Logger::default())
             .app_data(Data::new(parts_manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
-            .app_data(Data::new(cache_manager.clone()))
+            .app_data(Data::new(Mutex::new(manager)))
             .service(index)
             .service(render_full_body)
             .service(get_skin)

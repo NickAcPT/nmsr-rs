@@ -1,5 +1,6 @@
 use std::io::Error;
 use std::string::FromUtf8Error;
+use std::sync::PoisonError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -28,6 +29,8 @@ pub(crate) enum NMSRaaSError {
     IOError(#[from] Error),
     #[error("System time error: {0}")]
     SystemTimeError(#[from] std::time::SystemTimeError),
+    #[error("Failed to accquire lock on cache manager")]
+    MutexPoisonError,
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {}
@@ -35,5 +38,11 @@ impl actix_web::error::ResponseError for NMSRaaSError {}
 impl From<FromUtf8Error> for NMSRaaSError {
     fn from(_: FromUtf8Error) -> Self {
         NMSRaaSError::InvalidBase64TexturesProperty
+    }
+}
+
+impl<T> From<PoisonError<T>> for NMSRaaSError {
+    fn from(_: PoisonError<T>) -> Self {
+        NMSRaaSError::MutexPoisonError
     }
 }

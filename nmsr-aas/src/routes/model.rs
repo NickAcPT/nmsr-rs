@@ -26,15 +26,32 @@ impl TryFrom<String> for PlayerRenderInput {
 }
 
 impl PlayerRenderInput {
+    async fn fetch_skin_hash(
+        &self,
+        cache_manager: &mut MojangCacheManager,
+        client: &reqwest::Client,
+    ) -> Result<String> {
+        Ok(match self {
+            PlayerRenderInput::PlayerUuid(id) => {
+                if let Some(cached_hash) = cache_manager.get_cached_uuid_to_skin_hash(id) {
+                    cached_hash
+                } else {
+                    let fetched_hash = requests::get_skin_hash(client, *id).await?;
+                    cache_manager.cache_uuid_to_skin_hash(id, &fetched_hash);
+
+                    fetched_hash
+                }
+            },
+            PlayerRenderInput::TextureHash(hash) => hash.to_owned(),
+        })
+    }
+
     pub(crate) async fn fetch_skin_bytes(
         &self,
-        cache_manager: &MojangCacheManager,
+        cache_manager: &mut MojangCacheManager,
         client: &reqwest::Client,
     ) -> Result<(String, Bytes)> {
-        let hash = match self {
-            PlayerRenderInput::PlayerUuid(id) => requests::get_skin_hash(client, *id).await?,
-            PlayerRenderInput::TextureHash(hash) => hash.to_owned(),
-        };
+        let hash = self.fetch_skin_hash(cache_manager, client).await?;
 
         let result = cache_manager.get_cached_skin(&hash)?;
 

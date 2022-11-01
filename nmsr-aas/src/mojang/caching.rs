@@ -1,16 +1,26 @@
+use std::collections::HashMap;
 use crate::utils::Result;
 use actix_web::web::Bytes;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::{Duration, Instant};
+use uuid::Uuid;
+
+#[derive(Debug, Clone)]
+struct CachedUuidToSkinHash {
+    time: Instant,
+    hash: String,
+}
 
 #[derive(Debug, Clone)]
 pub(crate) struct MojangCacheManager {
     skins: PathBuf,
     full_body_renders: PathBuf,
+    resolved_uuid_to_skin_hash_cache: HashMap<Uuid, CachedUuidToSkinHash>
 }
 
 const SKIN_CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24 * 7); // 7 days ( 60 seconds * 60 minutes * 24 hours * 7 days )
+const UUID_TO_SKIN_HASH_CACHE_EXPIRE: Duration = Duration::from_secs(60); // 1 minute ( 60 seconds )
 
 impl MojangCacheManager {
     pub(crate) fn cleanup_old_files(&self) -> Result<()> {
@@ -42,6 +52,7 @@ impl MojangCacheManager {
         Ok(MojangCacheManager {
             skins: skins_path,
             full_body_renders: full_body_renders_path,
+            resolved_uuid_to_skin_hash_cache: HashMap::new()
         })
     }
 
@@ -81,5 +92,23 @@ impl MojangCacheManager {
         let path = self.get_cached_full_body_render_path(hash);
         fs::write(path, bytes)?;
         Ok(())
+    }
+
+    pub(crate) fn get_cached_uuid_to_skin_hash(&mut self, uuid: &Uuid) -> Option<String> {
+        if let Some(cached) = self.resolved_uuid_to_skin_hash_cache.get(uuid) {
+            if cached.time.elapsed() < UUID_TO_SKIN_HASH_CACHE_EXPIRE {
+                return Some(cached.hash.clone());
+            } else {
+                self.resolved_uuid_to_skin_hash_cache.remove(uuid);
+            }
+        }
+        None
+    }
+
+    pub(crate) fn cache_uuid_to_skin_hash(&mut self, uuid: &Uuid, hash: &String) {
+        self.resolved_uuid_to_skin_hash_cache.insert(*uuid, CachedUuidToSkinHash {
+            time: Instant::now(),
+            hash: hash.clone()
+        });
     }
 }

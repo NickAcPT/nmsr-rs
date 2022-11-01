@@ -1,36 +1,34 @@
-use crate::routes::model::PlayerRenderInput;
-use crate::utils::errors::NMSRaaSError;
-use crate::utils::Result;
-use actix_web::web::Buf;
-use actix_web::{get, web, HttpResponse, Responder};
+use crate::{routes::model::PlayerRenderInput, utils::errors::NMSRaaSError, utils::Result};
+use actix_web::{get, web, web::Buf, HttpResponse, Responder};
 use image::ImageFormat::Png;
-use nmsr_lib::parts::manager::PartsManager;
-use nmsr_lib::rendering::entry::RenderingEntry;
+use nmsr_lib::{parts::manager::PartsManager, rendering::entry::RenderingEntry};
 use serde::Deserialize;
 use std::io::{BufWriter, Cursor};
 
 #[derive(Deserialize, Default)]
-pub(crate) struct GetSkinInfo {
-    alex: bool,
+pub(crate) struct RenderFullBodyData {
+    alex: Option<String>,
 }
 
-#[get("/skin/{player}")]
-pub(crate) async fn get_skin(
+#[get("/full/{player}")]
+pub(crate) async fn render_full_body(
     path: web::Path<String>,
-    skin_info: web::Query<GetSkinInfo>,
+    skin_info: web::Query<RenderFullBodyData>,
     parts_manager: web::Data<PartsManager>,
+    mojang_requests_client: web::Data<reqwest::Client>,
 ) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
 
-    let skin = player.get_skin_bytes().await?;
+    let skin = player
+        .get_skin_bytes(mojang_requests_client.as_ref())
+        .await?;
     let skin_image =
         image::load_from_memory(skin.chunk()).map_err(NMSRaaSError::InvalidImageError)?;
 
-    let entry = RenderingEntry::new(skin_image.into_rgba8(), skin_info.alex);
+    let entry = RenderingEntry::new(skin_image.into_rgba8(), skin_info.alex.is_some());
 
     let render = entry
-        .render(parts_manager.as_ref())
-        .map_err(NMSRaaSError::NMSRError)?;
+        .render(parts_manager.as_ref())?;
 
     let mut render_bytes = Vec::new();
 

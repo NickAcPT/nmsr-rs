@@ -11,7 +11,44 @@
 <body>
 <main>
     <h1>NickAc's Minecraft Skin Renderer</h1>
-    <h6>Hello world!</h6>
+    <p>
+        A service written in Rust to render Minecraft skins with true perspective.
+        <br>This works by using pre-rendered UV maps that are then merged together into the output image.<br>
+    </p>
+
+    <h2>API endpoints</h2>
+    <p>Listed here are all the API endpoints that are available.</p>
+
+
+    <h3>GET <code>/full/{uuid}</code> - Render a player's full body with their current skin</h3>
+    <div style="display: flex; justify-content: space-between">
+        <div>
+            <p>Render a player's current Minecraft skin onto a PNG image.</p>
+            <p>You can also specify the <code>?alex</code> query parameter to use the Alex model.</p>
+
+            <p>Examples:</p>
+            <ul>
+                <li>
+                    <a href="/full/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">Full body render of NickAc</a>
+                </li>
+                <li>
+                    <a href="/full/c5776379-12a8-4f44-9908-77ceb86064d9?alex">Full body render of Koide</a>
+                </li>
+                <li>
+                    <a href="/full/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Full body render of BmaxXSux</a>
+                </li>
+            </ul>
+        </div>
+
+        <figure>
+            <!--suppress HtmlUnknownTarget -->
+            <img src="/full/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex"
+                 alt="Example of a full body render of user with UUID ad4569f3-7576-4376-a7c7-8e8cfcd9b832 using the Alex model">
+            <figcaption>Example of a full body render</figcaption>
+        </figure>
+    </div>
+
+
 </main>
 </body>
 </html>

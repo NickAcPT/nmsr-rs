@@ -25,9 +25,12 @@ impl TryFrom<String> for PlayerRenderInput {
 }
 
 impl PlayerRenderInput {
-    pub(crate) async fn get_skin_bytes(&self) -> Result<Bytes> {
+    pub(crate) async fn get_skin_bytes(
+        &self,
+        client: &reqwest::Client,
+    ) -> Result<Bytes> {
         let hash = match self {
-            PlayerRenderInput::PlayerUuid(id) => mojang_requests::get_skin_hash(*id).await?,
+            PlayerRenderInput::PlayerUuid(id) => mojang_requests::get_skin_hash(client, *id).await?,
             PlayerRenderInput::TextureHash(hash) => hash.to_owned(),
         };
 

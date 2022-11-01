@@ -1,4 +1,5 @@
 use std::io::Error;
+use std::string::FromUtf8Error;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -11,9 +12,11 @@ pub(crate) enum NMSRaaSError {
     MojangRequestError(#[from] reqwest::Error),
     #[error("Missing textures property from player game profile")]
     MissingTexturesProperty,
-    #[error("Failed to decode textures property from player game profile")]
+    #[error("Invalid base64 texture data")]
+    InvalidBase64TexturesProperty,
+    #[error("Failed to decode textures property from player game profile (base64): {0}")]
     Base64DecodeError(#[from] base64::DecodeError),
-    #[error("Failed to decode textures property from player game profile")]
+    #[error("Failed to decode textures property from player game profile (json): {0}")]
     InvalidJsonError(#[from] serde_json::Error),
     #[error("Invalid skin hash url: {0}")]
     InvalidHashSkinUrl(String),
@@ -26,3 +29,9 @@ pub(crate) enum NMSRaaSError {
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {}
+
+impl From<FromUtf8Error> for NMSRaaSError {
+    fn from(_: FromUtf8Error) -> Self {
+        NMSRaaSError::InvalidBase64TexturesProperty
+    }
+}

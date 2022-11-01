@@ -19,3 +19,5 @@ thiserror = "1.0.37"
 
 env_logger = "0.9.1"
 log = "0.4.17"
+
+parking_lot = "0.12.1"

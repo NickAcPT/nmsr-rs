@@ -3,10 +3,9 @@ use crate::{routes::model::PlayerRenderInput, utils::Result};
 use actix_web::{get, web, web::Buf, HttpResponse, Responder};
 use image::ImageFormat::Png;
 use nmsr_lib::{parts::manager::PartsManager, rendering::entry::RenderingEntry};
+use parking_lot::RwLock;
 use serde::Deserialize;
-use std::borrow::BorrowMut;
 use std::io::{BufWriter, Cursor};
-use std::sync::Mutex;
 
 #[derive(Deserialize, Default)]
 pub(crate) struct RenderFullBodyData {
@@ -19,18 +18,15 @@ pub(crate) async fn render_full_body(
     skin_info: web::Query<RenderFullBodyData>,
     parts_manager: web::Data<PartsManager>,
     mojang_requests_client: web::Data<reqwest::Client>,
-    cache_manager: web::Data<Mutex<MojangCacheManager>>,
+    cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
 
     let (hash, skin_bytes) = player
-        .fetch_skin_bytes(
-            cache_manager.lock()?.borrow_mut(),
-            mojang_requests_client.as_ref(),
-        )
+        .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
         .await?;
 
-    let cached_render = cache_manager.lock()?.get_cached_full_body_render(&hash)?;
+    let cached_render = cache_manager.read().get_cached_full_body_render(&hash)?;
     if let Some(bytes) = cached_render {
         return Ok(HttpResponse::Ok().content_type("image/png").body(bytes));
     }
@@ -49,9 +45,11 @@ pub(crate) async fn render_full_body(
         render.write_to(&mut writer, Png)?;
     }
 
-    cache_manager
-        .lock()?
-        .cache_full_body_render(&hash, render_bytes.as_slice())?;
+    {
+        cache_manager
+            .write()
+            .cache_full_body_render(&hash, render_bytes.as_slice())?;
+    }
 
     Ok(HttpResponse::Ok()
         .content_type("image/png")

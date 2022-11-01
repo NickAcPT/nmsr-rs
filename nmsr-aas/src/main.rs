@@ -7,10 +7,10 @@ use crate::utils::Result;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use log::{debug, info};
 use nmsr_lib::parts::manager::PartsManager;
+use parking_lot::RwLock;
 use routes::{
     get_skin_route::get_skin, index_route::index, render_full_body_route::render_full_body,
 };
-use std::sync::Mutex;
 
 #[actix_web::main]
 async fn main() -> Result<()> {
@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
             .wrap(Logger::default())
             .app_data(Data::new(parts_manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
-            .app_data(Data::new(Mutex::new(manager)))
+            .app_data(Data::new(RwLock::new(manager)))
             .service(index)
             .service(render_full_body)
             .service(get_skin)

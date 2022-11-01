@@ -96,21 +96,22 @@ impl MojangCacheManager {
 
     pub(crate) fn get_cached_uuid_to_skin_hash(&mut self, uuid: &Uuid) -> Option<String> {
         if let Some(cached) = self.resolved_uuid_to_skin_hash_cache.get(uuid) {
-            if cached.time.elapsed() < UUID_TO_SKIN_HASH_CACHE_EXPIRE {
-                return Some(cached.hash.clone());
+            return if cached.time.elapsed() < UUID_TO_SKIN_HASH_CACHE_EXPIRE {
+                Some(cached.hash.clone())
             } else {
                 self.resolved_uuid_to_skin_hash_cache.remove(uuid);
-            }
+                None
+            };
         }
         None
     }
 
-    pub(crate) fn cache_uuid_to_skin_hash(&mut self, uuid: &Uuid, hash: &String) {
+    pub(crate) fn cache_uuid_to_skin_hash(&mut self, uuid: &Uuid, hash: &str) {
         self.resolved_uuid_to_skin_hash_cache.insert(
             *uuid,
             CachedUuidToSkinHash {
                 time: Instant::now(),
-                hash: hash.clone(),
+                hash: hash.to_owned(),
             },
         );
     }

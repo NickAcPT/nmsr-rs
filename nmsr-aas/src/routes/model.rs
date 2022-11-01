@@ -3,6 +3,7 @@ use crate::mojang::requests;
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 use actix_web::web::Bytes;
+use parking_lot::RwLock;
 
 #[derive(Debug, Clone)]
 pub(crate) enum PlayerRenderInput {
@@ -28,17 +29,25 @@ impl TryFrom<String> for PlayerRenderInput {
 impl PlayerRenderInput {
     async fn fetch_skin_hash(
         &self,
-        cache_manager: &mut MojangCacheManager,
+        cache_manager: &RwLock<MojangCacheManager>,
         client: &reqwest::Client,
     ) -> Result<String> {
         Ok(match self {
             PlayerRenderInput::PlayerUuid(id) => {
-                if let Some(cached_hash) = cache_manager.get_cached_uuid_to_skin_hash(id) {
+                let option = {
+                    let mut guard = cache_manager.write();
+                    guard.get_cached_uuid_to_skin_hash(id)
+                };
+
+                if let Some(cached_hash) = option {
                     cached_hash
                 } else {
                     let fetched_hash = requests::get_skin_hash(client, *id).await?;
-                    cache_manager.cache_uuid_to_skin_hash(id, &fetched_hash);
-
+                    {
+                        cache_manager
+                            .write()
+                            .cache_uuid_to_skin_hash(id, &fetched_hash);
+                    }
                     fetched_hash
                 }
             }
@@ -48,18 +57,22 @@ impl PlayerRenderInput {
 
     pub(crate) async fn fetch_skin_bytes(
         &self,
-        cache_manager: &mut MojangCacheManager,
+        cache_manager: &RwLock<MojangCacheManager>,
         client: &reqwest::Client,
     ) -> Result<(String, Bytes)> {
         let hash = self.fetch_skin_hash(cache_manager, client).await?;
 
-        let result = cache_manager.get_cached_skin(&hash)?;
+        let result = cache_manager.read().get_cached_skin(&hash)?;
 
         if let Some(bytes) = result {
             Ok((hash, Bytes::from(bytes)))
         } else {
             let bytes_from_mojang = requests::fetch_skin_bytes_from_mojang(&hash).await?;
-            cache_manager.cache_skin(&hash, &bytes_from_mojang)?;
+            {
+                cache_manager
+                    .write()
+                    .cache_skin(&hash, &bytes_from_mojang)?;
+            }
             Ok((hash, bytes_from_mojang))
         }
     }

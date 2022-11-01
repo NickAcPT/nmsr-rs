@@ -6,6 +6,7 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>NickAc's Minecraft Skin Renderer</title>
+
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css">
 </head>
 <body>
@@ -48,6 +49,34 @@
         </figure>
     </div>
 
+    <hr>
+
+    <h3>GET <code>/skin/{uuid}</code> - Fetch a player's current skin</h3>
+    <div style="display: flex; justify-content: space-between">
+        <div>
+            <p>Get the player's current Minecraft skin returned as a PNG image.</p>
+
+            <p>Examples:</p>
+            <ul>
+                <li>
+                    <a href="/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">Skin of NickAc</a>
+                </li>
+                <li>
+                    <a href="/skin/c5776379-12a8-4f44-9908-77ceb86064d9?alex">Skin of Koide</a>
+                </li>
+                <li>
+                    <a href="/skin/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Skin of BmaxXSux</a>
+                </li>
+            </ul>
+        </div>
+
+        <figure>
+            <!--suppress HtmlUnknownTarget -->
+            <img style="width: 240px; image-rendering: pixelated;" src="/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832"
+                 alt="Example of the fetching of the current Minecraft skin of user with UUID ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+            <figcaption>Example of a Minecraft skin</figcaption>
+        </figure>
+    </div>
 
 </main>
 </body>

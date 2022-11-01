@@ -22,6 +22,7 @@ pub(crate) async fn render_full_body(
     let skin = player
         .get_skin_bytes(mojang_requests_client.as_ref())
         .await?;
+    
     let skin_image =
         image::load_from_memory(skin.chunk()).map_err(NMSRaaSError::InvalidImageError)?;
 

@@ -6,7 +6,7 @@ use crate::utils::Result;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use log::{debug, info};
 use nmsr_lib::parts::manager::PartsManager;
-use routes::{render_full_body_route::render_full_body, index_route::index};
+use routes::{render_full_body_route::render_full_body, index_route::index, get_skin_route::get_skin};
 
 #[actix_web::main]
 async fn main() -> Result<()> {
@@ -32,6 +32,7 @@ async fn main() -> Result<()> {
             .app_data(Data::new(mojang_requests_client.clone()))
             .service(index)
             .service(render_full_body)
+            .service(get_skin)
     });
 
     let server = server.bind(("0.0.0.0", 8080))?;

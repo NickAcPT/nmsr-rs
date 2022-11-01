@@ -10,51 +10,68 @@
     <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css">
 </head>
 <body>
+
+<header>
+    <hgroup>
+        <h1>NickAc's Minecraft Skin Renderer</h1>
+        <h2>
+            A service written in Rust to render Minecraft skins with true perspective.
+            <br>This works by using pre-rendered UV maps that are then merged together into the output image.<br>
+        </h2>
+    </hgroup>
+</header>
+
 <main>
-    <h1>NickAc's Minecraft Skin Renderer</h1>
-    <p>
-        A service written in Rust to render Minecraft skins with true perspective.
-        <br>This works by using pre-rendered UV maps that are then merged together into the output image.<br>
-    </p>
-
     <h2>API endpoints</h2>
-    <p>Listed here are all the API endpoints that are available.</p>
-
-
-    <h3>GET <code>/full/{uuid}</code> - Render a player's full body with their current skin</h3>
-    <div style="display: flex; justify-content: space-between">
+    <h3>GET <code>/full/{uuid|texture hash}</code> - Render a player's full body</h3>
+    <section style="display: flex; justify-content: space-between">
         <div>
-            <p>Render a player's current Minecraft skin onto a PNG image.</p>
+            <p>Render a player's Minecraft skin onto a PNG image.</p>
+            <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
             <p>You can also specify the <code>?alex</code> query parameter to use the Alex model.</p>
 
             <p>Examples:</p>
             <ul>
                 <li>
-                    <a href="/full/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">Full body render of NickAc</a>
+                    <a href="/full/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">Full body render of NickAc's current skin</a>
                 </li>
                 <li>
-                    <a href="/full/c5776379-12a8-4f44-9908-77ceb86064d9?alex">Full body render of Koide</a>
+                    <a href="/full/c5776379-12a8-4f44-9908-77ceb86064d9?alex">Full body render of Koide's current skin</a>
                 </li>
                 <li>
-                    <a href="/full/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Full body render of BmaxXSux</a>
+                    <a href="/full/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Full body render of BmaxXSux's current skin</a>
+                </li>
+                <li>
+                    <a href="/full/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Full body render of an old skin of BmaxXSux</a>
+                </li>
+                <li>
+                    <a href="/full/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Full body render of an old skin of Koide</a>
                 </li>
             </ul>
         </div>
 
+
         <figure>
             <!--suppress HtmlUnknownTarget -->
-            <img src="/full/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex"
-                 alt="Example of a full body render of user with UUID ad4569f3-7576-4376-a7c7-8e8cfcd9b832 using the Alex model">
-            <figcaption>Example of a full body render</figcaption>
+            <img height="378px" src="/full/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex"
+                 alt="Example of a full body skin render of user NickAc using the Alex model">
+            <figcaption>Full body render of NickAc's current skin</figcaption>
         </figure>
-    </div>
+        <figure>
+            <!--suppress HtmlUnknownTarget -->
+            <img height="378px" src="/full/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex"
+                 alt="Example of a full body skin render of an old skin of user BmaxXSux using the Alex model">
+            <figcaption>Full body render of an old BmaxXSux's skin</figcaption>
+        </figure>
+    </section>
 
     <hr>
 
-    <h3>GET <code>/skin/{uuid}</code> - Fetch a player's current skin</h3>
-    <div style="display: flex; justify-content: space-between">
+    <h3>GET <code>/skin/{uuid|texture hash}</code> - Fetch a player's skin</h3>
+    <section style="display: flex; justify-content: space-between">
         <div>
-            <p>Get the player's current Minecraft skin returned as a PNG image.</p>
+            <p>Get the player's Minecraft skin returned as a PNG image.</p>
+            <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
 
             <p>Examples:</p>
             <ul>
@@ -67,16 +84,29 @@
                 <li>
                     <a href="/skin/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Skin of BmaxXSux</a>
                 </li>
+                <li>
+                    <a href="/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">An old skin of BmaxXSux</a>
+                </li>
+                <li>
+                    <a href="/skin/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">An old skin of Koide</a>
+                </li>
+
             </ul>
         </div>
 
         <figure>
             <!--suppress HtmlUnknownTarget -->
             <img style="width: 240px; image-rendering: pixelated;" src="/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832"
-                 alt="Example of the fetching of the current Minecraft skin of user with UUID ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
-            <figcaption>Example of a Minecraft skin</figcaption>
+                 alt="Example of the fetching of the current Minecraft skin of user NickAc">
+            <figcaption>Example of NickAc's current skin</figcaption>
         </figure>
-    </div>
+        <figure>
+            <!--suppress HtmlUnknownTarget -->
+            <img style="width: 240px; image-rendering: pixelated;" src="/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb"
+                 alt="Example of the fetching of an old Minecraft skin of user with user BmaxXSux">
+            <figcaption>Example of one of BmaxXSux's old skins</figcaption>
+        </figure>
+    </section>
 
 </main>
 </body>

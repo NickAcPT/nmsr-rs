@@ -1,8 +1,8 @@
-use std::borrow::BorrowMut;
-use std::sync::Mutex;
 use crate::mojang::caching::MojangCacheManager;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
 use actix_web::{get, web, HttpResponse, Responder};
+use std::borrow::BorrowMut;
+use std::sync::Mutex;
 
 #[get("/skin/{player}")]
 pub(crate) async fn get_skin(
@@ -13,7 +13,10 @@ pub(crate) async fn get_skin(
     let player: PlayerRenderInput = path.into_inner().try_into()?;
 
     let (_, skin_bytes) = player
-        .fetch_skin_bytes(cache_manager.lock()?.borrow_mut(), mojang_requests_client.as_ref())
+        .fetch_skin_bytes(
+            cache_manager.lock()?.borrow_mut(),
+            mojang_requests_client.as_ref(),
+        )
         .await?;
 
     Ok(HttpResponse::Ok()

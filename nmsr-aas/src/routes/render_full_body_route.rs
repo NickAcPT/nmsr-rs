@@ -1,10 +1,10 @@
-use std::borrow::BorrowMut;
 use crate::mojang::caching::MojangCacheManager;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
 use actix_web::{get, web, web::Buf, HttpResponse, Responder};
 use image::ImageFormat::Png;
 use nmsr_lib::{parts::manager::PartsManager, rendering::entry::RenderingEntry};
 use serde::Deserialize;
+use std::borrow::BorrowMut;
 use std::io::{BufWriter, Cursor};
 use std::sync::Mutex;
 
@@ -24,7 +24,10 @@ pub(crate) async fn render_full_body(
     let player: PlayerRenderInput = path.into_inner().try_into()?;
 
     let (hash, skin_bytes) = player
-        .fetch_skin_bytes(cache_manager.lock()?.borrow_mut(), mojang_requests_client.as_ref())
+        .fetch_skin_bytes(
+            cache_manager.lock()?.borrow_mut(),
+            mojang_requests_client.as_ref(),
+        )
         .await?;
 
     let cached_render = cache_manager.lock()?.get_cached_full_body_render(&hash)?;
@@ -46,7 +49,9 @@ pub(crate) async fn render_full_body(
         render.write_to(&mut writer, Png)?;
     }
 
-    cache_manager.lock()?.cache_full_body_render(&hash, render_bytes.as_slice())?;
+    cache_manager
+        .lock()?
+        .cache_full_body_render(&hash, render_bytes.as_slice())?;
 
     Ok(HttpResponse::Ok()
         .content_type("image/png")

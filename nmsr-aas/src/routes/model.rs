@@ -41,7 +41,7 @@ impl PlayerRenderInput {
 
                     fetched_hash
                 }
-            },
+            }
             PlayerRenderInput::TextureHash(hash) => hash.to_owned(),
         })
     }

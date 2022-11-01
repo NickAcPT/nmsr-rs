@@ -2,7 +2,6 @@ mod mojang;
 mod routes;
 mod utils;
 
-use std::sync::Mutex;
 use crate::mojang::caching::MojangCacheManager;
 use crate::utils::Result;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
@@ -11,6 +10,7 @@ use nmsr_lib::parts::manager::PartsManager;
 use routes::{
     get_skin_route::get_skin, index_route::index, render_full_body_route::render_full_body,
 };
+use std::sync::Mutex;
 
 #[actix_web::main]
 async fn main() -> Result<()> {

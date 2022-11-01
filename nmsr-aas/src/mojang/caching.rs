@@ -1,3 +1,4 @@
+use crate::manager::RenderMode;
 use crate::utils::Result;
 use actix_web::web::Bytes;
 use std::collections::HashMap;
@@ -7,7 +8,6 @@ use std::time::{Duration, Instant};
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 use walkdir::WalkDir;
-use crate::manager::RenderMode;
 
 #[derive(Debug, Clone)]
 struct CachedUuidToSkinHash {
@@ -96,7 +96,12 @@ impl MojangCacheManager {
         Ok(())
     }
 
-    pub(crate) fn get_cached_render(&self, mode: &RenderMode, hash: &String, slim_arms: bool) -> Result<Option<Vec<u8>>> {
+    pub(crate) fn get_cached_render(
+        &self,
+        mode: &RenderMode,
+        hash: &String,
+        slim_arms: bool,
+    ) -> Result<Option<Vec<u8>>> {
         let path = self.get_cached_render_path(mode, hash, slim_arms);
         if path.exists() {
             Ok(Some(fs::read(path)?))
@@ -105,7 +110,13 @@ impl MojangCacheManager {
         }
     }
 
-    pub(crate) fn cache_render(&self, mode: &RenderMode, hash: &String, slim_arms: bool, bytes: &[u8]) -> Result<()> {
+    pub(crate) fn cache_render(
+        &self,
+        mode: &RenderMode,
+        hash: &String,
+        slim_arms: bool,
+        bytes: &[u8],
+    ) -> Result<()> {
         let path = self.get_cached_render_path(mode, hash, slim_arms);
         fs::write(path, bytes)?;
         Ok(())

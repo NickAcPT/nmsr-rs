@@ -1,8 +1,8 @@
+use crate::manager::RenderMode;
 use std::io::Error;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 use thiserror::Error;
-use crate::manager::RenderMode;
 
 #[derive(Error, Debug)]
 pub(crate) enum NMSRaaSError {

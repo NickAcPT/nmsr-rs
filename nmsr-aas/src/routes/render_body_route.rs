@@ -1,13 +1,13 @@
+use crate::manager::{NMSRaaSManager, RenderMode};
 use crate::mojang::caching::MojangCacheManager;
+use crate::utils::errors::NMSRaaSError;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
 use actix_web::{get, web, web::Buf, HttpResponse, Responder};
 use image::ImageFormat::Png;
-use nmsr_lib::{rendering::entry::RenderingEntry};
+use nmsr_lib::rendering::entry::RenderingEntry;
 use parking_lot::RwLock;
 use serde::Deserialize;
 use std::io::{BufWriter, Cursor};
-use crate::manager::{NMSRaaSManager, RenderMode};
-use crate::utils::errors::NMSRaaSError;
 
 #[derive(Deserialize, Default)]
 pub(crate) struct RenderData {
@@ -23,17 +23,20 @@ pub(crate) async fn render(
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {
     let (mode, player) = path.into_inner();
-    let mode: RenderMode = RenderMode::try_from(mode.as_str()).map_err(|_| NMSRaaSError::InvalidRenderMode(mode))?;
+    let mode: RenderMode =
+        RenderMode::try_from(mode.as_str()).map_err(|_| NMSRaaSError::InvalidRenderMode(mode))?;
     let player: PlayerRenderInput = player.try_into()?;
     let slim_arms = skin_info.alex.is_some();
 
     let parts_manager = parts_manager.as_ref().get_manager(&mode)?;
 
     let (hash, skin_bytes) = player
-    .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
-    .await?;
+        .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
+        .await?;
 
-    let cached_render = cache_manager.read().get_cached_render(&mode, &hash, slim_arms)?;
+    let cached_render = cache_manager
+        .read()
+        .get_cached_render(&mode, &hash, slim_arms)?;
     if let Some(bytes) = cached_render {
         return Ok(HttpResponse::Ok().content_type("image/png").body(bytes));
     }

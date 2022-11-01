@@ -26,7 +26,7 @@
     <h3>GET <code>/fullbody/{uuid|texture hash}</code> - Render a player's full body</h3>
     <section style="display: flex; justify-content: space-between">
         <div>
-            <p>Render a player's Minecraft skin onto a PNG image.</p>
+            <p>Render a player's Minecraft body into a PNG image.</p>
             <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
             <p>You can also specify the <code>?alex</code> query parameter to use the Alex model.</p>
 
@@ -62,6 +62,50 @@
             <img height="378px" src="/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex"
                  alt="Example of a full body skin render of an old skin of user BmaxXSux using the Alex model">
             <figcaption>Full body render of an old BmaxXSux's skin</figcaption>
+        </figure>
+    </section>
+
+    <hr>
+
+    <h3>GET <code>/frontfull/{uuid|texture hash}</code> - Render a player's full body in 2D</h3>
+    <section style="display: flex; justify-content: space-between">
+        <div>
+            <p>Render a full image of a Minecraft player's body in 2D into a PNG image.</p>
+            <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
+            <p>You can also specify the <code>?alex</code> query parameter to use the Alex model.</p>
+
+            <p>Examples:</p>
+            <ul>
+                <li>
+                    <a href="/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">2D Body render of NickAc's current skin</a>
+                </li>
+                <li>
+                    <a href="/frontfull/c5776379-12a8-4f44-9908-77ceb86064d9?alex">2D Body render of Koide's current skin</a>
+                </li>
+                <li>
+                    <a href="/frontfull/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">2D Body render of BmaxXSux's current skin</a>
+                </li>
+                <li>
+                    <a href="/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">2D Body render of an old skin of BmaxXSux</a>
+                </li>
+                <li>
+                    <a href="/frontfull/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">2D Body render of an old skin of Koide</a>
+                </li>
+            </ul>
+        </div>
+
+
+        <figure>
+            <!--suppress HtmlUnknownTarget -->
+            <img height="378px" src="/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex"
+                 alt="Example of a full body skin render of user NickAc using the Alex model">
+            <figcaption>2D Body render of NickAc's current skin</figcaption>
+        </figure>
+        <figure>
+            <!--suppress HtmlUnknownTarget -->
+            <img height="378px" src="/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex"
+                 alt="Example of a full body skin render of an old skin of user BmaxXSux using the Alex model">
+            <figcaption>2D Body render of an old BmaxXSux's skin</figcaption>
         </figure>
     </section>
 

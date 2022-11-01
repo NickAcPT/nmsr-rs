@@ -1,7 +1,8 @@
-use crate::mojang_requests;
+use crate::mojang::requests;
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 use actix_web::web::Bytes;
+use crate::mojang::caching::MojangCacheManager;
 
 #[derive(Debug, Clone)]
 pub(crate) enum PlayerRenderInput {
@@ -25,15 +26,24 @@ impl TryFrom<String> for PlayerRenderInput {
 }
 
 impl PlayerRenderInput {
-    pub(crate) async fn get_skin_bytes(
+    pub(crate) async fn fetch_skin_bytes(
         &self,
+        cache_manager: &MojangCacheManager,
         client: &reqwest::Client,
-    ) -> Result<Bytes> {
+    ) -> Result<(String, Bytes)> {
         let hash = match self {
-            PlayerRenderInput::PlayerUuid(id) => mojang_requests::get_skin_hash(client, *id).await?,
+            PlayerRenderInput::PlayerUuid(id) => requests::get_skin_hash(client, *id).await?,
             PlayerRenderInput::TextureHash(hash) => hash.to_owned(),
         };
 
-        mojang_requests::get_skin_bytes(hash).await
+        let result = cache_manager.get_cached_skin(&hash)?;
+
+        if let Some(bytes) = result {
+            Ok((hash, Bytes::from(bytes)))
+        } else {
+            let bytes_from_mojang = requests::fetch_skin_bytes_from_mojang(&hash).await?;
+            cache_manager.cache_skin(&hash, &bytes_from_mojang)?;
+            Ok((hash, bytes_from_mojang))
+        }
     }
 }

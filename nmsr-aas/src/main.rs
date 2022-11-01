@@ -1,12 +1,13 @@
-mod mojang_requests;
 mod routes;
 mod utils;
+mod mojang;
 
 use crate::utils::Result;
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{App, HttpServer, middleware::Logger, web::Data};
 use log::{debug, info};
 use nmsr_lib::parts::manager::PartsManager;
-use routes::{render_full_body_route::render_full_body, index_route::index, get_skin_route::get_skin};
+use routes::{get_skin_route::get_skin, index_route::index, render_full_body_route::render_full_body};
+use crate::mojang::caching::MojangCacheManager;
 
 #[actix_web::main]
 async fn main() -> Result<()> {
@@ -19,6 +20,8 @@ async fn main() -> Result<()> {
     let parts_manager = PartsManager::new("parts")?;
     info!("Parts manager loaded in {}ms", start.elapsed().as_millis());
 
+    let cache_manager = MojangCacheManager::init("cache")?;
+
     let mojang_requests_client = reqwest::Client::builder()
         .user_agent(format!("NMSR as a Service/{}", env!("CARGO_PKG_VERSION")))
         .build()?;
@@ -30,6 +33,7 @@ async fn main() -> Result<()> {
             .wrap(Logger::default())
             .app_data(Data::new(parts_manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
+            .app_data(Data::new(cache_manager.clone()))
             .service(index)
             .service(render_full_body)
             .service(get_skin)

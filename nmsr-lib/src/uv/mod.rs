@@ -1,6 +1,7 @@
 use image::{ImageBuffer, Rgba};
 
-mod utils;
+pub(crate) mod part;
+pub(crate) mod utils;
 pub mod uv_magic;
 
 /// Sendable 16-bit Rgb + alpha channel image buffer

@@ -3,7 +3,7 @@ use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
-use image::{imageops, GenericImageView, ImageBuffer, Pixel};
+use image::{imageops, ImageBuffer, Pixel};
 use std::ops::Deref;
 
 impl RenderingEntry {
@@ -17,18 +17,20 @@ impl RenderingEntry {
 
         let overlay = parts_manager.get_overlay(uv_image);
 
-        for (x, y, pixel) in applied_uv.enumerate_pixels_mut() {
-            let alpha = pixel.0[3];
-            if alpha > 0 {
-                if let Some(overlay) = overlay {
-                    let pixel_channels = pixel.channels_mut();
-                    let overlay_channels = overlay.uv_image.get_pixel(x, y).channels();
+        if let Some(overlay) = overlay {
+            for uv_pixel in &overlay.uv_pixels {
+                if let Some(overlay_channels) = uv_pixel.original_rgba {
+                    let pixel_channels = applied_uv
+                        .get_pixel_mut(uv_pixel.position.0, uv_pixel.position.1)
+                        .channels_mut();
 
-                    for i in 0..4 {
-                        let original_percent = (pixel_channels[i] as f32) / u16::MAX as f32;
-                        let overlay_percent = (overlay_channels[i] as f32) / u16::MAX as f32;
+                    for channel_index in 0..4 {
+                        let original_percent =
+                            (pixel_channels[channel_index] as f32) / u16::MAX as f32;
+                        let overlay_percent =
+                            (overlay_channels[channel_index] as f32) / u16::MAX as f32;
 
-                        pixel_channels[i] =
+                        pixel_channels[channel_index] =
                             ((original_percent * overlay_percent) * (u16::MAX as f32)) as u16;
                     }
                 }
@@ -62,12 +64,12 @@ impl RenderingEntry {
         let mut pixels = applied_uvs
             .iter()
             .flat_map(|(uv, applied)| {
-                applied.enumerate_pixels().map(move |(x, y, pixel)| {
+                uv.uv_pixels.iter().map(|pixel| {
                     (
-                        unsafe { uv.uv_image.unsafe_get_pixel(x, y) }.0[2], // Depth stored in B channel
-                        x,
-                        y,
-                        pixel,
+                        pixel.depth,
+                        pixel.position.0,
+                        pixel.position.1,
+                        applied.get_pixel(pixel.position.0, pixel.position.1),
                     )
                 })
             })

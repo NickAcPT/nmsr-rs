@@ -30,15 +30,15 @@ impl PartsManager {
         let mut model_parts = HashMap::<String, UvImage>::with_capacity(8);
         let mut model_overlays = HashMap::<String, UvImage>::with_capacity(16);
 
-        Self::load_as_parts(root, &mut all_parts, "")?;
-        Self::load_model_specific_parts(root, &mut model_parts)?;
+        Self::load_as_parts(root, &mut all_parts, "", false)?;
+        Self::load_model_specific_parts(root, &mut model_parts, false)?;
 
         let overlays_root = root.join("overlays");
         if overlays_root.exists() {
             let overlays_root_path = overlays_root.as_path();
 
-            Self::load_as_parts(overlays_root_path, &mut model_overlays, "")?;
-            Self::load_model_specific_parts(overlays_root_path, &mut model_overlays)?;
+            Self::load_as_parts(overlays_root_path, &mut model_overlays, "", true)?;
+            Self::load_model_specific_parts(overlays_root_path, &mut model_overlays, true)?;
         }
 
         let environment_background = Self::load_environment_background(root)?;
@@ -54,11 +54,17 @@ impl PartsManager {
     fn load_model_specific_parts(
         root: &Path,
         model_parts: &mut HashMap<String, UvImage>,
+        store_raw_pixels: bool,
     ) -> Result<()> {
         for model in [PlayerModel::Alex, PlayerModel::Steve].iter() {
             let dir_name = model.get_dir_name();
 
-            Self::load_as_parts(root.join(dir_name).as_path(), model_parts, dir_name)?;
+            Self::load_as_parts(
+                root.join(dir_name).as_path(),
+                model_parts,
+                dir_name,
+                store_raw_pixels,
+            )?;
         }
 
         Ok(())
@@ -68,6 +74,7 @@ impl PartsManager {
         dir: &Path,
         parts_map: &mut HashMap<String, UvImage>,
         path_prefix: &str,
+        store_raw_pixels: bool,
     ) -> Result<()> {
         let directory = dir
             .read_dir()
@@ -118,7 +125,7 @@ impl PartsManager {
             .map(
                 |result: Result<(&String, Rgba16Image)>| -> Result<UvImage> {
                     let (name, image) = result?;
-                    let uv_image = UvImage::new(name.to_owned(), image);
+                    let uv_image = UvImage::new(name.to_owned(), image, store_raw_pixels);
 
                     Ok(uv_image)
                 },

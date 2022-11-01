@@ -23,3 +23,5 @@ log = "0.4.17"
 parking_lot = "0.12.1"
 
 strum = { version = "0.24.1", features = ["derive"] }
+
+walkdir = "2.3.2"

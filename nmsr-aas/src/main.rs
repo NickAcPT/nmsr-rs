@@ -9,7 +9,7 @@ use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use log::{debug, info};
 use parking_lot::RwLock;
 use routes::{
-    get_skin_route::get_skin, index_route::index, render_full_body_route::render,
+    get_skin_route::get_skin, index_route::index, render_body_route::render,
 };
 use crate::manager::NMSRaaSManager;
 

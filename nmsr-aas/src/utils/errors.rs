@@ -36,6 +36,8 @@ pub(crate) enum NMSRaaSError {
     MissingPartManager(RenderMode),
     #[error("Invalid render mode: {0}")]
     InvalidRenderMode(String),
+    #[error("Failed to walk directory: {0}")]
+    WalkDirError(#[from] walkdir::Error),
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {}

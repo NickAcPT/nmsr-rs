@@ -2,6 +2,7 @@ use std::io::Error;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 use thiserror::Error;
+use crate::manager::RenderMode;
 
 #[derive(Error, Debug)]
 pub(crate) enum NMSRaaSError {
@@ -31,6 +32,10 @@ pub(crate) enum NMSRaaSError {
     SystemTimeError(#[from] std::time::SystemTimeError),
     #[error("Failed to accquire lock on cache manager")]
     MutexPoisonError,
+    #[error("Failed to find part manager for mode: {0}")]
+    MissingPartManager(RenderMode),
+    #[error("Invalid render mode: {0}")]
+    InvalidRenderMode(String),
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {}

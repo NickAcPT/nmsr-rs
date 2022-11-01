@@ -4,7 +4,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
+use strum::IntoEnumIterator;
 use uuid::Uuid;
+use crate::manager::RenderMode;
 
 #[derive(Debug, Clone)]
 struct CachedUuidToSkinHash {
@@ -15,7 +17,7 @@ struct CachedUuidToSkinHash {
 #[derive(Debug, Clone)]
 pub(crate) struct MojangCacheManager {
     skins: PathBuf,
-    full_body_renders: PathBuf,
+    renders_dir: PathBuf,
     resolved_uuid_to_skin_hash_cache: HashMap<Uuid, CachedUuidToSkinHash>,
 }
 
@@ -24,7 +26,7 @@ const UUID_TO_SKIN_HASH_CACHE_EXPIRE: Duration = Duration::from_secs(60); // 1 m
 
 impl MojangCacheManager {
     pub(crate) fn cleanup_old_files(&self) -> Result<()> {
-        let files = fs::read_dir(&self.skins)?.chain(fs::read_dir(&self.full_body_renders)?);
+        let files = fs::read_dir(&self.skins)?.chain(fs::read_dir(&self.renders_dir)?);
         let now = std::time::SystemTime::now();
 
         for file in files {
@@ -43,25 +45,34 @@ impl MojangCacheManager {
         let renders_path = root_path.join("renders");
 
         let skins_path = root_path.join("skins");
-        let full_body_renders_path = renders_path.join("full_body");
 
         fs::create_dir_all(&root_path)?;
         fs::create_dir_all(&skins_path)?;
-        fs::create_dir_all(&full_body_renders_path)?;
+        fs::create_dir_all(&renders_path)?;
 
-        Ok(MojangCacheManager {
+        let manager = MojangCacheManager {
             skins: skins_path,
-            full_body_renders: full_body_renders_path,
+            renders_dir: renders_path,
             resolved_uuid_to_skin_hash_cache: HashMap::new(),
-        })
+        };
+
+        for mode in RenderMode::iter() {
+            fs::create_dir_all(manager.get_cached_render_mode_path(&mode))?;
+        }
+
+        Ok(manager)
     }
 
     fn get_cached_skin_path(&self, hash: &String) -> PathBuf {
         self.skins.join(hash)
     }
 
-    fn get_cached_full_body_render_path(&self, hash: &String) -> PathBuf {
-        self.full_body_renders.join(hash)
+    fn get_cached_render_path(&self, mode: &RenderMode, hash: &String) -> PathBuf {
+        self.get_cached_render_mode_path(mode).join(hash)
+    }
+
+    fn get_cached_render_mode_path(&self, mode: &RenderMode) -> PathBuf {
+        self.renders_dir.join(mode.to_string())
     }
 
     pub(crate) fn get_cached_skin(&self, hash: &String) -> Result<Option<Vec<u8>>> {
@@ -79,8 +90,8 @@ impl MojangCacheManager {
         Ok(())
     }
 
-    pub(crate) fn get_cached_full_body_render(&self, hash: &String) -> Result<Option<Vec<u8>>> {
-        let path = self.get_cached_full_body_render_path(hash);
+    pub(crate) fn get_cached_render(&self, mode: &RenderMode, hash: &String) -> Result<Option<Vec<u8>>> {
+        let path = self.get_cached_render_path(mode, hash);
         if path.exists() {
             Ok(Some(fs::read(path)?))
         } else {
@@ -88,8 +99,8 @@ impl MojangCacheManager {
         }
     }
 
-    pub(crate) fn cache_full_body_render(&self, hash: &String, bytes: &[u8]) -> Result<()> {
-        let path = self.get_cached_full_body_render_path(hash);
+    pub(crate) fn cache_render(&self, mode: &RenderMode, hash: &String, bytes: &[u8]) -> Result<()> {
+        let path = self.get_cached_render_path(mode, hash);
         fs::write(path, bytes)?;
         Ok(())
     }

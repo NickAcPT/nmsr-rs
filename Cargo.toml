@@ -3,7 +3,8 @@
 members = [
     "nmsr-lib",
     "nmsr-jni",
-    "nmsr-aas"
+    "nmsr-aas",
+    "nmsr-multi-parts-organizer"
 ]
 
 [profile.dev.package.nmsr-lib]

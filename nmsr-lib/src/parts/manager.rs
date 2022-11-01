@@ -23,8 +23,8 @@ impl PartsManager {
         Ok(path.is_file() && name != PartsManager::ENVIRONMENT_BACKGROUND_NAME)
     }
 
-    pub fn new(path: &str) -> Result<PartsManager> {
-        let root = Path::new(path);
+    pub fn new(path: impl AsRef<Path>) -> Result<PartsManager> {
+        let root = path.as_ref();
 
         let mut all_parts = HashMap::<String, UvImage>::with_capacity(8);
         let mut model_parts = HashMap::<String, UvImage>::with_capacity(8);

@@ -1,16 +1,17 @@
 mod mojang;
 mod routes;
 mod utils;
+mod manager;
 
 use crate::mojang::caching::MojangCacheManager;
 use crate::utils::Result;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use log::{debug, info};
-use nmsr_lib::parts::manager::PartsManager;
 use parking_lot::RwLock;
 use routes::{
-    get_skin_route::get_skin, index_route::index, render_full_body_route::render_full_body,
+    get_skin_route::get_skin, index_route::index, render_full_body_route::render,
 };
+use crate::manager::NMSRaaSManager;
 
 #[actix_web::main]
 async fn main() -> Result<()> {
@@ -20,7 +21,7 @@ async fn main() -> Result<()> {
 
     debug!("Loading parts manager...");
     let start = std::time::Instant::now();
-    let parts_manager = PartsManager::new("parts")?;
+    let manager = NMSRaaSManager::new("parts")?;
     info!("Parts manager loaded in {}ms", start.elapsed().as_millis());
 
     let cache_manager = MojangCacheManager::init("cache")?;
@@ -33,15 +34,14 @@ async fn main() -> Result<()> {
     info!("Starting server...");
 
     let server = HttpServer::new(move || {
-        let manager = cache_manager.clone();
         App::new()
             .wrap(Logger::default())
-            .app_data(Data::new(parts_manager.clone()))
+            .app_data(Data::new(manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
-            .app_data(Data::new(RwLock::new(manager)))
+            .app_data(Data::new(RwLock::new(cache_manager.clone())))
             .service(index)
-            .service(render_full_body)
             .service(get_skin)
+            .service(render)
     });
 
     let server = server.bind(("0.0.0.0", 8080))?;

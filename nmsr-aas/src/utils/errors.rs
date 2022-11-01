@@ -26,6 +26,8 @@ pub(crate) enum NMSRaaSError {
     NMSRError(#[from] nmsr_lib::errors::NMSRError),
     #[error("IO error: {0}")]
     IOError(#[from] Error),
+    #[error("System time error: {0}")]
+    SystemTimeError(#[from] std::time::SystemTimeError),
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {}

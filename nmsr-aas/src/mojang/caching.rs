@@ -2,15 +2,32 @@ use crate::utils::Result;
 use actix_web::web::Bytes;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub(crate) struct MojangCacheManager {
-    root: PathBuf,
     skins: PathBuf,
     full_body_renders: PathBuf,
 }
 
+const SKIN_CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24 * 7); // 7 days ( 60 seconds * 60 minutes * 24 hours * 7 days )
+
 impl MojangCacheManager {
+    pub(crate) fn cleanup_old_files(&self) -> Result<()> {
+        let files = fs::read_dir(&self.skins)?.chain(fs::read_dir(&self.full_body_renders)?);
+        let now = std::time::SystemTime::now();
+
+        for file in files {
+            let file = file?;
+            let modified = file.metadata()?.modified()?;
+            if now.duration_since(modified)? > SKIN_CACHE_EXPIRE {
+                fs::remove_file(file.path())?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub(crate) fn init<P: AsRef<Path>>(root_path: P) -> Result<MojangCacheManager> {
         let root_path = root_path.as_ref().to_path_buf();
         let renders_path = root_path.join("renders");
@@ -23,7 +40,6 @@ impl MojangCacheManager {
         fs::create_dir_all(&full_body_renders_path)?;
 
         Ok(MojangCacheManager {
-            root: root_path,
             skins: skins_path,
             full_body_renders: full_body_renders_path,
         })

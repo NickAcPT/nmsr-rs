@@ -23,6 +23,7 @@ async fn main() -> Result<()> {
     info!("Parts manager loaded in {}ms", start.elapsed().as_millis());
 
     let cache_manager = MojangCacheManager::init("cache")?;
+    cache_manager.cleanup_old_files()?;
 
     let mojang_requests_client = reqwest::Client::builder()
         .user_agent(format!("NMSR as a Service/{}", env!("CARGO_PKG_VERSION")))

@@ -1,10 +1,10 @@
+use crate::mojang::caching::MojangCacheManager;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
 use actix_web::{get, web, web::Buf, HttpResponse, Responder};
 use image::ImageFormat::Png;
 use nmsr_lib::{parts::manager::PartsManager, rendering::entry::RenderingEntry};
 use serde::Deserialize;
 use std::io::{BufWriter, Cursor};
-use crate::mojang::caching::MojangCacheManager;
 
 #[derive(Deserialize, Default)]
 pub(crate) struct RenderFullBodyData {
@@ -17,7 +17,7 @@ pub(crate) async fn render_full_body(
     skin_info: web::Query<RenderFullBodyData>,
     parts_manager: web::Data<PartsManager>,
     mojang_requests_client: web::Data<reqwest::Client>,
-    cache_manager: web::Data<MojangCacheManager>
+    cache_manager: web::Data<MojangCacheManager>,
 ) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
 
@@ -30,13 +30,11 @@ pub(crate) async fn render_full_body(
         return Ok(HttpResponse::Ok().content_type("image/png").body(bytes));
     }
 
-    let skin_image =
-        image::load_from_memory(skin_bytes.chunk())?;
+    let skin_image = image::load_from_memory(skin_bytes.chunk())?;
 
     let entry = RenderingEntry::new(skin_image.into_rgba8(), skin_info.alex.is_some());
 
-    let render = entry
-        .render(parts_manager.as_ref())?;
+    let render = entry.render(parts_manager.as_ref())?;
 
     let mut render_bytes = Vec::new();
 

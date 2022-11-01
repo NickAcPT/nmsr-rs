@@ -86,7 +86,6 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
 }
 
 pub(crate) async fn fetch_skin_bytes_from_mojang(hash: &String) -> Result<Bytes> {
-
     let bytes = reqwest::get(format!("http://textures.minecraft.net/texture/{}", hash))
         .await?
         .bytes()

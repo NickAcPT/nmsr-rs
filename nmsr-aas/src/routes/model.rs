@@ -1,8 +1,8 @@
+use crate::mojang::caching::MojangCacheManager;
 use crate::mojang::requests;
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 use actix_web::web::Bytes;
-use crate::mojang::caching::MojangCacheManager;
 
 #[derive(Debug, Clone)]
 pub(crate) enum PlayerRenderInput {

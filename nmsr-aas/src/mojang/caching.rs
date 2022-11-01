@@ -1,7 +1,7 @@
+use crate::utils::Result;
+use actix_web::web::Bytes;
 use std::fs;
 use std::path::{Path, PathBuf};
-use actix_web::web::Bytes;
-use crate::utils::Result;
 
 #[derive(Debug, Clone)]
 pub(crate) struct MojangCacheManager {

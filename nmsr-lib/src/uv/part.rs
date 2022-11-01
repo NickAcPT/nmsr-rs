@@ -7,7 +7,6 @@ pub(crate) struct Point(pub(crate) u32, pub(crate) u32);
 pub(crate) struct UvImagePixel {
     pub(crate) position: Point,
     pub(crate) uv: Point,
-    pub(crate) alpha: u8,
     pub(crate) depth: u16,
     pub(crate) original_rgba: Option<[u16; 4]>,
 }
@@ -68,7 +67,6 @@ impl UvImagePixel {
         Some(Self {
             position: Point(x, y),
             uv: Point(u, v),
-            alpha: (alpha / u16::MAX) as u8 * u8::MAX,
             depth,
             original_rgba: rgba,
         })

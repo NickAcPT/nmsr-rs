@@ -8,9 +8,11 @@ use crate::config::ServerConfiguration;
 use crate::manager::NMSRaaSManager;
 use crate::mojang::caching::MojangCacheManager;
 use crate::utils::Result;
+use actix_web::rt::time;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use clap::Parser;
 use log::{debug, info};
+use parking_lot::RwLock;
 use routes::{get_skin_route::get_skin, index_route::index, render_body_route::render};
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
@@ -18,8 +20,6 @@ use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::time::Duration;
-use actix_web::rt::time;
-use parking_lot::RwLock;
 
 #[derive(Parser)]
 struct Args {
@@ -63,7 +63,10 @@ async fn main() -> Result<()> {
             interval.tick().await;
 
             debug!("Cleaning up cache...");
-            cache_manager.read().cleanup_old_files().expect("Failed to cleanup cache");
+            cache_manager
+                .read()
+                .cleanup_old_files()
+                .expect("Failed to cleanup cache");
             debug!("Cache cleaned up");
         }
     });

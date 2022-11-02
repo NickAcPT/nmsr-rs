@@ -1,11 +1,11 @@
 use crate::manager::RenderMode;
 use crate::utils::Result;
 use actix_web::web::Bytes;
+use log::debug;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
-use log::debug;
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 use walkdir::WalkDir;

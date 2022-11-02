@@ -12,6 +12,8 @@ pub(crate) enum NMSRaaSError {
     InvalidPlayerRequest(String),
     #[error("Invalid player game profile response: {0}")]
     MojangRequestError(#[from] reqwest::Error),
+    #[error("Invalid player game profile response: {0}")]
+    GameProfileError(String),
     #[error("Missing textures property from player game profile")]
     MissingTexturesProperty,
     #[error("Invalid base64 texture data")]

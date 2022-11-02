@@ -49,7 +49,11 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_renderS
     .into_rgba8();
 
     // Create a new rendering entry
-    let entry = unwrap_or_throw_java_exception!(env, RenderingEntry::new(skin_image, slim_arms), empty_byte_array);
+    let entry = unwrap_or_throw_java_exception!(
+        env,
+        RenderingEntry::new(skin_image, slim_arms),
+        empty_byte_array
+    );
 
     // Render the skin
     let render =

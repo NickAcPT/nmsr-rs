@@ -57,15 +57,23 @@ impl GameProfile {
 }
 
 async fn get_player_game_profile(client: &Client, id: Uuid) -> Result<GameProfile> {
-    Ok(client
+    let response = client
         .get(format!(
             "https://sessionserver.mojang.com/session/minecraft/profile/{}",
             id
         ))
         .send()
-        .await?
-        .json::<GameProfile>()
-        .await?)
+        .await?;
+
+    if !response.status().is_success() {
+        Err(NMSRaaSError::GameProfileError(format!(
+            "Failed to fetch game profile for {}: {}",
+            id,
+            response.status()
+        )))
+    } else {
+        Ok(response.json::<GameProfile>().await?)
+    }
 }
 
 pub(crate) async fn get_skin_hash(
@@ -94,12 +102,16 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
 }
 
 pub(crate) async fn fetch_skin_bytes_from_mojang(hash: &String, client: &Client) -> Result<Bytes> {
-    let bytes = client
+    let response = client
         .get(format!("http://textures.minecraft.net/texture/{}", hash))
         .send()
-        .await?
-        .bytes()
         .await?;
+
+    if !response.status().is_success() {
+        return Err(NMSRaaSError::InvalidHashSkinUrl(hash.to_string()));
+    }
+
+    let bytes = response.bytes().await?;
 
     Ok(bytes)
 }

@@ -51,7 +51,9 @@ async fn main() -> Result<()> {
         "cache",
         config.cache.image_cache_expiry,
         config.cache.mojang_profile_request_expiry,
+        config.cache.mojang_profile_requests_per_second
     )?;
+
     let cache_manager = Data::new(RwLock::new(cache_manager));
     let cache_ref = cache_manager.clone().into_inner();
 

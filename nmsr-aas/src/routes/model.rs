@@ -42,13 +42,18 @@ impl PlayerRenderInput {
                 if let Some(cached_hash) = option {
                     cached_hash
                 } else {
-                    let fetched_hash = requests::get_skin_hash(client, *id).await?;
                     {
-                        cache_manager
-                            .write()
-                            .cache_uuid_to_skin_hash(id, &fetched_hash);
+                        let limiter = {
+                            let guard = cache_manager.read();
+                            guard.rate_limiter.clone()
+                        };
+                        let fetched_hash = { requests::get_skin_hash(client, &limiter, *id) }.await?;
+                        {
+                            let mut guard = cache_manager.write();
+                            guard.cache_uuid_to_skin_hash(id, &fetched_hash);
+                        }
+                        fetched_hash
                     }
-                    fetched_hash
                 }
             }
             PlayerRenderInput::TextureHash(hash) => hash.to_owned(),

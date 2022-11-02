@@ -1,14 +1,21 @@
 use crate::manager::RenderMode;
 use crate::utils::Result;
 use actix_web::web::Bytes;
+use governor::clock::DefaultClock;
+use governor::state::{InMemoryState, NotKeyed};
+use governor::{Quota, RateLimiter};
 use log::debug;
 use std::collections::HashMap;
 use std::fs;
+use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 use walkdir::WalkDir;
+
+pub(crate) type RateLimiterType = RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
 
 #[derive(Debug, Clone)]
 struct CachedUuidToSkinHash {
@@ -16,7 +23,7 @@ struct CachedUuidToSkinHash {
     hash: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct MojangCacheManager {
     root: PathBuf,
     skins: PathBuf,
@@ -25,6 +32,8 @@ pub(crate) struct MojangCacheManager {
 
     renders_and_skin_cache_expiry: Duration,
     uuid_to_skin_hash_cache_expiry: Duration,
+
+    pub(crate) rate_limiter: Arc<RateLimiterType>,
 }
 
 impl MojangCacheManager {
@@ -46,11 +55,16 @@ impl MojangCacheManager {
         root_path: P,
         renders_and_skin_cache_expiry: u64,
         uuid_to_skin_hash_cache_expiry: u64,
+        mojang_api_rate_limit: u32,
     ) -> Result<MojangCacheManager> {
         let root_path = root_path.as_ref().to_path_buf();
         let renders_path = root_path.join("renders");
 
         let skins_path = root_path.join("skins");
+
+        let rate_limiter = RateLimiter::direct(Quota::per_second(
+            NonZeroU32::new(mojang_api_rate_limit.max(1)).unwrap(),
+        ));
 
         fs::create_dir_all(&root_path)?;
         fs::create_dir_all(&skins_path)?;
@@ -64,6 +78,7 @@ impl MojangCacheManager {
 
             renders_and_skin_cache_expiry: Duration::from_secs(renders_and_skin_cache_expiry),
             uuid_to_skin_hash_cache_expiry: Duration::from_secs(uuid_to_skin_hash_cache_expiry),
+            rate_limiter: Arc::new(rate_limiter),
         };
 
         for mode in RenderMode::iter() {

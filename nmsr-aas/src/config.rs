@@ -40,6 +40,9 @@ pub(crate) struct CacheConfiguration {
     /// This task will remove any files in the cache that are older than the image cache expiry.
     /// This task will run on startup, and then every time the interval has passed.
     pub(crate) cleanup_interval: u64,
+
+    /// How many requests per second to allow to the Mojang API (defaults to 10 requests per second)
+    pub(crate) mojang_profile_requests_per_second: u32,
 }
 
 impl Default for ServerConfiguration {
@@ -60,6 +63,7 @@ impl Default for CacheConfiguration {
             image_cache_expiry: 86400,
             mojang_profile_request_expiry: 900,
             cleanup_interval: 3600,
+            mojang_profile_requests_per_second: 10,
         }
     }
 }

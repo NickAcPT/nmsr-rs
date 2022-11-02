@@ -33,7 +33,9 @@ pub(crate) struct CacheConfiguration {
 
     /// How long, in seconds, it takes to expire the cache of the uuid to skin hash (defaults to 15 minutes [900 seconds])
     /// This cache is used to prevent the same uuid from being resolved multiple times in a short period of time.
-    /// Setting this to a big value will reduce the amount of requests to the Mojang API, but will increase the time it takes to update the skin for a player.
+    /// Setting this to a big value will reduce the amount of requests to the Mojang API, but will increase the time
+    /// it takes to update the skin for a player.
+    /// This value is also used for the Cache-Control header age for the render and skin requests.
     pub(crate) mojang_profile_request_expiry: u32,
 
     /// How long, in seconds, to run the cleanup task (defaults to 1 hour [3600 seconds])

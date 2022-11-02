@@ -1,14 +1,20 @@
+use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 use image::{Pixel, Rgba};
 
 #[derive(Debug, Clone)]
 pub(crate) struct Point(pub(crate) u32, pub(crate) u32);
 
 #[derive(Debug, Clone)]
-pub(crate) struct UvImagePixel {
-    pub(crate) position: Point,
-    pub(crate) uv: Point,
-    pub(crate) depth: u16,
-    pub(crate) original_rgba: Option<[u16; 4]>,
+pub(crate) enum UvImagePixel {
+    RawPixel {
+        position: Point,
+        rgba: [u16; 4],
+    },
+    UvPixel {
+        position: Point,
+        uv: Point,
+        depth: u16,
+    },
 }
 
 impl UvImagePixel {
@@ -58,17 +64,17 @@ impl UvImagePixel {
             ) / Self::COORDINATE_RESOLVE_SMOOTHING_SCALE,
         );
 
-        let rgba = if store_raw_pixels {
-            Some([channels[0], channels[1], channels[2], channels[3]])
+        if store_raw_pixels {
+            Some(RawPixel {
+                position: Point(x, y),
+                rgba: [channels[0], channels[1], channels[2], channels[3]],
+            })
         } else {
-            None
-        };
-
-        Some(Self {
-            position: Point(x, y),
-            uv: Point(u, v),
-            depth,
-            original_rgba: rgba,
-        })
+            Some(UvPixel {
+                position: Point(x, y),
+                uv: Point(u, v),
+                depth,
+            })
+        }
     }
 }

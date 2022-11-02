@@ -1,6 +1,7 @@
 use crate::errors::{NMSRError, Result};
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
+use crate::uv::part::UvImagePixel;
 use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
 use image::{imageops, ImageBuffer, Pixel};
@@ -19,9 +20,13 @@ impl RenderingEntry {
 
         if let Some(overlay) = overlay {
             for uv_pixel in &overlay.uv_pixels {
-                if let Some(overlay_channels) = uv_pixel.original_rgba {
+                if let UvImagePixel::RawPixel {
+                    position,
+                    rgba: overlay_channels,
+                } = uv_pixel
+                {
                     let pixel_channels = applied_uv
-                        .get_pixel_mut(uv_pixel.position.0, uv_pixel.position.1)
+                        .get_pixel_mut(position.0, position.1)
                         .channels_mut();
 
                     for channel_index in 0..4 {
@@ -64,13 +69,16 @@ impl RenderingEntry {
         let mut pixels = applied_uvs
             .iter()
             .flat_map(|(uv, applied)| {
-                uv.uv_pixels.iter().map(|pixel| {
-                    (
-                        pixel.depth,
-                        pixel.position.0,
-                        pixel.position.1,
-                        applied.get_pixel(pixel.position.0, pixel.position.1),
-                    )
+                uv.uv_pixels.iter().flat_map(|pixel| match pixel {
+                    UvImagePixel::RawPixel { .. } => None,
+                    UvImagePixel::UvPixel {
+                        depth, position, ..
+                    } => Some((
+                        depth,
+                        position.0,
+                        position.1,
+                        applied.get_pixel(position.0, position.1),
+                    )),
                 })
             })
             .collect::<Vec<_>>();

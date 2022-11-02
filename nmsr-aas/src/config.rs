@@ -29,17 +29,17 @@ pub(crate) struct TlsConfiguration {
 pub(crate) struct CacheConfiguration {
     /// How long, in seconds, it takes to expire the skins and renders cache (defaults to 1 day [86400 seconds])
     /// These images are cached based on the hash of the skin, so if the skin changes, the file will no longer be cached and will be re-rendered.
-    pub(crate) image_cache_expiry: u64,
+    pub(crate) image_cache_expiry: u32,
 
     /// How long, in seconds, it takes to expire the cache of the uuid to skin hash (defaults to 15 minutes [900 seconds])
     /// This cache is used to prevent the same uuid from being resolved multiple times in a short period of time.
     /// Setting this to a big value will reduce the amount of requests to the Mojang API, but will increase the time it takes to update the skin for a player.
-    pub(crate) mojang_profile_request_expiry: u64,
+    pub(crate) mojang_profile_request_expiry: u32,
 
     /// How long, in seconds, to run the cleanup task (defaults to 1 hour [3600 seconds])
     /// This task will remove any files in the cache that are older than the image cache expiry.
     /// This task will run on startup, and then every time the interval has passed.
-    pub(crate) cleanup_interval: u64,
+    pub(crate) cleanup_interval: u32,
 
     /// How many requests per second to allow to the Mojang API (defaults to 10 requests per second)
     pub(crate) mojang_profile_requests_per_second: u32,

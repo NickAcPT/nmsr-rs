@@ -53,8 +53,8 @@ impl MojangCacheManager {
 
     pub(crate) fn init<P: AsRef<Path>>(
         root_path: P,
-        renders_and_skin_cache_expiry: u64,
-        uuid_to_skin_hash_cache_expiry: u64,
+        renders_and_skin_cache_expiry: u32,
+        uuid_to_skin_hash_cache_expiry: u32,
         mojang_api_rate_limit: u32,
     ) -> Result<MojangCacheManager> {
         let root_path = root_path.as_ref().to_path_buf();
@@ -63,7 +63,7 @@ impl MojangCacheManager {
         let skins_path = root_path.join("skins");
 
         let rate_limiter = RateLimiter::direct(Quota::per_second(
-            NonZeroU32::new(mojang_api_rate_limit.max(1)).unwrap(),
+            NonZeroU32::new(mojang_api_rate_limit).expect("mojang_api_rate_limit must be > 0"),
         ));
 
         fs::create_dir_all(&root_path)?;
@@ -76,8 +76,12 @@ impl MojangCacheManager {
             renders_dir: renders_path,
             resolved_uuid_to_skin_hash_cache: HashMap::new(),
 
-            renders_and_skin_cache_expiry: Duration::from_secs(renders_and_skin_cache_expiry),
-            uuid_to_skin_hash_cache_expiry: Duration::from_secs(uuid_to_skin_hash_cache_expiry),
+            renders_and_skin_cache_expiry: Duration::from_secs(
+                renders_and_skin_cache_expiry as u64,
+            ),
+            uuid_to_skin_hash_cache_expiry: Duration::from_secs(
+                uuid_to_skin_hash_cache_expiry as u64,
+            ),
             rate_limiter: Arc::new(rate_limiter),
         };
 

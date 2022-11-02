@@ -37,6 +37,7 @@ async fn main() -> Result<()> {
     };
     let config = Data::new(config);
     let config_ref = config.clone().into_inner();
+    let cache_config = Data::new(config_ref.cache.clone());
 
     env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
 
@@ -60,7 +61,8 @@ async fn main() -> Result<()> {
     actix_web::rt::spawn(async move {
         let config = config_ref;
         let cache_manager = cache_ref;
-        let mut interval = time::interval(Duration::from_secs(config.cache.cleanup_interval));
+        let mut interval =
+            time::interval(Duration::from_secs(config.cache.cleanup_interval as u64));
         loop {
             interval.tick().await;
 
@@ -85,6 +87,7 @@ async fn main() -> Result<()> {
             .app_data(Data::new(manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
             .app_data(cache_manager.clone())
+            .app_data(cache_config.clone())
             .service(index)
             .service(get_skin)
             .service(render)

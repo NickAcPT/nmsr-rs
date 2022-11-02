@@ -33,3 +33,5 @@ clap = { version = "4.0.18", features = ["derive"] }
 toml = "0.5.9"
 
 governor = "0.5.0"
+
+xxhash-rust = { version = "0.8.6", features = ["xxh3"] }

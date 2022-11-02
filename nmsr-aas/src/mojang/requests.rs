@@ -1,10 +1,10 @@
+use crate::mojang::caching::RateLimiterType;
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 use actix_web::web::Bytes;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::mojang::caching::RateLimiterType;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct GameProfileProperty {
@@ -68,7 +68,11 @@ async fn get_player_game_profile(client: &Client, id: Uuid) -> Result<GameProfil
         .await?)
 }
 
-pub(crate) async fn get_skin_hash(client: &Client, rate_limiter: &RateLimiterType, id: Uuid) -> Result<String> {
+pub(crate) async fn get_skin_hash(
+    client: &Client,
+    rate_limiter: &RateLimiterType,
+    id: Uuid,
+) -> Result<String> {
     rate_limiter.until_ready().await;
 
     let game_profile = get_player_game_profile(client, id).await?;

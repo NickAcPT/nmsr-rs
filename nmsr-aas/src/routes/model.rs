@@ -47,7 +47,8 @@ impl PlayerRenderInput {
                             let guard = cache_manager.read();
                             guard.rate_limiter.clone()
                         };
-                        let fetched_hash = { requests::get_skin_hash(client, &limiter, *id) }.await?;
+                        let fetched_hash =
+                            { requests::get_skin_hash(client, &limiter, *id) }.await?;
                         {
                             let mut guard = cache_manager.write();
                             guard.cache_uuid_to_skin_hash(id, &fetched_hash);

@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
+use log::debug;
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 use walkdir::WalkDir;
@@ -21,10 +22,10 @@ pub(crate) struct MojangCacheManager {
     skins: PathBuf,
     renders_dir: PathBuf,
     resolved_uuid_to_skin_hash_cache: HashMap<Uuid, CachedUuidToSkinHash>,
-}
 
-const SKIN_CACHE_EXPIRE: Duration = Duration::from_secs(60 * 60 * 24 * 7); // 7 days ( 60 seconds * 60 [minutes] * 24 [hours] * 7 [days] )
-const UUID_TO_SKIN_HASH_CACHE_EXPIRE: Duration = Duration::from_secs(60 * 15); // 15 minutes ( 60 seconds * 15 [minutes] )
+    renders_and_skin_cache_expiry: Duration,
+    uuid_to_skin_hash_cache_expiry: Duration,
+}
 
 impl MojangCacheManager {
     pub(crate) fn cleanup_old_files(&self) -> Result<()> {
@@ -33,7 +34,7 @@ impl MojangCacheManager {
         for file in WalkDir::new(&self.root) {
             let file = file?;
             let modified = file.metadata()?.modified()?;
-            if now.duration_since(modified)? > SKIN_CACHE_EXPIRE {
+            if now.duration_since(modified)? > self.renders_and_skin_cache_expiry {
                 fs::remove_file(file.path())?;
             }
         }
@@ -41,7 +42,11 @@ impl MojangCacheManager {
         Ok(())
     }
 
-    pub(crate) fn init<P: AsRef<Path>>(root_path: P) -> Result<MojangCacheManager> {
+    pub(crate) fn init<P: AsRef<Path>>(
+        root_path: P,
+        renders_and_skin_cache_expiry: u64,
+        uuid_to_skin_hash_cache_expiry: u64,
+    ) -> Result<MojangCacheManager> {
         let root_path = root_path.as_ref().to_path_buf();
         let renders_path = root_path.join("renders");
 
@@ -56,6 +61,9 @@ impl MojangCacheManager {
             skins: skins_path,
             renders_dir: renders_path,
             resolved_uuid_to_skin_hash_cache: HashMap::new(),
+
+            renders_and_skin_cache_expiry: Duration::from_secs(renders_and_skin_cache_expiry),
+            uuid_to_skin_hash_cache_expiry: Duration::from_secs(uuid_to_skin_hash_cache_expiry),
         };
 
         for mode in RenderMode::iter() {
@@ -82,10 +90,13 @@ impl MojangCacheManager {
     }
 
     pub(crate) fn get_cached_skin(&self, hash: &String) -> Result<Option<Vec<u8>>> {
+        debug!("Getting cached skin for hash {}", hash);
         let path = self.get_cached_skin_path(hash);
         if path.exists() {
+            debug!("Found cached skin for hash {}", hash);
             Ok(Some(fs::read(path)?))
         } else {
+            debug!("No cached skin for hash {}", hash);
             Ok(None)
         }
     }
@@ -102,10 +113,18 @@ impl MojangCacheManager {
         hash: &String,
         slim_arms: bool,
     ) -> Result<Option<Vec<u8>>> {
+        debug!(
+            "Getting cached render for hash {} in mode {}, slim arms: {}",
+            hash,
+            mode.to_string(),
+            slim_arms
+        );
         let path = self.get_cached_render_path(mode, hash, slim_arms);
         if path.exists() {
+            debug!("Found cached render for hash {}", hash);
             Ok(Some(fs::read(path)?))
         } else {
+            debug!("No cached render for hash {}", hash);
             Ok(None)
         }
     }
@@ -123,14 +142,18 @@ impl MojangCacheManager {
     }
 
     pub(crate) fn get_cached_uuid_to_skin_hash(&mut self, uuid: &Uuid) -> Option<String> {
+        debug!("Checking cache for {}", uuid);
         if let Some(cached) = self.resolved_uuid_to_skin_hash_cache.get(uuid) {
-            return if cached.time.elapsed() < UUID_TO_SKIN_HASH_CACHE_EXPIRE {
+            return if cached.time.elapsed() < self.uuid_to_skin_hash_cache_expiry {
+                debug!("Found cached hash for {}", uuid);
                 Some(cached.hash.clone())
             } else {
+                debug!("Cached hash for {} expired", uuid);
                 self.resolved_uuid_to_skin_hash_cache.remove(uuid);
                 None
             };
         }
+        debug!("No cached hash for {}", uuid);
         None
     }
 

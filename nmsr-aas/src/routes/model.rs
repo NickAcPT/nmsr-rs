@@ -67,7 +67,7 @@ impl PlayerRenderInput {
         if let Some(bytes) = result {
             Ok((hash, Bytes::from(bytes)))
         } else {
-            let bytes_from_mojang = requests::fetch_skin_bytes_from_mojang(&hash).await?;
+            let bytes_from_mojang = requests::fetch_skin_bytes_from_mojang(&hash, client).await?;
             {
                 cache_manager
                     .write()

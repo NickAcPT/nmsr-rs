@@ -38,6 +38,10 @@ pub(crate) enum NMSRaaSError {
     InvalidRenderMode(String),
     #[error("Failed to walk directory: {0}")]
     WalkDirError(#[from] walkdir::Error),
+    #[error("TLS error: {0}")]
+    TlsError(#[from] rustls::Error),
+    #[error("Error decoding toml: {0}")]
+    TomlDecodeError(#[from] toml::de::Error),
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {}

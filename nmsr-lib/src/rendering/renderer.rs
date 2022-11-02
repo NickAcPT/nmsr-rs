@@ -1,10 +1,12 @@
-use crate::errors::{NMSRError, Result};
-use crate::parts::manager::PartsManager;
-use crate::rendering::entry::RenderingEntry;
-use crate::uv::part::UvImagePixel;
-use crate::uv::uv_magic::UvImage;
-use crate::uv::Rgba16Image;
-use image::{imageops, ImageBuffer, Pixel};
+use crate::{
+    errors::{NMSRError, Result},
+    parts::manager::PartsManager,
+    rendering::entry::RenderingEntry,
+    uv::part::UvImagePixel,
+    uv::uv_magic::UvImage,
+    uv::Rgba16Image,
+};
+use image::{GenericImage, ImageBuffer, Pixel, Rgba};
 use std::ops::Deref;
 
 impl RenderingEntry {
@@ -90,7 +92,13 @@ impl RenderingEntry {
         let mut final_image: Rgba16Image = ImageBuffer::new(width, height);
 
         if let Some(environment) = &parts_manager.environment_background {
-            imageops::replace(&mut final_image, environment, 0, 0);
+            for uv_pixel in &environment.uv_pixels {
+                if let UvImagePixel::RawPixel { position, rgba } = uv_pixel {
+                    unsafe {
+                        final_image.unsafe_put_pixel(position.0, position.1, Rgba(rgba.to_owned()))
+                    }
+                }
+            }
         }
 
         for (_, x, y, pixel) in pixels {

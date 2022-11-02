@@ -1,6 +1,7 @@
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 use actix_web::web::Bytes;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -54,7 +55,7 @@ impl GameProfile {
     }
 }
 
-async fn get_player_game_profile(client: &reqwest::Client, id: Uuid) -> Result<GameProfile> {
+async fn get_player_game_profile(client: &Client, id: Uuid) -> Result<GameProfile> {
     Ok(client
         .get(format!(
             "https://sessionserver.mojang.com/session/minecraft/profile/{}",
@@ -66,7 +67,7 @@ async fn get_player_game_profile(client: &reqwest::Client, id: Uuid) -> Result<G
         .await?)
 }
 
-pub(crate) async fn get_skin_hash(client: &reqwest::Client, id: Uuid) -> Result<String> {
+pub(crate) async fn get_skin_hash(client: &Client, id: Uuid) -> Result<String> {
     let game_profile = get_player_game_profile(client, id).await?;
     let textures = game_profile.get_textures()?;
     let url = textures.textures.skin.url;
@@ -85,8 +86,10 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
         .to_string())
 }
 
-pub(crate) async fn fetch_skin_bytes_from_mojang(hash: &String) -> Result<Bytes> {
-    let bytes = reqwest::get(format!("http://textures.minecraft.net/texture/{}", hash))
+pub(crate) async fn fetch_skin_bytes_from_mojang(hash: &String, client: &Client) -> Result<Bytes> {
+    let bytes = client
+        .get(format!("http://textures.minecraft.net/texture/{}", hash))
+        .send()
         .await?
         .bytes()
         .await?;

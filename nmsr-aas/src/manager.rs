@@ -21,8 +21,8 @@ pub(crate) struct NMSRaaSManager {
 impl NMSRaaSManager {
     pub(crate) fn get_manager(&self, render_type: &RenderMode) -> Result<&PartsManager> {
         self.part_managers
-            .get(&render_type)
-            .ok_or(MissingPartManager(render_type.clone()))
+            .get(render_type)
+            .ok_or_else(|| MissingPartManager(render_type.clone()))
     }
 
     pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {

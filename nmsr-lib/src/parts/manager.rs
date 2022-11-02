@@ -7,7 +7,7 @@ pub struct PartsManager {
     pub all_parts: HashMap<String, UvImage>,
     pub model_parts: HashMap<String, UvImage>,
     pub model_overlays: HashMap<String, UvImage>,
-    pub environment_background: Option<Rgba16Image>,
+    pub environment_background: Option<UvImage>,
 }
 
 impl PartsManager {
@@ -140,13 +140,17 @@ impl PartsManager {
         Ok(())
     }
 
-    fn load_environment_background(root: &Path) -> Result<Option<Rgba16Image>> {
+    fn load_environment_background(root: &Path) -> Result<Option<UvImage>> {
         let path = &root
             .join(Self::ENVIRONMENT_BACKGROUND_NAME)
             .with_extension("png");
         if path.exists() {
             let image = image::open(path).map_err(NMSRError::ImageError)?;
-            Ok(Some(image.into_rgba16()))
+            Ok(Some(UvImage::new(
+                Self::ENVIRONMENT_BACKGROUND_NAME.to_string(),
+                image.into_rgba16(),
+                true,
+            )))
         } else {
             Ok(None)
         }

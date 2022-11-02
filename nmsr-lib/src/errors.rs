@@ -13,6 +13,8 @@ pub enum NMSRError {
     ImageError(#[from] image::ImageError),
     #[error("Expected there to be at least 1 UV part")]
     NoPartsFound,
+    #[error("An error occurred while upgrading legacy skin to modern format")]
+    LegacySkinUpgradeError,
 }
 
 pub type Result<T> = std::result::Result<T, NMSRError>;

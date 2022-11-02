@@ -1,5 +1,4 @@
-use crate::parts::player_model::PlayerModel;
-use crate::uv::Rgba16Image;
+use crate::{errors::NMSRError, errors::Result, parts::player_model::PlayerModel, uv::Rgba16Image};
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
 
@@ -9,16 +8,20 @@ pub struct RenderingEntry {
 }
 
 impl RenderingEntry {
-    pub fn new(mut skin: RgbaImage, slim_arms: bool) -> RenderingEntry {
+    pub fn new(skin: RgbaImage, slim_arms: bool) -> Result<RenderingEntry> {
+        // Make sure the skin is 64x64
+        let mut skin = ears_rs::utils::legacy_upgrader::upgrade_skin_if_needed(skin)
+            .ok_or(NMSRError::LegacySkinUpgradeError)?;
+
         // Strip the alpha data from the skin
         ears_rs::utils::alpha::strip_alpha(&mut skin);
 
-        RenderingEntry {
+        Ok(RenderingEntry {
             skin: skin.convert(),
             model: match slim_arms {
                 true => PlayerModel::Alex,
                 false => PlayerModel::Steve,
             },
-        }
+        })
     }
 }

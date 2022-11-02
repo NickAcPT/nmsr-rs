@@ -47,7 +47,7 @@ pub(crate) async fn render(
     } else {
         let skin_image = image::load_from_memory(skin_bytes.chunk())?;
 
-        let entry = RenderingEntry::new(skin_image.into_rgba8(), slim_arms);
+        let entry = RenderingEntry::new(skin_image.into_rgba8(), slim_arms)?;
 
         let render = entry.render(parts_manager)?;
 

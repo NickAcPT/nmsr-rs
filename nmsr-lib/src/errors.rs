@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use thiserror::Error;
+use crate::uv::part::Point;
 
 #[derive(Error, Debug)]
 pub enum NMSRError {
@@ -15,6 +16,16 @@ pub enum NMSRError {
     NoPartsFound,
     #[error("An error occurred while upgrading legacy skin to modern format")]
     LegacySkinUpgradeError,
+    #[error("Invalid UV Point: {0}")]
+    InvalidUvPoint(Point<u8>),
+    #[error("Unspecified NMSR error: {0}")]
+    UnspecifiedNMSRError(String),
 }
 
 pub type Result<T> = std::result::Result<T, NMSRError>;
+
+impl From<&NMSRError> for NMSRError {
+    fn from(e: &NMSRError) -> Self {
+        NMSRError::UnspecifiedNMSRError(e.to_string())
+    }
+}

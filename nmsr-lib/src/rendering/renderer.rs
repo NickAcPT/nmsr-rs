@@ -1,3 +1,4 @@
+use crate::uv::utils::u8_to_u16;
 use crate::{
     errors::{NMSRError, Result},
     parts::manager::PartsManager,
@@ -15,8 +16,8 @@ impl RenderingEntry {
         parts_manager: &PartsManager,
         uv_image: &UvImage,
         skin: &Rgba16Image,
-    ) -> Rgba16Image {
-        let mut applied_uv = uv_image.apply(skin);
+    ) -> Result<Rgba16Image> {
+        let mut applied_uv = uv_image.apply(skin)?;
 
         let overlay = parts_manager.get_overlay(uv_image);
 
@@ -28,14 +29,14 @@ impl RenderingEntry {
                 } = uv_pixel
                 {
                     let pixel_channels = applied_uv
-                        .get_pixel_mut(position.0, position.1)
+                        .get_pixel_mut(position.0 as u32, position.1 as u32)
                         .channels_mut();
 
                     for channel_index in 0..4 {
                         let original_percent =
                             (pixel_channels[channel_index] as f32) / u16::MAX as f32;
                         let overlay_percent =
-                            (overlay_channels[channel_index] as f32) / u16::MAX as f32;
+                            (u8_to_u16!(overlay_channels[channel_index]) as f32) / u16::MAX as f32;
 
                         pixel_channels[channel_index] =
                             ((original_percent * overlay_percent) * (u16::MAX as f32)) as u16;
@@ -44,7 +45,7 @@ impl RenderingEntry {
             }
         }
 
-        applied_uv
+        Ok(applied_uv)
     }
 
     pub fn render(&self, parts_manager: &PartsManager) -> Result<Rgba16Image> {
@@ -67,6 +68,7 @@ impl RenderingEntry {
 
         // Get the image size
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
+        let first_uv = first_uv.as_ref()?;
 
         let mut pixels = applied_uvs
             .iter()
@@ -79,7 +81,9 @@ impl RenderingEntry {
                         depth,
                         position.0,
                         position.1,
-                        applied.get_pixel(position.0, position.1),
+                        applied
+                            .as_ref()
+                            .map(|a| a.get_pixel(position.0 as u32, position.1 as u32)),
                     )),
                 })
             })
@@ -95,16 +99,28 @@ impl RenderingEntry {
             for uv_pixel in &environment.uv_pixels {
                 if let UvImagePixel::RawPixel { position, rgba } = uv_pixel {
                     unsafe {
-                        final_image.unsafe_put_pixel(position.0, position.1, Rgba(rgba.to_owned()))
+                        let rgba = [
+                            u8_to_u16!(rgba[0]),
+                            u8_to_u16!(rgba[1]),
+                            u8_to_u16!(rgba[2]),
+                            u8_to_u16!(rgba[3]),
+                        ];
+
+                        final_image.unsafe_put_pixel(
+                            position.0 as u32,
+                            position.1 as u32,
+                            Rgba(rgba),
+                        )
                     }
                 }
             }
         }
 
         for (_, x, y, pixel) in pixels {
+            let pixel = pixel?;
             let alpha = pixel.0[3];
             if alpha > 0 {
-                final_image.get_pixel_mut(x, y).blend(pixel);
+                final_image.get_pixel_mut(x as u32, y as u32).blend(pixel);
             }
         }
 

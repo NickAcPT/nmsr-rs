@@ -1,5 +1,6 @@
 use crate::uv::part::UvImagePixel;
 use crate::{uv::utils::apply_uv_map, uv::utils::get_uv_max_depth, uv::Rgba16Image};
+use crate::errors::Result;
 
 #[derive(Debug, Clone)]
 pub struct UvImage {
@@ -25,7 +26,7 @@ impl UvImage {
         }
     }
 
-    pub fn apply(&self, original_image: &Rgba16Image) -> Rgba16Image {
+    pub fn apply(&self, original_image: &Rgba16Image) -> Result<Rgba16Image> {
         apply_uv_map(original_image, self)
     }
 }

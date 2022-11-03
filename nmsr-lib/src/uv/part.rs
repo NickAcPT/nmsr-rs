@@ -1,18 +1,26 @@
+use std::fmt::{Debug, Display, Formatter};
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 use image::{Pixel, Rgba};
+use crate::uv::utils::u16_to_u8;
 
 #[derive(Debug, Clone)]
-pub(crate) struct Point(pub(crate) u32, pub(crate) u32);
+pub struct Point<T: Debug>(pub(crate) T, pub(crate) T);
+
+impl<T: Debug> Display for Point<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({:?}, {:?})", self.0, self.1)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub(crate) enum UvImagePixel {
     RawPixel {
-        position: Point,
-        rgba: [u16; 4],
+        position: Point<u16>,
+        rgba: [u8; 4],
     },
     UvPixel {
-        position: Point,
-        uv: Point,
+        position: Point<u16>,
+        uv: Point<u8>,
         depth: u16,
     },
 }
@@ -65,14 +73,20 @@ impl UvImagePixel {
         );
 
         if store_raw_pixels {
+
             Some(RawPixel {
-                position: Point(x, y),
-                rgba: [channels[0], channels[1], channels[2], channels[3]],
+                position: Point(x as u16, y as u16),
+                rgba: [
+                    u16_to_u8!(channels[0]),
+                    u16_to_u8!(channels[1]),
+                    u16_to_u8!(channels[2]),
+                    u16_to_u8!(channels[3]),
+                ],
             })
         } else {
             Some(UvPixel {
-                position: Point(x, y),
-                uv: Point(u, v),
+                position: Point(x as u16, y as u16),
+                uv: Point(u as u8, v as u8),
                 depth,
             })
         }

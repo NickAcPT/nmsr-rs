@@ -12,9 +12,9 @@ pub(crate) enum RenderMode {
     FullBody,
     FrontFull,
     FullBodyIso,
+    Head,
+    HeadIso,
     Face,
-    FaceIso,
-    Head
 }
 
 #[derive(Debug, Clone)]

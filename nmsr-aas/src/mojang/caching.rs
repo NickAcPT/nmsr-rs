@@ -40,11 +40,14 @@ impl MojangCacheManager {
     pub(crate) fn cleanup_old_files(&self) -> Result<()> {
         let now = std::time::SystemTime::now();
 
-        for file in WalkDir::new(&self.root) {
-            let file = file?;
-            let modified = file.metadata()?.modified()?;
+        for entry in WalkDir::new(&self.root) {
+            let entry = entry?;
+            if !entry.path().is_file() {
+                continue;
+            }
+            let modified = entry.metadata()?.modified()?;
             if now.duration_since(modified)? > self.renders_and_skin_cache_expiry {
-                fs::remove_file(file.path())?;
+                fs::remove_file(entry.path())?;
             }
         }
 

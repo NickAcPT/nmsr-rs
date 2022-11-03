@@ -59,8 +59,14 @@ impl PartsManager {
         for model in [PlayerModel::Alex, PlayerModel::Steve].iter() {
             let dir_name = model.get_dir_name();
 
+            let model_parts_dir = root.join(dir_name);
+
+            if !model_parts_dir.exists() {
+                continue;
+            }
+
             Self::load_as_parts(
-                root.join(dir_name).as_path(),
+                model_parts_dir.as_path(),
                 model_parts,
                 dir_name,
                 store_raw_pixels,

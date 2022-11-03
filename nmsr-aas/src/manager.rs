@@ -11,6 +11,10 @@ use strum::{Display, EnumCount, EnumIter, EnumString};
 pub(crate) enum RenderMode {
     FullBody,
     FrontFull,
+    FullBodyIso,
+    Face,
+    FaceIso,
+    Head
 }
 
 #[derive(Debug, Clone)]

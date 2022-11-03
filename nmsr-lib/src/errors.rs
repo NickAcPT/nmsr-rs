@@ -1,6 +1,6 @@
+use crate::uv::part::Point;
 use std::path::PathBuf;
 use thiserror::Error;
-use crate::uv::part::Point;
 
 #[derive(Error, Debug)]
 pub enum NMSRError {

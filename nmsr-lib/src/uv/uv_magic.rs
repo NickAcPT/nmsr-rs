@@ -1,6 +1,6 @@
+use crate::errors::Result;
 use crate::uv::part::UvImagePixel;
 use crate::{uv::utils::apply_uv_map, uv::utils::get_uv_max_depth, uv::Rgba16Image};
-use crate::errors::Result;
 
 #[derive(Debug, Clone)]
 pub struct UvImage {

@@ -1,7 +1,7 @@
-use std::fmt::{Debug, Display, Formatter};
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
-use image::{Pixel, Rgba};
 use crate::uv::utils::u16_to_u8;
+use image::{Pixel, Rgba};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct Point<T: Debug>(pub(crate) T, pub(crate) T);
@@ -73,7 +73,6 @@ impl UvImagePixel {
         );
 
         if store_raw_pixels {
-
             Some(RawPixel {
                 position: Point(x as u16, y as u16),
                 rgba: [

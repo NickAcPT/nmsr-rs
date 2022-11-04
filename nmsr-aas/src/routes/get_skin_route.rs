@@ -2,22 +2,49 @@ use crate::config::CacheConfiguration;
 use crate::mojang::caching::MojangCacheManager;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
 use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag};
+use actix_web::web::Buf;
 use actix_web::{get, web, HttpResponse, Responder};
+use image::ImageFormat::Png;
+use nmsr_lib::rendering::entry::RenderingEntry;
 use parking_lot::RwLock;
+use serde::Deserialize;
+use std::io::{BufWriter, Cursor};
 use xxhash_rust::xxh3::xxh3_64;
+
+#[derive(Deserialize, Default)]
+pub(crate) struct SkinRequest {
+    process: Option<String>,
+}
 
 #[get("/skin/{player}")]
 pub(crate) async fn get_skin(
     path: web::Path<String>,
+    skin_info: web::Query<SkinRequest>,
     cache_config: web::Data<CacheConfiguration>,
     mojang_requests_client: web::Data<reqwest::Client>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
+    let should_process = skin_info.process.is_some();
 
-    let (hash, skin_bytes) = player
+    let (hash, mut skin_bytes) = player
         .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
         .await?;
+
+    if should_process {
+        let image = image::load_from_memory(skin_bytes.chunk())?.into_rgba8();
+        let image = RenderingEntry::process_skin(image)?;
+
+        let mut render_bytes = Vec::new();
+
+        // Write the image to a byte array
+        {
+            let mut writer = BufWriter::new(Cursor::new(&mut render_bytes));
+            image.write_to(&mut writer, Png)?;
+        }
+
+        skin_bytes = render_bytes.into();
+    }
 
     Ok(HttpResponse::Ok()
         .content_type("image/png")

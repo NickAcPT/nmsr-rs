@@ -8,13 +8,19 @@ pub struct RenderingEntry {
 }
 
 impl RenderingEntry {
-    pub fn new(skin: RgbaImage, slim_arms: bool) -> Result<RenderingEntry> {
+    pub fn process_skin(skin: RgbaImage) -> Result<RgbaImage> {
         // Make sure the skin is 64x64
         let mut skin = ears_rs::utils::legacy_upgrader::upgrade_skin_if_needed(skin)
             .ok_or(NMSRError::LegacySkinUpgradeError)?;
 
         // Strip the alpha data from the skin
         ears_rs::utils::alpha::strip_alpha(&mut skin);
+
+        Ok(skin)
+    }
+
+    pub fn new(skin: RgbaImage, slim_arms: bool) -> Result<RenderingEntry> {
+        let skin = RenderingEntry::process_skin(skin)?;
 
         Ok(RenderingEntry {
             skin: skin.convert(),

@@ -122,7 +122,7 @@ impl PartsManager {
         let loaded_parts: Vec<_> = part_entries
             .iter()
             .map(|(name, entry)| {
-                let image = image::open(&entry)
+                let image = image::open(entry)
                     .map_err(NMSRError::ImageError)?
                     .into_rgba16();
 

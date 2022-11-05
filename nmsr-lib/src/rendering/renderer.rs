@@ -1,14 +1,8 @@
-use crate::uv::utils::u8_to_u16;
-use crate::{
-    errors::{NMSRError, Result},
-    parts::manager::PartsManager,
-    rendering::entry::RenderingEntry,
-    uv::part::UvImagePixel,
-    uv::uv_magic::UvImage,
-    uv::Rgba16Image,
-};
-use image::{GenericImage, ImageBuffer, Pixel, Rgba};
 use std::ops::Deref;
+use crate::uv::utils::u8_to_u16;
+use crate::{errors::{NMSRError, Result}, parts::manager::PartsManager, rendering::entry::RenderingEntry, uv::part::UvImagePixel, uv::uv_magic::UvImage, uv::Rgba16Image, par_iterator_if_enabled};
+use image::{GenericImage, ImageBuffer, Pixel, Rgba};
+#[cfg(feature = "rayon")] use rayon::prelude::*;
 
 impl RenderingEntry {
     fn apply_uv_and_overlay(
@@ -53,8 +47,7 @@ impl RenderingEntry {
         let all_parts = parts_manager.get_parts(self);
 
         // Apply all the UVs
-        let mut applied_uvs: Vec<_> = all_parts
-            .iter()
+        let mut applied_uvs: Vec<_> = par_iterator_if_enabled!(all_parts)
             .map(|p| {
                 (
                     p.deref(),
@@ -70,10 +63,9 @@ impl RenderingEntry {
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
         let first_uv = first_uv.as_ref()?;
 
-        let mut pixels = applied_uvs
-            .iter()
+        let mut pixels = par_iterator_if_enabled!(applied_uvs)
             .flat_map(|(uv, applied)| {
-                uv.uv_pixels.iter().flat_map(|pixel| match pixel {
+                par_iterator_if_enabled!(uv.uv_pixels).flat_map(|pixel| match pixel {
                     UvImagePixel::RawPixel { .. } => None,
                     UvImagePixel::UvPixel {
                         depth, position, ..

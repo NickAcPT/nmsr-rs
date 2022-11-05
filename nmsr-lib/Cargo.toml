@@ -8,6 +8,11 @@ authors = ["NickAcPT"]
 image = { version = "0.24.4", features = ["png"], default-features = false }
 thiserror = "1.0.37"
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
+rayon = { version = "1.5.3", optional = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+rayon = ["dep:rayon"]

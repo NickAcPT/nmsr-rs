@@ -4,7 +4,7 @@ version = "0.1.2"
 edition = "2021"
 
 [dependencies]
-nmsr-lib = { path = "../nmsr-lib" }
+nmsr-lib = { path = "../nmsr-lib", features = ["rayon"] }
 image = { version = "0.24.4", features = ["png"], default-features = false }
 
 serde = { version = "1.0.147", features = ["derive"] }

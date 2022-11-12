@@ -1,8 +1,8 @@
 use crate::manager::RenderMode;
-use std::io::Error;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 use thiserror::Error;
+use nmsr_lib::vfs::VfsError;
 
 #[derive(Error, Debug)]
 pub(crate) enum NMSRaaSError {
@@ -29,7 +29,9 @@ pub(crate) enum NMSRaaSError {
     #[error("NMSR error: {0}")]
     NMSRError(#[from] nmsr_lib::errors::NMSRError),
     #[error("IO error: {0}")]
-    IOError(#[from] Error),
+    IOError(#[from] std::io::Error),
+    #[error("IO error: {0}")]
+    VirtualIOError(VfsError),
     #[error("System time error: {0}")]
     SystemTimeError(#[from] std::time::SystemTimeError),
     #[error("Failed to accquire lock on cache manager")]
@@ -57,5 +59,11 @@ impl From<FromUtf8Error> for NMSRaaSError {
 impl<T> From<PoisonError<T>> for NMSRaaSError {
     fn from(_: PoisonError<T>) -> Self {
         NMSRaaSError::MutexPoisonError
+    }
+}
+
+impl From<VfsError> for NMSRaaSError {
+    fn from(e: VfsError) -> Self {
+        NMSRaaSError::VirtualIOError(e)
     }
 }

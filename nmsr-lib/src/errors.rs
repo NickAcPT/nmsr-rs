@@ -1,13 +1,16 @@
 use crate::uv::part::Point;
 use std::path::PathBuf;
 use thiserror::Error;
+use vfs::VfsError;
 
 #[derive(Error, Debug)]
 pub enum NMSRError {
     #[error("Invalid path: {0}")]
     InvalidPath(PathBuf),
     #[error("IO error ({1}): {0}")]
-    IoError(std::io::Error, String),
+    IoError(VfsError, String),
+    #[error("Virtual IO error: {0}")]
+    VirtualIoError(VfsError),
     #[error("IO error: {0}")]
     UnspecifiedIoError(String),
     #[error("Image error: {0}")]
@@ -27,5 +30,11 @@ pub type Result<T> = std::result::Result<T, NMSRError>;
 impl From<&NMSRError> for NMSRError {
     fn from(e: &NMSRError) -> Self {
         NMSRError::UnspecifiedNMSRError(e.to_string())
+    }
+}
+
+impl From<VfsError> for NMSRError {
+    fn from(e: VfsError) -> Self {
+        NMSRError::VirtualIoError(e)
     }
 }

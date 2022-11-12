@@ -47,7 +47,7 @@ fn main() -> Result<()> {
 
         // Move file
         std::fs::create_dir_all(
-            &new_path
+            new_path
                 .parent()
                 .ok_or_else(|| anyhow::anyhow!("Invalid path"))?,
         )?;

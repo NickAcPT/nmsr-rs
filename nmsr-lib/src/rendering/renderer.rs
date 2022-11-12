@@ -1,8 +1,16 @@
-use std::ops::Deref;
+use crate::errors::NMSRError;
+use crate::errors::Result;
+use crate::parts::manager::PartsManager;
+use crate::rendering::entry::RenderingEntry;
+use crate::utils::par_iterator_if_enabled;
+use crate::uv::part::UvImagePixel;
 use crate::uv::utils::u8_to_u16;
-use crate::{errors::{NMSRError, Result}, parts::manager::PartsManager, rendering::entry::RenderingEntry, uv::part::UvImagePixel, uv::uv_magic::UvImage, uv::Rgba16Image, par_iterator_if_enabled};
+use crate::uv::uv_magic::UvImage;
+use crate::uv::Rgba16Image;
 use image::{GenericImage, ImageBuffer, Pixel, Rgba};
-#[cfg(feature = "rayon")] use rayon::prelude::*;
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+use std::ops::Deref;
 
 impl RenderingEntry {
     fn apply_uv_and_overlay(

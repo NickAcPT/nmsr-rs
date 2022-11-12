@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter, EnumString};
+use nmsr_lib::vfs::{PhysicalFS, VfsPath};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumString, EnumIter, EnumCount, Display)]
 #[strum(serialize_all = "lowercase")]
@@ -30,10 +31,13 @@ impl NMSRaaSManager {
     }
 
     pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
+        let part_root: VfsPath = PhysicalFS::new(part_root).into();
         let mut map = HashMap::with_capacity(RenderMode::COUNT);
 
         for render_type in RenderMode::iter() {
-            let part_manager = PartsManager::new(part_root.as_ref().join(render_type.to_string()))?;
+            let path = part_root.join(render_type.to_string())?;
+
+            let part_manager = PartsManager::new(&path)?;
             map.insert(render_type, part_manager);
         }
 

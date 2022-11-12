@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+
+use vfs::VfsPath;
+
 use crate::errors::{NMSRError, Result};
+use crate::utils::open_image_from_vfs;
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16Image};
-use std::{collections::HashMap, path::Path};
 
 #[derive(Debug, Clone)]
 pub struct PartsManager {
@@ -11,21 +15,15 @@ pub struct PartsManager {
 }
 
 impl PartsManager {
-    const ENVIRONMENT_BACKGROUND_NAME: &'static str = "environment_background";
+    const ENVIRONMENT_BACKGROUND_NAME: &'static str = "environment_background.png";
 
-    fn is_part_file(path: impl AsRef<Path>) -> Result<bool> {
-        let path = path.as_ref();
-        let name = path
-            .file_stem()
-            .and_then(|f| f.to_str())
-            .ok_or_else(|| NMSRError::InvalidPath(path.to_path_buf()))?;
+    fn is_part_file(path: &VfsPath) -> Result<bool> {
+        let name = path.filename();
 
-        Ok(path.is_file() && name != PartsManager::ENVIRONMENT_BACKGROUND_NAME)
+        Ok(path.is_file()? && name != PartsManager::ENVIRONMENT_BACKGROUND_NAME)
     }
 
-    pub fn new(path: impl AsRef<Path>) -> Result<PartsManager> {
-        let root = path.as_ref();
-
+    pub fn new(root: &VfsPath) -> Result<PartsManager> {
         let mut all_parts = HashMap::<String, UvImage>::with_capacity(8);
         let mut model_parts = HashMap::<String, UvImage>::with_capacity(8);
         let mut model_overlays = HashMap::<String, UvImage>::with_capacity(16);
@@ -33,12 +31,10 @@ impl PartsManager {
         Self::load_as_parts(root, &mut all_parts, "", false)?;
         Self::load_model_specific_parts(root, &mut model_parts, false)?;
 
-        let overlays_root = root.join("overlays");
-        if overlays_root.exists() {
-            let overlays_root_path = overlays_root.as_path();
-
-            Self::load_as_parts(overlays_root_path, &mut model_overlays, "", true)?;
-            Self::load_model_specific_parts(overlays_root_path, &mut model_overlays, true)?;
+        let overlays_root = root.join("overlays")?;
+        if overlays_root.exists()? {
+            Self::load_as_parts(&overlays_root, &mut model_overlays, "", true)?;
+            Self::load_model_specific_parts(&overlays_root, &mut model_overlays, true)?;
         }
 
         let environment_background = Self::load_environment_background(root)?;
@@ -52,32 +48,27 @@ impl PartsManager {
     }
 
     fn load_model_specific_parts(
-        root: &Path,
+        root: &VfsPath,
         model_parts: &mut HashMap<String, UvImage>,
         store_raw_pixels: bool,
     ) -> Result<()> {
         for model in [PlayerModel::Alex, PlayerModel::Steve].iter() {
             let dir_name = model.get_dir_name();
 
-            let model_parts_dir = root.join(dir_name);
+            let model_parts_dir = root.join(dir_name)?;
 
-            if !model_parts_dir.exists() {
+            if !model_parts_dir.exists()? {
                 continue;
             }
 
-            Self::load_as_parts(
-                model_parts_dir.as_path(),
-                model_parts,
-                dir_name,
-                store_raw_pixels,
-            )?;
+            Self::load_as_parts(&model_parts_dir, model_parts, dir_name, store_raw_pixels)?;
         }
 
         Ok(())
     }
 
     fn load_as_parts(
-        dir: &Path,
+        dir: &VfsPath,
         parts_map: &mut HashMap<String, UvImage>,
         path_prefix: &str,
         store_raw_pixels: bool,
@@ -89,45 +80,26 @@ impl PartsManager {
         let mut part_entries = vec![];
 
         for dir_entry in directory {
-            let entry = dir_entry
-                .as_ref()
-                .map_err(|err| {
-                    NMSRError::UnspecifiedIoError(format!(
-                        "Unable to read path {:?} ({})",
-                        &dir_entry.as_ref(),
-                        err
-                    ))
-                })
-                .map(|e| e.path())?;
-
             // Skip non part files
-            if !Self::is_part_file(&entry)? {
+            if !Self::is_part_file(&dir_entry)? {
                 continue;
             }
 
             // Compute map entry key
-            let name: String = entry
-                .file_name()
-                .and_then(|f| f.to_str())
-                .ok_or_else(|| NMSRError::InvalidPath(entry.to_owned()))?
+            let name: String = dir_entry
+                .filename()
                 .chars()
                 .take_while(|p| !char::is_ascii_digit(p) && !char::is_ascii_punctuation(p))
                 .collect();
 
             let name = format!("{}{}", path_prefix, name);
 
-            part_entries.push((name, entry));
+            part_entries.push((name, dir_entry));
         }
 
         let loaded_parts: Vec<_> = part_entries
             .iter()
-            .map(|(name, entry)| {
-                let image = image::open(entry)
-                    .map_err(NMSRError::ImageError)?
-                    .into_rgba16();
-
-                Ok((name, image))
-            })
+            .map(|(name, entry)| Ok((name, open_image_from_vfs(entry)?.into_rgba16())))
             .map(
                 |result: Result<(&String, Rgba16Image)>| -> Result<UvImage> {
                     let (name, image) = result?;
@@ -146,12 +118,12 @@ impl PartsManager {
         Ok(())
     }
 
-    fn load_environment_background(root: &Path) -> Result<Option<UvImage>> {
-        let path = &root
-            .join(Self::ENVIRONMENT_BACKGROUND_NAME)
-            .with_extension("png");
-        if path.exists() {
-            let image = image::open(path).map_err(NMSRError::ImageError)?;
+    fn load_environment_background(root: &VfsPath) -> Result<Option<UvImage>> {
+        let path = &root.join(Self::ENVIRONMENT_BACKGROUND_NAME)?;
+
+        if path.exists()? {
+            let image = open_image_from_vfs(path)?;
+
             Ok(Some(UvImage::new(
                 Self::ENVIRONMENT_BACKGROUND_NAME.to_string(),
                 image.into_rgba16(),

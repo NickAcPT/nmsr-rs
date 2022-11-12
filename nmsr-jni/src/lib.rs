@@ -8,6 +8,7 @@ use jni::JNIEnv;
 use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::rendering::entry::RenderingEntry;
 use std::io::{BufWriter, Cursor};
+use nmsr_lib::vfs::PhysicalFS;
 
 #[no_mangle]
 pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_initialize(
@@ -15,9 +16,9 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_initial
     _class: JClass,
     parts_path: JString,
 ) -> jlong {
-    let parts_path = get_string_or_throw!(env, parts_path, 0);
+    let parts_path = PhysicalFS::new(get_string_or_throw!(env, parts_path, 0));
 
-    let parts_manager = unwrap_or_throw_java_exception!(env, PartsManager::new(&parts_path), 0);
+    let parts_manager = unwrap_or_throw_java_exception!(env, PartsManager::new(&parts_path.into()), 0);
 
     Box::into_raw(Box::from(parts_manager)) as jlong
 }

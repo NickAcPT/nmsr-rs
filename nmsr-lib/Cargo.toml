@@ -1,6 +1,6 @@
 [package]
 name = "nmsr-lib"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["NickAcPT"]
 
@@ -9,6 +9,7 @@ image = { version = "0.24.4", features = ["png"], default-features = false }
 thiserror = "1.0.37"
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
 rayon = { version = "1.5.3", optional = true }
+vfs = { version = "0.7.1" }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

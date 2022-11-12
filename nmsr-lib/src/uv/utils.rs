@@ -1,8 +1,9 @@
+use std::borrow::BorrowMut;
+
 use crate::errors::{NMSRError, Result};
 use crate::uv::part::UvImagePixel;
 use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
-use std::borrow::BorrowMut;
 
 pub fn apply_uv_map(input: &Rgba16Image, uv: &UvImage) -> Result<Rgba16Image> {
     // Generate a new image

@@ -1,8 +1,11 @@
-use crate::manager::RenderMode;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
+
 use thiserror::Error;
+
 use nmsr_lib::vfs::VfsError;
+
+use crate::manager::RenderMode;
 
 #[derive(Error, Debug)]
 pub(crate) enum NMSRaaSError {

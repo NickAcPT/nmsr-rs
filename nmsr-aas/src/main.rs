@@ -1,25 +1,28 @@
-mod config;
-mod manager;
-mod mojang;
-mod routes;
-mod utils;
+use std::fs;
+use std::fs::File;
+use std::io::BufReader;
+use std::time::Duration;
 
-use crate::config::ServerConfiguration;
-use crate::manager::NMSRaaSManager;
-use crate::mojang::caching::MojangCacheManager;
-use crate::utils::Result;
 use actix_web::rt::time;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use clap::Parser;
 use log::{debug, info};
 use parking_lot::RwLock;
-use routes::{get_skin_route::get_skin, index_route::index, render_body_route::render};
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
-use std::fs;
-use std::fs::File;
-use std::io::BufReader;
-use std::time::Duration;
+
+use routes::{get_skin_route::get_skin, index_route::index, render_body_route::render};
+
+use crate::config::ServerConfiguration;
+use crate::manager::NMSRaaSManager;
+use crate::mojang::caching::MojangCacheManager;
+use crate::utils::Result;
+
+mod config;
+mod manager;
+mod mojang;
+mod routes;
+mod utils;
 
 #[derive(Parser)]
 struct Args {

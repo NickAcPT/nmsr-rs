@@ -1,11 +1,14 @@
-use crate::utils::errors::NMSRaaSError::MissingPartManager;
-use crate::utils::Result;
-use nmsr_lib::parts::manager::PartsManager;
 use std::collections::HashMap;
 use std::path::Path;
+
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter, EnumString};
+
+use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::vfs::{PhysicalFS, VfsPath};
+
+use crate::utils::errors::NMSRaaSError::MissingPartManager;
+use crate::utils::Result;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumString, EnumIter, EnumCount, Display)]
 #[strum(serialize_all = "lowercase")]

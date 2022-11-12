@@ -1,9 +1,10 @@
+use actix_web::web::Bytes;
+use parking_lot::RwLock;
+
 use crate::mojang::caching::MojangCacheManager;
 use crate::mojang::requests;
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
-use actix_web::web::Bytes;
-use parking_lot::RwLock;
 
 #[derive(Debug, Clone)]
 pub(crate) enum PlayerRenderInput {

@@ -1,6 +1,7 @@
-use crate::{errors::NMSRError, errors::Result, parts::player_model::PlayerModel, uv::Rgba16Image};
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
+
+use crate::{errors::NMSRError, errors::Result, parts::player_model::PlayerModel, uv::Rgba16Image};
 
 pub struct RenderingEntry {
     pub skin: Rgba16Image,

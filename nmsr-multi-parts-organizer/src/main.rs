@@ -1,5 +1,6 @@
-use anyhow::Result;
 use std::path::Path;
+
+use anyhow::Result;
 use walkdir::WalkDir;
 
 fn main() -> Result<()> {

@@ -1,7 +1,8 @@
+use std::ops::Deref;
+
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
-use std::ops::Deref;
 
 impl PartsManager {
     pub(crate) fn get_parts(&self, entry: &RenderingEntry) -> Vec<&UvImage> {

@@ -1,10 +1,11 @@
-use crate::mojang::caching::RateLimiterType;
-use crate::utils::errors::NMSRaaSError;
-use crate::utils::Result;
 use actix_web::web::Bytes;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::mojang::caching::RateLimiterType;
+use crate::utils::errors::NMSRaaSError;
+use crate::utils::Result;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct GameProfileProperty {

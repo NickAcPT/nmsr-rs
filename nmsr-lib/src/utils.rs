@@ -1,13 +1,14 @@
 use std::io::BufReader;
+
 use image::DynamicImage;
 use vfs::VfsPath;
+
 use crate::errors::NMSRError;
 use crate::errors::Result;
 
 pub(crate) fn open_image_from_vfs(path: &VfsPath) -> Result<DynamicImage> {
     let reader = BufReader::new(path.open_file()?);
-    let image = image::load(reader, image::ImageFormat::Png)
-        .map_err(NMSRError::ImageError)?;
+    let image = image::load(reader, image::ImageFormat::Png).map_err(NMSRError::ImageError)?;
 
     Ok(image)
 }

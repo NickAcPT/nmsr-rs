@@ -1,3 +1,9 @@
+use std::ops::Deref;
+
+use image::{GenericImage, ImageBuffer, Pixel, Rgba};
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
 use crate::errors::NMSRError;
 use crate::errors::Result;
 use crate::parts::manager::PartsManager;
@@ -7,10 +13,6 @@ use crate::uv::part::UvImagePixel;
 use crate::uv::utils::u8_to_u16;
 use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
-use image::{GenericImage, ImageBuffer, Pixel, Rgba};
-#[cfg(feature = "rayon")]
-use rayon::prelude::*;
-use std::ops::Deref;
 
 impl RenderingEntry {
     fn apply_uv_and_overlay(

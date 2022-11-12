@@ -1,5 +1,6 @@
-use jni::JNIEnv;
 use std::fmt::{Debug, Display};
+
+use jni::JNIEnv;
 
 macro_rules! get_string_or_throw {
     ($env: expr, $expr: expr, $default_return: expr) => {

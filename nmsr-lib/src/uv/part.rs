@@ -1,7 +1,9 @@
+use std::fmt::{Debug, Display, Formatter};
+
+use image::{Pixel, Rgba};
+
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 use crate::uv::utils::u16_to_u8;
-use image::{Pixel, Rgba};
-use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, Clone)]
 pub struct Point<T: Debug>(pub(crate) T, pub(crate) T);

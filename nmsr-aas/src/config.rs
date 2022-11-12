@@ -1,5 +1,6 @@
-use serde::Deserialize;
 use std::path::PathBuf;
+
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct ServerConfiguration {

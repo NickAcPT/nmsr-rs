@@ -1,15 +1,18 @@
-use crate::config::CacheConfiguration;
-use crate::mojang::caching::MojangCacheManager;
-use crate::{routes::model::PlayerRenderInput, utils::Result};
+use std::io::{BufWriter, Cursor};
+
 use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag};
 use actix_web::web::Buf;
 use actix_web::{get, web, HttpResponse, Responder};
 use image::ImageFormat::Png;
-use nmsr_lib::rendering::entry::RenderingEntry;
 use parking_lot::RwLock;
 use serde::Deserialize;
-use std::io::{BufWriter, Cursor};
 use xxhash_rust::xxh3::xxh3_64;
+
+use nmsr_lib::rendering::entry::RenderingEntry;
+
+use crate::config::CacheConfiguration;
+use crate::mojang::caching::MojangCacheManager;
+use crate::{routes::model::PlayerRenderInput, utils::Result};
 
 #[derive(Deserialize, Default)]
 pub(crate) struct SkinRequest {

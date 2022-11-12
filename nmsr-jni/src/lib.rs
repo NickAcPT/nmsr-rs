@@ -1,14 +1,17 @@
-mod error_handling;
+use std::io::{BufWriter, Cursor};
 
-use crate::error_handling::{get_string_or_throw, unwrap_or_throw_java_exception};
 use image::ImageOutputFormat::Png;
 use jni::objects::{JClass, JString};
 use jni::sys::{jboolean, jbyteArray, jlong, JNI_TRUE};
 use jni::JNIEnv;
+
 use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::rendering::entry::RenderingEntry;
-use std::io::{BufWriter, Cursor};
 use nmsr_lib::vfs::PhysicalFS;
+
+use crate::error_handling::{get_string_or_throw, unwrap_or_throw_java_exception};
+
+mod error_handling;
 
 #[no_mangle]
 pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_initialize(
@@ -18,7 +21,8 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_initial
 ) -> jlong {
     let parts_path = PhysicalFS::new(get_string_or_throw!(env, parts_path, 0));
 
-    let parts_manager = unwrap_or_throw_java_exception!(env, PartsManager::new(&parts_path.into()), 0);
+    let parts_manager =
+        unwrap_or_throw_java_exception!(env, PartsManager::new(&parts_path.into()), 0);
 
     Box::into_raw(Box::from(parts_manager)) as jlong
 }

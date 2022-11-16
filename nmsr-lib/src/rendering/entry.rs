@@ -6,6 +6,7 @@ use crate::{errors::NMSRError, errors::Result, parts::player_model::PlayerModel,
 pub struct RenderingEntry {
     pub skin: Rgba16Image,
     pub model: PlayerModel,
+    pub render_overlays: bool,
 }
 
 impl RenderingEntry {
@@ -20,7 +21,7 @@ impl RenderingEntry {
         Ok(skin)
     }
 
-    pub fn new(skin: RgbaImage, slim_arms: bool) -> Result<RenderingEntry> {
+    pub fn new(skin: RgbaImage, slim_arms: bool, render_overlays: bool) -> Result<RenderingEntry> {
         let skin = RenderingEntry::process_skin(skin)?;
 
         Ok(RenderingEntry {
@@ -29,6 +30,7 @@ impl RenderingEntry {
                 true => PlayerModel::Alex,
                 false => PlayerModel::Steve,
             },
+            render_overlays
         })
     }
 }

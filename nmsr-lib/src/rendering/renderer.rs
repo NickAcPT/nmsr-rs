@@ -23,6 +23,10 @@ impl RenderingEntry {
     ) -> Result<Rgba16Image> {
         let mut applied_uv = uv_image.apply(skin)?;
 
+        if !self.render_overlays {
+            return Ok(applied_uv);
+        }
+
         let overlay = parts_manager.get_overlay(uv_image);
 
         if let Some(overlay) = overlay {

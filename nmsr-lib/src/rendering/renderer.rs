@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use image::{GenericImage, ImageBuffer, Pixel, Rgba};
-#[cfg(feature = "rayon")]
+#[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 
 use crate::errors::NMSRError;

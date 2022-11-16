@@ -16,4 +16,4 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = []
-rayon = ["dep:rayon"]
+parallel_iters = ["dep:rayon"]

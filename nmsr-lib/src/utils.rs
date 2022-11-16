@@ -13,14 +13,14 @@ pub(crate) fn open_image_from_vfs(path: &VfsPath) -> Result<DynamicImage> {
     Ok(image)
 }
 
-#[cfg(feature = "rayon")]
+#[cfg(feature = "parallel_iters")]
 macro_rules! par_iterator_if_enabled {
     ($value: expr) => {
         $value.par_iter()
     };
 }
 
-#[cfg(not(feature = "rayon"))]
+#[cfg(not(feature = "parallel_iters"))]
 macro_rules! par_iterator_if_enabled {
     ($value: expr) => {
         $value.iter()

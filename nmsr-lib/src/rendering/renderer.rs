@@ -23,7 +23,7 @@ impl RenderingEntry {
     ) -> Result<Rgba16Image> {
         let mut applied_uv = uv_image.apply(skin)?;
 
-        if !self.render_overlays {
+        if !self.render_shading {
             return Ok(applied_uv);
         }
 

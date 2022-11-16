@@ -15,6 +15,7 @@ impl PartsManager {
 
         required_parts
             .chain(model_parts)
+            .filter(|(name, _)| !name.contains("Layer") || entry.render_layers)
             .map(|(_, uv)| uv)
             .collect()
     }

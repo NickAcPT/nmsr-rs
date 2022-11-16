@@ -56,7 +56,7 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_renderS
     // Create a new rendering entry
     let entry = unwrap_or_throw_java_exception!(
         env,
-        RenderingEntry::new(skin_image, slim_arms, true),
+        RenderingEntry::new(skin_image, slim_arms, true, true),
         empty_byte_array
     );
 

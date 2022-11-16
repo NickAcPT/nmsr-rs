@@ -1,11 +1,13 @@
 use std::fmt::{Debug, Display, Formatter};
 
 use image::{Pixel, Rgba};
+#[cfg(feature = "serializable_parts")] use serde::{Deserialize, Serialize};
 
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 use crate::uv::utils::u16_to_u8;
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
 pub struct Point<T: Debug>(pub(crate) T, pub(crate) T);
 
 impl<T: Debug> Display for Point<T> {
@@ -15,6 +17,7 @@ impl<T: Debug> Display for Point<T> {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
 pub(crate) enum UvImagePixel {
     RawPixel {
         position: Point<u16>,

@@ -10,6 +10,7 @@ thiserror = "1.0.37"
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
 rayon = { version = "1.5.3", optional = true }
 vfs = { version = "0.7.1" }
+serde = { version = "1.0.147", features = ["derive"], optional = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -17,3 +18,4 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 parallel_iters = ["dep:rayon"]
+serializable_parts = ["dep:serde"]

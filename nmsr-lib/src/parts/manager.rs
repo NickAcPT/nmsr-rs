@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+#[cfg(feature = "serializable_parts")]
+use serde::{Deserialize, Serialize};
 use vfs::VfsPath;
 
 use crate::errors::{NMSRError, Result};
@@ -7,6 +9,7 @@ use crate::utils::open_image_from_vfs;
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16Image};
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
 pub struct PartsManager {
     pub all_parts: HashMap<String, UvImage>,
     pub model_parts: HashMap<String, UvImage>,

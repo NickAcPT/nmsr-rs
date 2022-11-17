@@ -1,7 +1,8 @@
 use crate::errors::Result;
 use crate::uv::part::UvImagePixel;
 use crate::{uv::utils::apply_uv_map, uv::utils::get_uv_max_depth, uv::Rgba16Image};
-#[cfg(feature = "serializable_parts")] use serde::{Deserialize, Serialize};
+#[cfg(feature = "serializable_parts")]
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]

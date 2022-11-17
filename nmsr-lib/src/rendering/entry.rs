@@ -30,7 +30,12 @@ impl RenderingEntry {
     /// * `slim_arms`: Whether the skin has slim arms or not
     /// * `render_shading`: Whether to render shading or not (this is internally called overlays)
     /// * `render_layers`: Whether to render the secondary skin layers or not
-    pub fn new(skin: RgbaImage, slim_arms: bool, render_shading: bool, render_layers: bool) -> Result<RenderingEntry> {
+    pub fn new(
+        skin: RgbaImage,
+        slim_arms: bool,
+        render_shading: bool,
+        render_layers: bool,
+    ) -> Result<RenderingEntry> {
         let skin = RenderingEntry::process_skin(skin)?;
 
         Ok(RenderingEntry {

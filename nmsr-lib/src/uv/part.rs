@@ -1,7 +1,8 @@
 use std::fmt::{Debug, Display, Formatter};
 
 use image::{Pixel, Rgba};
-#[cfg(feature = "serializable_parts")] use serde::{Deserialize, Serialize};
+#[cfg(feature = "serializable_parts")]
+use serde::{Deserialize, Serialize};
 
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 use crate::uv::utils::u16_to_u8;

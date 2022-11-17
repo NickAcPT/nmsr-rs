@@ -45,8 +45,10 @@ impl NMSRaaSManager {
 
         Ok(PartsManager::new(&path)?)
     }
+}
 
-    #[cfg(not(feature = "lazy_parts"))]
+#[cfg(not(feature = "lazy_parts"))]
+impl NMSRaaSManager {
     pub(crate) fn get_manager(&self, render_type: &RenderMode) -> Result<Cow<PartsManager>> {
         self.part_managers
             .get(render_type)
@@ -54,7 +56,6 @@ impl NMSRaaSManager {
             .ok_or_else(|| MissingPartManager(render_type.clone()))
     }
 
-    #[cfg(not(feature = "lazy_parts"))]
     pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
         let part_root: VfsPath = PhysicalFS::new(part_root).into();
         let mut map = HashMap::with_capacity(RenderMode::COUNT);
@@ -66,8 +67,10 @@ impl NMSRaaSManager {
 
         Ok(NMSRaaSManager { part_managers: map })
     }
+}
 
-    #[cfg(feature = "lazy_parts")]
+#[cfg(feature = "lazy_parts")]
+impl NMSRaaSManager {
     pub(crate) fn get_manager(&self, render_type: &RenderMode) -> Result<Cow<PartsManager>> {
         let lazy_parts_dir = Self::get_lazy_parts_directory(&self.part_root)?;
         let part_path = Self::get_render_mode_part_manager_path(&lazy_parts_dir, render_type)?;
@@ -89,12 +92,10 @@ impl NMSRaaSManager {
         }
     }
 
-    #[cfg(feature = "lazy_parts")]
     fn get_lazy_parts_directory(part_root: &VfsPath) -> Result<VfsPath> {
         Ok(part_root.join("lazy_parts")?)
     }
 
-    #[cfg(feature = "lazy_parts")]
     fn get_render_mode_part_manager_path(
         lazy_parts_dir: &VfsPath,
         render_type: &RenderMode,
@@ -102,7 +103,6 @@ impl NMSRaaSManager {
         Ok(lazy_parts_dir.join(render_type.to_string())?)
     }
 
-    #[cfg(feature = "lazy_parts")]
     pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
         let part_root = PhysicalFS::new(part_root).into();
         let lazy_parts_dir = Self::get_lazy_parts_directory(&part_root)?;

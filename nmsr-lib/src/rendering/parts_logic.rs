@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
@@ -11,19 +9,17 @@ impl PartsManager {
         let model_parts = self
             .model_parts
             .iter()
-            .filter(|(key, _)| key.starts_with(entry.model.get_dir_name()));
+            .filter(|uv| uv.name.starts_with(entry.model.get_dir_name()));
 
         required_parts
             .chain(model_parts)
-            .filter(|(name, _)| !name.contains("Layer") || entry.render_layers)
-            .map(|(_, uv)| uv)
+            .filter(|uv| uv.name.contains("Layer") || entry.render_layers)
             .collect()
     }
 
     pub(crate) fn get_overlay(&self, uv: &UvImage) -> Option<&UvImage> {
         self.model_overlays
             .iter()
-            .find(|(key, _)| key.deref().eq(&uv.name))
-            .map(|(_, uv)| uv)
+            .find(|other| other.name.eq(&uv.name))
     }
 }

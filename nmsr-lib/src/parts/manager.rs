@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[cfg(feature = "serializable_parts")]
 use serde::{Deserialize, Serialize};
 use vfs::VfsPath;
@@ -11,9 +9,9 @@ use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16I
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
 pub struct PartsManager {
-    pub all_parts: HashMap<String, UvImage>,
-    pub model_parts: HashMap<String, UvImage>,
-    pub model_overlays: HashMap<String, UvImage>,
+    pub all_parts: Vec<UvImage>,
+    pub model_parts: Vec<UvImage>,
+    pub model_overlays: Vec<UvImage>,
     pub environment_background: Option<UvImage>,
 }
 
@@ -27,9 +25,9 @@ impl PartsManager {
     }
 
     pub fn new(root: &VfsPath) -> Result<PartsManager> {
-        let mut all_parts = HashMap::<String, UvImage>::with_capacity(8);
-        let mut model_parts = HashMap::<String, UvImage>::with_capacity(8);
-        let mut model_overlays = HashMap::<String, UvImage>::with_capacity(16);
+        let mut all_parts = Vec::<UvImage>::with_capacity(8);
+        let mut model_parts = Vec::<UvImage>::with_capacity(8);
+        let mut model_overlays = Vec::<UvImage>::with_capacity(16);
 
         Self::load_as_parts(root, &mut all_parts, "", false)?;
         Self::load_model_specific_parts(root, &mut model_parts, false)?;
@@ -52,7 +50,7 @@ impl PartsManager {
 
     fn load_model_specific_parts(
         root: &VfsPath,
-        model_parts: &mut HashMap<String, UvImage>,
+        model_parts: &mut Vec<UvImage>,
         store_raw_pixels: bool,
     ) -> Result<()> {
         for model in [PlayerModel::Alex, PlayerModel::Steve].iter() {
@@ -72,7 +70,7 @@ impl PartsManager {
 
     fn load_as_parts(
         dir: &VfsPath,
-        parts_map: &mut HashMap<String, UvImage>,
+        parts_map: &mut Vec<UvImage>,
         path_prefix: &str,
         store_raw_pixels: bool,
     ) -> Result<()> {
@@ -115,7 +113,7 @@ impl PartsManager {
 
         for part in loaded_parts {
             let part = part?;
-            parts_map.insert(part.name.to_owned(), part);
+            parts_map.push(part);
         }
 
         Ok(())

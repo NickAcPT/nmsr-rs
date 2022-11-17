@@ -1,3 +1,4 @@
+use log::debug;
 use std::borrow::Cow;
 #[cfg(not(feature = "lazy_parts"))]
 use std::collections::HashMap;
@@ -74,7 +75,14 @@ impl NMSRaaSManager {
         if part_path.exists()? {
             let reader = BufReader::new(part_path.open_file()?);
 
+            let start = std::time::Instant::now();
             let manager = bincode::deserialize_from(reader)?;
+            debug!(
+                "Deserialized part manager for {:?} in {:?}",
+                render_type,
+                start.elapsed()
+            );
+
             Ok(Cow::Owned(manager))
         } else {
             Err(MissingPartManager(render_type.clone()))

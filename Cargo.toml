@@ -4,7 +4,8 @@ members = [
     "nmsr-lib",
     "nmsr-jni",
     "nmsr-aas",
-    "nmsr-multi-parts-organizer"
+    "nmsr-multi-parts-organizer",
+    "nmsr-backfaces-optimizer"
 ]
 
 [profile.dev.package.nmsr-lib]

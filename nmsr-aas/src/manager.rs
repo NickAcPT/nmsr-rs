@@ -1,12 +1,18 @@
+use std::borrow::Cow;
+#[cfg(not(feature = "lazy_parts"))]
 use std::collections::HashMap;
+use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
+#[cfg(feature = "lazy_parts")]
+use rayon::prelude::*;
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter, EnumString};
 
 use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::vfs::{PhysicalFS, VfsPath};
 
+use crate::utils::errors::NMSRaaSError;
 use crate::utils::errors::NMSRaaSError::MissingPartManager;
 use crate::utils::Result;
 
@@ -23,27 +29,101 @@ pub(crate) enum RenderMode {
 
 #[derive(Debug, Clone)]
 pub(crate) struct NMSRaaSManager {
+    #[cfg(feature = "lazy_parts")]
+    part_root: VfsPath,
+    #[cfg(not(feature = "lazy_parts"))]
     part_managers: HashMap<RenderMode, PartsManager>,
 }
 
 impl NMSRaaSManager {
-    pub(crate) fn get_manager(&self, render_type: &RenderMode) -> Result<&PartsManager> {
+    fn create_part_manager_for_mode(
+        part_root: &VfsPath,
+        render_type: &RenderMode,
+    ) -> Result<PartsManager> {
+        let path = part_root.join(render_type.to_string())?;
+
+        Ok(PartsManager::new(&path)?)
+    }
+
+    #[cfg(not(feature = "lazy_parts"))]
+    pub(crate) fn get_manager(&self, render_type: &RenderMode) -> Result<Cow<PartsManager>> {
         self.part_managers
             .get(render_type)
+            .map(Cow::Borrowed)
             .ok_or_else(|| MissingPartManager(render_type.clone()))
     }
 
+    #[cfg(not(feature = "lazy_parts"))]
     pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
         let part_root: VfsPath = PhysicalFS::new(part_root).into();
         let mut map = HashMap::with_capacity(RenderMode::COUNT);
 
         for render_type in RenderMode::iter() {
-            let path = part_root.join(render_type.to_string())?;
-
-            let part_manager = PartsManager::new(&path)?;
-            map.insert(render_type, part_manager);
+            let manager = Self::create_part_manager_for_mode(&part_root, &render_type)?;
+            map.insert(render_type, manager);
         }
 
         Ok(NMSRaaSManager { part_managers: map })
+    }
+
+    #[cfg(feature = "lazy_parts")]
+    pub(crate) fn get_manager(&self, render_type: &RenderMode) -> Result<Cow<PartsManager>> {
+        let lazy_parts_dir = Self::get_lazy_parts_directory(&self.part_root)?;
+        let part_path = Self::get_render_mode_part_manager_path(&lazy_parts_dir, render_type)?;
+
+        if part_path.exists()? {
+            let reader = BufReader::new(part_path.open_file()?);
+
+            let manager = bincode::deserialize_from(reader)?;
+            Ok(Cow::Owned(manager))
+        } else {
+            Err(MissingPartManager(render_type.clone()))
+        }
+    }
+
+    #[cfg(feature = "lazy_parts")]
+    fn get_lazy_parts_directory(part_root: &VfsPath) -> Result<VfsPath> {
+        Ok(part_root.join("lazy_parts")?)
+    }
+
+    #[cfg(feature = "lazy_parts")]
+    fn get_render_mode_part_manager_path(
+        lazy_parts_dir: &VfsPath,
+        render_type: &RenderMode,
+    ) -> Result<VfsPath> {
+        Ok(lazy_parts_dir.join(render_type.to_string())?)
+    }
+
+    #[cfg(feature = "lazy_parts")]
+    pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
+        let part_root = PhysicalFS::new(part_root).into();
+        let lazy_parts_dir = Self::get_lazy_parts_directory(&part_root)?;
+
+        // Yeet all the old parts we made just in case.
+        // It's a one time action so it's fine™
+        lazy_parts_dir.remove_dir_all()?;
+        lazy_parts_dir.create_dir_all()?;
+
+        let serialized_parts: Vec<_> = RenderMode::iter()
+            .par_bridge()
+            .map(|render_type| {
+                let manager = Self::create_part_manager_for_mode(&part_root, &render_type);
+                let serialized = manager.and_then(|manager| {
+                    bincode::serialize(&manager).map_err(NMSRaaSError::BincodeError)
+                });
+
+                (render_type, serialized)
+            })
+            .collect();
+
+        for (mode, serialized_part) in serialized_parts {
+            let file = Self::get_render_mode_part_manager_path(&lazy_parts_dir, &mode)?;
+            let mut writer = BufWriter::new(file.create_file()?);
+            let data = serialized_part?;
+
+            writer.write_all(data.as_slice())?;
+        }
+
+        Ok(NMSRaaSManager { part_root })
     }
 }

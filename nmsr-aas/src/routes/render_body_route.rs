@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::io::{BufWriter, Cursor};
 
 use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag};
@@ -52,7 +53,7 @@ pub(crate) async fn render(
 
         let entry = RenderingEntry::new(skin_image.into_rgba8(), slim_arms, true, true)?;
 
-        let render = entry.render(parts_manager)?;
+        let render = entry.render(parts_manager.borrow())?;
 
         let mut render_bytes = Vec::new();
 

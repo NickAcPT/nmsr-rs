@@ -49,6 +49,8 @@ pub(crate) enum NMSRaaSError {
     TlsError(#[from] rustls::Error),
     #[error("Error decoding toml: {0}")]
     TomlDecodeError(#[from] toml::de::Error),
+    #[error("Bincode Error: {0}")]
+    BincodeError(#[from] Box<bincode::ErrorKind>),
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {}

@@ -40,3 +40,7 @@ xxhash-rust = { version = "0.8.6", features = ["xxh3"] }
 
 [features]
 lazy_parts = ["nmsr-lib/serializable_parts", "rayon"]
+
+[build-dependencies]
+anyhow = { version = "1.0.66" }
+vergen = { version = "7.4.2", default-features = false, features = ["git"] }

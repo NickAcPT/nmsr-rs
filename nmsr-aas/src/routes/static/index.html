@@ -13,7 +13,7 @@
     <meta content="NMSR" property="og:site_name">
     <meta content='/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex' property='og:image'>
     <meta content="#d80000" name="theme-color">
-    <link href="/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832" rel="icon" type="image/png"/>
+    <link href="http://localhost:8080/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832" rel="icon" type="image/png"/>
 
     <link href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css" rel="stylesheet">
 
@@ -48,31 +48,71 @@
             <div>
                 <p>Render a player's Minecraft body into a PNG image.</p>
                 <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
-                <p>You can also specify the <code>?alex</code> query parameter to use the Alex model.</p>
+
+                <h4>Query Parameters</h4>
+                <figure>
+                    <table role="grid">
+                        <thead>
+                        <tr>
+                            <th scope="col">Parameter Name</th>
+                            <th scope="col">Description</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td><code>alex</code></td>
+                            <td>When present, the Alex model is used for rendering.</td>
+                        </tr>
+                        <tr>
+                            <td><code>steve</code></td>
+                            <td>
+                                <p>
+                                    When present, the Steve model is used for rendering. This parameter has higher
+                                    priority than the <code>alex</code> query
+                                    parameter.
+                                </p></td>
+                        </tr>
+                        <tr>
+                            <td><code>noshading</code></td>
+                            <td>
+                                <p>
+                                    When present, no shading will be added to the rendered image.
+                                </p></td>
+                        </tr>
+                        <tr>
+                            <td><code>nolayers</code></td>
+                            <td>
+                                <p>
+                                    When present, the secondary layers of the skins will not be added tos the rendered image.
+                                </p></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </figure>
 
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href="/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">Full body
+                        <a href="http://localhost:8080/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">Full body
                             render of NickAc's
                             current skin</a>
                     </li>
                     <li>
-                        <a href="/fullbody/c5776379-12a8-4f44-9908-77ceb86064d9?alex">Full body
+                        <a href="http://localhost:8080/fullbody/c5776379-12a8-4f44-9908-77ceb86064d9?alex">Full body
                             render of Koide's
                             current skin</a>
                     </li>
                     <li>
-                        <a href="/fullbody/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Full body
+                        <a href="http://localhost:8080/fullbody/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Full body
                             render of BmaxXSux's
                             current skin</a>
                     </li>
                     <li>
-                        <a href="/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">Full
+                        <a href="http://localhost:8080/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">Full
                             body render of an old skin of BmaxXSux</a>
                     </li>
                     <li>
-                        <a href="/fullbody/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">Full
+                        <a href="http://localhost:8080/fullbody/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">Full
                             body render of an old skin of Koide</a>
                     </li>
                 </ul>
@@ -80,13 +120,13 @@
 
             <figure>
                 <img alt="Example of a full body skin render of user NickAc using the Alex model" height="378px"
-                     src="/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">
+                     src="http://localhost:8080/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">
                 <figcaption>Full body render of NickAc's current skin</figcaption>
             </figure>
             <figure>
                 <img alt="Example of a full body skin render of an old skin of user BmaxXSux using the Alex model"
                      height="378px"
-                     src="/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
+                     src="http://localhost:8080/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
                 <figcaption>Full body render of an old BmaxXSux's skin</figcaption>
             </figure>
         </section>
@@ -104,27 +144,27 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href="/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">2D Body
+                        <a href="http://localhost:8080/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">2D Body
                             render of NickAc's
                             current skin</a>
                     </li>
                     <li>
-                        <a href="/frontfull/c5776379-12a8-4f44-9908-77ceb86064d9?alex">2D Body
+                        <a href="http://localhost:8080/frontfull/c5776379-12a8-4f44-9908-77ceb86064d9?alex">2D Body
                             render of Koide's current
                             skin</a>
                     </li>
                     <li>
-                        <a href="/frontfull/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">2D Body
+                        <a href="http://localhost:8080/frontfull/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">2D Body
                             render of BmaxXSux's
                             current skin</a>
                     </li>
                     <li>
-                        <a href="/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">2D
+                        <a href="http://localhost:8080/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">2D
                             Body
                             render of an old skin of BmaxXSux</a>
                     </li>
                     <li>
-                        <a href="/frontfull/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">2D
+                        <a href="http://localhost:8080/frontfull/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">2D
                             Body render of an old skin of Koide</a>
                     </li>
                 </ul>
@@ -133,13 +173,13 @@
 
             <figure>
                 <img alt="Example of a full body skin render of user NickAc using the Alex model" height="378px"
-                     src="/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">
+                     src="http://localhost:8080/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">
                 <figcaption>2D Body render of NickAc's current skin</figcaption>
             </figure>
             <figure>
                 <img alt="Example of a full body skin render of an old skin of user BmaxXSux using the Alex model"
                      height="378px"
-                     src="/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
+                     src="http://localhost:8080/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
                 <figcaption>2D Body render of an old BmaxXSux's skin</figcaption>
             </figure>
         </section>
@@ -157,26 +197,26 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href="/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">Isometric
+                        <a href="http://localhost:8080/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">Isometric
                             full body render of
                             NickAc's current skin</a>
                     </li>
                     <li>
-                        <a href="/fullbodyiso/c5776379-12a8-4f44-9908-77ceb86064d9?alex">Isometric
+                        <a href="http://localhost:8080/fullbodyiso/c5776379-12a8-4f44-9908-77ceb86064d9?alex">Isometric
                             full body render of
                             Koide's current skin</a>
                     </li>
                     <li>
-                        <a href="/fullbodyiso/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Isometric
+                        <a href="http://localhost:8080/fullbodyiso/2f32ce5d-645f-401b-81f1-813d1c0e8a5d?alex">Isometric
                             full body render of
                             BmaxXSux's current skin</a>
                     </li>
                     <li>
-                        <a href="/fullbodyiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">Isometric
+                        <a href="http://localhost:8080/fullbodyiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">Isometric
                             full body render of an old skin of BmaxXSux</a>
                     </li>
                     <li>
-                        <a href="/fullbodyiso/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">Isometric
+                        <a href="http://localhost:8080/fullbodyiso/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">Isometric
                             full body render of an old skin of Koide</a>
                     </li>
                 </ul>
@@ -185,13 +225,13 @@
             <figure>
                 <img alt="Example of a full body skin isometric render of user NickAc using the Alex model"
                      height="378px"
-                     src="/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">
+                     src="http://localhost:8080/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex">
                 <figcaption>Isometric full body render of NickAc's current skin</figcaption>
             </figure>
             <figure>
                 <img alt="Example of a full body skin isometric render of an old skin of user BmaxXSux using the Alex model"
                      height="378px"
-                     src="/fullbodyiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
+                     src="http://localhost:8080/fullbodyiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
                 <figcaption>Isometric full body render of an old BmaxXSux's skin</figcaption>
             </figure>
         </section>
@@ -208,24 +248,24 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href="/head/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Head render of
+                        <a href="http://localhost:8080/head/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Head render of
                             NickAc's current skin</a>
                     </li>
                     <li>
-                        <a href="/head/c5776379-12a8-4f44-9908-77ceb86064d9">Head render of Koide's
+                        <a href="http://localhost:8080/head/c5776379-12a8-4f44-9908-77ceb86064d9">Head render of Koide's
                             current skin</a>
                     </li>
                     <li>
-                        <a href="/head/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Head render of
+                        <a href="http://localhost:8080/head/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Head render of
                             BmaxXSux's current skin</a>
                     </li>
                     <li>
-                        <a href="/head/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Head
+                        <a href="http://localhost:8080/head/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Head
                             render of an
                             old skin of BmaxXSux</a>
                     </li>
                     <li>
-                        <a href="/head/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Head
+                        <a href="http://localhost:8080/head/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Head
                             render of
                             an old skin of Koide</a>
                     </li>
@@ -234,13 +274,13 @@
 
             <figure>
                 <img alt="Example of a head render of user NickAc" height="378px"
-                     src="/head/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                     src="http://localhost:8080/head/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                 <figcaption>Head render of NickAc's current skin</figcaption>
             </figure>
             <figure>
                 <img alt="Example of a head render of an old skin of user BmaxXSux"
                      height="378px"
-                     src="/head/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
+                     src="http://localhost:8080/head/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
                 <figcaption>Head render of an old BmaxXSux's skin</figcaption>
             </figure>
         </section>
@@ -257,21 +297,21 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href="/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">NickAc's Face</a>
+                        <a href="http://localhost:8080/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">NickAc's Face</a>
                     </li>
                     <li>
-                        <a href="/face/c5776379-12a8-4f44-9908-77ceb86064d9">Koide's Face</a>
+                        <a href="http://localhost:8080/face/c5776379-12a8-4f44-9908-77ceb86064d9">Koide's Face</a>
                     </li>
                     <li>
-                        <a href="/face/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">BmaxXSux's Face</a>
+                        <a href="http://localhost:8080/face/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">BmaxXSux's Face</a>
                     </li>
                     <li>
-                        <a href="/face/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Face
+                        <a href="http://localhost:8080/face/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Face
                             of one of
                             BmaxXSux's old skin</a>
                     </li>
                     <li>
-                        <a href="/face/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Face
+                        <a href="http://localhost:8080/face/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Face
                             of one of
                             Koide's old skin</a>
                     </li>
@@ -281,13 +321,13 @@
 
             <figure>
                 <img alt="Example of a face rendering of user NickAc"
-                     src="/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832"
+                     src="http://localhost:8080/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832"
                      style="width: 240px; image-rendering: pixelated;">
                 <figcaption>Face of NickAc's current skin</figcaption>
             </figure>
             <figure>
                 <img alt="Example of a face rendering of an old skin of user BmaxXSux"
-                     src="/face/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb"
+                     src="http://localhost:8080/face/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb"
                      style="width: 240px; image-rendering: pixelated;">
                 <figcaption>Face of one of BmaxXSux's old skins</figcaption>
             </figure>
@@ -305,27 +345,27 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href="/headiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Isometric head
+                        <a href="http://localhost:8080/headiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Isometric head
                             render of NickAc's
                             current skin</a>
                     </li>
                     <li>
-                        <a href="/headiso/c5776379-12a8-4f44-9908-77ceb86064d9">Isometric head
+                        <a href="http://localhost:8080/headiso/c5776379-12a8-4f44-9908-77ceb86064d9">Isometric head
                             render of Koide's current
                             skin</a>
                     </li>
                     <li>
-                        <a href="/headiso/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Isometric head
+                        <a href="http://localhost:8080/headiso/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Isometric head
                             render of BmaxXSux's
                             current skin</a>
                     </li>
                     <li>
-                        <a href="/headiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Isometric
+                        <a href="http://localhost:8080/headiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Isometric
                             head
                             render of an old skin of BmaxXSux</a>
                     </li>
                     <li>
-                        <a href="/headiso/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Isometric
+                        <a href="http://localhost:8080/headiso/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Isometric
                             head render of an old skin of Koide</a>
                     </li>
                 </ul>
@@ -333,13 +373,13 @@
 
             <figure>
                 <img alt="Example of an isometric head render of user NickAc" height="378px"
-                     src="/headiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                     src="http://localhost:8080/headiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                 <figcaption>Isometric head render of NickAc's current skin</figcaption>
             </figure>
             <figure>
                 <img alt="Example of a Isometric head render of an old skin of user BmaxXSux"
                      height="378px"
-                     src="/headiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
+                     src="http://localhost:8080/headiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
                 <figcaption>Isometric head render of an old BmaxXSux's skin</figcaption>
             </figure>
         </section>
@@ -360,21 +400,21 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href="/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Skin of NickAc</a>
+                        <a href="http://localhost:8080/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Skin of NickAc</a>
                     </li>
                     <li>
-                        <a href="/skin/c5776379-12a8-4f44-9908-77ceb86064d9">Skin of Koide</a>
+                        <a href="http://localhost:8080/skin/c5776379-12a8-4f44-9908-77ceb86064d9">Skin of Koide</a>
                     </li>
                     <li>
-                        <a href="/skin/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Skin of BmaxXSux</a>
+                        <a href="http://localhost:8080/skin/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Skin of BmaxXSux</a>
                     </li>
                     <li>
-                        <a href="/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">An
+                        <a href="http://localhost:8080/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">An
                             old skin of
                             BmaxXSux</a>
                     </li>
                     <li>
-                        <a href="/skin/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">An
+                        <a href="http://localhost:8080/skin/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">An
                             old skin of
                             Koide</a>
                     </li>
@@ -385,13 +425,13 @@
             <div>
                 <figure>
                     <img alt="Example of the fetching of the current Minecraft skin of user NickAc"
-                         src="/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832"
+                         src="http://localhost:8080/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832"
                          style="width: 240px; image-rendering: pixelated;">
                     <figcaption>Example of NickAc's current skin</figcaption>
                 </figure>
                 <figure>
                     <img alt="Example of the fetching of an old Minecraft skin of user with user BmaxXSux"
-                         src="/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb"
+                         src="http://localhost:8080/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb"
                          style="width: 240px; image-rendering: pixelated;">
                     <figcaption>Example of one of BmaxXSux's old skins</figcaption>
                 </figure>

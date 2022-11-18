@@ -19,6 +19,9 @@ use crate::{routes::model::PlayerRenderInput, utils::Result};
 #[derive(Deserialize, Default)]
 pub(crate) struct RenderData {
     alex: Option<String>,
+    steve: Option<String>,
+    noshading: Option<String>,
+    nolayers: Option<String>,
 }
 
 #[get("/{type}/{player}")]
@@ -34,7 +37,8 @@ pub(crate) async fn render(
     let mode: RenderMode =
         RenderMode::try_from(mode.as_str()).map_err(|_| NMSRaaSError::InvalidRenderMode(mode))?;
     let player: PlayerRenderInput = player.try_into()?;
-    let slim_arms = skin_info.alex.is_some();
+    let include_shading = skin_info.noshading.is_none();
+    let include_layers = skin_info.nolayers.is_none();
 
     let parts_manager = parts_manager.as_ref().get_manager(&mode)?;
 
@@ -51,7 +55,7 @@ pub(crate) async fn render(
     } else {
         let skin_image = image::load_from_memory(skin_bytes.chunk())?;
 
-        let entry = RenderingEntry::new(skin_image.into_rgba8(), slim_arms, true, true)?;
+        let entry = RenderingEntry::new(skin_image.into_rgba8(), slim_arms, include_shading, include_layers)?;
 
         let render = entry.render(parts_manager.borrow())?;
 

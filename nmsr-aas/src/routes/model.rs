@@ -35,10 +35,7 @@ impl PlayerRenderInput {
     ) -> Result<String> {
         Ok(match self {
             PlayerRenderInput::PlayerUuid(id) => {
-                let option = {
-                    let mut guard = cache_manager.write();
-                    guard.get_cached_uuid_to_skin_hash(id)
-                };
+                let option = cache_manager.read().get_cached_uuid_to_skin_hash(id);
 
                 if let Some(cached_hash) = option {
                     cached_hash

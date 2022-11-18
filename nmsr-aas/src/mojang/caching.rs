@@ -165,7 +165,7 @@ impl MojangCacheManager {
         Ok(())
     }
 
-    pub(crate) fn get_cached_uuid_to_skin_hash(&mut self, uuid: &Uuid) -> Option<String> {
+    pub(crate) fn get_cached_uuid_to_skin_hash(&self, uuid: &Uuid) -> Option<String> {
         debug!("Checking cache for {}", uuid);
         if let Some(cached) = self.resolved_uuid_to_skin_hash_cache.get(uuid) {
             return if cached.time.elapsed() < self.uuid_to_skin_hash_cache_expiry {
@@ -173,7 +173,6 @@ impl MojangCacheManager {
                 Some(cached.hash.clone())
             } else {
                 debug!("Cached hash for {} expired", uuid);
-                self.resolved_uuid_to_skin_hash_cache.remove(uuid);
                 None
             };
         }

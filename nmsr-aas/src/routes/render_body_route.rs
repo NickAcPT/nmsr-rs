@@ -42,13 +42,25 @@ pub(crate) async fn render(
 
     let parts_manager = parts_manager.as_ref().get_manager(&mode)?;
 
+    // Fetch the skin hash, model and skin bytes
     let (hash, skin_bytes) = player
         .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
         .await?;
 
+    // Separate the skin hash from the model
+    let skin_hash = hash.get_hash();
+
+    // Whether we need to use the Alex model
+    // Logic is as follows:
+    // 1. If Mojang says the model is Alex, use Alex (this means the player set their model to Alex)
+    // 2. If the user specified an alex model, use that
+    // 3. If the user specified a steve model, use that, overriding the 1. and 2. rules
+    let slim_arms = hash.is_slim_arms() || skin_info.alex.is_some();
+    let slim_arms = slim_arms && skin_info.steve.is_none();
+
     let cached_render = cache_manager
         .read()
-        .get_cached_render(&mode, &hash, slim_arms)?;
+        .get_cached_render(&mode, skin_hash, slim_arms)?;
 
     let render_bytes = if let Some(bytes) = cached_render {
         bytes
@@ -70,7 +82,7 @@ pub(crate) async fn render(
         {
             cache_manager
                 .write()
-                .cache_render(&mode, &hash, slim_arms, render_bytes.as_slice())?;
+                .cache_render(&mode, skin_hash, slim_arms, render_bytes.as_slice())?;
         }
 
         render_bytes

@@ -56,7 +56,7 @@ pub(crate) async fn get_skin(
         )]))
         .append_header(ETag(EntityTag::new_strong(format!(
             "{:x}",
-            xxh3_64(hash.as_bytes())
+            xxh3_64(hash.get_hash().as_bytes())
         ))))
         .body(skin_bytes))
 }

@@ -3,6 +3,7 @@ use parking_lot::RwLock;
 
 use crate::mojang::caching::MojangCacheManager;
 use crate::mojang::requests;
+use crate::mojang::requests::CachedSkinHash;
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 
@@ -28,34 +29,36 @@ impl TryFrom<String> for PlayerRenderInput {
 }
 
 impl PlayerRenderInput {
-    async fn fetch_skin_hash(
+    async fn fetch_skin_hash_and_model(
         &self,
         cache_manager: &RwLock<MojangCacheManager>,
         client: &reqwest::Client,
-    ) -> Result<String> {
+    ) -> Result<CachedSkinHash> {
         Ok(match self {
             PlayerRenderInput::PlayerUuid(id) => {
-                let option = cache_manager.read().get_cached_uuid_to_skin_hash(id);
+                let option = cache_manager.read().get_cached_uuid_to_skin_hash(id).cloned();
 
-                if let Some(cached_hash) = option {
-                    cached_hash
+                if let Some(hash) = option {
+                    hash
                 } else {
+                    let limiter = {
+                        let guard = cache_manager.read();
+                        guard.rate_limiter.clone()
+                    };
+                    let result =
+                        { requests::get_skin_hash_and_model(client, &limiter, *id) }.await?;
+
                     {
-                        let limiter = {
-                            let guard = cache_manager.read();
-                            guard.rate_limiter.clone()
-                        };
-                        let fetched_hash =
-                            { requests::get_skin_hash(client, &limiter, *id) }.await?;
-                        {
-                            let mut guard = cache_manager.write();
-                            guard.cache_uuid_to_skin_hash(id, &fetched_hash);
-                        }
-                        fetched_hash
+                        let mut guard = cache_manager.write();
+                        guard.cache_uuid_to_skin_hash_and_model(id, result.clone());
                     }
+
+                    result
                 }
             }
-            PlayerRenderInput::TextureHash(hash) => hash.to_owned(),
+            PlayerRenderInput::TextureHash(hash) => CachedSkinHash::WithoutModel {
+                skin_hash: hash.clone(),
+            },
         })
     }
 
@@ -63,21 +66,26 @@ impl PlayerRenderInput {
         &self,
         cache_manager: &RwLock<MojangCacheManager>,
         client: &reqwest::Client,
-    ) -> Result<(String, Bytes)> {
-        let hash = self.fetch_skin_hash(cache_manager, client).await?;
+    ) -> Result<(CachedSkinHash, Bytes)> {
 
-        let result = cache_manager.read().get_cached_skin(&hash)?;
+        let cached = self
+            .fetch_skin_hash_and_model(cache_manager, client)
+            .await?;
+
+        let skin_hash = cached.get_hash();
+
+        let result = cache_manager.read().get_cached_skin(skin_hash)?;
 
         if let Some(bytes) = result {
-            Ok((hash, Bytes::from(bytes)))
+            Ok((cached, Bytes::from(bytes)))
         } else {
-            let bytes_from_mojang = requests::fetch_skin_bytes_from_mojang(&hash, client).await?;
+            let bytes_from_mojang = requests::fetch_skin_bytes_from_mojang(skin_hash, client).await?;
             {
                 cache_manager
                     .write()
-                    .cache_skin(&hash, &bytes_from_mojang)?;
+                    .cache_skin(skin_hash, &bytes_from_mojang)?;
             }
-            Ok((hash, bytes_from_mojang))
+            Ok((cached, bytes_from_mojang))
         }
     }
 }

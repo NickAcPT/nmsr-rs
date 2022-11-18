@@ -15,6 +15,7 @@ use uuid::Uuid;
 use walkdir::WalkDir;
 
 use crate::manager::RenderMode;
+use crate::mojang::requests::CachedSkinHash;
 use crate::utils::Result;
 
 pub(crate) type RateLimiterType = RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
@@ -22,7 +23,7 @@ pub(crate) type RateLimiterType = RateLimiter<NotKeyed, InMemoryState, DefaultCl
 #[derive(Debug, Clone)]
 struct CachedUuidToSkinHash {
     time: Instant,
-    hash: String,
+    value: CachedSkinHash
 }
 
 #[derive(Debug)]
@@ -165,12 +166,12 @@ impl MojangCacheManager {
         Ok(())
     }
 
-    pub(crate) fn get_cached_uuid_to_skin_hash(&self, uuid: &Uuid) -> Option<String> {
+    pub(crate) fn get_cached_uuid_to_skin_hash(&self, uuid: &Uuid) -> Option<&CachedSkinHash> {
         debug!("Checking cache for {}", uuid);
         if let Some(cached) = self.resolved_uuid_to_skin_hash_cache.get(uuid) {
-            return if cached.time.elapsed() < self.uuid_to_skin_hash_cache_expiry {
+            return if Self::is_cached_uuid_to_skin_hash_expired(cached, self.uuid_to_skin_hash_cache_expiry) {
                 debug!("Found cached hash for {}", uuid);
-                Some(cached.hash.clone())
+                Some(&cached.value)
             } else {
                 debug!("Cached hash for {} expired", uuid);
                 None
@@ -180,13 +181,22 @@ impl MojangCacheManager {
         None
     }
 
-    pub(crate) fn cache_uuid_to_skin_hash(&mut self, uuid: &Uuid, hash: &str) {
+    pub(crate) fn cache_uuid_to_skin_hash_and_model(&mut self, uuid: &Uuid, data: CachedSkinHash) {
+
         self.resolved_uuid_to_skin_hash_cache.insert(
             *uuid,
             CachedUuidToSkinHash {
                 time: Instant::now(),
-                hash: hash.to_owned(),
+                value: data
             },
         );
+    }
+
+    fn is_cached_uuid_to_skin_hash_expired(cache: &CachedUuidToSkinHash, cache_duration: Duration) -> bool {
+        cache.time.elapsed() < cache_duration
+    }
+
+    pub(crate) fn purge_expired_uuid_to_skin_hash_cache(&mut self) {
+        self.resolved_uuid_to_skin_hash_cache.retain(|_, cache| Self::is_cached_uuid_to_skin_hash_expired(&cache, self.uuid_to_skin_hash_cache_expiry));
     }
 }

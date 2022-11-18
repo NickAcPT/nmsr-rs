@@ -74,6 +74,10 @@ async fn main() -> Result<()> {
                 .read()
                 .cleanup_old_files()
                 .expect("Failed to cleanup cache");
+
+            {
+                cache_manager.write().purge_expired_uuid_to_skin_hash_cache();
+            }
             debug!("Cache cleaned up");
         }
     });

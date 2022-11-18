@@ -42,6 +42,28 @@ struct SkinMetadata {
     pub(crate) model: String,
 }
 
+#[derive(Debug, Clone)]
+pub(crate) enum CachedSkinHash {
+    WithoutModel { skin_hash: String },
+    WithModel { skin_hash: String, slim_arms: bool },
+}
+
+impl CachedSkinHash {
+    pub(crate) fn get_hash(&self) -> &String {
+        match self {
+            CachedSkinHash::WithoutModel { skin_hash } => skin_hash,
+            CachedSkinHash::WithModel { skin_hash, .. } => skin_hash,
+        }
+    }
+    
+    pub(crate) fn is_slim_arms(&self) -> bool {
+        match self {
+            CachedSkinHash::WithoutModel { .. } => false,
+            CachedSkinHash::WithModel { slim_arms, .. } => *slim_arms
+        }
+    }
+}
+
 impl GameProfile {
     fn get_textures(&self) -> Result<GameProfileTextures> {
         let textures = self
@@ -77,21 +99,28 @@ async fn get_player_game_profile(client: &Client, id: Uuid) -> Result<GameProfil
     }
 }
 
-pub(crate) async fn get_skin_hash(
+pub(crate) async fn get_skin_hash_and_model(
     client: &Client,
     rate_limiter: &RateLimiterType,
     id: Uuid,
-) -> Result<String> {
+) -> Result<CachedSkinHash> {
     rate_limiter.until_ready().await;
 
     let game_profile = get_player_game_profile(client, id).await?;
     let textures = game_profile.get_textures()?;
-    let url = textures.textures.skin.url;
+    let skin = textures.textures.skin;
+
+    let url = skin.url;
+
+    let slim = skin.metadata.map(|m| m.model == "slim").unwrap_or(false);
 
     // Take only after last slash
     let hash = get_skin_hash_from_url(url)?;
 
-    Ok(hash)
+    Ok(CachedSkinHash::WithModel {
+        skin_hash: hash,
+        slim_arms: slim,
+    })
 }
 
 pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {

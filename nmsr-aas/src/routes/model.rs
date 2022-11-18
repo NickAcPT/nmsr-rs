@@ -35,8 +35,10 @@ impl PlayerRenderInput {
     ) -> Result<String> {
         Ok(match self {
             PlayerRenderInput::PlayerUuid(id) => {
-                let option =
-                    MojangCacheManager::get_cached_uuid_to_skin_hash_from_guard(cache_manager, id);
+                let option = {
+                    let mut guard = cache_manager.write();
+                    guard.get_cached_uuid_to_skin_hash(id)
+                };
 
                 if let Some(cached_hash) = option {
                     cached_hash

@@ -10,22 +10,14 @@ use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter};
 use log::debug;
-use parking_lot::RwLock;
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 use walkdir::WalkDir;
 
 use crate::manager::RenderMode;
-use crate::mojang::caching::SkinHashCacheResult::Hit;
 use crate::utils::Result;
 
 pub(crate) type RateLimiterType = RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
-
-enum SkinHashCacheResult {
-    Hit(String),
-    Miss,
-    Expired,
-}
 
 #[derive(Debug, Clone)]
 struct CachedUuidToSkinHash {
@@ -173,19 +165,20 @@ impl MojangCacheManager {
         Ok(())
     }
 
-    fn get_cached_uuid_to_skin_hash(&self, uuid: &Uuid) -> SkinHashCacheResult {
+    pub(crate) fn get_cached_uuid_to_skin_hash(&mut self, uuid: &Uuid) -> Option<String> {
         debug!("Checking cache for {}", uuid);
         if let Some(cached) = self.resolved_uuid_to_skin_hash_cache.get(uuid) {
             return if cached.time.elapsed() < self.uuid_to_skin_hash_cache_expiry {
                 debug!("Found cached hash for {}", uuid);
-                Hit(cached.hash.clone())
+                Some(cached.hash.clone())
             } else {
                 debug!("Cached hash for {} expired", uuid);
-                SkinHashCacheResult::Expired
+                self.resolved_uuid_to_skin_hash_cache.remove(uuid);
+                None
             };
         }
         debug!("No cached hash for {}", uuid);
-        SkinHashCacheResult::Miss
+        None
     }
 
     pub(crate) fn cache_uuid_to_skin_hash(&mut self, uuid: &Uuid, hash: &str) {
@@ -196,26 +189,5 @@ impl MojangCacheManager {
                 hash: hash.to_owned(),
             },
         );
-    }
-
-    pub(crate) fn get_cached_uuid_to_skin_hash_from_guard(
-        cache_manager: &RwLock<MojangCacheManager>,
-        id: &Uuid,
-    ) -> Option<String> {
-        let manager = cache_manager.read();
-
-        let result = manager.get_cached_uuid_to_skin_hash(id);
-
-        if let Hit(hash) = result {
-            Some(hash)
-        } else if let SkinHashCacheResult::Expired = result {
-            {
-                let mut manager = cache_manager.write();
-                manager.resolved_uuid_to_skin_hash_cache.remove(id);
-            }
-            None
-        } else {
-            None
-        }
     }
 }

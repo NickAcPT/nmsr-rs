@@ -76,7 +76,6 @@ pub(crate) async fn render(
 
     let response = HttpResponse::Ok()
         .content_type("image/png")
-        .append_header(("Access-Control-Allow-Origin", "*"))
         .append_header(CacheControl(vec![
             CacheDirective::Public,
             CacheDirective::MaxAge(cache_config.mojang_profile_request_expiry),

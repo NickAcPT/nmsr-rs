@@ -13,7 +13,7 @@ impl PartsManager {
 
         required_parts
             .chain(model_parts)
-            .filter(|uv| uv.name.contains("Layer") || entry.render_layers)
+            .filter(|uv| !uv.name.contains("Layer") || entry.render_layers)
             .collect()
     }
 

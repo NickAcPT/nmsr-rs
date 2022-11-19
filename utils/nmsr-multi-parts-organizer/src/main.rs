@@ -6,7 +6,7 @@ use walkdir::WalkDir;
 fn main() -> Result<()> {
     let types = ["FullBody", "FrontFull"];
 
-    for x in WalkDir::new("parts") {
+    for x in WalkDir::new("../../../parts") {
         let entry = x?;
         let path = entry.path();
         let file_name = path
@@ -25,7 +25,7 @@ fn main() -> Result<()> {
         if !types.contains(&last_word) {
             continue;
         }
-        let new_parent = Path::new("parts").join(last_word);
+        let new_parent = Path::new("../../../parts").join(last_word);
         // Take all but last word
         let new_file_name = file_name
             .to_str()
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
 
         // Insert new_parent between parts the file name
         let old_path_without_parent = path
-            .strip_prefix("parts")?
+            .strip_prefix("../../../parts")?
             .with_file_name(&new_file_name)
             .with_extension("png");
         let new_path = new_parent.join(old_path_without_parent);

@@ -1,17 +1,19 @@
-use log::debug;
 use std::borrow::Cow;
 #[cfg(not(feature = "lazy_parts"))]
 use std::collections::HashMap;
-use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
-#[cfg(feature = "lazy_parts")]
-use rayon::prelude::*;
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter, EnumString};
 
 use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::vfs::{PhysicalFS, VfsPath};
+#[cfg(feature = "lazy_parts")]
+use {
+    log::debug,
+    rayon::prelude::*,
+    std::io::{BufReader, BufWriter, Write},
+};
 
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::errors::NMSRaaSError::MissingPartManager;

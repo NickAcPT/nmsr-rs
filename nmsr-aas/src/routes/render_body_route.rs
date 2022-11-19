@@ -18,10 +18,17 @@ use crate::{routes::model::PlayerRenderInput, utils::Result};
 
 #[derive(Deserialize, Default)]
 pub(crate) struct RenderData {
-    alex: Option<String>,
-    steve: Option<String>,
-    noshading: Option<String>,
-    nolayers: Option<String>,
+    pub(crate) alex: Option<String>,
+    pub(crate) steve: Option<String>,
+    pub(crate) noshading: Option<String>,
+    pub(crate) nolayers: Option<String>,
+}
+
+#[derive(Debug)]
+pub(crate) struct RenderDataCacheKey {
+    pub(crate) slim_arms: bool,
+    pub(crate) include_shading: bool,
+    pub(crate) include_layers: bool,
 }
 
 #[get("/{type}/{player}")]
@@ -58,16 +65,27 @@ pub(crate) async fn render(
     let slim_arms = hash.is_slim_arms() || skin_info.alex.is_some();
     let slim_arms = slim_arms && skin_info.steve.is_none();
 
+    let cache_key = RenderDataCacheKey {
+        slim_arms,
+        include_shading,
+        include_layers,
+    };
+
     let cached_render = cache_manager
         .read()
-        .get_cached_render(&mode, skin_hash, slim_arms)?;
+        .get_cached_render(&mode, skin_hash, &cache_key)?;
 
     let render_bytes = if let Some(bytes) = cached_render {
         bytes
     } else {
         let skin_image = image::load_from_memory(skin_bytes.chunk())?;
 
-        let entry = RenderingEntry::new(skin_image.into_rgba8(), slim_arms, include_shading, include_layers)?;
+        let entry = RenderingEntry::new(
+            skin_image.into_rgba8(),
+            slim_arms,
+            include_shading,
+            include_layers,
+        )?;
 
         let render = entry.render(parts_manager.borrow())?;
 
@@ -80,9 +98,12 @@ pub(crate) async fn render(
         }
 
         {
-            cache_manager
-                .write()
-                .cache_render(&mode, skin_hash, slim_arms, render_bytes.as_slice())?;
+            cache_manager.write().cache_render(
+                &mode,
+                skin_hash,
+                &cache_key,
+                render_bytes.as_slice(),
+            )?;
         }
 
         render_bytes

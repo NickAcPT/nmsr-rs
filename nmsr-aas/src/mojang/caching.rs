@@ -16,6 +16,7 @@ use walkdir::WalkDir;
 
 use crate::manager::RenderMode;
 use crate::mojang::requests::CachedSkinHash;
+use crate::routes::render_body_route::{RenderDataCacheKey};
 use crate::utils::Result;
 
 pub(crate) type RateLimiterType = RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
@@ -102,11 +103,13 @@ impl MojangCacheManager {
         self.skins.join(hash)
     }
 
-    fn get_cached_render_path(&self, mode: &RenderMode, hash: &String, slim_arms: bool) -> PathBuf {
+    fn get_cached_render_path(&self, mode: &RenderMode, hash: &String, render_data: &RenderDataCacheKey) -> PathBuf {
         self.get_cached_render_mode_path(mode).join(format!(
-            "{}_{}.png",
+            "{}_{}_{}_{}.png",
             hash,
-            if slim_arms { "slim" } else { "classic" },
+            render_data.slim_arms,
+            render_data.include_layers,
+            render_data.include_shading
         ))
     }
 
@@ -136,15 +139,15 @@ impl MojangCacheManager {
         &self,
         mode: &RenderMode,
         hash: &String,
-        slim_arms: bool,
+        render_data: &RenderDataCacheKey,
     ) -> Result<Option<Vec<u8>>> {
         debug!(
-            "Getting cached render for hash {} in mode {}, slim arms: {}",
+            "Getting cached render for hash {} in mode {}, render_data: {:?}",
             hash,
             mode.to_string(),
-            slim_arms
+            render_data
         );
-        let path = self.get_cached_render_path(mode, hash, slim_arms);
+        let path = self.get_cached_render_path(mode, hash, render_data);
         if path.exists() {
             debug!("Found cached render for hash {}", hash);
             Ok(Some(fs::read(path)?))
@@ -158,10 +161,10 @@ impl MojangCacheManager {
         &self,
         mode: &RenderMode,
         hash: &String,
-        slim_arms: bool,
+        render_data: &RenderDataCacheKey,
         bytes: &[u8],
     ) -> Result<()> {
-        let path = self.get_cached_render_path(mode, hash, slim_arms);
+        let path = self.get_cached_render_path(mode, hash, render_data);
         fs::write(path, bytes)?;
         Ok(())
     }

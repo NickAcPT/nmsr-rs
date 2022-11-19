@@ -1,8 +1,9 @@
 use std::borrow::Borrow;
 use std::io::{BufWriter, Cursor};
 
-use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag};
-use actix_web::{get, web, web::Buf, HttpResponse, Responder};
+use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag, CONTENT_TYPE};
+use actix_web::web::Path;
+use actix_web::{get, head, web, web::Buf, HttpResponse, Responder};
 use image::ImageFormat::Png;
 use parking_lot::RwLock;
 use serde::Deserialize;
@@ -40,10 +41,8 @@ pub(crate) async fn render(
     mojang_requests_client: web::Data<reqwest::Client>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {
-    let (mode, player) = path.into_inner();
-    let mode: RenderMode =
-        RenderMode::try_from(mode.as_str()).map_err(|_| NMSRaaSError::InvalidRenderMode(mode))?;
-    let player: PlayerRenderInput = player.try_into()?;
+    let (mode, player) = get_render_data(path)?;
+
     let include_shading = skin_info.noshading.is_none();
     let include_layers = skin_info.nolayers.is_none();
 
@@ -121,4 +120,32 @@ pub(crate) async fn render(
         .body(render_bytes);
 
     Ok(response)
+}
+
+#[head("/{type}/{player}")]
+pub(crate) async fn render_head(
+    path: web::Path<(String, String)>,
+    mojang_requests_client: web::Data<reqwest::Client>,
+    cache_manager: web::Data<RwLock<MojangCacheManager>>,
+) -> Result<impl Responder> {
+    let (_, player) = get_render_data(path)?;
+
+    drop(
+        player
+            .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
+            .await?,
+    );
+
+    Ok(HttpResponse::Ok()
+        .append_header((CONTENT_TYPE, "image/png"))
+        .finish())
+}
+
+fn get_render_data(path: Path<(String, String)>) -> Result<(RenderMode, PlayerRenderInput)> {
+    let (mode, player) = path.into_inner();
+    let mode: RenderMode =
+        RenderMode::try_from(mode.as_str()).map_err(|_| NMSRaaSError::InvalidRenderMode(mode))?;
+    let player: PlayerRenderInput = player.try_into()?;
+
+    Ok((mode, player))
 }

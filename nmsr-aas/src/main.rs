@@ -12,11 +12,12 @@ use parking_lot::RwLock;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 
-use routes::{get_skin_route::get_skin, index_route::index, index_route::head, render_body_route::render};
+use routes::{get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index, render_body_route::render, render_body_route::render_head};
 
 use crate::config::ServerConfiguration;
 use crate::manager::NMSRaaSManager;
 use crate::mojang::caching::MojangCacheManager;
+use crate::routes::index_route::index_head;
 use crate::utils::Result;
 
 mod config;
@@ -99,9 +100,11 @@ async fn main() -> Result<()> {
             .app_data(cache_manager.clone())
             .app_data(cache_config.clone())
             .service(index)
-            .service(head)
+            .service(index_head)
             .service(get_skin)
+            .service(get_skin_head)
             .service(render)
+            .service(render_head)
     });
 
     let tls_config = if let Some(tls) = &config.tls {

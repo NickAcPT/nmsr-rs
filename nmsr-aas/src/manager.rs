@@ -13,9 +13,9 @@ use {
     log::debug,
     rayon::prelude::*,
     std::io::{BufReader, BufWriter, Write},
+    crate::utils::errors::NMSRaaSError,
 };
 
-use crate::utils::errors::NMSRaaSError;
 use crate::utils::errors::NMSRaaSError::MissingPartManager;
 use crate::utils::Result;
 

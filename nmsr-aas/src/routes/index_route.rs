@@ -1,5 +1,4 @@
 use actix_web::{get, head, HttpResponse, Responder};
-use actix_web::http::header::CONTENT_LENGTH;
 use reqwest::header::CONTENT_TYPE;
 
 pub const INDEX_HTML: &str = include_str!("static/index.html");
@@ -12,6 +11,6 @@ pub(crate) async fn index() -> impl Responder {
 }
 
 #[head("/")]
-pub(crate) async fn head() -> impl Responder {
+pub(crate) async fn index_head() -> impl Responder {
     HttpResponse::Ok().append_header((CONTENT_TYPE, "text/html; charset=utf-8")).finish()
 }

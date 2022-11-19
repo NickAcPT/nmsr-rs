@@ -13,6 +13,5 @@ pub(crate) async fn index() -> impl Responder {
 
 #[head("/")]
 pub(crate) async fn head() -> impl Responder {
-    let string = INDEX_HTML.replace("{{commit}}", VERGEN_SHA);
-    HttpResponse::Ok().append_header((CONTENT_LENGTH, string.len())).append_header((CONTENT_TYPE, "text/html; charset=utf-8")).finish()
+    HttpResponse::Ok().append_header((CONTENT_TYPE, "text/html; charset=utf-8")).finish()
 }

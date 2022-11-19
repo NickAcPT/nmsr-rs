@@ -99,7 +99,6 @@ async fn main() -> Result<()> {
             .app_data(cache_manager.clone())
             .app_data(cache_config.clone())
             .service(index)
-            .service(head)
             .service(get_skin)
             .service(render)
     });

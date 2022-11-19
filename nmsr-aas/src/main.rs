@@ -2,6 +2,7 @@ use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::time::Duration;
+use actix_cors::Cors;
 
 use actix_web::rt::time;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
@@ -11,7 +12,7 @@ use parking_lot::RwLock;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 
-use routes::{get_skin_route::get_skin, index_route::index, render_body_route::render};
+use routes::{get_skin_route::get_skin, index_route::index, index_route::head, render_body_route::render};
 
 use crate::config::ServerConfiguration;
 use crate::manager::NMSRaaSManager;
@@ -89,13 +90,16 @@ async fn main() -> Result<()> {
     info!("Starting server...");
 
     let server = HttpServer::new(move || {
+        let cors = Cors::default().allow_any_origin().allow_any_header();
         App::new()
             .wrap(Logger::default())
+            .wrap(cors)
             .app_data(Data::new(manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
             .app_data(cache_manager.clone())
             .app_data(cache_config.clone())
             .service(index)
+            .service(head)
             .service(get_skin)
             .service(render)
     });

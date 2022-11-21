@@ -25,6 +25,8 @@ pub enum NMSRError {
     InvalidUvPoint(Point<u8>),
     #[error("Unspecified NMSR error: {0}")]
     UnspecifiedNMSRError(String),
+    #[error("Ears parse error: {0}")]
+    EarsError(#[from] ears_rs::utils::errors::EarsError),
 }
 
 pub type Result<T> = std::result::Result<T, NMSRError>;

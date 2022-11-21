@@ -1,3 +1,5 @@
+use ears_rs::features::EarsFeatures;
+use ears_rs::parser::EarsParser;
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
 
@@ -8,6 +10,7 @@ pub struct RenderingEntry {
     pub model: PlayerModel,
     pub render_shading: bool,
     pub render_layers: bool,
+    #[cfg(feature = "ears")] pub ears_features: Option<EarsFeatures>
 }
 
 impl RenderingEntry {
@@ -38,6 +41,12 @@ impl RenderingEntry {
     ) -> Result<RenderingEntry> {
         let skin = RenderingEntry::process_skin(skin)?;
 
+        let ears_features = if cfg!(ears) {
+            EarsParser::parse(&skin)?
+        } else {
+            None
+        };
+
         Ok(RenderingEntry {
             skin: skin.convert(),
             model: match slim_arms {
@@ -46,6 +55,7 @@ impl RenderingEntry {
             },
             render_shading,
             render_layers,
+            #[cfg(feature = "ears")] ears_features,
         })
     }
 }

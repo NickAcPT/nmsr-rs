@@ -13,6 +13,8 @@ pub struct PartsManager {
     pub model_parts: Vec<UvImage>,
     pub model_overlays: Vec<UvImage>,
     pub environment_background: Option<UvImage>,
+    #[cfg(feature = "ears")]
+    pub ears_parts_manager: Option<Box<PartsManager>>,
 }
 
 impl PartsManager {
@@ -45,6 +47,8 @@ impl PartsManager {
             model_parts,
             model_overlays,
             environment_background,
+            #[cfg(feature = "ears")]
+            ears_parts_manager: Self::load_ears_parts_manager(root)?,
         })
     }
 
@@ -133,5 +137,16 @@ impl PartsManager {
         } else {
             Ok(None)
         }
+    }
+
+    #[cfg(feature = "ears")]
+    fn load_ears_parts_manager(root: &VfsPath) -> Result<Option<Box<PartsManager>>> {
+        let ears_dir = root.join("ears")?;
+        Ok(if ears_dir.exists()? {
+            let ears_parts_manager = PartsManager::new(&ears_dir)?;
+            Some(Box::new(ears_parts_manager))
+        } else {
+            None
+        })
     }
 }

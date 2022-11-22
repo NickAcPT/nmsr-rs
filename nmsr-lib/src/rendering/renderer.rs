@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use image::{GenericImage, ImageBuffer, Pixel, Rgba};
+use image::{imageops, GenericImage, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 
@@ -37,7 +37,7 @@ impl RenderingEntry {
                 } = uv_pixel
                 {
                     let pixel_channels = applied_uv
-                        .get_pixel_mut(position.0 as u32, position.1 as u32)
+                        .get_pixel_mut(position.x as u32, position.y as u32)
                         .channels_mut();
 
                     for channel_index in 0..4 {
@@ -85,11 +85,11 @@ impl RenderingEntry {
                         depth, position, ..
                     } => Some((
                         depth,
-                        position.0,
-                        position.1,
+                        position.x,
+                        position.y,
                         applied
                             .as_ref()
-                            .map(|a| a.get_pixel(position.0 as u32, position.1 as u32)),
+                            .map(|a| a.get_pixel(position.x as u32, position.y as u32)),
                     )),
                 })
             })
@@ -113,8 +113,8 @@ impl RenderingEntry {
                         ];
 
                         final_image.unsafe_put_pixel(
-                            position.0 as u32,
-                            position.1 as u32,
+                            position.x as u32,
+                            position.y as u32,
                             Rgba(rgba),
                         )
                     }
@@ -128,6 +128,17 @@ impl RenderingEntry {
             if alpha > 0 {
                 final_image.get_pixel_mut(x as u32, y as u32).blend(pixel);
             }
+        }
+
+        if let Some(crop) = parts_manager.get_crop(self) {
+            final_image = imageops::crop(
+                &mut final_image,
+                crop.position.x,
+                crop.position.y,
+                crop.size.width,
+                crop.size.height,
+            )
+            .to_image();
         }
 
         // Return it

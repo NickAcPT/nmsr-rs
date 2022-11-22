@@ -1,21 +1,12 @@
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 
 use image::{Pixel, Rgba};
 #[cfg(feature = "serializable_parts")]
 use serde::{Deserialize, Serialize};
 
+use crate::geometry::Point;
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 use crate::uv::utils::u16_to_u8;
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
-pub struct Point<T: Debug>(pub(crate) T, pub(crate) T);
-
-impl<T: Debug> Display for Point<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({:?}, {:?})", self.0, self.1)
-    }
-}
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
@@ -80,7 +71,10 @@ impl UvImagePixel {
 
         if store_raw_pixels {
             Some(RawPixel {
-                position: Point(x as u16, y as u16),
+                position: Point {
+                    x: x as u16,
+                    y: y as u16
+                },
                 rgba: [
                     u16_to_u8!(channels[0]),
                     u16_to_u8!(channels[1]),
@@ -90,8 +84,14 @@ impl UvImagePixel {
             })
         } else {
             Some(UvPixel {
-                position: Point(x as u16, y as u16),
-                uv: Point(u as u8, v as u8),
+                position: Point {
+                    x: x as u16,
+                    y: y as u16
+                },
+                uv: Point {
+                    x: u as u8,
+                    y: v as u8
+                },
                 depth,
             })
         }

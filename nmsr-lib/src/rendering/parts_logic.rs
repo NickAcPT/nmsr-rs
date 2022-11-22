@@ -1,8 +1,13 @@
+use crate::geometry::Rectangle;
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
 
 impl PartsManager {
+    pub(crate) fn get_crop(&self, entry: &RenderingEntry) -> Option<Rectangle<u32>> {
+        None
+    }
+
     pub(crate) fn get_parts(&self, entry: &RenderingEntry) -> Vec<&UvImage> {
         let required_parts = self.all_parts.iter();
 

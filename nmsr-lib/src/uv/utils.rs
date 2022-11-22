@@ -11,11 +11,11 @@ pub fn apply_uv_map(input: &Rgba16Image, uv: &UvImage) -> Result<Rgba16Image> {
 
     for uv_pixel in &uv.uv_pixels {
         if let UvImagePixel::UvPixel { position, uv, .. } = uv_pixel {
-            let u = position.0;
-            let v = position.1;
+            let u = position.x;
+            let v = position.y;
 
             let pixel = input
-                .get_pixel_checked(uv.0 as u32, uv.1 as u32)
+                .get_pixel_checked(uv.x as u32, uv.y as u32)
                 .ok_or_else(|| NMSRError::InvalidUvPoint(uv.clone()))?;
             image.borrow_mut().put_pixel(u as u32, v as u32, *pixel);
         }

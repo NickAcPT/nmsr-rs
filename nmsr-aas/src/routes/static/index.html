@@ -1,21 +1,22 @@
 <!doctype html>
-<html lang = "en">
+<html lang="en">
 <head>
-    <meta charset = "UTF-8">
-    <meta content = "width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
-          name = "viewport">
-    <meta content = "ie=edge" http-equiv = "X-UA-Compatible">
+    <meta charset="UTF-8">
+    <meta content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+          name="viewport">
+    <meta content="ie=edge" http-equiv="X-UA-Compatible">
     <title>NickAc's Minecraft Skin Renderer</title>
 
-    <meta content = "NickAc's Minecraft Skin Renderer" property = "og:title">
-    <meta content = "A service written in Rust to render Minecraft skins with true perspective."
-          property = "og:description">
-    <meta content = "NMSR" property = "og:site_name">
-    <meta content = '/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832' property = 'og:image'>
-    <meta content = "#d80000" name = "theme-color">
-    <link href = "/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832" rel = "icon" type = "image/png"/>
+    <meta content="NickAc's Minecraft Skin Renderer" property="og:title">
+    <meta content="A service written in Rust to render Minecraft skins with true perspective."
+          property="og:description">
+    <meta content="NMSR" property="og:site_name">
+    <meta content='/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832' property='og:image'>
+    <meta content="#d80000" name="theme-color">
+    <link href="/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832" https: rel="icon" type="image/png"
+    //localhost:8080/>
 
-    <link href = "https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css" rel = "stylesheet">
+    <link href="https://unpkg.com/@picocss/pico@latest/css/pico.classless.min.css" rel="stylesheet">
 
     <style>
         /* Center images in the figure */
@@ -29,6 +30,28 @@
         .endpoint-description-section {
             display: flex;
             justify-content: space-between
+        }
+
+        .body-render {
+            max-height: 512px;
+        }
+
+        .head-render {
+            max-height: 256px;
+        }
+
+        .iso-head-render {
+            max-height: 320px;
+        }
+
+        .face-render {
+            image-rendering: pixelated;
+            max-height: 240px;
+        }
+
+        .skin-render {
+            image-rendering: pixelated;
+            height: 256px;
         }
     </style>
 </head>
@@ -51,11 +74,11 @@
         <h3>Rendering - Query Parameters</h3>
         <p>For all the endpoints that render a Minecraft skin, the following parameters are available for use:</p>
         <figure>
-            <table role = "grid">
+            <table role="grid">
                 <thead>
                 <tr>
-                    <th scope = "col">Parameter Name</th>
-                    <th scope = "col">Description</th>
+                    <th scope="col">Parameter Name</th>
+                    <th scope="col">Description</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -88,7 +111,7 @@
 
     <section>
         <h4>GET <code>/fullbody/{uuid|texture hash}</code> - Render a player's full body</h4>
-        <section class = "endpoint-description-section">
+        <section class="endpoint-description-section">
             <div>
                 <p>Render a player's Minecraft body into a PNG image.</p>
                 <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
@@ -96,40 +119,40 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href = "/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Full body
+                        <a href="/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Full body
                             render of NickAc's
                             current skin</a>
                     </li>
                     <li>
-                        <a href = "/fullbody/c5776379-12a8-4f44-9908-77ceb86064d9">Full body
+                        <a href="/fullbody/c5776379-12a8-4f44-9908-77ceb86064d9">Full body
                             render of Koide's
                             current skin</a>
                     </li>
                     <li>
-                        <a href = "/fullbody/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Full body
+                        <a href="/fullbody/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Full body
                             render of BmqxX's
                             current skin</a>
                     </li>
                     <li>
-                        <a href = "/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">Full
+                        <a href="/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">Full
                             body render of an old skin of BmqxX</a>
                     </li>
                     <li>
-                        <a href = "/fullbody/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">Full
+                        <a href="/fullbody/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">Full
                             body render of an old skin of Koide</a>
                     </li>
                 </ul>
             </div>
 
             <figure>
-                <img alt = "Example of a full body skin render of user NickAc using the Alex model" height = "378px"
-                     src = "/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                <img alt="Example of a full body skin render of user NickAc using the Alex model" class="body-render"
+                     src="/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                 <figcaption>Full body render of NickAc's current skin</figcaption>
             </figure>
             <figure>
-                <img alt = "Example of a full body skin render of an old skin of user BmqxX using the Alex model"
-                     height = "378px"
-                     src = "/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
+                <img alt="Example of a full body skin render of an old skin of user BmqxX using the Alex model"
+                     class="body-render"
+                     src="/fullbody/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
                 <figcaption>Full body render of an old BmqxX's skin</figcaption>
             </figure>
         </section>
@@ -138,7 +161,7 @@
 
     <div>
         <h3>GET <code>/frontfull/{uuid|texture hash}</code> - Render a player's full body in 2D</h3>
-        <section class = "endpoint-description-section">
+        <section class="endpoint-description-section">
             <div>
                 <p>Render a full image of a Minecraft player's body in 2D into a PNG image.</p>
                 <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
@@ -146,23 +169,23 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href = "/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                        <a href="/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                             2D Body render of NickAc's current skin</a>
                     </li>
                     <li>
-                        <a href = "/frontfull/c5776379-12a8-4f44-9908-77ceb86064d9">
+                        <a href="/frontfull/c5776379-12a8-4f44-9908-77ceb86064d9">
                             2D Body render of Koide's current skin</a>
                     </li>
                     <li>
-                        <a href = "/frontfull/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">
+                        <a href="/frontfull/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">
                             2D Body render of BmqxX's current skin</a>
                     </li>
                     <li>
-                        <a href = "/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
+                        <a href="/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
                             2D Body render of an old skin of BmqxX</a>
                     </li>
                     <li>
-                        <a href = "/frontfull/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">
+                        <a href="/frontfull/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">
                             2D Body render of an old skin of Koide</a>
                     </li>
                 </ul>
@@ -170,16 +193,16 @@
 
 
             <figure>
-                <img alt = "Example of a full body skin render of user NickAc using the Alex model" height = "378px"
-                     src = "/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                <img alt="Example of a full body skin render of user NickAc using the Alex model" class="body-render"
+                     src="/frontfull/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                 <figcaption>
                     2D Body render of NickAc's current skin
                 </figcaption>
             </figure>
             <figure>
-                <img alt = "Example of a full body skin render of an old skin of user BmqxX using the Alex model"
-                     height = "378px"
-                     src = "/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
+                <img alt="Example of a full body skin render of an old skin of user BmqxX using the Alex model"
+                     class="body-render"
+                     src="/frontfull/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
                 <figcaption>
                     2D Body render of an old BmqxX's skin
                 </figcaption>
@@ -191,7 +214,7 @@
     <div>
         <h3>GET <code>/fullbodyiso/{uuid|texture hash}</code> - Render a player's full body in true isometric projection
         </h3>
-        <section class = "endpoint-description-section">
+        <section class="endpoint-description-section">
             <div>
                 <p>Render a player's Minecraft body into a PNG image.</p>
                 <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
@@ -199,41 +222,41 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href = "/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                        <a href="/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                             Full body render of
                             NickAc's current skin</a>
                     </li>
                     <li>
-                        <a href = "/fullbodyiso/c5776379-12a8-4f44-9908-77ceb86064d9">
+                        <a href="/fullbodyiso/c5776379-12a8-4f44-9908-77ceb86064d9">
                             Full body render of
                             Koide's current skin</a>
                     </li>
                     <li>
-                        <a href = "/fullbodyiso/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">
+                        <a href="/fullbodyiso/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">
                             Full body render of
                             BmqxX's current skin</a>
                     </li>
                     <li>
-                        <a href = "/fullbodyiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
+                        <a href="/fullbodyiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
                             Full body render of an old skin of BmqxX</a>
                     </li>
                     <li>
-                        <a href = "/fullbodyiso/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">
+                        <a href="/fullbodyiso/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7?alex">
                             Full body render of an old skin of Koide</a>
                     </li>
                 </ul>
             </div>
 
             <figure>
-                <img alt = "Example of a full body skin isometric render of user NickAc using the Alex model"
-                     height = "378px"
-                     src = "/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                <img alt="Example of a full body skin isometric render of user NickAc using the Alex model"
+                     class="body-render"
+                     src="/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                 <figcaption>Full body render of NickAc's current skin</figcaption>
             </figure>
             <figure>
-                <img alt = "Example of a full body skin isometric render of an old skin of user BmqxX using the Alex model"
-                     height = "378px"
-                     src = "/fullbodyiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
+                <img alt="Example of a full body skin isometric render of an old skin of user BmqxX using the Alex model"
+                     class="body-render"
+                     src="/fullbodyiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb?alex">
                 <figcaption>Full body render of an old BmqxX's skin</figcaption>
             </figure>
         </section>
@@ -242,7 +265,7 @@
 
     <div>
         <h3>GET <code>/head/{uuid|texture hash}</code> - Render a player's head</h3>
-        <section class = "endpoint-description-section">
+        <section class="endpoint-description-section">
             <div>
                 <p>Render a player's Minecraft head into a PNG image.</p>
                 <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
@@ -250,24 +273,24 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href = "/head/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Head render of
+                        <a href="/head/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Head render of
                             NickAc's current skin</a>
                     </li>
                     <li>
-                        <a href = "/head/c5776379-12a8-4f44-9908-77ceb86064d9">Head render of Koide's
+                        <a href="/head/c5776379-12a8-4f44-9908-77ceb86064d9">Head render of Koide's
                             current skin</a>
                     </li>
                     <li>
-                        <a href = "/head/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Head render of
+                        <a href="/head/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Head render of
                             BmqxX's current skin</a>
                     </li>
                     <li>
-                        <a href = "/head/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Head
+                        <a href="/head/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Head
                             render of an
                             old skin of BmqxX</a>
                     </li>
                     <li>
-                        <a href = "/head/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Head
+                        <a href="/head/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Head
                             render of
                             an old skin of Koide</a>
                     </li>
@@ -275,14 +298,13 @@
             </div>
 
             <figure>
-                <img alt = "Example of a head render of user NickAc" height = "378px"
-                     src = "/head/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                <img alt="Example of a head render of user NickAc" class="head-render"
+                     src="/head/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                 <figcaption>Head render of NickAc's current skin</figcaption>
             </figure>
             <figure>
-                <img alt = "Example of a head render of an old skin of user BmqxX"
-                     height = "378px"
-                     src = "/head/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
+                <img alt="Example of a head render of an old skin of user BmqxX" class="head-render"
+                     src="/head/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
                 <figcaption>Head render of an old BmqxX's skin</figcaption>
             </figure>
         </section>
@@ -291,7 +313,7 @@
 
     <div>
         <h3>GET <code>/face/{uuid|texture hash}</code> - Render a player's face</h3>
-        <section class = "endpoint-description-section">
+        <section class="endpoint-description-section">
             <div>
                 <p>Render a player's Minecraft face into a PNG image.</p>
                 <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
@@ -299,21 +321,21 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href = "/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">NickAc's Face</a>
+                        <a href="/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">NickAc's Face</a>
                     </li>
                     <li>
-                        <a href = "/face/c5776379-12a8-4f44-9908-77ceb86064d9">Koide's Face</a>
+                        <a href="/face/c5776379-12a8-4f44-9908-77ceb86064d9">Koide's Face</a>
                     </li>
                     <li>
-                        <a href = "/face/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">BmqxX's Face</a>
+                        <a href="/face/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">BmqxX's Face</a>
                     </li>
                     <li>
-                        <a href = "/face/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Face
+                        <a href="/face/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">Face
                             of one of
                             BmqxX's old skin</a>
                     </li>
                     <li>
-                        <a href = "/face/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Face
+                        <a href="/face/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">Face
                             of one of
                             Koide's old skin</a>
                     </li>
@@ -322,15 +344,13 @@
             </div>
 
             <figure>
-                <img alt = "Example of a face rendering of user NickAc"
-                     src = "/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832"
-                     style = "width: 240px; image-rendering: pixelated;">
+                <img alt="Example of a face rendering of user NickAc" class="face-render"
+                     src="/face/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                 <figcaption>Face of NickAc's current skin</figcaption>
             </figure>
             <figure>
-                <img alt = "Example of a face rendering of an old skin of user BmqxX"
-                     src = "/face/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb"
-                     style = "width: 240px; image-rendering: pixelated;">
+                <img alt="Example of a face rendering of an old skin of user BmqxX" class="face-render"
+                     src="/face/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb"">
                 <figcaption>Face of one of BmqxX's old skins</figcaption>
             </figure>
         </section>
@@ -339,7 +359,7 @@
 
     <div>
         <h3>GET <code>/headiso/{uuid|texture hash}</code> - Render a player's head in isometric projection</h3>
-        <section class = "endpoint-description-section">
+        <section class="endpoint-description-section">
             <div>
                 <p>Render a player's Minecraft head into a PNG image.</p>
                 <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
@@ -347,37 +367,36 @@
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href = "/headiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                        <a href="/headiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                             Head render of NickAc's current skin</a>
                     </li>
                     <li>
-                        <a href = "/headiso/c5776379-12a8-4f44-9908-77ceb86064d9">
+                        <a href="/headiso/c5776379-12a8-4f44-9908-77ceb86064d9">
                             Head render of Koide's current skin</a>
                     </li>
                     <li>
-                        <a href = "/headiso/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">
+                        <a href="/headiso/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">
                             Head render of BmqxX's current skin</a>
                     </li>
                     <li>
-                        <a href = "/headiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
+                        <a href="/headiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
                             Head render of an old skin of BmqxX</a>
                     </li>
                     <li>
-                        <a href = "/headiso/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">
+                        <a href="/headiso/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">
                             Head render of an old skin of Koide</a>
                     </li>
                 </ul>
             </div>
 
             <figure>
-                <img alt = "Example of an isometric head render of user NickAc" height = "378px"
-                     src = "/headiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+                <img alt="Example of an isometric head render of user NickAc" class="iso-head-render"
+                     src="/headiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                 <figcaption>Isometric head render of NickAc's current skin</figcaption>
             </figure>
             <figure>
-                <img alt = "Example of a Isometric head render of an old skin of user BmqxX"
-                     height = "378px"
-                     src = "/headiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
+                <img alt="Example of a Isometric head render of an old skin of user BmqxX" class="iso-head-render"
+                     src="/headiso/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
                 <figcaption>Isometric head render of an old BmqxX's skin</figcaption>
             </figure>
         </section>
@@ -385,34 +404,35 @@
     <hr>
 
     <div>
-        <section class = "endpoint-description-section">
+        <section class="endpoint-description-section">
             <div>
                 <h3>GET <code>/skin/{uuid|texture hash}</code> - Fetch a player's skin</h3>
                 <p>Get the player's Minecraft skin returned as a PNG image.</p>
                 <p>You can specify either a valid Minecraft account UUID or a texture hash.</p>
                 <p>You can also specify the <code>?process</code> query parameter to <abbr
-                        title = "Pre-processing includes upgrading legacy skins and stripping the alpha channel from non-transparent areas">pre-process</abbr>
+                        title="Pre-processing includes upgrading legacy skins, stripping the alpha channel
+from non-transparent areas and in the case of Ears instances, it will also erase regions">pre-process</abbr>
                     the skin.
                 </p>
 
                 <p>Examples:</p>
                 <ul>
                     <li>
-                        <a href = "/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Skin of NickAc</a>
+                        <a href="/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">Skin of NickAc</a>
                     </li>
                     <li>
-                        <a href = "/skin/c5776379-12a8-4f44-9908-77ceb86064d9">Skin of Koide</a>
+                        <a href="/skin/c5776379-12a8-4f44-9908-77ceb86064d9">Skin of Koide</a>
                     </li>
                     <li>
-                        <a href = "/skin/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Skin of BmqxX</a>
+                        <a href="/skin/2f32ce5d-645f-401b-81f1-813d1c0e8a5d">Skin of BmqxX</a>
                     </li>
                     <li>
-                        <a href = "/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">An
+                        <a href="/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">An
                             old skin of
                             BmqxX</a>
                     </li>
                     <li>
-                        <a href = "/skin/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">An
+                        <a href="/skin/7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7">An
                             old skin of
                             Koide</a>
                     </li>
@@ -422,15 +442,14 @@
 
             <div>
                 <figure>
-                    <img alt = "Example of the fetching of the current Minecraft skin of user NickAc"
-                         src = "/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832"
-                         style = "width: 240px; image-rendering: pixelated;">
+                    <img alt="Example of the fetching of the current Minecraft skin of user NickAc" class="skin-render"
+                         src="/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
                     <figcaption>Example of NickAc's current skin</figcaption>
                 </figure>
                 <figure>
-                    <img alt = "Example of the fetching of an old Minecraft skin of user with user BmqxX"
-                         src = "/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb"
-                         style = "width: 240px; image-rendering: pixelated;">
+                    <img alt="Example of the fetching of an old Minecraft skin of user with user BmqxX"
+                         class="skin-render"
+                         src="/skin/6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb">
                     <figcaption>Example of one of BmqxX's old skins</figcaption>
                 </figure>
             </div>
@@ -439,9 +458,9 @@
 
     <footer>
         <hr>
-        <small><a href = "https://github.com/NickAcPT/nmsr-rs">This project</a> was made by <a
-                href = "https://github.com/NickAcPT/">NickAcPT</a> and this server is running on commit <a
-                href = "https://github.com/NickAcPT/nmsr-rs/commit/{{commit}}"><code>{{commit}}</code></a>.</small>
+        <small><a href="https://github.com/NickAcPT/nmsr-rs">This project</a> was made by <a
+                href="https://github.com/NickAcPT/">NickAcPT</a> and this server is running on commit <a
+                href="https://github.com/NickAcPT/nmsr-rs/commit/{{commit}}"><code>{{commit}}</code></a>.</small>
     </footer>
 
 </main>

@@ -25,14 +25,17 @@ impl PartsManager {
 
             if let Some(ears_manager) = &self.ears_parts_manager {
                 if let Some(features) = &entry.ears_features {
-                    let ears_parts = get_ears_parts(features).into_iter().map(|p| {
-                        println!("Ears part: {:?}", p);
+                    let ears_parts = get_ears_parts(features, &entry.model).into_iter().map(|p| {
                         ears_manager
                             .all_parts
                             .iter()
-                            .chain(ears_manager.model_parts.iter())
+                            .chain(
+                                ears_manager
+                                    .model_parts
+                                    .iter()
+                                    .filter(|uv| uv.name.starts_with(entry.model.get_dir_name())),
+                            )
                             .find(|uv| {
-                                println!("Ears part: {:?} = {}", uv.name, p);
                                 uv.name == p
                             })
                     });
@@ -57,8 +60,15 @@ impl PartsManager {
         #[cfg(feature = "ears")]
         {
             if let Some(ears_manager) = &self.ears_parts_manager {
-                iterator = Either::Right(iterator.unwrap_left().chain(ears_manager.model_overlays.iter()));
+                iterator = Either::Right(
+                    iterator
+                        .unwrap_left()
+                        .chain(ears_manager.model_overlays.iter()),
+                );
             }
+        }
+        #[cfg(not(feature = "ears"))]{
+            iterator = Either::Right(iterator.unwrap_left());
         }
 
         iterator.find(|other| other.name.eq(&uv.name))

@@ -1,5 +1,8 @@
-#[cfg(feature = "ears")] use ears_rs::features::EarsFeatures;
-use ears_rs::parser::EarsParser;
+#[cfg(feature = "ears")]
+use ears_rs::{
+    features::EarsFeatures,
+    parser::EarsParser
+};
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
 
@@ -10,7 +13,8 @@ pub struct RenderingEntry {
     pub model: PlayerModel,
     pub render_shading: bool,
     pub render_layers: bool,
-    #[cfg(feature = "ears")] pub ears_features: Option<EarsFeatures>
+    #[cfg(feature = "ears")]
+    pub ears_features: Option<EarsFeatures>,
 }
 
 impl RenderingEntry {
@@ -45,11 +49,10 @@ impl RenderingEntry {
         render_shading: bool,
         render_layers: bool,
     ) -> Result<RenderingEntry> {
+        #[cfg(feature = "ears")]
         let ears_features = EarsParser::parse(&skin)?;
 
         let skin = RenderingEntry::process_skin(skin)?;
-
-        println!("ears_features: {:?}", ears_features.is_some());
 
         Ok(RenderingEntry {
             skin: skin.convert(),
@@ -59,7 +62,8 @@ impl RenderingEntry {
             },
             render_shading,
             render_layers,
-            #[cfg(feature = "ears")] ears_features,
+            #[cfg(feature = "ears")]
+            ears_features,
         })
     }
 }

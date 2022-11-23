@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use image::imageops::crop;
-use image::{GenericImage, ImageBuffer, Pixel, Rgba};
+use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 
@@ -72,7 +72,11 @@ impl RenderingEntry {
             .collect();
 
         // Sort by UV name first to make sure it's deterministic
-        applied_uvs.sort_by_key(|(uv, _)| &uv.name);
+        if cfg!(parallel_iters) {
+            applied_uvs.par_sort_by_key(|(uv, _)| &uv.name);
+        } else {
+            applied_uvs.sort_by_key(|(uv, _)| &uv.name)
+        }
 
         // Get the image size
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
@@ -138,6 +142,8 @@ impl RenderingEntry {
     }
 }
 
+const CROP_MARGIN: u32 = 15;
+
 fn crop_image(mut image: Rgba16Image) -> Rgba16Image {
     let mut min_x: u32 = image.width();
     let mut min_y: u32 = image.height();
@@ -155,5 +161,7 @@ fn crop_image(mut image: Rgba16Image) -> Rgba16Image {
         }
     }
 
+    let min_x = min_x.saturating_sub(CROP_MARGIN);
+    let max_x = max_x.saturating_add(CROP_MARGIN);
     crop(&mut image, min_x, min_y, max_x - min_x, max_y - min_y).to_image()
 }

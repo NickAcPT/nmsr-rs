@@ -1,4 +1,4 @@
-use ears_rs::features::EarsFeatures;
+#[cfg(feature = "ears")] use ears_rs::features::EarsFeatures;
 use ears_rs::parser::EarsParser;
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
@@ -18,6 +18,12 @@ impl RenderingEntry {
         // Make sure the skin is 64x64
         let mut skin = ears_rs::utils::legacy_upgrader::upgrade_skin_if_needed(skin)
             .ok_or(NMSRError::LegacySkinUpgradeError)?;
+
+        #[cfg(feature = "ears")]
+        {
+            // If using Ears, process the erase sections specified in the Alfalfa data
+            ears_rs::utils::eraser::process_erase_regions(&mut skin)?;
+        }
 
         // Strip the alpha data from the skin
         ears_rs::utils::alpha::strip_alpha(&mut skin);
@@ -39,13 +45,11 @@ impl RenderingEntry {
         render_shading: bool,
         render_layers: bool,
     ) -> Result<RenderingEntry> {
+        let ears_features = EarsParser::parse(&skin)?;
+
         let skin = RenderingEntry::process_skin(skin)?;
 
-        let ears_features = if cfg!(ears) {
-            EarsParser::parse(&skin)?
-        } else {
-            None
-        };
+        println!("ears_features: {:?}", ears_features.is_some());
 
         Ok(RenderingEntry {
             skin: skin.convert(),

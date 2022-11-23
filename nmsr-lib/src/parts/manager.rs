@@ -94,7 +94,7 @@ impl PartsManager {
             let name: String = dir_entry
                 .filename()
                 .chars()
-                .take_while(|p| !char::is_ascii_digit(p) && !char::is_ascii_punctuation(p))
+                .take_while(|p| (!char::is_ascii_digit(p) && !char::is_ascii_punctuation(p)) || *p == '-')
                 .collect();
 
             let name = format!("{}{}", path_prefix, name);

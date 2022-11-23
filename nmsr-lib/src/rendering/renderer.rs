@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use image::{imageops, GenericImage, ImageBuffer, Pixel, Rgba};
+use image::{GenericImage, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 
@@ -10,9 +10,9 @@ use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::utils::par_iterator_if_enabled;
 use crate::uv::part::UvImagePixel;
+use crate::uv::Rgba16Image;
 use crate::uv::utils::u8_to_u16;
 use crate::uv::uv_magic::UvImage;
-use crate::uv::Rgba16Image;
 
 impl RenderingEntry {
     fn apply_uv_and_overlay(
@@ -128,17 +128,6 @@ impl RenderingEntry {
             if alpha > 0 {
                 final_image.get_pixel_mut(x as u32, y as u32).blend(pixel);
             }
-        }
-
-        if let Some(crop) = parts_manager.get_crop(self) {
-            final_image = imageops::crop(
-                &mut final_image,
-                crop.position.x,
-                crop.position.y,
-                crop.size.width,
-                crop.size.height,
-            )
-            .to_image();
         }
 
         // Return it

@@ -1,7 +1,7 @@
 FROM rust:1.65 as builder
 
 WORKDIR /usr/src/nmsr-aas
-COPY . .
+RUN git clone https://github.com/NickAcPT/nmsr-rs .
 
 RUN apt-get install unzip
 RUN cargo install --bin nmsr-aas --path .

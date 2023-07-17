@@ -9,8 +9,8 @@ use actix_web::web::Bytes;
 use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter};
-use log::debug;
 use strum::IntoEnumIterator;
+use tracing::debug;
 use uuid::Uuid;
 use walkdir::WalkDir;
 

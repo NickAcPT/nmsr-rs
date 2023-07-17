@@ -1,18 +1,39 @@
+use actix_cors::Cors;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 use std::time::Duration;
-use actix_cors::Cors;
 
 use actix_web::rt::time;
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{web::Data, App, HttpServer};
 use clap::Parser;
-use log::{debug, info};
 use parking_lot::RwLock;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
+use tracing::{debug, info};
 
-use routes::{get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index, render_body_route::render, render_body_route::render_head};
+#[cfg(not(feature = "tracing"))]
+use actix_web::middleware::Logger;
+use tracing::level_filters::LevelFilter;
+#[cfg(feature = "tracing")]
+use {
+    opentelemetry::{
+        sdk::{trace, trace::Tracer, Resource},
+        KeyValue,
+    },
+    opentelemetry_otlp::WithExportConfig,
+    tracing_actix_web::TracingLogger,
+    tracing_opentelemetry::OpenTelemetryLayer,
+};
+
+use tracing_subscriber::fmt::format::{Format, Pretty};
+use tracing_subscriber::fmt::Subscriber;
+use tracing_subscriber::FmtSubscriber;
+
+use routes::{
+    get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index,
+    render_body_route::render, render_body_route::render_head,
+};
 
 use crate::config::ServerConfiguration;
 use crate::manager::NMSRaaSManager;
@@ -44,7 +65,12 @@ async fn main() -> Result<()> {
     let config_ref = config.clone().into_inner();
     let cache_config = Data::new(config_ref.cache.clone());
 
-    env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
+    //env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));m
+
+    // Setup the tracing here
+    // What we want to do is basically, if we compile with tracing feature, use opentelemetry tracing
+    // Otherwise, use the default tracing which outputs to stdout
+    setup_tracing_config(&config)?;
 
     info!("Starting NMSRaaS - NickAc's Minecraft Skin Renderer as a Service");
 
@@ -78,7 +104,9 @@ async fn main() -> Result<()> {
                 .expect("Failed to cleanup cache");
 
             {
-                cache_manager.write().purge_expired_uuid_to_skin_hash_cache();
+                cache_manager
+                    .write()
+                    .purge_expired_uuid_to_skin_hash_cache();
             }
             debug!("Cache cleaned up");
         }
@@ -92,8 +120,14 @@ async fn main() -> Result<()> {
 
     let server = HttpServer::new(move || {
         let cors = Cors::default().allow_any_origin().allow_any_header();
+
+        #[cfg(not(feature = "tracing"))]
+        let logger = Logger::default();
+        #[cfg(feature = "tracing")]
+        let logger = TracingLogger::default();
+
         App::new()
-            .wrap(Logger::default())
+            .wrap(logger)
             .wrap(cors)
             .app_data(Data::new(manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
@@ -138,6 +172,8 @@ async fn main() -> Result<()> {
 
     let addr = (config.address.clone(), config.port);
 
+    info!("Binding to {:?}...", &addr);
+
     let server = if let Some(config) = tls_config {
         server.bind_rustls(addr, config)?
     } else {
@@ -146,4 +182,49 @@ async fn main() -> Result<()> {
 
     server.run().await?;
     Ok(())
+}
+
+fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
+    let subscriber = get_tracing_subscriber(config)?;
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
+    Ok(())
+}
+
+#[cfg(not(feature = "tracing"))]
+fn get_tracing_subscriber(
+    _config: &Data<ServerConfiguration>,
+) -> Result<Subscriber<Pretty, Format<Pretty>>> {
+    Ok(FmtSubscriber::builder().pretty().with_max_level(LevelFilter::DEBUG).finish())
+}
+
+#[cfg(feature = "tracing")]
+fn get_tracing_subscriber(
+    config: &Data<ServerConfiguration>,
+) -> Result<Layered<OpenTelemetryLayer<Registry, Tracer>, Registry, Registry>> {
+    // Create a new OpenTelemetry pipeline
+    let tracer = opentelemetry_otlp::new_pipeline()
+        .tracing()
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint(&config.tracing.otel_endpoint),
+        )
+        .with_trace_config(
+            trace::config().with_resource(Resource::new(vec![KeyValue::new(
+                "service.name",
+                (&config.tracing.otel_service_name).clone(),
+            )])),
+        )
+        .install_simple()?;
+
+    // Create a tracing layer with the configured tracer
+    let layer = tracing_opentelemetry::layer().with_tracer(tracer);
+
+    // Use the tracing subscriber `Registry`, or any other subscriber
+    // that impls `LookupSpan`
+    let subscriber = Registry::default().with(layer);
+
+    Ok(subscriber)
 }

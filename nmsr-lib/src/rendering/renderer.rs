@@ -57,6 +57,7 @@ impl RenderingEntry {
         Ok(applied_uv)
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self, parts_manager)))]
     pub fn render(&self, parts_manager: &PartsManager) -> Result<Rgba16Image> {
         // Compute all the parts needed to be rendered
         let all_parts = parts_manager.get_parts(self);

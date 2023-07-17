@@ -17,7 +17,7 @@ use crate::mojang::caching::MojangCacheManager;
 use crate::utils::errors::NMSRaaSError;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Debug)]
 pub(crate) struct RenderData {
     pub(crate) alex: Option<String>,
     pub(crate) steve: Option<String>,
@@ -33,6 +33,7 @@ pub(crate) struct RenderDataCacheKey {
 }
 
 #[get("/{type}/{player}")]
+#[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_config, parts_manager, mojang_requests_client, cache_manager)))]
 pub(crate) async fn render(
     path: web::Path<(String, String)>,
     skin_info: web::Query<RenderData>,

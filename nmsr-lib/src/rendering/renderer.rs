@@ -4,7 +4,7 @@ use image::imageops::crop;
 use image::{GenericImage, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
-use tracing::{instrument, trace_span};
+use tracing::{instrument, info_span};
 
 use crate::errors::NMSRError;
 use crate::errors::Result;
@@ -65,7 +65,7 @@ impl RenderingEntry {
         let all_parts = parts_manager.get_parts(self);
 
         // Apply all the UVs
-        let mut applied_uvs: Vec<_> = trace_span!("apply_uvs").in_scope(|| {
+        let mut applied_uvs: Vec<_> = info_span!("apply_uvs").in_scope(|| {
             par_iterator_if_enabled!(all_parts)
                 .map(|p| {
                     (
@@ -87,7 +87,7 @@ impl RenderingEntry {
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
         let first_uv = first_uv.as_ref()?;
 
-        let _span = trace_span!("collect_pixels").entered();
+        let _span = info_span!("collect_pixels").entered();
         let mut pixels = par_iterator_if_enabled!(applied_uvs)
             .flat_map(|(uv, applied)| {
                 par_iterator_if_enabled!(uv.uv_pixels).flat_map(|pixel| match pixel {
@@ -107,7 +107,7 @@ impl RenderingEntry {
             .collect::<Vec<_>>();
         drop(_span);
 
-        trace_span!("sort_pixels").in_scope(|| {
+        info_span!("sort_pixels").in_scope(|| {
             pixels.sort_by_key(|(depth, _, _, _)| *depth);
         });
 
@@ -116,7 +116,7 @@ impl RenderingEntry {
         let mut final_image: Rgba16Image = ImageBuffer::new(width, height);
 
         if let Some(environment) = &parts_manager.environment_background {
-            let _span = trace_span!("set_environment_background").entered();
+            let _span = info_span!("set_environment_background").entered();
 
             for uv_pixel in &environment.uv_pixels {
                 if let UvImagePixel::RawPixel { position, rgba } = uv_pixel {
@@ -139,7 +139,7 @@ impl RenderingEntry {
         }
 
         {
-            let _span = trace_span!("blend_pixels").entered();
+            let _span = info_span!("blend_pixels").entered();
 
             for (_, x, y, pixel) in pixels {
                 let pixel = pixel?;

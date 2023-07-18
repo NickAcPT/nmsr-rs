@@ -200,7 +200,7 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
 
     // Here, we create a filter that will only debug output messages from our crates and errors from actix
     let fmt_filter =
-        EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=debug,tracing_actix_web=error")
+        EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=trace,tracing_actix_web=trace")
             .expect("Failed to create env filter for fmt");
 
     // Layer for pretty printing and exporting to stdout
@@ -225,13 +225,13 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
                         .with_endpoint(&config.tracing.otel_endpoint),
                 )
                 .with_trace_config(trace::config().with_resource(Resource::new(vec![
-                    KeyValue::new("service.name", (&config.tracing.otel_service_name).clone()),
+                    KeyValue::new("service.name", config.tracing.otel_service_name.clone()),
                 ])))
                 .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
 
         // Here we create a filter that will let through our crates' messages and the ones from actix_web
         let otel_filter =
-            EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=debug,tracing_actix_web=trace")
+            EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=trace,tracing_actix_web=trace")
                 .expect("Failed to create env filter for otel");
 
         // Create a tracing layer

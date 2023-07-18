@@ -17,6 +17,10 @@ base64 = "0.21.0"
 actix-web = { version = "4.2.1", features = ["rustls"] }
 actix-cors = "0.6.4"
 reqwest = { version = "0.11.13", features = ["json", "rustls-tls"], default-features = false }
+
+reqwest-middleware = "0.2.2"
+reqwest-tracing = "0.4.4"
+
 rustls = "0.20.7"
 rustls-pemfile = "1.0.1"
 
@@ -50,7 +54,7 @@ opentelemetry-otlp = { version = "*", optional = true, features = ["tls-roots"] 
 [features]
 lazy_parts = ["nmsr-lib/serializable_parts", "rayon"]
 ears = ["nmsr-lib/ears"]
-tracing = ["dep:tracing-actix-web", "dep:tracing-opentelemetry", "dep:opentelemetry", "dep:opentelemetry-otlp"]
+tracing = ["dep:tracing-actix-web", "dep:tracing-opentelemetry", "dep:opentelemetry", "dep:opentelemetry-otlp", "reqwest-tracing/opentelemetry_0_19"]
 
 [build-dependencies]
 anyhow = { version = "1.0.66" }

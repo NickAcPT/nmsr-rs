@@ -1,5 +1,7 @@
 use actix_web::web::Bytes;
 use parking_lot::RwLock;
+use reqwest_middleware::ClientWithMiddleware;
+use tracing::trace_span;
 
 use crate::mojang::caching::MojangCacheManager;
 use crate::mojang::requests;
@@ -29,10 +31,12 @@ impl TryFrom<String> for PlayerRenderInput {
 }
 
 impl PlayerRenderInput {
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_manager, client, _span), parent = _span))]
     async fn fetch_skin_hash_and_model(
         &self,
         cache_manager: &RwLock<MojangCacheManager>,
-        client: &reqwest::Client,
+        client: &ClientWithMiddleware,
+        _span: &tracing::Span,
     ) -> Result<CachedSkinHash> {
         Ok(match self {
             PlayerRenderInput::PlayerUuid(id) => {
@@ -42,6 +46,8 @@ impl PlayerRenderInput {
                     hash
                 } else {
                     let limiter = {
+                        let _guard_span = trace_span!("read_rate_limiter_acquire").entered();
+
                         let guard = cache_manager.read();
                         guard.rate_limiter.clone()
                     };
@@ -49,7 +55,10 @@ impl PlayerRenderInput {
                         { requests::get_skin_hash_and_model(client, &limiter, *id) }.await?;
 
                     {
+                        let _guard_span = trace_span!("write_rate_limiter_acquire").entered();
                         let mut guard = cache_manager.write();
+                        drop(_guard_span);
+
                         guard.cache_uuid_to_skin_hash_and_model(id, result.clone());
                     }
 
@@ -62,15 +71,16 @@ impl PlayerRenderInput {
         })
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_manager, client)))]
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_manager, client, _span), parent = _span))]
     pub(crate) async fn fetch_skin_bytes(
         &self,
         cache_manager: &RwLock<MojangCacheManager>,
-        client: &reqwest::Client,
+        client: &ClientWithMiddleware,
+        _span: &tracing::Span,
     ) -> Result<(CachedSkinHash, Bytes)> {
 
         let cached = self
-            .fetch_skin_hash_and_model(cache_manager, client)
+            .fetch_skin_hash_and_model(cache_manager, client, &tracing::Span::current())
             .await?;
 
         let skin_hash = cached.get_hash();

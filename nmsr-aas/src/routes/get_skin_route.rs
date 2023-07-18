@@ -1,18 +1,19 @@
 use std::io::{BufWriter, Cursor};
 
-use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag, CONTENT_TYPE};
+use actix_web::{get, head, HttpResponse, Responder, web};
+use actix_web::http::header::{CacheControl, CacheDirective, CONTENT_TYPE, EntityTag, ETag};
 use actix_web::web::Buf;
-use actix_web::{get, web, HttpResponse, Responder, head};
 use image::ImageFormat::Png;
 use parking_lot::RwLock;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::Deserialize;
 use xxhash_rust::xxh3::xxh3_64;
 
 use nmsr_lib::rendering::entry::RenderingEntry;
 
+use crate::{routes::model::PlayerRenderInput, utils::Result};
 use crate::config::CacheConfiguration;
 use crate::mojang::caching::MojangCacheManager;
-use crate::{routes::model::PlayerRenderInput, utils::Result};
 
 #[derive(Deserialize, Default)]
 pub(crate) struct SkinRequest {
@@ -24,14 +25,15 @@ pub(crate) async fn get_skin(
     path: web::Path<String>,
     skin_info: web::Query<SkinRequest>,
     cache_config: web::Data<CacheConfiguration>,
-    mojang_requests_client: web::Data<reqwest::Client>,
+    mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
     let should_process = skin_info.process.is_some();
 
     let (hash, mut skin_bytes) = player
-        .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
+        .fetch_skin_bytes(cache_manager.as_ref(),
+                          mojang_requests_client.as_ref(), &tracing::Span::current())
         .await?;
 
     if should_process {
@@ -64,14 +66,15 @@ pub(crate) async fn get_skin(
 #[head("/skin/{player}")]
 pub(crate) async fn get_skin_head(
     path: web::Path<String>,
-    mojang_requests_client: web::Data<reqwest::Client>,
+    mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
 
     drop(
         player
-            .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
+            .fetch_skin_bytes(cache_manager.as_ref(),
+                              mojang_requests_client.as_ref(), &tracing::Span::current())
             .await?
     );
 

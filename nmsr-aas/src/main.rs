@@ -11,6 +11,8 @@ use actix_web::middleware::Logger;
 use actix_web::rt::time;
 use clap::Parser;
 use parking_lot::RwLock;
+use reqwest_middleware::ClientBuilder;
+use reqwest_tracing::TracingMiddleware;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tracing::{debug, info, info_span};
@@ -117,9 +119,14 @@ async fn main() -> Result<()> {
         }
     });
 
+
     let mojang_requests_client = reqwest::Client::builder()
         .user_agent(format!("NMSR as a Service/{}", env!("CARGO_PKG_VERSION")))
         .build()?;
+
+    let mojang_requests_client = ClientBuilder::new(mojang_requests_client)
+        .with(TracingMiddleware::default())
+        .build();
 
     info!("Starting server...");
 
@@ -234,7 +241,7 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
 
         // Here we create a filter that will let through our crates' messages and the ones from actix_web
         let otel_filter =
-            EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=trace,tracing_actix_web=trace")
+            EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=trace,tracing_actix_web=trace,reqwest_tracing=debug")
                 .expect("Failed to create env filter for otel");
 
         // Create a tracing layer

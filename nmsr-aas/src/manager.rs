@@ -3,18 +3,20 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::Path;
 
-use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter, EnumString};
-use tracing::{debug, instrument};
+use strum::IntoEnumIterator;
+#[cfg(feature = "lazy_parts")]
+use tracing::debug;
+use tracing::instrument;
 
-use nmsr_lib::parts::manager::PartsManager;
-use nmsr_lib::vfs::{PhysicalFS, VfsPath};
 #[cfg(feature = "lazy_parts")]
 use {
+    crate::utils::errors::NMSRaaSError,
     rayon::prelude::*,
     std::io::{BufReader, BufWriter, Write},
-    crate::utils::errors::NMSRaaSError,
 };
+use nmsr_lib::parts::manager::PartsManager;
+use nmsr_lib::vfs::{PhysicalFS, VfsPath};
 
 use crate::utils::errors::NMSRaaSError::MissingPartManager;
 use crate::utils::Result;

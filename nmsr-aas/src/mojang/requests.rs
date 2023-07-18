@@ -1,5 +1,6 @@
 use actix_web::web::Bytes;
-use reqwest::Client;
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -74,7 +75,7 @@ impl GameProfile {
             .find(|property| property.name == "textures")
             .ok_or(NMSRaaSError::MissingTexturesProperty)?;
 
-        let decoded = base64::decode(&textures.value)?;
+        let decoded = STANDARD.decode(&textures.value)?;
         let decoded = String::from_utf8(decoded)?;
 
         Ok(serde_json::from_str(&decoded)?)

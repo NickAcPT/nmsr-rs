@@ -79,6 +79,7 @@ impl GameProfile {
     }
 }
 
+#[cfg_attr(feature = "tracing", tracing::instrument(skip(client)))]
 async fn get_player_game_profile(client: &Client, id: Uuid) -> Result<GameProfile> {
     let response = client
         .get(format!(
@@ -99,6 +100,7 @@ async fn get_player_game_profile(client: &Client, id: Uuid) -> Result<GameProfil
     }
 }
 
+#[cfg_attr(feature = "tracing", tracing::instrument(skip(client, rate_limiter)))]
 pub(crate) async fn get_skin_hash_and_model(
     client: &Client,
     rate_limiter: &RateLimiterType,

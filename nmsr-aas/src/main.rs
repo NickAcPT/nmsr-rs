@@ -26,9 +26,13 @@ use {
     tracing_opentelemetry::OpenTelemetryLayer,
 };
 
-use tracing_subscriber::fmt::format::{Format, Pretty};
-use tracing_subscriber::fmt::Subscriber;
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::{
+    fmt::format::{Format, Pretty},
+    fmt::Subscriber,
+    layer::{Layered, SubscriberExt},
+    FmtSubscriber,
+    Registry
+};
 
 use routes::{
     get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index,
@@ -196,7 +200,10 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
 fn get_tracing_subscriber(
     _config: &Data<ServerConfiguration>,
 ) -> Result<Subscriber<Pretty, Format<Pretty>>> {
-    Ok(FmtSubscriber::builder().pretty().with_max_level(LevelFilter::DEBUG).finish())
+    Ok(FmtSubscriber::builder()
+        .pretty()
+        .with_max_level(LevelFilter::DEBUG)
+        .finish())
 }
 
 #[cfg(feature = "tracing")]

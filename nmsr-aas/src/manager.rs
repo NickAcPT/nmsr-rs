@@ -5,6 +5,7 @@ use std::path::Path;
 
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter, EnumString};
+use tracing::debug;
 
 use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::vfs::{PhysicalFS, VfsPath};

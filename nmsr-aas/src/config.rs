@@ -55,8 +55,6 @@ pub(crate) struct CacheConfiguration {
 #[cfg(feature = "tracing")]
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct TracingConfiguration {
-    // Open telemetry tracing endpoint
-    // Write a description in a doc comment and the field itself
     /// Open telemetry tracing endpoint
     /// This is the endpoint that the tracing data will be sent to.
     pub(crate) otel_endpoint: String,

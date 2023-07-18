@@ -117,6 +117,7 @@ impl MojangCacheManager {
         self.renders_dir.join(mode.to_string())
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self)))]
     pub(crate) fn get_cached_skin(&self, hash: &String) -> Result<Option<Vec<u8>>> {
         debug!("Getting cached skin for hash {}", hash);
         let path = self.get_cached_skin_path(hash);
@@ -135,6 +136,7 @@ impl MojangCacheManager {
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self)))]
     pub(crate) fn get_cached_render(
         &self,
         mode: &RenderMode,
@@ -157,6 +159,7 @@ impl MojangCacheManager {
         }
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self)))]
     pub(crate) fn cache_render(
         &self,
         mode: &RenderMode,
@@ -185,7 +188,6 @@ impl MojangCacheManager {
     }
 
     pub(crate) fn cache_uuid_to_skin_hash_and_model(&mut self, uuid: &Uuid, data: CachedSkinHash) {
-
         self.resolved_uuid_to_skin_hash_cache.insert(
             *uuid,
             CachedUuidToSkinHash {

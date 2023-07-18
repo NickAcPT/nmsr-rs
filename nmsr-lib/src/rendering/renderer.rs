@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use image::imageops::crop;
-use image::{GenericImage, ImageBuffer, Pixel, Rgba};
+use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 use tracing::{instrument, trace_span};
@@ -17,13 +17,16 @@ use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
 
 impl RenderingEntry {
+    #[instrument(level = "trace", skip(parts_manager, uv_image, skin, _span), parent = _span, fields(part = uv_image.name.as_str()))]
     fn apply_uv_and_overlay(
         &self,
         parts_manager: &PartsManager,
         uv_image: &UvImage,
         skin: &Rgba16Image,
+        _span: &tracing::Span,
     ) -> Result<Rgba16Image> {
-        let mut applied_uv = uv_image.apply(skin)?;
+
+        let mut applied_uv = trace_span!("apply_uv", part = uv_image.name.as_str()).in_scope(|| uv_image.apply(skin))?;
 
         if !self.render_shading {
             return Ok(applied_uv);
@@ -32,6 +35,7 @@ impl RenderingEntry {
         let overlay = parts_manager.get_overlay(uv_image);
 
         if let Some(overlay) = overlay {
+            let _span_guard = trace_span!("apply_overlay").entered();
             for uv_pixel in &overlay.uv_pixels {
                 if let UvImagePixel::RawPixel {
                     position,
@@ -65,11 +69,13 @@ impl RenderingEntry {
 
         // Apply all the UVs
         let mut applied_uvs: Vec<_> = trace_span!("apply_uvs").in_scope(|| {
+            let current = tracing::Span::current();
+
             par_iterator_if_enabled!(all_parts)
                 .map(|p| {
                     (
                         p.deref(),
-                        self.apply_uv_and_overlay(parts_manager, p, &self.skin),
+                        self.apply_uv_and_overlay(parts_manager, p, &self.skin, &current),
                     )
                 })
                 .collect()
@@ -86,7 +92,13 @@ impl RenderingEntry {
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
         let first_uv = first_uv.as_ref()?;
 
-        let _span = trace_span!("collect_pixels").entered();
+        #[cfg(not(feature = "parallel_iters"))]
+        let is_parallel = false;
+
+        #[cfg(feature = "parallel_iters")]
+        let is_parallel = true;
+
+        let _span = trace_span!("collect_pixels", parallel = is_parallel).entered();
         let mut pixels = par_iterator_if_enabled!(applied_uvs)
             .flat_map(|(uv, applied)| {
                 par_iterator_if_enabled!(uv.uv_pixels).flat_map(|pixel| match pixel {

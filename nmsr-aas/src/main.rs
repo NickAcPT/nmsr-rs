@@ -2,6 +2,7 @@ use actix_cors::Cors;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
+use std::str::FromStr;
 use std::time::Duration;
 
 use actix_web::rt::time;
@@ -14,11 +15,12 @@ use tracing::{debug, info};
 
 #[cfg(not(feature = "tracing"))]
 use actix_web::middleware::Logger;
-use tracing::level_filters::LevelFilter;
+use tracing::instrument::WithSubscriber;
 #[cfg(feature = "tracing")]
 use {
     opentelemetry::{
-        sdk::{trace, trace::Tracer, Resource},
+        global,
+        sdk::{propagation::TraceContextPropagator, trace, trace::Tracer, Resource},
         KeyValue,
     },
     opentelemetry_otlp::WithExportConfig,
@@ -26,12 +28,19 @@ use {
     tracing_opentelemetry::OpenTelemetryLayer,
 };
 
+use tracing::level_filters::LevelFilter;
 use tracing_subscriber::{
+    fmt,
     fmt::format::{Format, Pretty},
     fmt::Subscriber,
+    EnvFilter, FmtSubscriber,
+};
+
+use tracing_subscriber::fmt::Layer;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{
     layer::{Layered, SubscriberExt},
-    FmtSubscriber,
-    Registry
+    Registry,
 };
 
 use routes::{
@@ -68,8 +77,6 @@ async fn main() -> Result<()> {
     let config = Data::new(config);
     let config_ref = config.clone().into_inner();
     let cache_config = Data::new(config_ref.cache.clone());
-
-    //env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));m
 
     // Setup the tracing here
     // What we want to do is basically, if we compile with tracing feature, use opentelemetry tracing
@@ -185,6 +192,13 @@ async fn main() -> Result<()> {
     };
 
     server.run().await?;
+
+    // Ensure all spans have been shipped.
+    #[cfg(feature = "tracing")]
+    {
+        global::shutdown_tracer_provider();
+    }
+
     Ok(())
 }
 
@@ -209,7 +223,30 @@ fn get_tracing_subscriber(
 #[cfg(feature = "tracing")]
 fn get_tracing_subscriber(
     config: &Data<ServerConfiguration>,
-) -> Result<Layered<OpenTelemetryLayer<Registry, Tracer>, Registry, Registry>> {
+) -> Result<
+    Layered<
+        OpenTelemetryLayer<
+            Layered<
+                EnvFilter,
+                Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
+                Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
+            >,
+            Tracer,
+        >,
+        Layered<
+            EnvFilter,
+            Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
+            Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
+        >,
+        Layered<
+            EnvFilter,
+            Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
+            Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
+        >,
+    >,
+> {
+    global::set_text_map_propagator(TraceContextPropagator::new());
+
     // Create a new OpenTelemetry pipeline
     let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
@@ -224,14 +261,19 @@ fn get_tracing_subscriber(
                 (&config.tracing.otel_service_name).clone(),
             )])),
         )
-        .install_simple()?;
+        .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
 
     // Create a tracing layer with the configured tracer
     let layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
     // Use the tracing subscriber `Registry`, or any other subscriber
     // that impls `LookupSpan`
-    let subscriber = Registry::default().with(layer);
+    let subscriber = Registry::default()
+        // Add the tracing layer
+        .with(fmt::layer().pretty())
+        // Add layer for pretty printing and exporting to stdout
+        .with(EnvFilter::from_str("DEBUG").expect("Failed to create env filter"))
+        .with(layer);
 
     Ok(subscriber)
 }

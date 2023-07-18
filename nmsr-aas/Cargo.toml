@@ -39,12 +39,12 @@ xxhash-rust = { version = "0.8.6", features = ["xxh3"] }
 # Tracing for the win!
 tracing = { version = "0.1.37" }
 # Allows logging to console
-tracing-subscriber = "0.3.17"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 # Allows tracing of actix-web
 tracing-actix-web = { version = "0.7.5", optional = true }
 # Allows tracing to opentelemetry
 tracing-opentelemetry = { version = "0.19.0", optional = true }
-opentelemetry = { version = "0.19.0", optional = true }
+opentelemetry = { version = "0.19.0", optional = true, features = ["rt-tokio-current-thread"] }
 opentelemetry-otlp = { version = "*", optional = true }
 
 [features]

@@ -10,7 +10,7 @@ use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter};
 use strum::IntoEnumIterator;
-use tracing::debug;
+use tracing::{debug, instrument};
 use uuid::Uuid;
 use walkdir::WalkDir;
 
@@ -41,6 +41,8 @@ pub(crate) struct MojangCacheManager {
 }
 
 impl MojangCacheManager {
+
+    #[cfg_attr(feature = "tracing", instrument(level="trace", skip(self)))]
     pub(crate) fn cleanup_old_files(&self) -> Result<()> {
         let now = std::time::SystemTime::now();
 
@@ -117,7 +119,7 @@ impl MojangCacheManager {
         self.renders_dir.join(mode.to_string())
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self)))]
+    #[cfg_attr(feature = "tracing", instrument(level="trace", skip(self)))]
     pub(crate) fn get_cached_skin(&self, hash: &String) -> Result<Option<Vec<u8>>> {
         debug!("Getting cached skin for hash {}", hash);
         let path = self.get_cached_skin_path(hash);
@@ -136,7 +138,7 @@ impl MojangCacheManager {
         Ok(())
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self)))]
+    #[cfg_attr(feature = "tracing", instrument(level="trace", skip(self)))]
     pub(crate) fn get_cached_render(
         &self,
         mode: &RenderMode,
@@ -159,7 +161,7 @@ impl MojangCacheManager {
         }
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self)))]
+    #[cfg_attr(feature = "tracing", instrument(level="trace", skip(self)))]
     pub(crate) fn cache_render(
         &self,
         mode: &RenderMode,

@@ -1,6 +1,7 @@
 use actix_web::web::Bytes;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::mojang::caching::RateLimiterType;
@@ -79,7 +80,7 @@ impl GameProfile {
     }
 }
 
-#[cfg_attr(feature = "tracing", tracing::instrument(skip(client)))]
+#[cfg_attr(feature = "tracing", instrument(level="trace", skip(client)))]
 async fn get_player_game_profile(client: &Client, id: Uuid) -> Result<GameProfile> {
     let response = client
         .get(format!(
@@ -100,7 +101,7 @@ async fn get_player_game_profile(client: &Client, id: Uuid) -> Result<GameProfil
     }
 }
 
-#[cfg_attr(feature = "tracing", tracing::instrument(skip(client, rate_limiter)))]
+#[cfg_attr(feature = "tracing", instrument(level="trace", skip(client, rate_limiter)))]
 pub(crate) async fn get_skin_hash_and_model(
     client: &Client,
     rate_limiter: &RateLimiterType,
@@ -133,6 +134,7 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
         .to_string())
 }
 
+#[cfg_attr(feature = "tracing", tracing::instrument(skip(client)))]
 pub(crate) async fn fetch_skin_bytes_from_mojang(hash: &String, client: &Client) -> Result<Bytes> {
     let response = client
         .get(format!("http://textures.minecraft.net/texture/{}", hash))

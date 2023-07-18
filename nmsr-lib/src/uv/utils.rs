@@ -1,12 +1,10 @@
 use std::borrow::BorrowMut;
-use tracing::instrument;
 
 use crate::errors::{NMSRError, Result};
 use crate::uv::part::UvImagePixel;
 use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
 
-#[instrument(skip(input, uv))]
 pub fn apply_uv_map(input: &Rgba16Image, uv: &UvImage) -> Result<Rgba16Image> {
     // Generate a new image
     let mut image = image::ImageBuffer::new(uv.size.0, uv.size.1);

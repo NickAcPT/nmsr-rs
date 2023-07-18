@@ -62,6 +62,7 @@ impl PlayerRenderInput {
         })
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_manager, client)))]
     pub(crate) async fn fetch_skin_bytes(
         &self,
         cache_manager: &RwLock<MojangCacheManager>,

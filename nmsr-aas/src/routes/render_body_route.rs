@@ -119,7 +119,7 @@ pub(crate) async fn render(
             CacheDirective::Public,
             CacheDirective::MaxAge(cache_config.mojang_profile_request_expiry),
         ]))
-        .append_header(ETag(EntityTag::new_strong(format!("{:x}", hash))))
+        .append_header(ETag(EntityTag::new_strong(format!("{hash:x}"))))
         .body(render_bytes);
 
     Ok(response)
@@ -127,7 +127,7 @@ pub(crate) async fn render(
 
 #[head("/{type}/{player}")]
 pub(crate) async fn render_head(
-    path: web::Path<(String, String)>,
+    path: Path<(String, String)>,
     mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {

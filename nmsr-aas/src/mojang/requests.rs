@@ -86,8 +86,7 @@ impl GameProfile {
 async fn get_player_game_profile(client: &ClientWithMiddleware, id: Uuid) -> Result<GameProfile> {
     let response = client
         .get(format!(
-            "https://sessionserver.mojang.com/session/minecraft/profile/{}",
-            id
+            "https://sessionserver.mojang.com/session/minecraft/profile/{id}"
         ))
         .send()
         .await?;
@@ -139,7 +138,7 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
 #[cfg_attr(feature = "tracing", tracing::instrument(skip(client)))]
 pub(crate) async fn fetch_skin_bytes_from_mojang(hash: &String, client: &ClientWithMiddleware) -> Result<Bytes> {
     let response = client
-        .get(format!("http://textures.minecraft.net/texture/{}", hash))
+        .get(format!("http://textures.minecraft.net/texture/{hash}"))
         .send()
         .await?;
 

@@ -206,6 +206,7 @@ async fn main() -> Result<()> {
 }
 
 fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
+    #[cfg(feature = "tracing")]
     global::set_text_map_propagator(TraceContextPropagator::new());
 
     // Here, we create a filter that will only debug output messages from our crates and errors from actix

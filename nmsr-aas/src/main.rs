@@ -11,7 +11,7 @@ use clap::Parser;
 use parking_lot::RwLock;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
-use tracing::{debug, info};
+use tracing::{debug, info, Level};
 
 #[cfg(not(feature = "tracing"))]
 use actix_web::middleware::Logger;
@@ -29,6 +29,7 @@ use {
 };
 
 use tracing::level_filters::LevelFilter;
+use tracing_actix_web::DefaultRootSpanBuilder;
 use tracing_subscriber::{
     fmt,
     fmt::format::{Format, Pretty},
@@ -42,6 +43,7 @@ use tracing_subscriber::{
     layer::{Layered, SubscriberExt},
     Registry,
 };
+use tracing_subscriber::fmt::writer::MakeWriterExt;
 
 use routes::{
     get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index,
@@ -269,10 +271,10 @@ fn get_tracing_subscriber(
     // Use the tracing subscriber `Registry`, or any other subscriber
     // that impls `LookupSpan`
     let subscriber = Registry::default()
-        // Add the tracing layer
-        .with(fmt::layer().pretty())
         // Add layer for pretty printing and exporting to stdout
-        .with(EnvFilter::from_str("DEBUG").expect("Failed to create env filter"))
+        .with(fmt::layer().pretty())
+        .with(EnvFilter::from_str("none,nmsr_aas=debug,tracing_actix_web=debug,actix_web=debug").expect("Failed to create env filter"))
+        // Add the tracing layer
         .with(layer);
 
     Ok(subscriber)

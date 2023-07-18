@@ -11,39 +11,30 @@ use clap::Parser;
 use parking_lot::RwLock;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
-use tracing::{debug, info, Level};
+use tracing::{debug, info};
 
 #[cfg(not(feature = "tracing"))]
 use actix_web::middleware::Logger;
-use tracing::instrument::WithSubscriber;
+
 #[cfg(feature = "tracing")]
 use {
     opentelemetry::{
         global,
-        sdk::{propagation::TraceContextPropagator, trace, trace::Tracer, Resource},
+        sdk::{propagation::TraceContextPropagator, trace, Resource},
         KeyValue,
     },
     opentelemetry_otlp::WithExportConfig,
     tracing_actix_web::TracingLogger,
-    tracing_opentelemetry::OpenTelemetryLayer,
 };
-
-use tracing::level_filters::LevelFilter;
-use tracing_actix_web::DefaultRootSpanBuilder;
 use tracing_subscriber::{
     fmt,
-    fmt::format::{Format, Pretty},
-    fmt::Subscriber,
-    EnvFilter, FmtSubscriber,
+    EnvFilter, Layer,
 };
 
-use tracing_subscriber::fmt::Layer;
-use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{
-    layer::{Layered, SubscriberExt},
+    layer::{SubscriberExt},
     Registry,
 };
-use tracing_subscriber::fmt::writer::MakeWriterExt;
 
 use routes::{
     get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index,
@@ -205,77 +196,53 @@ async fn main() -> Result<()> {
 }
 
 fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
-    let subscriber = get_tracing_subscriber(config)?;
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-
-    Ok(())
-}
-
-#[cfg(not(feature = "tracing"))]
-fn get_tracing_subscriber(
-    _config: &Data<ServerConfiguration>,
-) -> Result<Subscriber<Pretty, Format<Pretty>>> {
-    Ok(FmtSubscriber::builder()
-        .pretty()
-        .with_max_level(LevelFilter::DEBUG)
-        .finish())
-}
-
-#[cfg(feature = "tracing")]
-fn get_tracing_subscriber(
-    config: &Data<ServerConfiguration>,
-) -> Result<
-    Layered<
-        OpenTelemetryLayer<
-            Layered<
-                EnvFilter,
-                Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
-                Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
-            >,
-            Tracer,
-        >,
-        Layered<
-            EnvFilter,
-            Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
-            Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
-        >,
-        Layered<
-            EnvFilter,
-            Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
-            Layered<Layer<Registry, Pretty, Format<Pretty>>, Registry, Registry>,
-        >,
-    >,
-> {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-    // Create a new OpenTelemetry pipeline
-    let tracer = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint(&config.tracing.otel_endpoint),
-        )
-        .with_trace_config(
-            trace::config().with_resource(Resource::new(vec![KeyValue::new(
-                "service.name",
-                (&config.tracing.otel_service_name).clone(),
-            )])),
-        )
-        .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
+    // Here, we create a filter that will only debug output messages from our crates and errors from actix
+    let fmt_filter =
+        EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=debug,tracing_actix_web=error")
+            .expect("Failed to create env filter for fmt");
 
-    // Create a tracing layer with the configured tracer
-    let layer = tracing_opentelemetry::layer().with_tracer(tracer);
+    // Layer for pretty printing and exporting to stdout
+    let fmt_layer = fmt::layer().pretty().with_filter(fmt_filter);
 
     // Use the tracing subscriber `Registry`, or any other subscriber
     // that impls `LookupSpan`
     let subscriber = Registry::default()
         // Add layer for pretty printing and exporting to stdout
-        .with(fmt::layer().pretty())
-        .with(EnvFilter::from_str("none,nmsr_aas=debug,tracing_actix_web=debug,actix_web=debug").expect("Failed to create env filter"))
-        // Add the tracing layer
-        .with(layer);
+        .with(fmt_layer);
 
-    Ok(subscriber)
+    // Add the tracing layer to the subscriber
+    #[cfg(feature = "tracing")]
+    let subscriber = subscriber.with({
+        // Create a new OpenTelemetry pipeline
+        let otel_tracer =
+            opentelemetry_otlp::new_pipeline()
+                .tracing()
+                .with_exporter(
+                    opentelemetry_otlp::new_exporter()
+                        .tonic()
+                        .with_endpoint(&config.tracing.otel_endpoint),
+                )
+                .with_trace_config(trace::config().with_resource(Resource::new(vec![
+                    KeyValue::new("service.name", (&config.tracing.otel_service_name).clone()),
+                ])))
+                .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
+
+        // Here we create a filter that will let through our crates' messages and the ones from actix_web
+        let otel_filter =
+            EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=debug,tracing_actix_web=trace")
+                .expect("Failed to create env filter for otel");
+
+        // Create a tracing layer
+        let layer = tracing_opentelemetry::layer()
+            .with_tracer(otel_tracer)
+            .with_filter(otel_filter);
+
+        layer
+    });
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
+    Ok(())
 }

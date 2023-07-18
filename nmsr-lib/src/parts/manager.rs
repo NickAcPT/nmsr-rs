@@ -1,5 +1,6 @@
 #[cfg(feature = "serializable_parts")]
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use vfs::VfsPath;
 
 use crate::errors::{NMSRError, Result};
@@ -26,6 +27,7 @@ impl PartsManager {
         Ok(path.is_file()? && name != PartsManager::ENVIRONMENT_BACKGROUND_NAME)
     }
 
+    #[instrument(skip(root))]
     pub fn new(root: &VfsPath) -> Result<PartsManager> {
         let mut all_parts = Vec::<UvImage>::with_capacity(8);
         let mut model_parts = Vec::<UvImage>::with_capacity(8);
@@ -52,6 +54,7 @@ impl PartsManager {
         })
     }
 
+    #[instrument(skip(root, model_parts))]
     fn load_model_specific_parts(
         root: &VfsPath,
         model_parts: &mut Vec<UvImage>,
@@ -72,6 +75,7 @@ impl PartsManager {
         Ok(())
     }
 
+    #[instrument(skip(dir, parts_map))]
     fn load_as_parts(
         dir: &VfsPath,
         parts_map: &mut Vec<UvImage>,

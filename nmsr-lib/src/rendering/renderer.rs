@@ -4,6 +4,7 @@ use image::imageops::crop;
 use image::{GenericImage, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
+use tracing::{instrument, trace_span};
 
 use crate::errors::NMSRError;
 use crate::errors::Result;
@@ -16,6 +17,7 @@ use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
 
 impl RenderingEntry {
+    #[instrument(skip(parts_manager, uv_image, skin))]
     fn apply_uv_and_overlay(
         &self,
         parts_manager: &PartsManager,
@@ -57,20 +59,22 @@ impl RenderingEntry {
         Ok(applied_uv)
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self, parts_manager)))]
+    #[tracing::instrument(skip(parts_manager))]
     pub fn render(&self, parts_manager: &PartsManager) -> Result<Rgba16Image> {
         // Compute all the parts needed to be rendered
         let all_parts = parts_manager.get_parts(self);
 
         // Apply all the UVs
-        let mut applied_uvs: Vec<_> = par_iterator_if_enabled!(all_parts)
-            .map(|p| {
-                (
-                    p.deref(),
-                    self.apply_uv_and_overlay(parts_manager, p, &self.skin),
-                )
-            })
-            .collect();
+        let mut applied_uvs: Vec<_> = trace_span!("apply_uvs").in_scope(|| {
+            par_iterator_if_enabled!(all_parts)
+                .map(|p| {
+                    (
+                        p.deref(),
+                        self.apply_uv_and_overlay(parts_manager, p, &self.skin),
+                    )
+                })
+                .collect()
+        });
 
         // Sort by UV name first to make sure it's deterministic
         if cfg!(parallel_iters) {
@@ -83,6 +87,7 @@ impl RenderingEntry {
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
         let first_uv = first_uv.as_ref()?;
 
+        let _span = trace_span!("collect_pixels").entered();
         let mut pixels = par_iterator_if_enabled!(applied_uvs)
             .flat_map(|(uv, applied)| {
                 par_iterator_if_enabled!(uv.uv_pixels).flat_map(|pixel| match pixel {
@@ -100,14 +105,19 @@ impl RenderingEntry {
                 })
             })
             .collect::<Vec<_>>();
+        drop(_span);
 
-        pixels.sort_by_key(|(depth, _, _, _)| *depth);
+        trace_span!("sort_pixels").in_scope(|| {
+            pixels.sort_by_key(|(depth, _, _, _)| *depth);
+        });
 
         // Merge final image
         let (width, height) = (first_uv.width(), first_uv.height());
         let mut final_image: Rgba16Image = ImageBuffer::new(width, height);
 
         if let Some(environment) = &parts_manager.environment_background {
+            let _span = trace_span!("set_environment_background").entered();
+
             for uv_pixel in &environment.uv_pixels {
                 if let UvImagePixel::RawPixel { position, rgba } = uv_pixel {
                     unsafe {
@@ -128,11 +138,15 @@ impl RenderingEntry {
             }
         }
 
-        for (_, x, y, pixel) in pixels {
-            let pixel = pixel?;
-            let alpha = pixel.0[3];
-            if alpha > 0 {
-                final_image.get_pixel_mut(x as u32, y as u32).blend(pixel);
+        {
+            let _span = trace_span!("blend_pixels").entered();
+
+            for (_, x, y, pixel) in pixels {
+                let pixel = pixel?;
+                let alpha = pixel.0[3];
+                if alpha > 0 {
+                    final_image.get_pixel_mut(x as u32, y as u32).blend(pixel);
+                }
             }
         }
 
@@ -145,6 +159,7 @@ impl RenderingEntry {
 
 const CROP_MARGIN: u32 = 15;
 
+#[tracing::instrument(skip(image))]
 fn crop_image(mut image: Rgba16Image) -> Rgba16Image {
     let mut min_x: u32 = image.width();
     let mut min_y: u32 = image.height();

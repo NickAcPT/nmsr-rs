@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter};
+
 #[cfg(feature = "ears")]
 use ears_rs::{
     features::EarsFeatures,
@@ -15,6 +17,16 @@ pub struct RenderingEntry {
     pub render_layers: bool,
     #[cfg(feature = "ears")]
     pub ears_features: Option<EarsFeatures>,
+}
+
+impl Debug for RenderingEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RenderingEntry")
+            .field("model", &self.model)
+            .field("render_shading", &self.render_shading)
+            .field("render_layers", &self.render_layers)
+            .finish()
+    }
 }
 
 impl RenderingEntry {

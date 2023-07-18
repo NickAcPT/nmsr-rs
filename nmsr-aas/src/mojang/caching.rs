@@ -201,6 +201,7 @@ impl MojangCacheManager {
         cache.time.elapsed() < cache_duration
     }
 
+
     pub(crate) fn purge_expired_uuid_to_skin_hash_cache(&mut self) {
         self.resolved_uuid_to_skin_hash_cache.retain(|_, cache| Self::is_cached_uuid_to_skin_hash_expired(cache, self.uuid_to_skin_hash_cache_expiry));
     }

@@ -5,13 +5,12 @@ use std::path::Path;
 
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter, EnumString};
-use tracing::debug;
+use tracing::{debug, instrument};
 
 use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::vfs::{PhysicalFS, VfsPath};
 #[cfg(feature = "lazy_parts")]
 use {
-    log::debug,
     rayon::prelude::*,
     std::io::{BufReader, BufWriter, Write},
     crate::utils::errors::NMSRaaSError,
@@ -40,6 +39,7 @@ pub(crate) struct NMSRaaSManager {
 }
 
 impl NMSRaaSManager {
+    #[instrument(skip(part_root))]
     fn create_part_manager_for_mode(
         part_root: &VfsPath,
         render_type: &RenderMode,
@@ -59,6 +59,7 @@ impl NMSRaaSManager {
             .ok_or_else(|| MissingPartManager(render_type.clone()))
     }
 
+    #[instrument(skip(part_root))]
     pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
         let part_root: VfsPath = PhysicalFS::new(part_root).into();
         let mut map = HashMap::with_capacity(RenderMode::COUNT);
@@ -106,6 +107,7 @@ impl NMSRaaSManager {
         Ok(lazy_parts_dir.join(render_type.to_string())?)
     }
 
+    #[instrument(skip(part_root))]
     pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
         let part_root = PhysicalFS::new(part_root).into();
         let lazy_parts_dir = Self::get_lazy_parts_directory(&part_root)?;

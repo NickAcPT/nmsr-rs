@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use image::imageops::crop;
-use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Rgba};
+use image::{GenericImage, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 use tracing::{instrument, trace_span};
@@ -82,7 +82,7 @@ impl RenderingEntry {
         });
 
         // Sort by UV name first to make sure it's deterministic
-        if cfg!(parallel_iters) {
+        if cfg!(feature = "parallel_iters") {
             applied_uvs.par_sort_by_key(|(uv, _)| &uv.name);
         } else {
             applied_uvs.sort_by_key(|(uv, _)| &uv.name)
@@ -99,6 +99,7 @@ impl RenderingEntry {
         let is_parallel = true;
 
         let _span = trace_span!("collect_pixels", parallel = is_parallel).entered();
+
         let mut pixels = par_iterator_if_enabled!(applied_uvs)
             .flat_map(|(uv, applied)| {
                 par_iterator_if_enabled!(uv.uv_pixels).flat_map(|pixel| match pixel {
@@ -116,11 +117,16 @@ impl RenderingEntry {
                 })
             })
             .collect::<Vec<_>>();
+
         drop(_span);
 
-        trace_span!("sort_pixels").in_scope(|| {
+        if cfg!(feature = "parallel_iters") {
+            let _guard = trace_span!("parallel_sort_pixels").entered();
+            pixels.par_sort_by_key(|(depth, _, _, _)| *depth);
+        } else {
+            let _guard = trace_span!("sort_pixels").entered();
             pixels.sort_by_key(|(depth, _, _, _)| *depth);
-        });
+        }
 
         // Merge final image
         let (width, height) = (first_uv.width(), first_uv.height());

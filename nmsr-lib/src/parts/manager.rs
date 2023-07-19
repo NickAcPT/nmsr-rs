@@ -1,10 +1,14 @@
 #[cfg(feature = "serializable_parts")]
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "parallel_iters")]
+use rayon::prelude::*;
+
 use tracing::instrument;
 use vfs::VfsPath;
 
 use crate::errors::{NMSRError, Result};
-use crate::utils::open_image_from_vfs;
+use crate::utils::{into_par_iter_if_enabled, open_image_from_vfs};
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16Image};
 
 #[derive(Debug, Clone)]
@@ -106,11 +110,10 @@ impl PartsManager {
             part_entries.push((name, dir_entry));
         }
 
-        let loaded_parts: Vec<_> = part_entries
-            .iter()
-            .map(|(name, entry)| Ok((name, open_image_from_vfs(entry)?.into_rgba16())))
+        let loaded_parts: Vec<_> = into_par_iter_if_enabled!(part_entries)
+            .map(|(name, entry)| Ok((name, open_image_from_vfs(&entry)?.into_rgba16())))
             .map(
-                |result: Result<(&String, Rgba16Image)>| -> Result<UvImage> {
+                |result: Result<(String, Rgba16Image)>| -> Result<UvImage> {
                     let (name, image) = result?;
                     let uv_image = UvImage::new(name.to_owned(), image, store_raw_pixels);
 

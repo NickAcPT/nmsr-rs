@@ -1,8 +1,8 @@
 use std::io::{BufWriter, Cursor};
 
-use actix_web::{get, head, HttpResponse, Responder, web};
-use actix_web::http::header::{CacheControl, CacheDirective, CONTENT_TYPE, EntityTag, ETag};
+use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag, CONTENT_TYPE};
 use actix_web::web::Buf;
+use actix_web::{get, head, web, HttpResponse, Responder};
 use image::ImageFormat::Png;
 use parking_lot::RwLock;
 use reqwest_middleware::ClientWithMiddleware;
@@ -11,9 +11,9 @@ use xxhash_rust::xxh3::xxh3_64;
 
 use nmsr_lib::rendering::entry::RenderingEntry;
 
-use crate::{routes::model::PlayerRenderInput, utils::Result};
 use crate::config::CacheConfiguration;
 use crate::mojang::caching::MojangCacheManager;
+use crate::{routes::model::PlayerRenderInput, utils::Result};
 
 #[derive(Deserialize, Default)]
 pub(crate) struct SkinRequest {
@@ -32,8 +32,11 @@ pub(crate) async fn get_skin(
     let should_process = skin_info.process.is_some();
 
     let (hash, mut skin_bytes) = player
-        .fetch_skin_bytes(cache_manager.as_ref(),
-                          mojang_requests_client.as_ref(), &tracing::Span::current())
+        .fetch_skin_bytes(
+            cache_manager.as_ref(),
+            mojang_requests_client.as_ref(),
+            &tracing::Span::current(),
+        )
         .await?;
 
     if should_process {
@@ -73,9 +76,12 @@ pub(crate) async fn get_skin_head(
 
     drop(
         player
-            .fetch_skin_bytes(cache_manager.as_ref(),
-                              mojang_requests_client.as_ref(), &tracing::Span::current())
-            .await?
+            .fetch_skin_bytes(
+                cache_manager.as_ref(),
+                mojang_requests_client.as_ref(),
+                &tracing::Span::current(),
+            )
+            .await?,
     );
 
     Ok(HttpResponse::Ok()

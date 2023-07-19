@@ -101,7 +101,8 @@ impl PlayerRenderInput {
             let bytes_from_mojang =
                 requests::fetch_skin_bytes_from_mojang(skin_hash, client).await?;
             {
-                let _guard_span = trace_span!(parent: &current_span, "write_cache_acquire").entered();
+                let _guard_span =
+                    trace_span!(parent: &current_span, "write_cache_acquire").entered();
                 let write_guard = cache_manager.write();
                 drop(_guard_span);
 

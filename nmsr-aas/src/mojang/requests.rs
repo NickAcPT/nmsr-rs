@@ -1,6 +1,6 @@
 use actix_web::web::Bytes;
-use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "tracing")]
@@ -59,11 +59,11 @@ impl CachedSkinHash {
             CachedSkinHash::WithModel { skin_hash, .. } => skin_hash,
         }
     }
-    
+
     pub(crate) fn is_slim_arms(&self) -> bool {
         match self {
             CachedSkinHash::WithoutModel { .. } => false,
-            CachedSkinHash::WithModel { slim_arms, .. } => *slim_arms
+            CachedSkinHash::WithModel { slim_arms, .. } => *slim_arms,
         }
     }
 }
@@ -83,7 +83,7 @@ impl GameProfile {
     }
 }
 
-#[cfg_attr(feature = "tracing", instrument(level="trace", skip(client)))]
+#[cfg_attr(feature = "tracing", instrument(level = "trace", skip(client)))]
 async fn get_player_game_profile(client: &ClientWithMiddleware, id: Uuid) -> Result<GameProfile> {
     let response = client
         .get(format!(
@@ -103,7 +103,10 @@ async fn get_player_game_profile(client: &ClientWithMiddleware, id: Uuid) -> Res
     }
 }
 
-#[cfg_attr(feature = "tracing", instrument(level="trace", skip(client, rate_limiter, id)))]
+#[cfg_attr(
+    feature = "tracing",
+    instrument(level = "trace", skip(client, rate_limiter, id))
+)]
 pub(crate) async fn get_skin_hash_and_model(
     client: &ClientWithMiddleware,
     rate_limiter: &RateLimiterType,
@@ -137,7 +140,10 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
 }
 
 #[cfg_attr(feature = "tracing", tracing::instrument(skip(hash, client)))]
-pub(crate) async fn fetch_skin_bytes_from_mojang(hash: &String, client: &ClientWithMiddleware) -> Result<Bytes> {
+pub(crate) async fn fetch_skin_bytes_from_mojang(
+    hash: &String,
+    client: &ClientWithMiddleware,
+) -> Result<Bytes> {
     let response = client
         .get(format!("http://textures.minecraft.net/texture/{hash}"))
         .send()

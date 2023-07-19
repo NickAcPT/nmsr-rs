@@ -10,7 +10,7 @@ use crate::errors::NMSRError;
 use crate::errors::Result;
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
-use crate::utils::{par_iterator_if_enabled};
+use crate::utils::par_iterator_if_enabled;
 use crate::uv::part::UvImagePixel;
 use crate::uv::utils::u8_to_u16;
 use crate::uv::uv_magic::UvImage;
@@ -25,7 +25,6 @@ impl RenderingEntry {
         skin: &Rgba16Image,
         _span: &tracing::Span,
     ) -> Result<Rgba16Image> {
-
         let mut applied_uv = trace_span!("apply_uv").in_scope(|| uv_image.apply(skin))?;
 
         if !self.render_shading {
@@ -62,7 +61,7 @@ impl RenderingEntry {
         Ok(applied_uv)
     }
 
-    #[instrument(level="trace", skip(parts_manager))]
+    #[instrument(level = "trace", skip(parts_manager))]
     pub fn render(&self, parts_manager: &PartsManager) -> Result<Rgba16Image> {
         // Compute all the parts needed to be rendered
         let all_parts = parts_manager.get_parts(self);
@@ -94,9 +93,10 @@ impl RenderingEntry {
 
         let _span = trace_span!("collect_pixels").entered();
 
-        let mut pixels = applied_uvs.iter()
+        let mut pixels = applied_uvs
+            .iter()
             .flat_map(|(uv, applied)| {
-               uv.uv_pixels.iter().flat_map(move |pixel| match pixel {
+                uv.uv_pixels.iter().flat_map(move |pixel| match pixel {
                     UvImagePixel::RawPixel { .. } => None,
                     UvImagePixel::UvPixel {
                         depth, position, ..
@@ -170,7 +170,7 @@ impl RenderingEntry {
 
 const CROP_MARGIN: u32 = 15;
 
-#[instrument(level="trace", skip(image))]
+#[instrument(level = "trace", skip(image))]
 fn crop_image(mut image: Rgba16Image) -> Rgba16Image {
     let mut min_x: u32 = image.width();
     let mut min_y: u32 = image.height();

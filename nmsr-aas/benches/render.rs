@@ -26,13 +26,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     .expect("Failed to create entry");
 
     c.bench_function("fullbody", |b| {
-        b.iter(|| {
-            black_box(
-                black_box(&entry)
-                    .render(black_box(&manager))
-                    .expect("Bruh"),
-            )
-        })
+        b.iter(|| black_box(black_box(&entry).render(black_box(&manager)).expect("Bruh")))
     });
 }
 

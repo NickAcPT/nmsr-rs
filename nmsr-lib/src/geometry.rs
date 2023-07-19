@@ -1,4 +1,5 @@
-#[cfg(feature = "serializable_parts")] use serde::{Deserialize, Serialize};
+#[cfg(feature = "serializable_parts")]
+use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Debug, Clone)]

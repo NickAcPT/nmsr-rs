@@ -1,10 +1,7 @@
 use std::fmt::{Debug, Formatter};
 
 #[cfg(feature = "ears")]
-use ears_rs::{
-    features::EarsFeatures,
-    parser::EarsParser
-};
+use ears_rs::{features::EarsFeatures, parser::EarsParser};
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
 

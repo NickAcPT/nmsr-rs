@@ -31,7 +31,7 @@ impl PartsManager {
         Ok(path.is_file()? && name != PartsManager::ENVIRONMENT_BACKGROUND_NAME)
     }
 
-    #[instrument(level="trace", skip(root))]
+    #[instrument(level = "trace", skip(root))]
     pub fn new(root: &VfsPath) -> Result<PartsManager> {
         let mut all_parts = Vec::<UvImage>::with_capacity(8);
         let mut model_parts = Vec::<UvImage>::with_capacity(8);
@@ -58,7 +58,7 @@ impl PartsManager {
         })
     }
 
-    #[instrument(level="trace", skip(root, model_parts))]
+    #[instrument(level = "trace", skip(root, model_parts))]
     fn load_model_specific_parts(
         root: &VfsPath,
         model_parts: &mut Vec<UvImage>,
@@ -79,7 +79,7 @@ impl PartsManager {
         Ok(())
     }
 
-    #[instrument(level="trace", skip(dir, parts_map))]
+    #[instrument(level = "trace", skip(dir, parts_map))]
     fn load_as_parts(
         dir: &VfsPath,
         parts_map: &mut Vec<UvImage>,
@@ -102,7 +102,9 @@ impl PartsManager {
             let name: String = dir_entry
                 .filename()
                 .chars()
-                .take_while(|p| (!char::is_ascii_digit(p) && !char::is_ascii_punctuation(p)) || *p == '-')
+                .take_while(|p| {
+                    (!char::is_ascii_digit(p) && !char::is_ascii_punctuation(p)) || *p == '-'
+                })
                 .collect();
 
             let name = format!("{path_prefix}{name}");
@@ -112,14 +114,12 @@ impl PartsManager {
 
         let loaded_parts: Vec<_> = into_par_iter_if_enabled!(part_entries)
             .map(|(name, entry)| Ok((name, open_image_from_vfs(&entry)?.into_rgba16())))
-            .map(
-                |result: Result<(String, Rgba16Image)>| -> Result<UvImage> {
-                    let (name, image) = result?;
-                    let uv_image = UvImage::new(name, image, store_raw_pixels);
+            .map(|result: Result<(String, Rgba16Image)>| -> Result<UvImage> {
+                let (name, image) = result?;
+                let uv_image = UvImage::new(name, image, store_raw_pixels);
 
-                    Ok(uv_image)
-                },
-            )
+                Ok(uv_image)
+            })
             .collect();
 
         for part in loaded_parts {

@@ -41,5 +41,5 @@ macro_rules! into_par_iter_if_enabled {
     };
 }
 
-pub(crate) use par_iterator_if_enabled;
 pub(crate) use into_par_iter_if_enabled;
+pub(crate) use par_iterator_if_enabled;

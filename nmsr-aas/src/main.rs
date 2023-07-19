@@ -5,10 +5,10 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use actix_cors::Cors;
-use actix_web::{App, HttpServer, web::Data};
 #[cfg(not(feature = "tracing"))]
 use actix_web::middleware::Logger;
 use actix_web::rt::time;
+use actix_web::{web::Data, App, HttpServer};
 use clap::Parser;
 use parking_lot::RwLock;
 use reqwest_middleware::ClientBuilder;
@@ -16,22 +16,22 @@ use reqwest_tracing::TracingMiddleware;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tracing::{debug, info, info_span};
-use tracing_subscriber::{EnvFilter, fmt, Layer};
+use tracing_subscriber::{fmt, EnvFilter, Layer};
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 
+use routes::{
+    get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index,
+    render_body_route::render, render_body_route::render_head,
+};
 #[cfg(feature = "tracing")]
 use {
     opentelemetry::{
         global,
+        sdk::{propagation::TraceContextPropagator, trace, Resource},
         KeyValue,
-        sdk::{propagation::TraceContextPropagator, Resource, trace},
     },
     opentelemetry_otlp::WithExportConfig,
     tracing_actix_web::TracingLogger,
-};
-use routes::{
-    get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index,
-    render_body_route::render, render_body_route::render_head,
 };
 
 use crate::config::ServerConfiguration;

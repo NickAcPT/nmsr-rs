@@ -1,16 +1,21 @@
 use std::future::{ready, Ready};
 
-use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, HttpMessage};
 use actix_web::http::header::{HeaderName, HeaderValue};
+use actix_web::{
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    Error, HttpMessage,
+};
 use futures_util::future::LocalBoxFuture;
 use tracing_actix_web::RequestId;
 
 pub struct TraceIdHeader;
 
 impl<S, B> Transform<S, ServiceRequest> for TraceIdHeader
-    where S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=Error>,
-          S::Future: 'static,
-          B: 'static, {
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S::Future: 'static,
+    B: 'static,
+{
     type Response = ServiceResponse<B>;
     type Error = Error;
     type Transform = TraceIdHeaderMiddleware<S>;
@@ -27,9 +32,11 @@ pub struct TraceIdHeaderMiddleware<S> {
 }
 
 impl<S, B> Service<ServiceRequest> for TraceIdHeaderMiddleware<S>
-    where S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=Error>,
-          S::Future: 'static,
-          B: 'static, {
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S::Future: 'static,
+    B: 'static,
+{
     type Response = ServiceResponse<B>;
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;

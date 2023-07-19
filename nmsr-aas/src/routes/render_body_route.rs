@@ -34,7 +34,10 @@ pub(crate) struct RenderDataCacheKey {
 }
 
 #[get("/{type}/{player}")]
-#[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_config, parts_manager, mojang_requests_client, cache_manager)))]
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip(cache_config, parts_manager, mojang_requests_client, cache_manager))
+)]
 pub(crate) async fn render(
     path: Path<(String, String)>,
     skin_info: web::Query<RenderData>,
@@ -52,8 +55,11 @@ pub(crate) async fn render(
 
     // Fetch the skin hash, model and skin bytes
     let (hash, skin_bytes) = player
-        .fetch_skin_bytes(cache_manager.as_ref(),
-                          mojang_requests_client.as_ref(), &tracing::Span::current())
+        .fetch_skin_bytes(
+            cache_manager.as_ref(),
+            mojang_requests_client.as_ref(),
+            &tracing::Span::current(),
+        )
         .await?;
 
     // Separate the skin hash from the model
@@ -135,8 +141,11 @@ pub(crate) async fn render_head(
 
     drop(
         player
-            .fetch_skin_bytes(cache_manager.as_ref(), 
-                              mojang_requests_client.as_ref(), &tracing::Span::current())
+            .fetch_skin_bytes(
+                cache_manager.as_ref(),
+                mojang_requests_client.as_ref(),
+                &tracing::Span::current(),
+            )
             .await?,
     );
 

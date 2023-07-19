@@ -1,6 +1,6 @@
+use crate::parts::player_model::PlayerModel;
 use ears_rs::features::data::ear::{EarAnchor, EarMode};
 use ears_rs::features::EarsFeatures;
-use crate::parts::player_model::PlayerModel;
 
 pub(crate) fn get_ears_parts(features: &EarsFeatures, model: &PlayerModel) -> Vec<String> {
     let mut parts = vec![];
@@ -20,7 +20,11 @@ pub(crate) fn get_ears_parts(features: &EarsFeatures, model: &PlayerModel) -> Ve
     }
 
     if features.claws {
-        parts.extend(["LeftLegClaw", "RightLegClaw"].map(|s|s.to_string()).to_vec());
+        parts.extend(
+            ["LeftLegClaw", "RightLegClaw"]
+                .map(|s| s.to_string())
+                .to_vec(),
+        );
 
         parts.push(format!("{}LeftArmClaw", model.get_dir_name()));
         parts.push(format!("{}RightArmClaw", model.get_dir_name()));

@@ -31,7 +31,7 @@ impl TryFrom<String> for PlayerRenderInput {
 }
 
 impl PlayerRenderInput {
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_manager, client, _span), parent = _span))]
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self, cache_manager, client, _span), parent = _span))]
     async fn fetch_skin_hash_and_model(
         &self,
         cache_manager: &RwLock<MojangCacheManager>,

@@ -17,7 +17,7 @@ use crate::uv::uv_magic::UvImage;
 use crate::uv::Rgba16Image;
 
 impl RenderingEntry {
-    #[instrument(level = "trace", skip(parts_manager, uv_image, skin, _span), parent = _span, fields(part = uv_image.name.as_str()))]
+    #[instrument(level = "trace", skip(self, parts_manager, uv_image, skin, _span), parent = _span, fields(part = uv_image.name.as_str()))]
     fn apply_uv_and_overlay(
         &self,
         parts_manager: &PartsManager,

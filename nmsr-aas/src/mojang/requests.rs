@@ -102,7 +102,7 @@ async fn get_player_game_profile(client: &ClientWithMiddleware, id: Uuid) -> Res
     }
 }
 
-#[cfg_attr(feature = "tracing", instrument(level="trace", skip(client, rate_limiter)))]
+#[cfg_attr(feature = "tracing", instrument(level="trace", skip(client, rate_limiter, id)))]
 pub(crate) async fn get_skin_hash_and_model(
     client: &ClientWithMiddleware,
     rate_limiter: &RateLimiterType,

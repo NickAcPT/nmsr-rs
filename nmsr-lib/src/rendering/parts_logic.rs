@@ -7,7 +7,7 @@ use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
 
 impl PartsManager {
-    #[tracing::instrument(level="trace", skip(self))]
+    #[tracing::instrument(level="trace", skip(self, entry))]
     pub(crate) fn get_parts(&self, entry: &RenderingEntry) -> Vec<&UvImage> {
         let required_parts = self.all_parts.iter();
 

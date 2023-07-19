@@ -59,3 +59,10 @@ tracing = ["dep:tracing-actix-web", "dep:tracing-opentelemetry", "dep:openteleme
 
 [build-dependencies]
 vergen = { version = "8.2.1", default-features = false, features = ["git", "gitcl"] }
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "render"
+harness = false

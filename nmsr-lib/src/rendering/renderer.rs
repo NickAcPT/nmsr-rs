@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use image::imageops::crop;
-use image::{GenericImage, ImageBuffer, Pixel, Rgba};
+use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 use tracing::{instrument, trace_span};
@@ -10,7 +10,7 @@ use crate::errors::NMSRError;
 use crate::errors::Result;
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
-use crate::utils::par_iterator_if_enabled;
+use crate::utils::{par_iterator_if_enabled};
 use crate::uv::part::UvImagePixel;
 use crate::uv::utils::u8_to_u16;
 use crate::uv::uv_magic::UvImage;
@@ -92,17 +92,11 @@ impl RenderingEntry {
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
         let first_uv = first_uv.as_ref()?;
 
-        #[cfg(not(feature = "parallel_iters"))]
-        let is_parallel = false;
+        let _span = trace_span!("collect_pixels").entered();
 
-        #[cfg(feature = "parallel_iters")]
-        let is_parallel = true;
-
-        let _span = trace_span!("collect_pixels", parallel = is_parallel).entered();
-
-        let mut pixels = par_iterator_if_enabled!(applied_uvs)
+        let mut pixels = applied_uvs.iter()
             .flat_map(|(uv, applied)| {
-                par_iterator_if_enabled!(uv.uv_pixels).flat_map(|pixel| match pixel {
+               uv.uv_pixels.iter().flat_map(move |pixel| match pixel {
                     UvImagePixel::RawPixel { .. } => None,
                     UvImagePixel::UvPixel {
                         depth, position, ..

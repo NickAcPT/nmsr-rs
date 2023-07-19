@@ -26,7 +26,7 @@ impl RenderingEntry {
         _span: &tracing::Span,
     ) -> Result<Rgba16Image> {
 
-        let mut applied_uv = trace_span!("apply_uv", part = uv_image.name.as_str()).in_scope(|| uv_image.apply(skin))?;
+        let mut applied_uv = trace_span!("apply_uv").in_scope(|| uv_image.apply(skin))?;
 
         if !self.render_shading {
             return Ok(applied_uv);
@@ -125,7 +125,6 @@ impl RenderingEntry {
         // Merge final image
         let (width, height) = (first_uv.width(), first_uv.height());
         let mut final_image: Rgba16Image = ImageBuffer::new(width, height);
-
 
         if let Some(environment) = &parts_manager.environment_background {
             let _span = trace_span!("set_environment_background").entered();

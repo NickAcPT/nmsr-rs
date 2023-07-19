@@ -135,7 +135,7 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
         .to_string())
 }
 
-#[cfg_attr(feature = "tracing", tracing::instrument(skip(client)))]
+#[cfg_attr(feature = "tracing", tracing::instrument(skip(hash, client)))]
 pub(crate) async fn fetch_skin_bytes_from_mojang(hash: &String, client: &ClientWithMiddleware) -> Result<Bytes> {
     let response = client
         .get(format!("http://textures.minecraft.net/texture/{hash}"))

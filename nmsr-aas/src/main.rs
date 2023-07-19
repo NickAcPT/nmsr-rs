@@ -242,7 +242,7 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
 
         // Here we create a filter that will let through our crates' messages and the ones from actix_web
         let otel_filter =
-            EnvFilter::from_str("none,nmsr_aas=debug,nmsr_lib=trace,tracing_actix_web=trace,reqwest_tracing=debug")
+            EnvFilter::from_str("none,nmsr_aas=trace,nmsr_lib=trace,tracing_actix_web=trace,reqwest_tracing=debug")
                 .expect("Failed to create env filter for otel");
 
         // Create a tracing layer

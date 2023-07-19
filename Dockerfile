@@ -4,7 +4,7 @@ WORKDIR /usr/src/nmsr-aas
 RUN git clone https://github.com/NickAcPT/nmsr-rs .
 
 RUN apt-get install unzip
-RUN cargo install --bin nmsr-aas --path .
+RUN cargo install --bin nmsr-aas --features tracing --path .
 RUN wget https://github.com/NickAcPT/nmsr-rs/releases/latest/download/parts.zip
 RUN unzip parts.zip
 

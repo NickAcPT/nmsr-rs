@@ -51,11 +51,12 @@ tracing-actix-web = { version = "0.7.5", optional = true, features = ["opentelem
 tracing-opentelemetry = { version = "0.19.0", optional = true }
 opentelemetry = { version = "0.19.0", optional = true, features = ["rt-tokio-current-thread"] }
 opentelemetry-otlp = { version = "*", optional = true, features = ["tls-roots"] }
+futures-util = { version = "0.3.28", optional = true }
 
 [features]
 lazy_parts = ["nmsr-lib/serializable_parts", "rayon"]
 ears = ["nmsr-lib/ears"]
-tracing = ["dep:tracing-actix-web", "dep:tracing-opentelemetry", "dep:opentelemetry", "dep:opentelemetry-otlp", "reqwest-tracing/opentelemetry_0_19"]
+tracing = ["dep:tracing-actix-web", "dep:tracing-opentelemetry", "dep:opentelemetry", "dep:opentelemetry-otlp", "reqwest-tracing/opentelemetry_0_19", "dep:futures-util"]
 
 [build-dependencies]
 vergen = { version = "8.2.1", default-features = false, features = ["git", "gitcl"] }

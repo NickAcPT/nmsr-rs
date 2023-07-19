@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use image::imageops::crop;
-use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Rgba};
+use image::{GenericImage, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 use tracing::{instrument, trace_span};

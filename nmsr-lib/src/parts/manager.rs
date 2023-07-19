@@ -105,7 +105,7 @@ impl PartsManager {
                 .take_while(|p| (!char::is_ascii_digit(p) && !char::is_ascii_punctuation(p)) || *p == '-')
                 .collect();
 
-            let name = format!("{}{}", path_prefix, name);
+            let name = format!("{path_prefix}{name}");
 
             part_entries.push((name, dir_entry));
         }
@@ -115,7 +115,7 @@ impl PartsManager {
             .map(
                 |result: Result<(String, Rgba16Image)>| -> Result<UvImage> {
                     let (name, image) = result?;
-                    let uv_image = UvImage::new(name.to_owned(), image, store_raw_pixels);
+                    let uv_image = UvImage::new(name, image, store_raw_pixels);
 
                     Ok(uv_image)
                 },

@@ -10,7 +10,9 @@ use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter};
 use strum::IntoEnumIterator;
-use tracing::{debug, instrument};
+use tracing::debug;
+#[cfg(feature = "tracing")]
+use tracing::instrument;
 use uuid::Uuid;
 use walkdir::WalkDir;
 

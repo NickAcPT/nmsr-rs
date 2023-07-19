@@ -16,14 +16,8 @@ use reqwest_tracing::TracingMiddleware;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tracing::{debug, info, info_span};
-use tracing_subscriber::{
-    EnvFilter,
-    fmt, Layer,
-};
-use tracing_subscriber::{
-    layer::SubscriberExt,
-    Registry,
-};
+use tracing_subscriber::{EnvFilter, fmt, Layer};
+use tracing_subscriber::{layer::SubscriberExt, Registry};
 
 #[cfg(feature = "tracing")]
 use {
@@ -119,7 +113,6 @@ async fn main() -> Result<()> {
         }
     });
 
-
     let mojang_requests_client = reqwest::Client::builder()
         .user_agent(format!("NMSR as a Service/{}", env!("CARGO_PKG_VERSION")))
         .build()?;
@@ -138,8 +131,12 @@ async fn main() -> Result<()> {
         #[cfg(feature = "tracing")]
         let logger = TracingLogger::default();
 
-        App::new()
-            .wrap(logger)
+        let app = App::new();
+
+        #[cfg(feature = "tracing")]
+        let app = app.wrap(utils::tracing_headers::TraceIdHeader);
+
+        app.wrap(logger)
             .wrap(cors)
             .app_data(Data::new(manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
@@ -210,9 +207,8 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
     // Here, we create a filter that will only debug output messages from our crates and errors from actix
-    let fmt_filter =
-        EnvFilter::from_str("none,nmsr_aas=info,tracing_actix_web=error")
-            .expect("Failed to create env filter for fmt");
+    let fmt_filter = EnvFilter::from_str("none,nmsr_aas=info,tracing_actix_web=error")
+        .expect("Failed to create env filter for fmt");
 
     // Layer for pretty printing and exporting to stdout
     let fmt_layer = fmt::layer().pretty().with_filter(fmt_filter);
@@ -241,9 +237,10 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
                 .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
 
         // Here we create a filter that will let through our crates' messages and the ones from actix_web
-        let otel_filter =
-            EnvFilter::from_str("none,nmsr_aas=trace,nmsr_lib=trace,tracing_actix_web=trace,reqwest_tracing=debug")
-                .expect("Failed to create env filter for otel");
+        let otel_filter = EnvFilter::from_str(
+            "none,nmsr_aas=trace,nmsr_lib=trace,tracing_actix_web=trace,reqwest_tracing=debug",
+        )
+        .expect("Failed to create env filter for otel");
 
         // Create a tracing layer
         tracing_opentelemetry::layer()

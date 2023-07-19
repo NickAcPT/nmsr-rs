@@ -3,6 +3,7 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "tracing")]
 use tracing::instrument;
 use uuid::Uuid;
 

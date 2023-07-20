@@ -103,21 +103,22 @@ impl RenderingEntry {
                     UvImagePixel::RawPixel { .. } => None,
                     UvImagePixel::UvPixel {
                         depth, position, ..
-                    } => Some((
-                        depth,
-                        position.x,
-                        position.y,
+                    } => {
                         applied
                             .as_ref()
-                            .map(|a| a.get_pixel(position.x as u32, position.y as u32)),
-                    )),
+                            .map(|a| a.get_pixel(position.x as u32, position.y as u32))
+                            .ok()
+                            .filter(|pixel| /* alpha > 0 */ pixel.0[3] > 0)
+                            .map(|pixel| (*depth, position.x, position.y, pixel))
+                    }
                 })
             })
             .collect::<Vec<_>>();
 
         drop(_span);
 
-        #[cfg(feature = "parallel_iters")] {
+        #[cfg(feature = "parallel_iters")]
+        {
             let _guard = trace_span!("parallel_sort_pixels").entered();
             pixels.par_sort_by_key(|(depth, _, _, _)| *depth);
         }
@@ -158,11 +159,7 @@ impl RenderingEntry {
             let _span = trace_span!("blend_pixels").entered();
 
             for (_, x, y, pixel) in pixels {
-                let pixel = pixel?;
-                let alpha = pixel.0[3];
-                if alpha > 0 {
-                    final_image.get_pixel_mut(x as u32, y as u32).blend(pixel);
-                }
+                final_image.get_pixel_mut(x as u32, y as u32).blend(pixel);
             }
         }
 

@@ -81,10 +81,13 @@ impl RenderingEntry {
         });
 
         // Sort by UV name first to make sure it's deterministic
-        if cfg!(feature = "parallel_iters") {
+        #[cfg(feature = "parallel_iters")]
+        {
             applied_uvs.par_sort_by_key(|(uv, _)| &uv.name);
-        } else {
-            applied_uvs.sort_by_key(|(uv, _)| &uv.name)
+        }
+        #[cfg(not(feature = "parallel_iters"))]
+        {
+            applied_uvs.sort_by_key(|(uv, _)| &uv.name);
         }
 
         // Get the image size
@@ -114,10 +117,12 @@ impl RenderingEntry {
 
         drop(_span);
 
-        if cfg!(feature = "parallel_iters") {
+        #[cfg(feature = "parallel_iters")] {
             let _guard = trace_span!("parallel_sort_pixels").entered();
             pixels.par_sort_by_key(|(depth, _, _, _)| *depth);
-        } else {
+        }
+        #[cfg(not(feature = "parallel_iters"))]
+        {
             let _guard = trace_span!("sort_pixels").entered();
             pixels.sort_by_key(|(depth, _, _, _)| *depth);
         }

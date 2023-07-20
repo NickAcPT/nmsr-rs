@@ -18,6 +18,10 @@ pub(crate) struct ServerConfiguration {
 
     /// Cache configuration
     pub(crate) cache: CacheConfiguration,
+
+    /// Tracing configuration
+    #[cfg(feature = "tracing")]
+    pub(crate) tracing: TracingConfiguration,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -48,6 +52,28 @@ pub(crate) struct CacheConfiguration {
     pub(crate) mojang_profile_requests_per_second: u32,
 }
 
+#[cfg(feature = "tracing")]
+#[derive(Debug, Deserialize, Clone)]
+pub(crate) struct TracingConfiguration {
+    /// Open telemetry tracing endpoint
+    /// This is the endpoint that the tracing data will be sent to.
+    pub(crate) otel_endpoint: String,
+
+    /// Open telemetry service name
+    /// This is the name of the service that will be used in the tracing data.
+    pub(crate) otel_service_name: String,
+}
+
+#[cfg(feature = "tracing")]
+impl Default for TracingConfiguration {
+    fn default() -> Self {
+        TracingConfiguration {
+            otel_endpoint: "http://localhost:4317".to_string(),
+            otel_service_name: "nmsr-aas".to_string(),
+        }
+    }
+}
+
 impl Default for ServerConfiguration {
     fn default() -> Self {
         ServerConfiguration {
@@ -56,6 +82,8 @@ impl Default for ServerConfiguration {
             parts: "parts".to_string(),
             tls: None,
             cache: CacheConfiguration::default(),
+            #[cfg(feature = "tracing")]
+            tracing: TracingConfiguration::default(),
         }
     }
 }

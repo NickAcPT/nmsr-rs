@@ -18,7 +18,7 @@ macro_rules! unwrap_or_throw_java_exception {
         match $error_expr {
             Ok(v) => v,
             Err(e) => {
-                crate::error_handling::ErrorAsJavaException::throw_java_exception(&e, &$env);
+                crate::error_handling::ErrorAsJavaException::throw_java_exception(&e, &mut $env);
                 return $default;
             }
         }
@@ -29,11 +29,11 @@ pub(crate) use get_string_or_throw;
 pub(crate) use unwrap_or_throw_java_exception;
 
 pub(crate) trait ErrorAsJavaException {
-    fn throw_java_exception(&self, env: &JNIEnv);
+    fn throw_java_exception(&self, env: &mut JNIEnv);
 }
 
 impl<E: Display + Debug> ErrorAsJavaException for E {
-    fn throw_java_exception(&self, env: &JNIEnv) {
+    fn throw_java_exception(&self, env: &mut JNIEnv) {
         env.throw_new(
             "io/github/nickacpt/jnmsr/natives/JNMSRException",
             format!("{:?}", &self),

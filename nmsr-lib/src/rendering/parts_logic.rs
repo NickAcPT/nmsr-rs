@@ -7,6 +7,7 @@ use crate::rendering::entry::RenderingEntry;
 use crate::uv::uv_magic::UvImage;
 
 impl PartsManager {
+    #[tracing::instrument(level = "trace", skip(self, entry))]
     pub(crate) fn get_parts(&self, entry: &RenderingEntry) -> Vec<&UvImage> {
         let required_parts = self.all_parts.iter();
 
@@ -35,9 +36,7 @@ impl PartsManager {
                                     .iter()
                                     .filter(|uv| uv.name.starts_with(entry.model.get_dir_name())),
                             )
-                            .find(|uv| {
-                                uv.name == p
-                            })
+                            .find(|uv| uv.name == p)
                     });
 
                     for part in ears_parts.flatten() {
@@ -67,7 +66,8 @@ impl PartsManager {
                 );
             }
         }
-        #[cfg(not(feature = "ears"))]{
+        #[cfg(not(feature = "ears"))]
+        {
             iterator = Either::Right(iterator.unwrap_left());
         }
 

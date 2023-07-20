@@ -1,8 +1,8 @@
 use std::io::{BufWriter, Cursor};
 
 use image::ImageOutputFormat::Png;
-use jni::objects::{JClass, JString};
-use jni::sys::{jboolean, jbyteArray, jlong, JNI_TRUE};
+use jni::objects::{JByteArray, JClass, JString};
+use jni::sys::{jboolean, jlong, JNI_TRUE};
 use jni::JNIEnv;
 
 use nmsr_lib::parts::manager::PartsManager;
@@ -14,12 +14,12 @@ use crate::error_handling::{get_string_or_throw, unwrap_or_throw_java_exception}
 mod error_handling;
 
 #[no_mangle]
-pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_initialize(
-    env: JNIEnv,
-    _class: JClass,
-    parts_path: JString,
+pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_initialize<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    parts_path: JString<'local>,
 ) -> jlong {
-    let parts_path = PhysicalFS::new(get_string_or_throw!(env, parts_path, 0));
+    let parts_path = PhysicalFS::new(get_string_or_throw!(env, &parts_path, 0));
 
     let parts_manager =
         unwrap_or_throw_java_exception!(env, PartsManager::new(&parts_path.into()), 0);
@@ -28,13 +28,13 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_initial
 }
 
 #[no_mangle]
-pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_renderSkin(
-    env: JNIEnv,
-    _class: JClass,
+pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_renderSkin<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
     parts_manager_ptr: jlong,
-    skin_bytes: jbyteArray,
+    skin_bytes: JByteArray<'local>,
     slim_arms: jboolean,
-) -> jbyteArray {
+) -> JByteArray<'local> {
     // Create an empty byte array to return if something goes wrong
     let empty_byte_array = env.new_byte_array(0).expect("NewByteArray should not fail");
 
@@ -80,9 +80,9 @@ pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_renderS
 }
 
 #[no_mangle]
-pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_destroy(
-    _env: JNIEnv,
-    _class: JClass,
+pub extern "system" fn Java_io_github_nickacpt_jnmsr_natives_NMSRNatives_destroy<'local>(
+    _env: JNIEnv<'local>,
+    _class: JClass<'local>,
     parts_manager_ptr: jlong,
 ) {
     let _ = unsafe { Box::from_raw(parts_manager_ptr as *mut PartsManager) };

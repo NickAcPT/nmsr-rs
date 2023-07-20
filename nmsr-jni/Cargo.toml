@@ -6,8 +6,8 @@ authors = ["NickAcPT"]
 
 [dependencies]
 nmsr-lib = { path = "../nmsr-lib" }
-jni = "0.20.0"
-image = { version = "0.24.5", features = ["png"], default-features = false }
+jni = "0.21.1"
+image = { version = "0.24.6", features = ["png"], default-features = false }
 
 [lib]
 crate_type = ["cdylib"]

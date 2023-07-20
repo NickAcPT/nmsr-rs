@@ -1,18 +1,38 @@
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
+use std::str::FromStr;
 use std::time::Duration;
-use actix_cors::Cors;
 
+use actix_cors::Cors;
+#[cfg(not(feature = "tracing"))]
+use actix_web::middleware::Logger;
 use actix_web::rt::time;
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{web::Data, App, HttpServer};
 use clap::Parser;
-use log::{debug, info};
 use parking_lot::RwLock;
+use reqwest_middleware::ClientBuilder;
+use reqwest_tracing::TracingMiddleware;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
+use tracing::{debug, info, info_span};
+use tracing_subscriber::{fmt, EnvFilter, Layer};
+use tracing_subscriber::{layer::SubscriberExt, Registry};
 
-use routes::{get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index, render_body_route::render, render_body_route::render_head};
+use routes::{
+    get_skin_route::get_skin, get_skin_route::get_skin_head, index_route::index,
+    render_body_route::render, render_body_route::render_head,
+};
+#[cfg(feature = "tracing")]
+use {
+    opentelemetry::{
+        global,
+        sdk::{propagation::TraceContextPropagator, trace, Resource},
+        KeyValue,
+    },
+    opentelemetry_otlp::WithExportConfig,
+    tracing_actix_web::TracingLogger,
+};
 
 use crate::config::ServerConfiguration;
 use crate::manager::NMSRaaSManager;
@@ -44,11 +64,16 @@ async fn main() -> Result<()> {
     let config_ref = config.clone().into_inner();
     let cache_config = Data::new(config_ref.cache.clone());
 
-    env_logger::init_from_env(env_logger::Env::default().default_filter_or("info"));
+    // Setup the tracing here
+    // What we want to do is basically, if we compile with tracing feature, use opentelemetry tracing
+    // Otherwise, use the default tracing which outputs to stdout
+    setup_tracing_config(&config)?;
+
+    let server_init_span = info_span!("NMSRaaS init", config = ?config.clone()).entered();
 
     info!("Starting NMSRaaS - NickAc's Minecraft Skin Renderer as a Service");
 
-    debug!("Loading parts manager...");
+    info!("Loading parts manager...");
     let start = std::time::Instant::now();
     let manager = NMSRaaSManager::new(&config.parts)?;
     info!("Parts manager loaded in {}ms", start.elapsed().as_millis());
@@ -71,6 +96,8 @@ async fn main() -> Result<()> {
         loop {
             interval.tick().await;
 
+            let _span = info_span!("clean_cache").entered();
+
             debug!("Cleaning up cache...");
             cache_manager
                 .read()
@@ -78,7 +105,9 @@ async fn main() -> Result<()> {
                 .expect("Failed to cleanup cache");
 
             {
-                cache_manager.write().purge_expired_uuid_to_skin_hash_cache();
+                cache_manager
+                    .write()
+                    .purge_expired_uuid_to_skin_hash_cache();
             }
             debug!("Cache cleaned up");
         }
@@ -88,12 +117,26 @@ async fn main() -> Result<()> {
         .user_agent(format!("NMSR as a Service/{}", env!("CARGO_PKG_VERSION")))
         .build()?;
 
+    let mojang_requests_client = ClientBuilder::new(mojang_requests_client)
+        .with(TracingMiddleware::default())
+        .build();
+
     info!("Starting server...");
 
     let server = HttpServer::new(move || {
         let cors = Cors::default().allow_any_origin().allow_any_header();
-        App::new()
-            .wrap(Logger::default())
+
+        #[cfg(not(feature = "tracing"))]
+        let logger = Logger::default();
+        #[cfg(feature = "tracing")]
+        let logger = TracingLogger::default();
+
+        let app = App::new();
+
+        #[cfg(feature = "tracing")]
+        let app = app.wrap(utils::tracing_headers::TraceIdHeader);
+
+        app.wrap(logger)
             .wrap(cors)
             .app_data(Data::new(manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
@@ -138,12 +181,74 @@ async fn main() -> Result<()> {
 
     let addr = (config.address.clone(), config.port);
 
+    info!("Binding to {:?}...", &addr);
+
     let server = if let Some(config) = tls_config {
         server.bind_rustls(addr, config)?
     } else {
         server.bind(addr)?
     };
 
+    drop(server_init_span);
+
     server.run().await?;
+
+    // Ensure all spans have been shipped.
+    #[cfg(feature = "tracing")]
+    {
+        global::shutdown_tracer_provider();
+    }
+
+    Ok(())
+}
+
+fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
+    #[cfg(feature = "tracing")]
+    global::set_text_map_propagator(TraceContextPropagator::new());
+
+    // Here, we create a filter that will only debug output messages from our crates and errors from actix
+    let fmt_filter = EnvFilter::from_str("none,nmsr_aas=info,tracing_actix_web=error")
+        .expect("Failed to create env filter for fmt");
+
+    // Layer for pretty printing and exporting to stdout
+    let fmt_layer = fmt::layer().pretty().with_filter(fmt_filter);
+
+    // Use the tracing subscriber `Registry`, or any other subscriber
+    // that impls `LookupSpan`
+    let subscriber = Registry::default()
+        // Add layer for pretty printing and exporting to stdout
+        .with(fmt_layer);
+
+    // Add the tracing layer to the subscriber
+    #[cfg(feature = "tracing")]
+    let subscriber = subscriber.with({
+        // Create a new OpenTelemetry pipeline
+        let otel_tracer =
+            opentelemetry_otlp::new_pipeline()
+                .tracing()
+                .with_exporter(
+                    opentelemetry_otlp::new_exporter()
+                        .tonic()
+                        .with_endpoint(&config.tracing.otel_endpoint),
+                )
+                .with_trace_config(trace::config().with_resource(Resource::new(vec![
+                    KeyValue::new("service.name", config.tracing.otel_service_name.clone()),
+                ])))
+                .install_batch(opentelemetry::runtime::TokioCurrentThread)?;
+
+        // Here we create a filter that will let through our crates' messages and the ones from actix_web
+        let otel_filter = EnvFilter::from_str(
+            "none,nmsr_aas=trace,nmsr_lib=trace,tracing_actix_web=trace,reqwest_tracing=debug",
+        )
+        .expect("Failed to create env filter for otel");
+
+        // Create a tracing layer
+        tracing_opentelemetry::layer()
+            .with_tracer(otel_tracer)
+            .with_filter(otel_filter)
+    });
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
     Ok(())
 }

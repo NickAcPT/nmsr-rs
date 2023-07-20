@@ -6,6 +6,7 @@ use actix_web::web::Path;
 use actix_web::{get, head, web, web::Buf, HttpResponse, Responder};
 use image::ImageFormat::Png;
 use parking_lot::RwLock;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::Deserialize;
 use xxhash_rust::xxh3::xxh3_64;
 
@@ -17,7 +18,7 @@ use crate::mojang::caching::MojangCacheManager;
 use crate::utils::errors::NMSRaaSError;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Debug)]
 pub(crate) struct RenderData {
     pub(crate) alex: Option<String>,
     pub(crate) steve: Option<String>,
@@ -33,12 +34,16 @@ pub(crate) struct RenderDataCacheKey {
 }
 
 #[get("/{type}/{player}")]
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip(cache_config, parts_manager, mojang_requests_client, cache_manager))
+)]
 pub(crate) async fn render(
-    path: web::Path<(String, String)>,
+    path: Path<(String, String)>,
     skin_info: web::Query<RenderData>,
     cache_config: web::Data<CacheConfiguration>,
     parts_manager: web::Data<NMSRaaSManager>,
-    mojang_requests_client: web::Data<reqwest::Client>,
+    mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {
     let (mode, player) = get_render_data(path)?;
@@ -50,7 +55,11 @@ pub(crate) async fn render(
 
     // Fetch the skin hash, model and skin bytes
     let (hash, skin_bytes) = player
-        .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
+        .fetch_skin_bytes(
+            cache_manager.as_ref(),
+            mojang_requests_client.as_ref(),
+            &tracing::Span::current(),
+        )
         .await?;
 
     // Separate the skin hash from the model
@@ -116,7 +125,7 @@ pub(crate) async fn render(
             CacheDirective::Public,
             CacheDirective::MaxAge(cache_config.mojang_profile_request_expiry),
         ]))
-        .append_header(ETag(EntityTag::new_strong(format!("{:x}", hash))))
+        .append_header(ETag(EntityTag::new_strong(format!("{hash:x}"))))
         .body(render_bytes);
 
     Ok(response)
@@ -124,15 +133,19 @@ pub(crate) async fn render(
 
 #[head("/{type}/{player}")]
 pub(crate) async fn render_head(
-    path: web::Path<(String, String)>,
-    mojang_requests_client: web::Data<reqwest::Client>,
+    path: Path<(String, String)>,
+    mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
 ) -> Result<impl Responder> {
     let (_, player) = get_render_data(path)?;
 
     drop(
         player
-            .fetch_skin_bytes(cache_manager.as_ref(), mojang_requests_client.as_ref())
+            .fetch_skin_bytes(
+                cache_manager.as_ref(),
+                mojang_requests_client.as_ref(),
+                &tracing::Span::current(),
+            )
             .await?,
     );
 

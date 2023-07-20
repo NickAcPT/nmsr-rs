@@ -73,7 +73,7 @@ impl UvImagePixel {
             Some(RawPixel {
                 position: Point {
                     x: x as u16,
-                    y: y as u16
+                    y: y as u16,
                 },
                 rgba: [
                     u16_to_u8!(channels[0]),
@@ -86,11 +86,11 @@ impl UvImagePixel {
             Some(UvPixel {
                 position: Point {
                     x: x as u16,
-                    y: y as u16
+                    y: y as u16,
                 },
                 uv: Point {
                     x: u as u8,
-                    y: v as u8
+                    y: v as u8,
                 },
                 depth,
             })

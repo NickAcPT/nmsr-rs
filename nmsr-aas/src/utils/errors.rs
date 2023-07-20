@@ -1,3 +1,5 @@
+#[cfg(feature = "tracing")]
+use opentelemetry::trace::TraceError;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 
@@ -51,6 +53,11 @@ pub(crate) enum NMSRaaSError {
     TomlDecodeError(#[from] toml::de::Error),
     #[error("Bincode Error: {0}")]
     BincodeError(#[from] Box<bincode::ErrorKind>),
+    #[cfg(feature = "tracing")]
+    #[error("Trace error: {0}")]
+    TraceError(#[from] TraceError),
+    #[error("Reqwest middleware error: {0}")]
+    ReqwestMiddlewareError(#[from] reqwest_middleware::Error),
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {}

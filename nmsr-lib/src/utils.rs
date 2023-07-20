@@ -27,4 +27,19 @@ macro_rules! par_iterator_if_enabled {
     };
 }
 
+#[cfg(feature = "parallel_iters")]
+macro_rules! into_par_iter_if_enabled {
+    ($value: expr) => {
+        $value.into_par_iter()
+    };
+}
+
+#[cfg(not(feature = "parallel_iters"))]
+macro_rules! into_par_iter_if_enabled {
+    ($value: expr) => {
+        $value.into_iter()
+    };
+}
+
+pub(crate) use into_par_iter_if_enabled;
 pub(crate) use par_iterator_if_enabled;

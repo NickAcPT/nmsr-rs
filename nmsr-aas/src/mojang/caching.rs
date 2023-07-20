@@ -9,14 +9,16 @@ use actix_web::web::Bytes;
 use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter};
-use log::debug;
 use strum::IntoEnumIterator;
+use tracing::debug;
+#[cfg(feature = "tracing")]
+use tracing::instrument;
 use uuid::Uuid;
 use walkdir::WalkDir;
 
 use crate::manager::RenderMode;
 use crate::mojang::requests::CachedSkinHash;
-use crate::routes::render_body_route::{RenderDataCacheKey};
+use crate::routes::render_body_route::RenderDataCacheKey;
 use crate::utils::Result;
 
 pub(crate) type RateLimiterType = RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
@@ -24,7 +26,7 @@ pub(crate) type RateLimiterType = RateLimiter<NotKeyed, InMemoryState, DefaultCl
 #[derive(Debug, Clone)]
 struct CachedUuidToSkinHash {
     time: Instant,
-    value: CachedSkinHash
+    value: CachedSkinHash,
 }
 
 #[derive(Debug)]
@@ -41,6 +43,7 @@ pub(crate) struct MojangCacheManager {
 }
 
 impl MojangCacheManager {
+    #[cfg_attr(feature = "tracing", instrument(level = "trace", skip(self)))]
     pub(crate) fn cleanup_old_files(&self) -> Result<()> {
         let now = std::time::SystemTime::now();
 
@@ -103,13 +106,15 @@ impl MojangCacheManager {
         self.skins.join(hash)
     }
 
-    fn get_cached_render_path(&self, mode: &RenderMode, hash: &String, render_data: &RenderDataCacheKey) -> PathBuf {
+    fn get_cached_render_path(
+        &self,
+        mode: &RenderMode,
+        hash: &String,
+        render_data: &RenderDataCacheKey,
+    ) -> PathBuf {
         self.get_cached_render_mode_path(mode).join(format!(
             "{}_{}_{}_{}.png",
-            hash,
-            render_data.slim_arms,
-            render_data.include_layers,
-            render_data.include_shading
+            hash, render_data.slim_arms, render_data.include_layers, render_data.include_shading
         ))
     }
 
@@ -117,6 +122,7 @@ impl MojangCacheManager {
         self.renders_dir.join(mode.to_string())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(level = "trace", skip(self)))]
     pub(crate) fn get_cached_skin(&self, hash: &String) -> Result<Option<Vec<u8>>> {
         debug!("Getting cached skin for hash {}", hash);
         let path = self.get_cached_skin_path(hash);
@@ -135,6 +141,7 @@ impl MojangCacheManager {
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", instrument(level = "trace", skip(self)))]
     pub(crate) fn get_cached_render(
         &self,
         mode: &RenderMode,
@@ -157,6 +164,7 @@ impl MojangCacheManager {
         }
     }
 
+    #[cfg_attr(feature = "tracing", instrument(level = "trace", skip(self)))]
     pub(crate) fn cache_render(
         &self,
         mode: &RenderMode,
@@ -172,7 +180,10 @@ impl MojangCacheManager {
     pub(crate) fn get_cached_uuid_to_skin_hash(&self, uuid: &Uuid) -> Option<&CachedSkinHash> {
         debug!("Checking cache for {}", uuid);
         if let Some(cached) = self.resolved_uuid_to_skin_hash_cache.get(uuid) {
-            return if Self::is_cached_uuid_to_skin_hash_expired(cached, self.uuid_to_skin_hash_cache_expiry) {
+            return if Self::is_cached_uuid_to_skin_hash_expired(
+                cached,
+                self.uuid_to_skin_hash_cache_expiry,
+            ) {
                 debug!("Found cached hash for {}", uuid);
                 Some(&cached.value)
             } else {
@@ -185,21 +196,25 @@ impl MojangCacheManager {
     }
 
     pub(crate) fn cache_uuid_to_skin_hash_and_model(&mut self, uuid: &Uuid, data: CachedSkinHash) {
-
         self.resolved_uuid_to_skin_hash_cache.insert(
             *uuid,
             CachedUuidToSkinHash {
                 time: Instant::now(),
-                value: data
+                value: data,
             },
         );
     }
 
-    fn is_cached_uuid_to_skin_hash_expired(cache: &CachedUuidToSkinHash, cache_duration: Duration) -> bool {
+    fn is_cached_uuid_to_skin_hash_expired(
+        cache: &CachedUuidToSkinHash,
+        cache_duration: Duration,
+    ) -> bool {
         cache.time.elapsed() < cache_duration
     }
 
     pub(crate) fn purge_expired_uuid_to_skin_hash_cache(&mut self) {
-        self.resolved_uuid_to_skin_hash_cache.retain(|_, cache| Self::is_cached_uuid_to_skin_hash_expired(cache, self.uuid_to_skin_hash_cache_expiry));
+        self.resolved_uuid_to_skin_hash_cache.retain(|_, cache| {
+            Self::is_cached_uuid_to_skin_hash_expired(cache, self.uuid_to_skin_hash_cache_expiry)
+        });
     }
 }

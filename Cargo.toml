@@ -5,11 +5,10 @@ members = [
     "nmsr-jni",
     "nmsr-aas",
     "utils/nmsr-multi-parts-organizer",
-    "utils/nmsr-backfaces-optimizer"
+    "utils/nmsr-backfaces-optimizer",
+    "utils/nmsr-parts-merger"
 ]
 
-[profile.dev.package.nmsr-lib]
-opt-level = 3
 [profile.dev.package.image]
 opt-level = 3
 [profile.release]

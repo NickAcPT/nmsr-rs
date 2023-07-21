@@ -1,9 +1,11 @@
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use std::{env, fs};
+use std::ops::Deref;
 
 use anyhow::{anyhow, Result};
 use image::{GenericImage, ImageBuffer, Rgba};
+use itertools::Itertools;
 use rayon::prelude::*;
 
 pub(crate) type Rgba16Image = ImageBuffer<Rgba<u16>, Vec<u16>>;
@@ -56,11 +58,11 @@ fn merge_parts_in_directory(dir: &Path, root: &Path) -> Result<()> {
                 }
             }
         } else if path.is_dir()
-            && !path
+            /*&& !path
                 .file_name()
                 .expect("Dir needs a filename")
                 .to_string_lossy()
-                .contains("overlays")
+                .contains("overlays")*/
         {
             merge_parts_in_directory(&path, root)?;
         }
@@ -92,14 +94,63 @@ fn merge_parts_in_directory(dir: &Path, root: &Path) -> Result<()> {
 
         let mut all_group_pixels: Vec<_> = vec![];
 
+        println!("Merging images in group {}", key);
         for image in &group {
-            all_group_pixels.par_extend(image.enumerate_pixels().par_bridge());
+            all_group_pixels.par_extend(image.enumerate_pixels().par_bridge().map(|p| (image, p)));
+        }
+        println!("Loaded images in group {}", key);
+
+        println!("Sorting pixels in group {}", key);
+        all_group_pixels.par_sort_by_key(|(_, (_, _, pixel))| pixel.0[2]); // Sort by depth
+        println!("Sorted pixels in group {}", key);
+
+        println!("Checking for overlapping pixels in group {}", key);
+        //Check if we have overlapping pixels, if we have lots of them, we should move them to a separate image
+
+        // For this, we have to go through all the pixels and check the overlapping ones by comparing the depth for each pixel in the x and y axis
+        // First, we group the pixels by x and y position
+        // Then we take the pixels that have the same x and y position and check if they have the same depth
+        // If they have the same depth, we add them to the overlapping pixels list
+        // Same depth is defined as the difference between the two depths being less than 100
+        let group_by = all_group_pixels
+            .iter().group_by(|(_, (x, y, _))| (*x, *y));
+        let grouped_pixels = group_by.into_iter();
+
+        let grouped_pixels: Vec<_> = grouped_pixels.collect();
+
+        grouped_pixels.into_iter().max_by(|(_, group), (_, group2)| group.clone().count().cmp(&group2.count())).map(|(key, _)| key).unwrap();
+
+        let mut shown_sample = false;
+
+        let mut overlapping_pixels = vec![];
+        for (_, group) in grouped_pixels {
+            let mut group = group.collect::<Vec<_>>();
+            group.sort_by_key(|(_, (_, _, pixel))| pixel.0[2]);
+            let mut group = group.into_iter();
+            let mut last_pixel = group.next().unwrap();
+            let (_, (_, _, last_pixel_rgba)) = last_pixel;
+            for p in group {
+                let (_, (x, y, pixel_rgba)) = p;
+                if pixel_rgba.0[2] - last_pixel_rgba.0[2] < 100 {
+                    overlapping_pixels.push((x, y));
+
+                    if (!shown_sample) {
+                        println!("Found overlapping pixels in group {}:", key);
+                        println!("Pixel 1: {:?}", last_pixel.1);
+                        println!("Pixel 2: {:?}", p.1);
+                        shown_sample = true;
+                    }
+                }
+                last_pixel = p;
+            }
         }
 
-        all_group_pixels.par_sort_by_key(|(_, _, pixel)| pixel.0[2]); // Sort by depth
 
-        for (x, y, pixel) in all_group_pixels {
-            unsafe { merged_image.unsafe_put_pixel(x, y, *pixel) };
+        for (_, (x, y, &pixel)) in &all_group_pixels {
+            if overlapping_pixels.contains(&(x, y)) {
+                continue;
+            }
+            unsafe { merged_image.unsafe_put_pixel(*x, *y, pixel) };
         }
 
         let parent_dir = get_final_dir(dir, root)?;

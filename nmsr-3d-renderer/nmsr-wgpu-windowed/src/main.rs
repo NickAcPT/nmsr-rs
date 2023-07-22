@@ -7,6 +7,7 @@ use winit::event_loop::EventLoop;
 async fn main() {
     let event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
+    builder = builder.with_title("NMSR WGPU Windowed");
     let window = builder.build(&event_loop).unwrap();
 
     let backends = wgpu::util::backend_bits_from_env().unwrap_or_else(wgpu::Backends::all);
@@ -29,7 +30,7 @@ async fn main() {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
         compatible_surface: Some(&surface),
-    }).await.expect("Failed to find an appropiate adapter");
+    }).await.expect("Failed to find an appropriate adapter");
 
 
     let adapter_info = adapter.get_info();
@@ -47,7 +48,7 @@ async fn main() {
     let mut config = surface
         .get_default_config(&adapter, size.width, size.height)
         .expect("Surface isn't supported by the adapter.");
-    let surface_view_format = config.format.add_srgb_suffix();
+    let surface_view_format = config.format;
     config.view_formats.push(surface_view_format);
     surface.configure(&device, &config);
 
@@ -56,7 +57,7 @@ async fn main() {
         match event {
             event::Event::RedrawEventsCleared => {
                 window.request_redraw();
-            },
+            }
             event::Event::WindowEvent {
                 event:
                 WindowEvent::Resized(size)
@@ -81,10 +82,10 @@ async fn main() {
                     config.height = size.height.max(1);
                     surface.configure(&device, &config);
                 }
-            },
+            }
             event::Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
                 *control_flow = winit::event_loop::ControlFlow::Exit;
-            },
+            }
             event::Event::RedrawRequested(_) => {
                 let frame = match surface.get_current_texture() {
                     Ok(frame) => frame,
@@ -100,11 +101,35 @@ async fn main() {
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
+                let mut encoder =
+                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+                {
+                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Main render pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.1,
+                                    g: 0.2,
+                                    b: 0.3,
+                                    a: 1.0,
+                                }),
+                                store: true,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                    });
+
+                    rpass.insert_debug_marker("Draw!");
+                }
+
+                queue.submit(Some(encoder.finish()));
+
                 frame.present();
-            },
-            _ => {
-                println!("{:?}", event);
             }
+            _ => {}
         }
     });
 }

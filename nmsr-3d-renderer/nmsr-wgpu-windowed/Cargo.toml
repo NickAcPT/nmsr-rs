@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 nmsr-parts = { path = "../nmsr-parts" }
+winit = "0.28.6"
+wgpu = "0.17.0"
+tokio = { version = "1.29.1", features = ["full"] }

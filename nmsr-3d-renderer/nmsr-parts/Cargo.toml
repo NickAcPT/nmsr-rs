@@ -1,0 +1,9 @@
+[package]
+name = "nmsr-parts"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wgpu = "0.17.0"
+bytemuck = "1.13.1"
+glam = "0.24.1"

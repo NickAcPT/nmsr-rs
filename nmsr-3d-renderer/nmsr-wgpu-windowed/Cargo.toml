@@ -1,0 +1,7 @@
+[package]
+name = "nmsr-wgpu-windowed"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nmsr-parts = { path = "../nmsr-parts" }

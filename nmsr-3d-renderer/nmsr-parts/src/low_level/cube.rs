@@ -21,68 +21,68 @@ impl Cube {
         left_face_uv: [Vec2; 2],
         right_face_uv: [Vec2; 2],
     ) -> Self {
-        // Generate the quads for the cube. Z- is front, Z+ is back, Y+ is top, Y- is bottom, X+ is left, X- is right
-        let left_x = center.x - size.x / 2.0;
-        let right_x = center.x + size.x / 2.0;
+        // Generate the quads for the cube. Y is up. Z is front. X is left.
+        let x_left = center.x - size.x;
+        let x_right = center.x + size.x;
 
-        let top_y = center.y + size.y / 2.0;
-        let bottom_y = center.y - size.y / 2.0;
+        let y_up = center.y + size.y;
+        let y_down = center.y - size.y;
 
-        let front_z = center.z - size.z / 2.0;
-        let back_z = center.z + size.z / 2.0;
+        let z_front = center.z + size.z;
+        let z_back = center.z - size.z;
 
         let front_quad = Quad::new(
-            /* top left */ Vec3::new(left_x, top_y, front_z),
-            /* top right */ Vec3::new(right_x, top_y, front_z),
-            /* bottom left */ Vec3::new(left_x, bottom_y, front_z),
-            /* bottom right */ Vec3::new(right_x, bottom_y, front_z),
-            /* top_left_uv */ front_face_uv[0],
-            /* top_right_uv */ front_face_uv[1],
+            /* top_left */       Vec3::new(x_left, y_up, z_front),
+            /* top_right */     Vec3::new(x_right, y_up, z_front),
+            /* bottom_left */   Vec3::new(x_left, y_down, z_front),
+            /* bottom_right */ Vec3::new(x_right, y_down, z_front),
+            /* top_left_uv */      front_face_uv[0],
+            /* bottom_right_uv */ front_face_uv[1],
         );
 
         let back_quad = Quad::new(
-            /* top left */ Vec3::new(left_x, top_y, back_z),
-            /* top right */ Vec3::new(right_x, top_y, back_z),
-            /* bottom left */ Vec3::new(left_x, bottom_y, back_z),
-            /* bottom right */ Vec3::new(right_x, bottom_y, back_z),
-            /* top_left_uv */ back_face_uv[0],
-            /* top_right_uv */ back_face_uv[1],
+            /* top_left */       Vec3::new(x_right, y_up, z_back),
+            /* top_right */     Vec3::new(x_left, y_up, z_back),
+            /* bottom_left */   Vec3::new(x_right, y_down, z_back),
+            /* bottom_right */ Vec3::new(x_left, y_down, z_back),
+            /* top_left_uv */      back_face_uv[0],
+            /* bottom_right_uv */ back_face_uv[1],
         );
 
         let top_quad = Quad::new(
-            /* top left */ Vec3::new(left_x, top_y, front_z),
-            /* top right */ Vec3::new(right_x, top_y, front_z),
-            /* bottom left */ Vec3::new(left_x, top_y, back_z),
-            /* bottom right */ Vec3::new(right_x, top_y, back_z),
-            /* top_left_uv */ top_face_uv[0],
-            /* top_right_uv */ top_face_uv[1],
+            /* top_left */      Vec3::new(x_left, y_up, z_back),
+            /* top_right */     Vec3::new(x_right, y_up, z_back),
+            /* bottom_left */   Vec3::new(x_left, y_up, z_front),
+            /* bottom_right */ Vec3::new(x_right, y_up, z_front),
+            /* top_left_uv */      top_face_uv[0],
+            /* bottom_right_uv */ top_face_uv[1],
         );
 
         let bottom_quad = Quad::new(
-            /* top left */ Vec3::new(left_x, bottom_y, front_z),
-            /* top right */ Vec3::new(right_x, bottom_y, front_z),
-            /* bottom left */ Vec3::new(left_x, bottom_y, back_z),
-            /* bottom right */ Vec3::new(right_x, bottom_y, back_z),
-            /* top_left_uv */ bottom_face_uv[0],
-            /* top_right_uv */ bottom_face_uv[1],
+            /* top_left */   Vec3::new(x_left, y_down, z_front),
+            /* top_right */ Vec3::new(x_right, y_down, z_front),
+            /* bottom_left */      Vec3::new(x_left, y_down, z_back),
+            /* bottom_right */     Vec3::new(x_right, y_down, z_back),
+            /* top_left_uv */      bottom_face_uv[0],
+            /* bottom_right_uv */ bottom_face_uv[1],
         );
 
         let left_quad = Quad::new(
-            /* top left */ Vec3::new(left_x, top_y, front_z),
-            /* top right */ Vec3::new(left_x, top_y, back_z),
-            /* bottom left */ Vec3::new(left_x, bottom_y, front_z),
-            /* bottom right */ Vec3::new(left_x, bottom_y, back_z),
-            /* top_left_uv */ left_face_uv[0],
-            /* top_right_uv */ left_face_uv[1],
+            /* top_left */      Vec3::new(x_left, y_up, z_back),
+            /* top_right */     Vec3::new(x_left, y_up, z_front),
+            /* bottom_left */   Vec3::new(x_left, y_down, z_back),
+            /* bottom_right */ Vec3::new(x_left, y_down, z_front),
+            /* top_left_uv */      left_face_uv[0],
+            /* bottom_right_uv */ left_face_uv[1],
         );
 
         let right_quad = Quad::new(
-            /* top left */ Vec3::new(right_x, top_y, front_z),
-            /* top right */ Vec3::new(right_x, top_y, back_z),
-            /* bottom left */ Vec3::new(right_x, bottom_y, front_z),
-            /* bottom right */ Vec3::new(right_x, bottom_y, back_z),
-            /* top_left_uv */ right_face_uv[0],
-            /* top_right_uv */ right_face_uv[1],
+            /* top_left */      Vec3::new(x_right, y_up, z_front),
+            /* top_right */     Vec3::new(x_right, y_up, z_back),
+            /* bottom_left */   Vec3::new(x_right, y_down, z_front),
+            /* bottom_right */ Vec3::new(x_right, y_down, z_back),
+            /* top_left_uv */      right_face_uv[0],
+            /* bottom_right_uv */ right_face_uv[1],
         );
 
         Cube {

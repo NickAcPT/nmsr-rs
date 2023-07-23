@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 use std::mem;
+use std::ptr::null;
+use renderdoc::OverlayBits;
 
-use wgpu::RequestAdapterOptions;
+use wgpu::{RenderPassDepthStencilAttachment, RequestAdapterOptions};
 use wgpu::util::DeviceExt;
 use winit::event;
 use winit::event::WindowEvent;
@@ -13,6 +15,10 @@ use nmsr_parts::low_level::primitives::{PartPrimitive, Vertex};
 
 #[tokio::main]
 async fn main() {
+
+    let mut renderdoc = renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
+    renderdoc.launch_replay_ui(true, None).expect("Failed to launch RenderDoc replay UI");
+
     let event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
     builder = builder.with_title("NMSR WGPU Windowed");
@@ -135,7 +141,7 @@ async fn main() {
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &[
             wgpu::VertexAttribute {
-                format: wgpu::VertexFormat::Float32x4,
+                format: wgpu::VertexFormat::Float32x3,
                 offset: 0,
                 shader_location: 0,
             },
@@ -161,15 +167,20 @@ async fn main() {
             targets: &[Some(config.view_formats[0].into())],
         }),
         primitive: wgpu::PrimitiveState {
-            cull_mode: None,
+            cull_mode: Some(wgpu::Face::Back),
             front_face: wgpu::FrontFace::Cw,
             ..Default::default()
         },
-        depth_stencil: None,
+        depth_stencil: Some(wgpu::DepthStencilState {
+            format: wgpu::TextureFormat::Depth32Float,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil: Default::default(),
+            bias: Default::default(),
+        }),
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
     });
-
 
     println!("Entering render loop...");
     event_loop.run(move |event, _, control_flow| {
@@ -213,28 +224,33 @@ async fn main() {
                 if input.state == winit::event::ElementState::Pressed {
                     match input.virtual_keycode {
                         Some(winit::event::VirtualKeyCode::W) => {
-                            camera.z -= 1.0;
+                            camera.z -= 0.5;
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::S) => {
-                            camera.z += 1.0;
+                            camera.z += 0.5;
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::A) => {
-                            camera.x -= 1.0;
+                            camera.x -= 0.5;
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::D) => {
-                            camera.x += 1.0;
+                            camera.x += 0.5;
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::Q) => {
-                            camera.y += 1.0;
+                            camera.y += 0.5;
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::E) => {
-                            camera.y -= 1.0;
+                            camera.y -= 0.5;
                             changed = true;
+                        },
+                        // R
+                        Some(winit::event::VirtualKeyCode::R) => {
+                            println!("Triggering RenderDoc capture.");
+                            renderdoc.trigger_capture();
                         },
                         _ => {},
                     }
@@ -260,6 +276,22 @@ async fn main() {
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
+                let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+                    size: wgpu::Extent3d {
+                        width: config.width,
+                        height: config.height,
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Depth32Float,
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    label: None,
+                    view_formats: &[],
+                });
+                let depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
                 device.push_error_scope(wgpu::ErrorFilter::Validation);
 
                 let mut encoder =
@@ -280,7 +312,14 @@ async fn main() {
                                 store: true,
                             },
                         })],
-                        depth_stencil_attachment: None,
+                        depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
+                            view: &depth,
+                            depth_ops: Some(wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(1.0),
+                                store: true,
+                            }),
+                            stencil_ops: None,
+                        }),
                     });
 
                     rpass.push_debug_group("Prepare data for draw.");

@@ -9,3 +9,4 @@ bytemuck = "1.13.1"
 winit = "0.28.6"
 wgpu = "0.17.0"
 tokio = { version = "1.29.1", features = ["full"] }
+renderdoc = { version = "0.11.0",features = ["ci"] }

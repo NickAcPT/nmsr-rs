@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use std::f32::consts;
-use std::time::SystemTime;
 // Re-export the Vec3 type from the glam crate
 pub use glam::Vec3;
 pub use glam::Vec2;
@@ -12,7 +10,7 @@ pub mod cube;
 
 
 pub fn generate_matrix(camera: Vec3, aspect_ratio: f32) -> glam::Mat4 {
-    let projection = glam::Mat4::perspective_rh(45f32.to_radians(), aspect_ratio, 1.0, 10.0);
+    let projection = glam::Mat4::perspective_rh(45f32.to_radians(), aspect_ratio, 1.0, 100.0);
 
     let camera = Vec3::new(camera.x, camera.y, camera.z);
 

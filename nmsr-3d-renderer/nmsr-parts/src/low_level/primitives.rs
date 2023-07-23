@@ -3,7 +3,7 @@ use glam::{Vec2, Vec3};
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
-pub(crate) struct Vertex {
+pub struct Vertex {
     /// The position of the vertex
     position: Vec3,
     /// The uv coordinates of the vertex
@@ -11,7 +11,7 @@ pub(crate) struct Vertex {
 }
 
 impl Vertex {
-    pub(crate) fn new(position: Vec3, uv: Vec2) -> Self {
+    pub fn new(position: Vec3, uv: Vec2) -> Self {
         Vertex {
             position,
             uv,
@@ -19,7 +19,7 @@ impl Vertex {
     }
 }
 
-pub(crate) trait PartPrimitive {
+pub trait PartPrimitive {
     /// Returns the vertices of the primitive
     fn get_vertices(&self) -> Vec<Vertex>;
 

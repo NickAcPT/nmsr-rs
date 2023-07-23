@@ -1,7 +1,15 @@
+use std::borrow::Cow;
+use std::mem;
+
 use wgpu::RequestAdapterOptions;
+use wgpu::util::DeviceExt;
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
+
+use nmsr_parts::low_level::{generate_matrix, Vec2, Vec3};
+use nmsr_parts::low_level::cube::Cube;
+use nmsr_parts::low_level::primitives::{PartPrimitive, Vertex};
 
 #[tokio::main]
 async fn main() {
@@ -52,6 +60,117 @@ async fn main() {
     config.view_formats.push(surface_view_format);
     surface.configure(&device, &config);
 
+    let uv = Vec2::new(0.0, 0.0);
+    let uv2 = Vec2::new(1.0, 1.0);
+
+    let to_render = Cube::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), uv, uv2, uv, uv2, uv, uv2);
+
+    // Create the vertex and index buffers
+    let vertex_size = mem::size_of::<Vertex>();
+    let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
+
+    let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Vertex Buffer"),
+        contents: bytemuck::cast_slice(&vertex_data),
+        usage: wgpu::BufferUsages::VERTEX,
+    });
+
+    let index_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Index Buffer"),
+        contents: bytemuck::cast_slice(&index_data),
+        usage: wgpu::BufferUsages::INDEX,
+    });
+
+    // Create pipeline layout
+    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: None,
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: wgpu::BufferSize::new(64),
+                },
+                count: None,
+            }
+        ],
+    });
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
+        bind_group_layouts: &[&bind_group_layout],
+        push_constant_ranges: &[],
+    });
+
+    let mut camera = Vec3::new(0.0, 4.0, 4.0);
+
+    let mx_total = generate_matrix(camera, config.width as f32 / config.height as f32);
+    let mx_ref: &[f32; 16] = mx_total.as_ref();
+    let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Uniform Buffer"),
+        contents: bytemuck::cast_slice(mx_ref),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
+
+    // Create bind group
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &bind_group_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buf.as_entire_binding(),
+            },
+        ],
+        label: None,
+    });
+
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: None,
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
+    });
+
+    let vertex_buffers = [wgpu::VertexBufferLayout {
+        array_stride: vertex_size as wgpu::BufferAddress,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &[
+            wgpu::VertexAttribute {
+                format: wgpu::VertexFormat::Float32x4,
+                offset: 0,
+                shader_location: 0,
+            },
+            wgpu::VertexAttribute {
+                format: wgpu::VertexFormat::Float32x2,
+                offset: 4 * 4,
+                shader_location: 1,
+            },
+        ],
+    }];
+
+    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: None,
+        layout: Some(&pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: "vs_main",
+            buffers: &vertex_buffers,
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: "fs_main",
+            targets: &[Some(config.view_formats[0].into())],
+        }),
+        primitive: wgpu::PrimitiveState {
+            cull_mode: None,
+            front_face: wgpu::FrontFace::Cw,
+            ..Default::default()
+        },
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+    });
+
+
     println!("Entering render loop...");
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -85,7 +204,47 @@ async fn main() {
             }
             event::Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
                 *control_flow = winit::event_loop::ControlFlow::Exit;
-            }
+            },
+            // On keyboard input, move the camera
+            // W is forward, S is backward, A is left, D is right, Q is up, E is down
+            // We are facing north
+            event::Event::WindowEvent { event: WindowEvent::KeyboardInput { input, .. }, .. } => {
+                let mut changed = false;
+                if input.state == winit::event::ElementState::Pressed {
+                    match input.virtual_keycode {
+                        Some(winit::event::VirtualKeyCode::W) => {
+                            camera.z -= 1.0;
+                            changed = true;
+                        },
+                        Some(winit::event::VirtualKeyCode::S) => {
+                            camera.z += 1.0;
+                            changed = true;
+                        },
+                        Some(winit::event::VirtualKeyCode::A) => {
+                            camera.x -= 1.0;
+                            changed = true;
+                        },
+                        Some(winit::event::VirtualKeyCode::D) => {
+                            camera.x += 1.0;
+                            changed = true;
+                        },
+                        Some(winit::event::VirtualKeyCode::Q) => {
+                            camera.y += 1.0;
+                            changed = true;
+                        },
+                        Some(winit::event::VirtualKeyCode::E) => {
+                            camera.y -= 1.0;
+                            changed = true;
+                        },
+                        _ => {},
+                    }
+                }
+                if changed {
+                    let mx_total = generate_matrix(camera, config.width as f32 / config.height as f32);
+                    let mx_ref: &[f32; 16] = mx_total.as_ref();
+                    queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
+                }
+            },
             event::Event::RedrawRequested(_) => {
                 let frame = match surface.get_current_texture() {
                     Ok(frame) => frame,
@@ -100,6 +259,8 @@ async fn main() {
                     format: Some(surface_view_format),
                     ..wgpu::TextureViewDescriptor::default()
                 });
+
+                device.push_error_scope(wgpu::ErrorFilter::Validation);
 
                 let mut encoder =
                     device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -122,7 +283,15 @@ async fn main() {
                         depth_stencil_attachment: None,
                     });
 
+                    rpass.push_debug_group("Prepare data for draw.");
+                    rpass.set_pipeline(&pipeline);
+                    rpass.set_bind_group(0, &bind_group, &[]);
+                    rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
+                    rpass.set_vertex_buffer(0, vertex_buf.slice(..));
+                    rpass.pop_debug_group();
                     rpass.insert_debug_marker("Draw!");
+                    rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
+
                 }
 
                 queue.submit(Some(encoder.finish()));

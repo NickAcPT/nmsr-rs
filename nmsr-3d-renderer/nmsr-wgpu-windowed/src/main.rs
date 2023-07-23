@@ -63,7 +63,7 @@ async fn main() {
     let uv = Vec2::new(0.0, 0.0);
     let uv2 = Vec2::new(1.0, 1.0);
 
-    let to_render = Cube::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), uv, uv2, uv, uv2, uv, uv2);
+    let to_render = Cube::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2]);
 
     // Create the vertex and index buffers
     let vertex_size = mem::size_of::<Vertex>();

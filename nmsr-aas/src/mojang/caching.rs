@@ -164,7 +164,7 @@ impl MojangCacheManager {
         }
     }
 
-    #[cfg_attr(feature = "tracing", instrument(level = "trace", skip(self)))]
+    #[cfg_attr(feature = "tracing", instrument(level = "trace", skip(self, bytes)))]
     pub(crate) fn cache_render(
         &self,
         mode: &RenderMode,

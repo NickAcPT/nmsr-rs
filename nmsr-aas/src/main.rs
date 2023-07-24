@@ -32,6 +32,7 @@ use {
     },
     opentelemetry_otlp::WithExportConfig,
     tracing_actix_web::TracingLogger,
+    crate::utils::tracing_span::NMSRRootSpanBuilder,
 };
 
 use crate::config::ServerConfiguration;
@@ -129,7 +130,7 @@ async fn main() -> Result<()> {
         #[cfg(not(feature = "tracing"))]
         let logger = Logger::default();
         #[cfg(feature = "tracing")]
-        let logger = TracingLogger::default();
+        let logger = TracingLogger::<NMSRRootSpanBuilder>::new();
 
         let app = App::new();
 

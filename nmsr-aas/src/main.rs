@@ -11,7 +11,7 @@ use actix_web::rt::time;
 use actix_web::{web::Data, App, HttpServer};
 use clap::Parser;
 use parking_lot::RwLock;
-use reqwest_middleware::ClientBuilder;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_tracing::TracingMiddleware;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
@@ -35,7 +35,7 @@ use {
     crate::utils::tracing_span::NMSRRootSpanBuilder,
 };
 
-use crate::config::ServerConfiguration;
+use crate::config::{MojankConfiguration, ServerConfiguration};
 use crate::manager::NMSRaaSManager;
 use crate::mojang::caching::MojangCacheManager;
 use crate::routes::index_route::index_head;
@@ -64,6 +64,7 @@ async fn main() -> Result<()> {
     let config = Data::new(config);
     let config_ref = config.clone().into_inner();
     let cache_config = Data::new(config_ref.cache.clone());
+    let mojank_config = Data::new(config_ref.mojank.clone());
 
     // Setup the tracing here
     // What we want to do is basically, if we compile with tracing feature, use opentelemetry tracing
@@ -114,13 +115,7 @@ async fn main() -> Result<()> {
         }
     });
 
-    let mojang_requests_client = reqwest::Client::builder()
-        .user_agent(format!("NMSR as a Service/{}", env!("CARGO_PKG_VERSION")))
-        .build()?;
-
-    let mojang_requests_client = ClientBuilder::new(mojang_requests_client)
-        .with(TracingMiddleware::default())
-        .build();
+    let mojang_requests_client = build_mojang_request_client(&mojank_config)?;
 
     info!("Starting server...");
 
@@ -141,6 +136,7 @@ async fn main() -> Result<()> {
             .wrap(cors)
             .app_data(Data::new(manager.clone()))
             .app_data(Data::new(mojang_requests_client.clone()))
+            .app_data(mojank_config.clone())
             .app_data(cache_manager.clone())
             .app_data(cache_config.clone())
             .service(index)
@@ -201,6 +197,31 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn build_mojang_request_client(mojank_config: &Data<MojankConfiguration>) -> Result<ClientWithMiddleware> {
+    let mut mojang_requests_client = reqwest::Client::builder()
+        .user_agent(format!("NMSR as a Service/{}", env!("CARGO_PKG_VERSION")));
+
+    if let Some(experimental_http2_prior_knowledge) = mojank_config.experimental_http2_prior_knowledge {
+        if experimental_http2_prior_knowledge { mojang_requests_client = mojang_requests_client.http2_prior_knowledge(); }
+    }
+
+    if let Some(experimental_http2_keep_alive_while_idle) = mojank_config.experimental_http2_keep_alive_while_idle {
+        mojang_requests_client = mojang_requests_client.http2_keep_alive_while_idle(experimental_http2_keep_alive_while_idle);
+    }
+
+    if let Some(experimental_http2_keep_alive_interval) = mojank_config.experimental_http2_keep_alive_interval {
+        mojang_requests_client = mojang_requests_client.http2_keep_alive_interval(Duration::from_secs(experimental_http2_keep_alive_interval));
+    }
+
+    if let Some(experimental_http2_keep_alive_timeout) = mojank_config.experimental_http2_keep_alive_timeout {
+        mojang_requests_client = mojang_requests_client.http2_keep_alive_timeout(Duration::from_secs(experimental_http2_keep_alive_timeout));
+    }
+
+    Ok(ClientBuilder::new(mojang_requests_client.build()?)
+        .with(TracingMiddleware::default())
+        .build())
 }
 
 fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {

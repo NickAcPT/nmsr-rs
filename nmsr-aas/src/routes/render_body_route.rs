@@ -12,7 +12,7 @@ use xxhash_rust::xxh3::xxh3_64;
 
 use nmsr_lib::rendering::entry::RenderingEntry;
 
-use crate::config::CacheConfiguration;
+use crate::config::{CacheConfiguration, MojankConfiguration};
 use crate::manager::{NMSRaaSManager, RenderMode};
 use crate::mojang::caching::MojangCacheManager;
 use crate::utils::errors::NMSRaaSError;
@@ -36,7 +36,7 @@ pub(crate) struct RenderDataCacheKey {
 #[get("/{type}/{player}")]
 #[cfg_attr(
     feature = "tracing",
-    tracing::instrument(skip(cache_config, parts_manager, mojang_requests_client, cache_manager))
+    tracing::instrument(skip(cache_config, parts_manager, mojang_requests_client, cache_manager, mojank_config))
 )]
 pub(crate) async fn render(
     path: Path<(String, String)>,
@@ -45,6 +45,7 @@ pub(crate) async fn render(
     parts_manager: web::Data<NMSRaaSManager>,
     mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
+    mojank_config: web::Data<MojankConfiguration>,
 ) -> Result<impl Responder> {
     let (mode, player) = get_render_data(path)?;
 
@@ -57,6 +58,7 @@ pub(crate) async fn render(
     let (hash, skin_bytes) = player
         .fetch_skin_bytes(
             cache_manager.as_ref(),
+            mojank_config.as_ref(),
             mojang_requests_client.as_ref(),
             &tracing::Span::current(),
         )
@@ -136,6 +138,7 @@ pub(crate) async fn render_head(
     path: Path<(String, String)>,
     mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
+    mojank_config: web::Data<MojankConfiguration>,
 ) -> Result<impl Responder> {
     let (_, player) = get_render_data(path)?;
 
@@ -143,6 +146,7 @@ pub(crate) async fn render_head(
         player
             .fetch_skin_bytes(
                 cache_manager.as_ref(),
+                mojank_config.as_ref(),
                 mojang_requests_client.as_ref(),
                 &tracing::Span::current(),
             )

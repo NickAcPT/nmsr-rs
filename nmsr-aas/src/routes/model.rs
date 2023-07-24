@@ -2,6 +2,7 @@ use actix_web::web::Bytes;
 use parking_lot::RwLock;
 use reqwest_middleware::ClientWithMiddleware;
 use tracing::trace_span;
+use crate::config::MojankConfiguration;
 
 use crate::mojang::caching::MojangCacheManager;
 use crate::mojang::requests;
@@ -37,10 +38,11 @@ impl TryFrom<String> for PlayerRenderInput {
 }
 
 impl PlayerRenderInput {
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self, cache_manager, client, _span), parent = _span))]
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(self, cache_manager, client, _span, mojank_config), parent = _span))]
     async fn fetch_skin_hash_and_model(
         &self,
         cache_manager: &RwLock<MojangCacheManager>,
+        mojank_config: &MojankConfiguration,
         client: &ClientWithMiddleware,
         _span: &tracing::Span,
     ) -> Result<CachedSkinHash> {
@@ -61,7 +63,7 @@ impl PlayerRenderInput {
                         guard.rate_limiter.clone()
                     };
                     let result =
-                        { requests::get_skin_hash_and_model(client, &limiter, *id) }.await?;
+                        { requests::get_skin_hash_and_model(client, &limiter, *id, &mojank_config.session_server) }.await?;
 
                     {
                         let _guard_span = trace_span!("write_rate_limiter_acquire").entered();
@@ -80,16 +82,17 @@ impl PlayerRenderInput {
         })
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_manager, client, _span), parent = _span))]
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip(cache_manager, client, _span, mojank_config), parent = _span))]
     pub(crate) async fn fetch_skin_bytes(
         &self,
         cache_manager: &RwLock<MojangCacheManager>,
+        mojank_config: &MojankConfiguration,
         client: &ClientWithMiddleware,
         _span: &tracing::Span,
     ) -> Result<(CachedSkinHash, Bytes)> {
         let current_span = tracing::Span::current();
         let cached = self
-            .fetch_skin_hash_and_model(cache_manager, client, &current_span)
+            .fetch_skin_hash_and_model(cache_manager, mojank_config, client, &current_span)
             .await?;
 
         let skin_hash = cached.get_hash();
@@ -105,7 +108,7 @@ impl PlayerRenderInput {
             Ok((cached, Bytes::from(bytes)))
         } else {
             let bytes_from_mojang =
-                requests::fetch_skin_bytes_from_mojang(skin_hash, client).await?;
+                requests::fetch_skin_bytes_from_mojang(skin_hash, client, &mojank_config.textures_server).await?;
             {
                 let _guard_span =
                     trace_span!(parent: &current_span, "write_cache_acquire").entered();

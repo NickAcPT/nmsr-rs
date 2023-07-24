@@ -11,7 +11,7 @@ use xxhash_rust::xxh3::xxh3_64;
 
 use nmsr_lib::rendering::entry::RenderingEntry;
 
-use crate::config::CacheConfiguration;
+use crate::config::{CacheConfiguration, MojankConfiguration};
 use crate::mojang::caching::MojangCacheManager;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
 
@@ -27,6 +27,7 @@ pub(crate) async fn get_skin(
     cache_config: web::Data<CacheConfiguration>,
     mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
+    mojank_config: web::Data<MojankConfiguration>,
 ) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
     let should_process = skin_info.process.is_some();
@@ -34,6 +35,7 @@ pub(crate) async fn get_skin(
     let (hash, mut skin_bytes) = player
         .fetch_skin_bytes(
             cache_manager.as_ref(),
+            mojank_config.as_ref(),
             mojang_requests_client.as_ref(),
             &tracing::Span::current(),
         )
@@ -71,6 +73,7 @@ pub(crate) async fn get_skin_head(
     path: web::Path<String>,
     mojang_requests_client: web::Data<ClientWithMiddleware>,
     cache_manager: web::Data<RwLock<MojangCacheManager>>,
+    mojank_config: web::Data<MojankConfiguration>,
 ) -> Result<impl Responder> {
     let player: PlayerRenderInput = path.into_inner().try_into()?;
 
@@ -78,6 +81,7 @@ pub(crate) async fn get_skin_head(
         player
             .fetch_skin_bytes(
                 cache_manager.as_ref(),
+                mojank_config.as_ref(),
                 mojang_requests_client.as_ref(),
                 &tracing::Span::current(),
             )

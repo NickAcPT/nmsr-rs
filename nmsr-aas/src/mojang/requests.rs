@@ -83,11 +83,11 @@ impl GameProfile {
     }
 }
 
-#[cfg_attr(feature = "tracing", instrument(level = "trace", skip(client)))]
-async fn get_player_game_profile(client: &ClientWithMiddleware, id: Uuid) -> Result<GameProfile> {
+#[cfg_attr(feature = "tracing", instrument(level = "trace", skip(client, session_server)))]
+async fn get_player_game_profile(client: &ClientWithMiddleware, session_server: &String, id: Uuid) -> Result<GameProfile> {
     let response = client
         .get(format!(
-            "https://sessionserver.mojang.com/session/minecraft/profile/{id}"
+            "{session_server}/session/minecraft/profile/{id}"
         ))
         .send()
         .await?;
@@ -105,16 +105,17 @@ async fn get_player_game_profile(client: &ClientWithMiddleware, id: Uuid) -> Res
 
 #[cfg_attr(
     feature = "tracing",
-    instrument(level = "trace", skip(client, rate_limiter, id))
+    instrument(level = "trace", skip(client, rate_limiter, id, session_server))
 )]
 pub(crate) async fn get_skin_hash_and_model(
     client: &ClientWithMiddleware,
     rate_limiter: &RateLimiterType,
     id: Uuid,
+    session_server: &String,
 ) -> Result<CachedSkinHash> {
     rate_limiter.until_ready().await;
 
-    let game_profile = get_player_game_profile(client, id).await?;
+    let game_profile = get_player_game_profile(client, session_server, id).await?;
     let textures = game_profile.get_textures()?;
     let skin = textures.textures.skin;
 
@@ -139,13 +140,14 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
         .to_string())
 }
 
-#[cfg_attr(feature = "tracing", tracing::instrument(skip(hash, client)))]
+#[cfg_attr(feature = "tracing", tracing::instrument(skip(hash, client, textures_server)))]
 pub(crate) async fn fetch_skin_bytes_from_mojang(
     hash: &String,
     client: &ClientWithMiddleware,
+    textures_server: &String,
 ) -> Result<Bytes> {
     let response = client
-        .get(format!("http://textures.minecraft.net/texture/{hash}"))
+        .get(format!("{textures_server}/texture/{hash}"))
         .send()
         .await?;
 

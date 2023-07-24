@@ -22,6 +22,9 @@ pub(crate) struct ServerConfiguration {
     /// Tracing configuration
     #[cfg(feature = "tracing")]
     pub(crate) tracing: TracingConfiguration,
+
+    /// Mojang configuration (for when they're feeling janky)
+    pub(crate) mojank: MojankConfiguration,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -84,6 +87,7 @@ impl Default for ServerConfiguration {
             cache: CacheConfiguration::default(),
             #[cfg(feature = "tracing")]
             tracing: TracingConfiguration::default(),
+            mojank: MojankConfiguration::default(),
         }
     }
 }
@@ -95,6 +99,43 @@ impl Default for CacheConfiguration {
             mojang_profile_request_expiry: 900,
             cleanup_interval: 3600,
             mojang_profile_requests_per_second: 10,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub(crate) struct MojankConfiguration {
+    /// The URL to use for the session server.
+    /// This is used to get the game profile for a player.
+    pub session_server: String,
+
+    /// The URL to use for the textures.
+    pub textures_server: String,
+
+    /// Whether to use http2_prior_knowledge for the reqwest client.
+    pub experimental_http2_prior_knowledge: Option<bool>,
+
+    /// Whether to use http2_keep_alive_while_idle for the reqwest client.
+    pub experimental_http2_keep_alive_while_idle: Option<bool>,
+
+    /// Whether to use http2_keep_alive_interval for the reqwest client.
+    /// Value is in seconds.
+    pub experimental_http2_keep_alive_interval: Option<u64>,
+
+    /// Whether to use http2_keep_alive_timeout for the reqwest client.
+    /// Value is in seconds.
+    pub experimental_http2_keep_alive_timeout: Option<u64>,
+}
+
+impl Default for MojankConfiguration {
+    fn default() -> Self {
+        MojankConfiguration {
+            session_server: "https://sessionserver.mojang.com".to_string(),
+            textures_server: "https://textures.minecraft.net".to_string(),
+            experimental_http2_prior_knowledge: None,
+            experimental_http2_keep_alive_while_idle: None,
+            experimental_http2_keep_alive_interval: None,
+            experimental_http2_keep_alive_timeout: None,
         }
     }
 }

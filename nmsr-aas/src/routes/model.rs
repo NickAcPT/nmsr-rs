@@ -21,7 +21,13 @@ impl TryFrom<String> for PlayerRenderInput {
     fn try_from(value: String) -> Result<PlayerRenderInput> {
         if value.len() == 32 || value.len() == 36 {
             let uuid = uuid::Uuid::parse_str(&value).map_err(NMSRaaSError::InvalidUUID)?;
-            Ok(PlayerRenderInput::PlayerUuid(uuid))
+            let uuid_version = uuid.get_version_num();
+
+            if uuid_version == 4 {
+                Ok(PlayerRenderInput::PlayerUuid(uuid))
+            } else {
+                Err(NMSRaaSError::InvalidPlayerUuidRequest(value, uuid_version))
+            }
         } else if value.len() > 36 {
             Ok(PlayerRenderInput::TextureHash(value))
         } else {

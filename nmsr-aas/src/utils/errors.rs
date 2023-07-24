@@ -2,6 +2,7 @@
 use opentelemetry::trace::TraceError;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
+use actix_web::http::StatusCode;
 
 use thiserror::Error;
 
@@ -15,6 +16,8 @@ pub(crate) enum NMSRaaSError {
     InvalidUUID(#[from] uuid::Error),
     #[error("Invalid player request: {0}")]
     InvalidPlayerRequest(String),
+    #[error("Invalid player request: The UUID you requested ({0}) has version {1} instead of version 4. Version 4 UUIDs are required for online player skins.")]
+    InvalidPlayerUuidRequest(String, usize),
     #[error("Invalid player game profile response: {0}")]
     MojangRequestError(#[from] reqwest::Error),
     #[error("Invalid player game profile response: {0}")]
@@ -60,7 +63,14 @@ pub(crate) enum NMSRaaSError {
     ReqwestMiddlewareError(#[from] reqwest_middleware::Error),
 }
 
-impl actix_web::error::ResponseError for NMSRaaSError {}
+impl actix_web::error::ResponseError for NMSRaaSError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            NMSRaaSError::InvalidPlayerUuidRequest(_, _) => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
+}
 
 impl From<FromUtf8Error> for NMSRaaSError {
     fn from(_: FromUtf8Error) -> Self {

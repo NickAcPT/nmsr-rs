@@ -16,6 +16,7 @@ use reqwest_tracing::TracingMiddleware;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use tracing::{debug, info, info_span};
+use tracing_log::LogTracer;
 use tracing_subscriber::{fmt, EnvFilter, Layer};
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 
@@ -260,7 +261,7 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
 
         // Here we create a filter that will let through our crates' messages and the ones from actix_web
         let otel_filter = EnvFilter::from_str(
-            "none,nmsr_aas=trace,nmsr_lib=trace,tracing_actix_web=trace,reqwest_tracing=debug",
+            "none,nmsr_aas=trace,nmsr_lib=trace,tracing_actix_web=trace,reqwest_tracing=debug,rustls=debug",
         )
         .expect("Failed to create env filter for otel");
 
@@ -271,6 +272,11 @@ fn setup_tracing_config(config: &Data<ServerConfiguration>) -> Result<()> {
     });
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
+    LogTracer::builder()
+        .ignore_crate("hyper")
+        .ignore_crate("h2")
+        .init()?;
 
     Ok(())
 }

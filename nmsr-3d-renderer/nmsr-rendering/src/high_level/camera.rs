@@ -1,4 +1,4 @@
-use crate::high_level::utils::camera_getters_setters;
+use crate::high_level::utils::{camera_getters_setters, camera_inner_getters_setters};
 use crate::low_level::utils::minecraft_rotation_matrix;
 use glam::{Mat4, Vec3};
 
@@ -40,6 +40,9 @@ impl Camera {
         rotation: CameraRotation,
         aspect_ratio: f32
     );
+
+    camera_inner_getters_setters!(position, x, y, z);
+    camera_inner_getters_setters!(rotation, yaw, pitch);
 
     pub fn get_view_projection_matrix(&mut self) -> Mat4 {
         if self.dirty {

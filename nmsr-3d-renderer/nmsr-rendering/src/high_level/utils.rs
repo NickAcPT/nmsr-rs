@@ -20,4 +20,25 @@ macro_rules! camera_getters_setters {
     };
 }
 
+macro_rules! camera_inner_getters_setters {
+    ($inner: ident, $name: ident: $_type: ty) => {
+        paste::paste! {
+            pub fn [<get_ $name>](&self) -> &$_type {
+                &self.$inner.$name
+            }
+
+            pub fn [<set_ $name>](&mut self, $name: $_type) {
+                self.$inner.$name = $name;
+                self.dirty = true;
+            }
+        }
+    };
+    ($inner: ident, $($name: ident),*) => {
+        $(
+            camera_inner_getters_setters!($inner, $name: f32);
+        )*
+    };
+}
+
 pub(crate) use camera_getters_setters;
+pub(crate) use camera_inner_getters_setters;

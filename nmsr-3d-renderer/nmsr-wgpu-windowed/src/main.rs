@@ -1,26 +1,29 @@
-use egui::{Context, FontDefinitions};
-use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
-use egui_winit_platform::{Platform, PlatformDescriptor};
-use nmsr_parts::high_level::camera::{Camera, CameraRotation};
 use std::borrow::Cow;
 use std::time::Instant;
 use std::{iter, mem};
+
+use egui::emath::Numeric;
+use egui::{Context, FontDefinitions};
+use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
+use egui_winit_platform::{Platform, PlatformDescriptor};
 use wgpu::util::DeviceExt;
 use wgpu::{RenderPassDepthStencilAttachment, RequestAdapterOptions};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
-use nmsr_parts::low_level::cube::Cube;
-use nmsr_parts::low_level::mesh::Mesh;
-use nmsr_parts::low_level::primitives::PartPrimitive;
-use nmsr_parts::low_level::vertex::Vertex;
-use nmsr_parts::low_level::{Vec2, Vec3};
+use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
+use nmsr_rendering::low_level::cube::Cube;
+use nmsr_rendering::low_level::mesh::Mesh;
+use nmsr_rendering::low_level::primitives::PartPrimitive;
+use nmsr_rendering::low_level::vertex::Vertex;
+use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() {
     let mut renderdoc =
         renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
+
     renderdoc
         .launch_replay_ui(true, None)
         .expect("Failed to launch RenderDoc replay UI");
@@ -45,10 +48,11 @@ async fn main() {
 
         (size, surface)
     };
+
     let adapter = instance
         .request_adapter(&RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::LowPower,
-            force_fallback_adapter: true,
+            force_fallback_adapter: false,
             compatible_surface: Some(&surface),
         })
         .await
@@ -91,11 +95,28 @@ async fn main() {
         aspect_ratio,
     );
 
-    let to_render = //vec![
-        Cube::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2])
-        //,Cube::new(Vec3::new(0.0, 4.5, 0.0), Vec3::new(0.5, 0.5, 0.5), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2]),
-   //]
-    ;
+    let to_render = Mesh::new(vec![
+        Box::new(Cube::new(
+            Vec3::new(0.0, 4.0, 0.0),
+            Vec3::new(1.0, 1.0, 1.0),
+            [uv, uv2],
+            [uv, uv2],
+            [uv, uv2],
+            [uv, uv2],
+            [uv, uv2],
+            [uv, uv2],
+        )),
+        Box::new(Cube::new(
+            Vec3::new(0.0, 4.75, 0.0),
+            Vec3::new(0.5, 0.5, 0.5),
+            [uv2, uv],
+            [uv2, uv],
+            [uv2, uv],
+            [uv2, uv],
+            [uv2, uv],
+            [uv2, uv],
+        )),
+    ]);
 
     // Create the vertex and index buffers
     let vertex_size = mem::size_of::<Vertex>();
@@ -133,7 +154,7 @@ async fn main() {
         push_constant_ranges: &[],
     });
 
-    let mx_total = camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
+    let mx_total = camera.get_view_projection_matrix();
     let mx_ref: &[f32; 16] = mx_total.as_ref();
     let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Uniform Buffer"),
@@ -215,6 +236,8 @@ async fn main() {
     println!("Entering render loop...");
     let start_time = Instant::now();
     event_loop.run(move |event, _, control_flow| {
+        let mut renderdoc = renderdoc;
+
         platform.handle_event(&event);
 
         match event {
@@ -248,9 +271,13 @@ async fn main() {
             event::Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
-            } => {
+            } => unsafe {
+                if renderdoc.get_num_captures() == 0 {
+                    renderdoc.shutdown();
+                }
+
                 *control_flow = winit::event_loop::ControlFlow::Exit;
-            }
+            },
             // On keyboard input, move the camera
             // W is forward, S is backward, A is left, D is right, Q is up, E is down
             // We are facing South
@@ -258,46 +285,33 @@ async fn main() {
                 event: WindowEvent::KeyboardInput { input, .. },
                 ..
             } => {
-                let mut changed = false;
-                if input.state == winit::event::ElementState::Pressed {
+                if input.state == event::ElementState::Pressed {
                     match input.virtual_keycode {
-                        Some(winit::event::VirtualKeyCode::W) => {
+                        Some(event::VirtualKeyCode::W) => {
                             camera.set_z(camera.get_z() + 0.5);
-                            changed = true;
                         }
-                        Some(winit::event::VirtualKeyCode::S) => {
+                        Some(event::VirtualKeyCode::S) => {
                             camera.set_z(camera.get_z() - 0.5);
-                            changed = true;
                         }
-                        Some(winit::event::VirtualKeyCode::A) => {
+                        Some(event::VirtualKeyCode::A) => {
                             camera.set_x(camera.get_x() + 0.5);
-                            changed = true;
                         }
-                        Some(winit::event::VirtualKeyCode::D) => {
+                        Some(event::VirtualKeyCode::D) => {
                             camera.set_x(camera.get_x() - 0.5);
-                            changed = true;
                         }
-                        Some(winit::event::VirtualKeyCode::Q) => {
+                        Some(event::VirtualKeyCode::Q) => {
                             camera.set_y(camera.get_y() + 0.5);
-                            changed = true;
                         }
-                        Some(winit::event::VirtualKeyCode::E) => {
+                        Some(event::VirtualKeyCode::E) => {
                             camera.set_y(camera.get_y() - 0.5);
-                            changed = true;
                         }
                         // R
-                        Some(winit::event::VirtualKeyCode::R) => {
+                        Some(event::VirtualKeyCode::R) => {
                             println!("Triggering RenderDoc capture.");
                             renderdoc.trigger_capture();
                         }
                         _ => {}
                     }
-                }
-                if changed {
-                    let mx_total = camera
-                        .compute_view_position_matrix(config.width as f32 / config.height as f32);
-                    let mx_ref: &[f32; 16] = mx_total.as_ref();
-                    queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
                 }
             }
             event::Event::RedrawRequested(_) => {
@@ -416,8 +430,7 @@ async fn main() {
 
                 frame.present();
 
-                let mx_total =
-                    camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
+                let mx_total = camera.get_view_projection_matrix();
                 let mx_ref: &[f32; 16] = mx_total.as_ref();
                 queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
             }
@@ -430,16 +443,61 @@ fn debug_ui(ctx: &Context, camera: &mut Camera) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label("Camera");
         ui.label("X");
-        ui.add(egui::DragValue::new(&mut camera.get_x()));
+        ui.add(drag_value(camera, Camera::get_x, Camera::set_x, None, None));
         ui.label("Y");
-        ui.add(egui::DragValue::new(&mut camera.get_y()));
+        ui.add(drag_value(camera, Camera::get_y, Camera::set_y, None, None));
         ui.label("Z");
-        ui.add(egui::DragValue::new(&mut camera.get_z()));
+        ui.add(drag_value(camera, Camera::get_z, Camera::set_z, None, None));
         ui.label("Yaw");
-        ui.add(egui::DragValue::new(&mut camera.get_yaw()));
+        ui.add(drag_value(
+            camera,
+            Camera::get_yaw,
+            Camera::set_yaw,
+            Some(-180.0f32),
+            Some(180.0f32),
+        ));
         ui.label("Pitch");
-        ui.add(egui::DragValue::new(&mut camera.get_pitch()));
+        ui.add(drag_value(
+            camera,
+            Camera::get_pitch,
+            Camera::set_pitch,
+            Some(-90.0f32),
+            Some(90.0f32),
+        ));
         ui.label("Fov");
-        ui.add(egui::DragValue::new(&mut camera.get_fov()));
+        ui.add(drag_value(
+            camera,
+            Camera::get_fov,
+            Camera::set_fov,
+            None,
+            None,
+        ));
     });
+}
+
+fn drag_value<T, I>(
+    value: &mut I,
+    get: fn(&I) -> &T,
+    set: fn(&mut I, T),
+    min: Option<T>,
+    max: Option<T>,
+) -> egui::DragValue
+where
+    T: Numeric,
+{
+    let value = egui::DragValue::from_get_set(move |new| {
+        if let Some(new) = new {
+            set(value, Numeric::from_f64(new));
+        }
+
+        get(value).to_f64()
+    });
+
+    let min = min.unwrap_or(T::MIN);
+    let max = max.unwrap_or(T::MAX);
+
+    value
+        .clamp_range(min.to_f64()..=max.to_f64())
+        .speed(0.25)
+        .max_decimals(1)
 }

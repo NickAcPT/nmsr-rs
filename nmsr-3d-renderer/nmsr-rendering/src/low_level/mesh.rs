@@ -20,7 +20,7 @@ impl PartPrimitive for Mesh {
     }
 
     fn get_indices(&self) -> Vec<u16> {
-        // Go through all quads, get their indices, and add them to the list
+        // Go through all primitives, get their indices, and add them to the list
         // Be sure to offset the indices by the number of vertices we've already added
         let mut indices = Vec::new();
         let mut offset = 0;

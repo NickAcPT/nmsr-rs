@@ -22,14 +22,14 @@ impl Cube {
         right_face_uv: [Vec2; 2],
     ) -> Self {
         // Generate the quads for the cube. Y is up. Z is front. X is left.
-        let x_left = center.x - size.x;
-        let x_right = center.x + size.x;
+        let x_left = center.x - size.x / 2.0;
+        let x_right = center.x + size.x / 2.0;
 
-        let y_up = center.y + size.y;
-        let y_down = center.y - size.y;
+        let y_up = center.y + size.y / 2.0;
+        let y_down = center.y - size.y / 2.0;
 
-        let z_front = center.z + size.z;
-        let z_back = center.z - size.z;
+        let z_front = center.z + size.z / 2.0;
+        let z_back = center.z - size.z / 2.0;
 
         let front_quad = Quad::new(
             /* top_left */       Vec3::new(x_left, y_up, z_front),

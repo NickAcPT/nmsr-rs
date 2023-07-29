@@ -25,7 +25,5 @@ pub fn generate_matrix(camera: Vec3, aspect_ratio: f32) -> glam::Mat4 {
         Vec3::Y,
     );
 
-    println!("Camera: {:?}", camera);
-
     projection * view
 }

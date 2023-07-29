@@ -8,8 +8,9 @@ use wgpu::util::DeviceExt;
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
+use nmsr_parts::high_level::camera::{Camera, CameraRotation};
 
-use nmsr_parts::low_level::{generate_matrix, Vec2, Vec3};
+use nmsr_parts::low_level::{Vec2, Vec3};
 use nmsr_parts::low_level::cube::Cube;
 use nmsr_parts::low_level::primitives::{PartPrimitive, Vertex};
 
@@ -69,6 +70,11 @@ async fn main() {
     let uv = Vec2::new(0.0, 0.0);
     let uv2 = Vec2::new(1.0, 1.0);
 
+    let mut camera = Camera::new(Vec3::new(0.0, 4.0, -2.0), CameraRotation {
+        yaw: 0.0,
+        pitch: 0.0,
+    }, 110f32);
+
     let to_render = //vec![
         Cube::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2])
         //,Cube::new(Vec3::new(0.0, 4.5, 0.0), Vec3::new(0.5, 0.5, 0.5), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2]),
@@ -113,9 +119,8 @@ async fn main() {
         push_constant_ranges: &[],
     });
 
-    let mut camera = Vec3::new(0.0, 4.0, 4.0);
 
-    let mx_total = generate_matrix(camera, config.width as f32 / config.height as f32);
+    let mx_total = camera.generate_view_projection_matrix(config.width as f32 / config.height as f32);
     let mx_ref: &[f32; 16] = mx_total.as_ref();
     let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Uniform Buffer"),
@@ -222,33 +227,33 @@ async fn main() {
             },
             // On keyboard input, move the camera
             // W is forward, S is backward, A is left, D is right, Q is up, E is down
-            // We are facing north
+            // We are facing South
             event::Event::WindowEvent { event: WindowEvent::KeyboardInput { input, .. }, .. } => {
                 let mut changed = false;
                 if input.state == winit::event::ElementState::Pressed {
                     match input.virtual_keycode {
                         Some(winit::event::VirtualKeyCode::W) => {
-                            camera.z -= 0.5;
+                            camera.set_z(camera.position.z + 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::S) => {
-                            camera.z += 0.5;
+                            camera.set_z(camera.position.z - 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::A) => {
-                            camera.x -= 0.5;
+                            camera.set_x(camera.position.x + 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::D) => {
-                            camera.x += 0.5;
+                            camera.set_x(camera.position.x - 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::Q) => {
-                            camera.y += 0.5;
+                            camera.set_y(camera.position.y + 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::E) => {
-                            camera.y -= 0.5;
+                            camera.set_y(camera.position.y - 0.5);
                             changed = true;
                         },
                         // R
@@ -260,7 +265,7 @@ async fn main() {
                     }
                 }
                 if changed {
-                    let mx_total = generate_matrix(camera, config.width as f32 / config.height as f32);
+                    let mx_total = camera.generate_view_projection_matrix(config.width as f32 / config.height as f32);
                     let mx_ref: &[f32; 16] = mx_total.as_ref();
                     queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
                 }

@@ -8,3 +8,4 @@ wgpu = "0.17.0"
 bytemuck = { version = "1.13.1", features = ["derive"] }
 glam = { version = "0.24.1", features = ["bytemuck"] }
 paste = "1.0.14"
+thiserror = "1.0.44"

@@ -1,9 +1,9 @@
 use glam::{Vec2, Vec3};
 
-use crate::low_level::mesh::Mesh;
-use crate::low_level::primitives::PartPrimitive;
-use crate::low_level::quad::Quad;
-use crate::low_level::vertex::Vertex;
+use crate::low_level::primitives::part_primitive::PartPrimitive;
+use crate::low_level::primitives::vertex::Vertex;
+use crate::low_level::primitives::mesh::Mesh;
+use crate::low_level::primitives::quad::Quad;
 
 pub struct Cube {
     mesh: Mesh,

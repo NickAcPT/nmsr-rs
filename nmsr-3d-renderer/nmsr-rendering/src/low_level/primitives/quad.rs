@@ -1,7 +1,7 @@
 use glam::{Vec2, Vec3};
 
-use crate::low_level::primitives::PartPrimitive;
-use crate::low_level::vertex::Vertex;
+use crate::low_level::primitives::part_primitive::PartPrimitive;
+use crate::low_level::primitives::vertex::Vertex;
 
 pub struct Quad {
     top_left: Vertex,

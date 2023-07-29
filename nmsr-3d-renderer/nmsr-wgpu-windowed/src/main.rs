@@ -1,23 +1,24 @@
+use std::{iter, mem};
 use std::borrow::Cow;
 use std::time::Instant;
-use std::{iter, mem};
 
-use egui::emath::Numeric;
 use egui::{Context, FontDefinitions};
+use egui::emath::Numeric;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
+use wgpu::{Instance, RenderPassDepthStencilAttachment, RequestAdapterOptions, Surface};
 use wgpu::util::DeviceExt;
-use wgpu::{RenderPassDepthStencilAttachment, RequestAdapterOptions};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
 use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
+use nmsr_rendering::high_level::pipeline::{NmsrPipeline, NmsrPipelineDescriptor};
+use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::mesh::Mesh;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
-use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() {
@@ -33,21 +34,16 @@ async fn main() {
     builder = builder.with_title("NMSR WGPU Windowed");
     let window = builder.build(&event_loop).unwrap();
 
-    let backends = wgpu::util::backend_bits_from_env().unwrap_or_else(wgpu::Backends::all);
-    let dx12_shader_compiler = wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default();
+    let size = window.inner_size();
 
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends,
-        dx12_shader_compiler,
-    });
-
-    let (size, surface) = unsafe {
-        let size = window.inner_size();
-
-        let surface = instance.create_surface(&window).unwrap();
-
-        (size, surface)
+    let provider = |i: &Instance| unsafe {
+        i.create_surface(&window).unwrap()
     };
+
+    let (instance, device, surface) = NmsrPipeline::new(NmsrPipelineDescriptor {
+        backends: Some(wgpu::Backends::all()),
+        surface_provider: Box::new(provider),
+    }).await.expect("Expected Nmsr Pipeline").into();
 
     let adapter = instance
         .request_adapter(&RequestAdapterOptions {
@@ -244,11 +240,11 @@ async fn main() {
             }
             event::Event::WindowEvent {
                 event:
-                    WindowEvent::Resized(size)
-                    | WindowEvent::ScaleFactorChanged {
-                        new_inner_size: &mut size,
-                        ..
-                    },
+                WindowEvent::Resized(size)
+                | WindowEvent::ScaleFactorChanged {
+                    new_inner_size: &mut size,
+                    ..
+                },
                 ..
             } => {
                 // Once winit is fixed, the detection conditions here can be removed.
@@ -476,8 +472,8 @@ fn drag_value<T, I>(
     min: Option<T>,
     max: Option<T>,
 ) -> egui::DragValue
-where
-    T: Numeric,
+    where
+        T: Numeric,
 {
     let value = egui::DragValue::from_get_set(move |new| {
         if let Some(new) = new {

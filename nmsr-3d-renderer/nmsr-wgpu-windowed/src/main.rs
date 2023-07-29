@@ -1,6 +1,10 @@
 use std::borrow::Cow;
-use std::mem;
+use std::{iter, mem};
 use std::ptr::null;
+use std::time::Instant;
+use egui::{Context, FontDefinitions};
+use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
+use egui_winit_platform::{Platform, PlatformDescriptor};
 use renderdoc::OverlayBits;
 
 use wgpu::{RenderPassDepthStencilAttachment, RequestAdapterOptions};
@@ -191,8 +195,21 @@ async fn main() {
         multiview: None,
     });
 
+    let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
+
+    let mut platform = Platform::new(PlatformDescriptor {
+        physical_width: config.width as u32,
+        physical_height: config.height as u32,
+        scale_factor: window.scale_factor(),
+        font_definitions: FontDefinitions::default(),
+        style: Default::default(),
+    });
+
     println!("Entering render loop...");
+    let start_time = Instant::now();
     event_loop.run(move |event, _, control_flow| {
+        platform.handle_event(&event);
+
         match event {
             event::Event::RedrawEventsCleared => {
                 window.request_redraw();
@@ -271,6 +288,8 @@ async fn main() {
                 }
             },
             event::Event::RedrawRequested(_) => {
+                platform.update_time(start_time.elapsed().as_secs_f64());
+
                 let frame = match surface.get_current_texture() {
                     Ok(frame) => frame,
                     Err(_) => {
@@ -339,14 +358,83 @@ async fn main() {
                     rpass.pop_debug_group();
                     rpass.insert_debug_marker("Draw!");
                     rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
-
                 }
 
                 queue.submit(Some(encoder.finish()));
 
+                // Begin to draw the UI frame.
+                platform.begin_frame();
+
+                // Draw the demo application.
+                {
+                    debug_ui(&platform.context(), &mut camera);
+                }
+
+                // End the UI frame. We could now handle the output and draw the UI with the backend.
+                let full_output = platform.end_frame(Some(&window));
+                let paint_jobs = platform.context().tessellate(full_output.shapes);
+
+                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("encoder"),
+                });
+
+                // Upload all resources for the GPU.
+                let screen_descriptor = ScreenDescriptor {
+                    physical_width: config.width,
+                    physical_height: config.height,
+                    scale_factor: window.scale_factor() as f32,
+                };
+                let tdelta: egui::TexturesDelta = full_output.textures_delta;
+                egui_rpass
+                    .add_textures(&device, &queue, &tdelta)
+                    .expect("add texture ok");
+                egui_rpass.update_buffers(&device, &queue, &paint_jobs, &screen_descriptor);
+
+                // Record all render passes.
+                egui_rpass
+                    .execute(
+                        &mut encoder,
+                        &view,
+                        &paint_jobs,
+                        &screen_descriptor,
+                        None,
+                    )
+                    .unwrap();
+                // Submit the commands.
+                queue.submit(iter::once(encoder.finish()));
+
+                egui_rpass
+                    .remove_textures(tdelta)
+                    .expect("remove texture ok");
+
                 frame.present();
+
+                let mx_total = camera.generate_view_projection_matrix(config.width as f32 / config.height as f32);
+                let mx_ref: &[f32; 16] = mx_total.as_ref();
+                queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
             }
             _ => {}
         }
     });
+}
+
+fn debug_ui(ctx: &Context, camera: &mut Camera) {
+    egui::Window::new("Camera")
+        .vscroll(true)
+        .show(ctx, |ui| {
+            ui.label("Camera");
+            ui.label("X");
+            ui.add(egui::DragValue::new(&mut camera.position.x));
+            ui.label("Y");
+            ui.add(egui::DragValue::new(&mut camera.position.y));
+            ui.label("Z");
+            ui.add(egui::DragValue::new(&mut camera.position.z));
+            ui.label("Yaw");
+            ui.add(egui::DragValue::new(&mut camera.rotation.yaw));
+            ui.label("Pitch");
+            ui.add(egui::DragValue::new(&mut camera.rotation.pitch));
+            ui.label("Fov");
+            ui.add(egui::DragValue::new(&mut camera.fov));
+        });
+
 }

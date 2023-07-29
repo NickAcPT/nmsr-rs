@@ -9,4 +9,4 @@ pub mod vertex;
 pub mod quad;
 pub mod mesh;
 pub mod cube;
-mod utils;
+pub mod utils;

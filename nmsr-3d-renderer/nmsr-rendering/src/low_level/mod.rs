@@ -4,9 +4,5 @@
 pub use glam::Vec2;
 pub use glam::Vec3;
 
-pub mod cube;
-pub mod mesh;
 pub mod primitives;
-pub mod quad;
-pub mod utils;
-pub mod vertex;
+pub(crate) mod utils;

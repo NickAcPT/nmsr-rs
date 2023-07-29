@@ -226,8 +226,8 @@ async fn main() {
     let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
 
     let mut platform = Platform::new(PlatformDescriptor {
-        physical_width: config.width as u32,
-        physical_height: config.height as u32,
+        physical_width: config.width,
+        physical_height: config.height,
         scale_factor: window.scale_factor(),
         font_definitions: FontDefinitions::default(),
         style: Default::default(),
@@ -236,7 +236,6 @@ async fn main() {
     println!("Entering render loop...");
     let start_time = Instant::now();
     event_loop.run(move |event, _, control_flow| {
-        let mut renderdoc = renderdoc;
 
         platform.handle_event(&event);
 
@@ -271,11 +270,7 @@ async fn main() {
             event::Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
-            } => unsafe {
-                if renderdoc.get_num_captures() == 0 {
-                    renderdoc.shutdown();
-                }
-
+            } => {
                 *control_flow = winit::event_loop::ControlFlow::Exit;
             },
             // On keyboard input, move the camera

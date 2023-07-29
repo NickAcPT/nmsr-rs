@@ -1,4 +1,4 @@
-use crate::low_level::vertex::Vertex;
+use crate::low_level::primitives::vertex::Vertex;
 
 pub trait PartPrimitive {
     /// Returns the vertices of the primitive

@@ -1,14 +1,26 @@
-use glam::{Affine3A, Vec2, Vec3};
+use glam::{Vec2, Vec3};
 
-use crate::low_level::primitives::{PartPrimitive, Vertex};
+use crate::low_level::mesh::Mesh;
+use crate::low_level::primitives::PartPrimitive;
 use crate::low_level::quad::Quad;
+use crate::low_level::vertex::Vertex;
 
 pub struct Cube {
-    quads: Vec<Quad>,
-    transform: Affine3A,
+    mesh: Mesh,
+}
+
+impl PartPrimitive for Cube {
+    fn get_vertices(&self) -> Vec<Vertex> {
+        self.mesh.get_vertices()
+    }
+
+    fn get_indices(&self) -> Vec<u16> {
+        self.mesh.get_indices()
+    }
 }
 
 impl Cube {
+    //noinspection DuplicatedCode
     /// Create a new cube with the given parameters
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -32,90 +44,68 @@ impl Cube {
         let z_back = center.z - size.z / 2.0;
 
         let front_quad = Quad::new(
-            /* top_left */       Vec3::new(x_left, y_up, z_front),
-            /* top_right */     Vec3::new(x_right, y_up, z_front),
-            /* bottom_left */   Vec3::new(x_left, y_down, z_front),
-            /* bottom_right */ Vec3::new(x_right, y_down, z_front),
-            /* top_left_uv */      front_face_uv[0],
-            /* bottom_right_uv */ front_face_uv[1],
+            Vec3::new(x_left, y_up, z_front),
+            Vec3::new(x_right, y_up, z_front),
+            Vec3::new(x_left, y_down, z_front),
+            Vec3::new(x_right, y_down, z_front),
+            front_face_uv[0],
+            front_face_uv[1],
         );
 
         let back_quad = Quad::new(
-            /* top_left */       Vec3::new(x_right, y_up, z_back),
-            /* top_right */     Vec3::new(x_left, y_up, z_back),
-            /* bottom_left */   Vec3::new(x_right, y_down, z_back),
-            /* bottom_right */ Vec3::new(x_left, y_down, z_back),
-            /* top_left_uv */      back_face_uv[0],
-            /* bottom_right_uv */ back_face_uv[1],
+            Vec3::new(x_right, y_up, z_back),
+            Vec3::new(x_left, y_up, z_back),
+            Vec3::new(x_right, y_down, z_back),
+            Vec3::new(x_left, y_down, z_back),
+            back_face_uv[0],
+            back_face_uv[1],
         );
 
         let top_quad = Quad::new(
-            /* top_left */      Vec3::new(x_left, y_up, z_back),
-            /* top_right */     Vec3::new(x_right, y_up, z_back),
-            /* bottom_left */   Vec3::new(x_left, y_up, z_front),
-            /* bottom_right */ Vec3::new(x_right, y_up, z_front),
-            /* top_left_uv */      top_face_uv[0],
-            /* bottom_right_uv */ top_face_uv[1],
+            Vec3::new(x_left, y_up, z_back),
+            Vec3::new(x_right, y_up, z_back),
+            Vec3::new(x_left, y_up, z_front),
+            Vec3::new(x_right, y_up, z_front),
+            top_face_uv[0],
+            top_face_uv[1],
         );
 
         let bottom_quad = Quad::new(
-            /* top_left */   Vec3::new(x_left, y_down, z_front),
-            /* top_right */ Vec3::new(x_right, y_down, z_front),
-            /* bottom_left */      Vec3::new(x_left, y_down, z_back),
-            /* bottom_right */     Vec3::new(x_right, y_down, z_back),
-            /* top_left_uv */      bottom_face_uv[0],
-            /* bottom_right_uv */ bottom_face_uv[1],
+            Vec3::new(x_left, y_down, z_front),
+            Vec3::new(x_right, y_down, z_front),
+            Vec3::new(x_left, y_down, z_back),
+            Vec3::new(x_right, y_down, z_back),
+            bottom_face_uv[0],
+            bottom_face_uv[1],
         );
 
         let left_quad = Quad::new(
-            /* top_left */      Vec3::new(x_left, y_up, z_back),
-            /* top_right */     Vec3::new(x_left, y_up, z_front),
-            /* bottom_left */   Vec3::new(x_left, y_down, z_back),
-            /* bottom_right */ Vec3::new(x_left, y_down, z_front),
-            /* top_left_uv */      left_face_uv[0],
-            /* bottom_right_uv */ left_face_uv[1],
+            Vec3::new(x_left, y_up, z_back),
+            Vec3::new(x_left, y_up, z_front),
+            Vec3::new(x_left, y_down, z_back),
+            Vec3::new(x_left, y_down, z_front),
+            left_face_uv[0],
+            left_face_uv[1],
         );
 
         let right_quad = Quad::new(
-            /* top_left */      Vec3::new(x_right, y_up, z_front),
-            /* top_right */     Vec3::new(x_right, y_up, z_back),
-            /* bottom_left */   Vec3::new(x_right, y_down, z_front),
-            /* bottom_right */ Vec3::new(x_right, y_down, z_back),
-            /* top_left_uv */      right_face_uv[0],
-            /* bottom_right_uv */ right_face_uv[1],
+            Vec3::new(x_right, y_up, z_front),
+            Vec3::new(x_right, y_up, z_back),
+            Vec3::new(x_right, y_down, z_front),
+            Vec3::new(x_right, y_down, z_back),
+            right_face_uv[0],
+            right_face_uv[1],
         );
 
         Cube {
-            quads: vec![
-                front_quad,
-                back_quad,
-                top_quad,
-                bottom_quad,
-                left_quad,
-                right_quad,
-            ],
-            transform: Affine3A::IDENTITY,
+            mesh: Mesh::new(vec![
+                Box::from(front_quad),
+                Box::from(back_quad),
+                Box::from(top_quad),
+                Box::from(bottom_quad),
+                Box::from(left_quad),
+                Box::from(right_quad),
+            ])
         }
-    }
-}
-
-impl PartPrimitive for Cube {
-    fn get_vertices(&self) -> Vec<Vertex> {
-        self.quads.iter().flat_map(|quad| quad.get_vertices()).collect()
-    }
-
-    fn get_indices(&self) -> Vec<u16> {
-        // Go through all quads, get their indices, and add them to the list
-        // Be sure to offset the indices by the number of vertices we've already added
-        let mut indices = Vec::new();
-        let mut offset = 0;
-
-        for quad in &self.quads {
-            let quad_indices = quad.get_indices();
-            indices.extend(quad_indices.iter().map(|index| index + offset));
-            offset += quad.get_vertices().len() as u16;
-        }
-
-        indices
     }
 }

@@ -1,12 +1,9 @@
 use std::borrow::Cow;
 use std::{iter, mem};
-use std::ptr::null;
 use std::time::Instant;
 use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
-use renderdoc::OverlayBits;
-
 use wgpu::{RenderPassDepthStencilAttachment, RequestAdapterOptions};
 use wgpu::util::DeviceExt;
 use winit::event;
@@ -15,8 +12,9 @@ use winit::event_loop::EventLoop;
 use nmsr_parts::high_level::camera::{Camera, CameraRotation};
 
 use nmsr_parts::low_level::{Vec2, Vec3};
-use nmsr_parts::low_level::cube::Cube;
-use nmsr_parts::low_level::primitives::{PartPrimitive, Vertex};
+use nmsr_parts::low_level::mesh::Mesh;
+use nmsr_parts::low_level::primitives::PartPrimitive;
+use nmsr_parts::low_level::vertex::Vertex;
 
 #[tokio::main]
 async fn main() {
@@ -80,7 +78,7 @@ async fn main() {
     }, 110f32);
 
     let to_render = //vec![
-        Cube::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2])
+        Mesh::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2])
         //,Cube::new(Vec3::new(0.0, 4.5, 0.0), Vec3::new(0.5, 0.5, 0.5), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2]),
    //]
     ;

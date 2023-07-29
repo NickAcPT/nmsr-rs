@@ -1,5 +1,5 @@
 [package]
-name = "nmsr-parts"
+name = "nmsr-rendering"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,4 @@ edition = "2021"
 wgpu = "0.17.0"
 bytemuck = { version = "1.13.1", features = ["derive"] }
 glam = { version = "0.24.1", features = ["bytemuck"] }
+paste = "1.0.14"

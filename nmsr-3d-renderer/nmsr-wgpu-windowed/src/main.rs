@@ -12,6 +12,7 @@ use winit::event_loop::EventLoop;
 use nmsr_parts::high_level::camera::{Camera, CameraRotation};
 
 use nmsr_parts::low_level::{Vec2, Vec3};
+use nmsr_parts::low_level::cube::Cube;
 use nmsr_parts::low_level::mesh::Mesh;
 use nmsr_parts::low_level::primitives::PartPrimitive;
 use nmsr_parts::low_level::vertex::Vertex;
@@ -42,10 +43,9 @@ async fn main() {
 
         (size, surface)
     };
-
     let adapter = instance.request_adapter(&RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::HighPerformance,
-        force_fallback_adapter: false,
+        power_preference: wgpu::PowerPreference::LowPower,
+        force_fallback_adapter: true,
         compatible_surface: Some(&surface),
     }).await.expect("Failed to find an appropriate adapter");
 
@@ -72,13 +72,15 @@ async fn main() {
     let uv = Vec2::new(0.0, 0.0);
     let uv2 = Vec2::new(1.0, 1.0);
 
+    let aspect_ratio = config.width as f32 / config.height as f32;
+
     let mut camera = Camera::new(Vec3::new(0.0, 4.0, -2.0), CameraRotation {
         yaw: 0.0,
         pitch: 0.0,
-    }, 110f32);
+    }, 110f32, aspect_ratio);
 
     let to_render = //vec![
-        Mesh::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2])
+        Cube::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2])
         //,Cube::new(Vec3::new(0.0, 4.5, 0.0), Vec3::new(0.5, 0.5, 0.5), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2]),
    //]
     ;
@@ -122,7 +124,7 @@ async fn main() {
     });
 
 
-    let mx_total = camera.generate_view_projection_matrix(config.width as f32 / config.height as f32);
+    let mx_total = camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
     let mx_ref: &[f32; 16] = mx_total.as_ref();
     let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Uniform Buffer"),
@@ -248,27 +250,27 @@ async fn main() {
                 if input.state == winit::event::ElementState::Pressed {
                     match input.virtual_keycode {
                         Some(winit::event::VirtualKeyCode::W) => {
-                            camera.set_z(camera.position.z + 0.5);
+                            camera.set_z(camera.get_z() + 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::S) => {
-                            camera.set_z(camera.position.z - 0.5);
+                            camera.set_z(camera.get_z() - 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::A) => {
-                            camera.set_x(camera.position.x + 0.5);
+                            camera.set_x(camera.get_x() + 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::D) => {
-                            camera.set_x(camera.position.x - 0.5);
+                            camera.set_x(camera.get_x() - 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::Q) => {
-                            camera.set_y(camera.position.y + 0.5);
+                            camera.set_y(camera.get_y() + 0.5);
                             changed = true;
                         },
                         Some(winit::event::VirtualKeyCode::E) => {
-                            camera.set_y(camera.position.y - 0.5);
+                            camera.set_y(camera.get_y() - 0.5);
                             changed = true;
                         },
                         // R
@@ -280,7 +282,7 @@ async fn main() {
                     }
                 }
                 if changed {
-                    let mx_total = camera.generate_view_projection_matrix(config.width as f32 / config.height as f32);
+                    let mx_total = camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
                     let mx_ref: &[f32; 16] = mx_total.as_ref();
                     queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
                 }
@@ -407,7 +409,7 @@ async fn main() {
 
                 frame.present();
 
-                let mx_total = camera.generate_view_projection_matrix(config.width as f32 / config.height as f32);
+                let mx_total = camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
                 let mx_ref: &[f32; 16] = mx_total.as_ref();
                 queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
             }
@@ -422,17 +424,17 @@ fn debug_ui(ctx: &Context, camera: &mut Camera) {
         .show(ctx, |ui| {
             ui.label("Camera");
             ui.label("X");
-            ui.add(egui::DragValue::new(&mut camera.position.x));
+            ui.add(egui::DragValue::new(&mut camera.get_x()));
             ui.label("Y");
-            ui.add(egui::DragValue::new(&mut camera.position.y));
+            ui.add(egui::DragValue::new(&mut camera.get_y()));
             ui.label("Z");
-            ui.add(egui::DragValue::new(&mut camera.position.z));
+            ui.add(egui::DragValue::new(&mut camera.get_z()));
             ui.label("Yaw");
-            ui.add(egui::DragValue::new(&mut camera.rotation.yaw));
+            ui.add(egui::DragValue::new(&mut camera.get_yaw()));
             ui.label("Pitch");
-            ui.add(egui::DragValue::new(&mut camera.rotation.pitch));
+            ui.add(egui::DragValue::new(&mut camera.get_pitch()));
             ui.label("Fov");
-            ui.add(egui::DragValue::new(&mut camera.fov));
+            ui.add(egui::DragValue::new(&mut camera.get_fov()));
         });
 
 }

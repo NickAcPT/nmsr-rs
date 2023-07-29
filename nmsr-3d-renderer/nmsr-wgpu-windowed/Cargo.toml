@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-nmsr-parts = { path = "../nmsr-parts" }
+nmsr-rendering = { path = "../nmsr-rendering" }
 bytemuck = "1.13.1"
 winit = "0.28.6"
 wgpu = "0.17.0"

@@ -13,10 +13,10 @@ use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
 use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
-use nmsr_rendering::low_level::cube::Cube;
-use nmsr_rendering::low_level::mesh::Mesh;
-use nmsr_rendering::low_level::primitives::PartPrimitive;
-use nmsr_rendering::low_level::vertex::Vertex;
+use nmsr_rendering::low_level::primitives::cube::Cube;
+use nmsr_rendering::low_level::primitives::mesh::Mesh;
+use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
+use nmsr_rendering::low_level::primitives::vertex::Vertex;
 use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
@@ -236,7 +236,6 @@ async fn main() {
     println!("Entering render loop...");
     let start_time = Instant::now();
     event_loop.run(move |event, _, control_flow| {
-
         platform.handle_event(&event);
 
         match event {
@@ -272,7 +271,7 @@ async fn main() {
                 ..
             } => {
                 *control_flow = winit::event_loop::ControlFlow::Exit;
-            },
+            }
             // On keyboard input, move the camera
             // W is forward, S is backward, A is left, D is right, Q is up, E is down
             // We are facing South

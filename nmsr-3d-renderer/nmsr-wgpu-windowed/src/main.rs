@@ -1,27 +1,29 @@
-use std::borrow::Cow;
-use std::{iter, mem};
-use std::time::Instant;
 use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
-use wgpu::{RenderPassDepthStencilAttachment, RequestAdapterOptions};
+use nmsr_parts::high_level::camera::{Camera, CameraRotation};
+use std::borrow::Cow;
+use std::time::Instant;
+use std::{iter, mem};
 use wgpu::util::DeviceExt;
+use wgpu::{RenderPassDepthStencilAttachment, RequestAdapterOptions};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
-use nmsr_parts::high_level::camera::{Camera, CameraRotation};
 
-use nmsr_parts::low_level::{Vec2, Vec3};
 use nmsr_parts::low_level::cube::Cube;
 use nmsr_parts::low_level::mesh::Mesh;
 use nmsr_parts::low_level::primitives::PartPrimitive;
 use nmsr_parts::low_level::vertex::Vertex;
+use nmsr_parts::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() {
-
-    let mut renderdoc = renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
-    renderdoc.launch_replay_ui(true, None).expect("Failed to launch RenderDoc replay UI");
+    let mut renderdoc =
+        renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
+    renderdoc
+        .launch_replay_ui(true, None)
+        .expect("Failed to launch RenderDoc replay UI");
 
     let event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
@@ -43,24 +45,29 @@ async fn main() {
 
         (size, surface)
     };
-    let adapter = instance.request_adapter(&RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::LowPower,
-        force_fallback_adapter: true,
-        compatible_surface: Some(&surface),
-    }).await.expect("Failed to find an appropriate adapter");
-
+    let adapter = instance
+        .request_adapter(&RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            force_fallback_adapter: true,
+            compatible_surface: Some(&surface),
+        })
+        .await
+        .expect("Failed to find an appropriate adapter");
 
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
-    let (device, queue) = adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: None,
-            features: wgpu::Features::empty(),
-            limits: wgpu::Limits::default(),
-        },
-        None,
-    ).await.expect("Unable to find a suitable GPU adapter!");
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::empty(),
+                limits: wgpu::Limits::default(),
+            },
+            None,
+        )
+        .await
+        .expect("Unable to find a suitable GPU adapter!");
 
     let mut config = surface
         .get_default_config(&adapter, size.width, size.height)
@@ -74,10 +81,15 @@ async fn main() {
 
     let aspect_ratio = config.width as f32 / config.height as f32;
 
-    let mut camera = Camera::new(Vec3::new(0.0, 4.0, -2.0), CameraRotation {
-        yaw: 0.0,
-        pitch: 0.0,
-    }, 110f32, aspect_ratio);
+    let mut camera = Camera::new(
+        Vec3::new(0.0, 4.0, -2.0),
+        CameraRotation {
+            yaw: 0.0,
+            pitch: 0.0,
+        },
+        110f32,
+        aspect_ratio,
+    );
 
     let to_render = //vec![
         Cube::new(Vec3::new(0.0, 4.0, 0.0), Vec3::new(1.0, 1.0, 1.0), [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2], [uv, uv2])
@@ -104,25 +116,22 @@ async fn main() {
     // Create pipeline layout
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: None,
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: wgpu::BufferSize::new(64),
-                },
-                count: None,
-            }
-        ],
+        entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::VERTEX,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: wgpu::BufferSize::new(64),
+            },
+            count: None,
+        }],
     });
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
         bind_group_layouts: &[&bind_group_layout],
         push_constant_ranges: &[],
     });
-
 
     let mx_total = camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
     let mx_ref: &[f32; 16] = mx_total.as_ref();
@@ -135,12 +144,10 @@ async fn main() {
     // Create bind group
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: &bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buf.as_entire_binding(),
-            },
-        ],
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: uniform_buf.as_entire_binding(),
+        }],
         label: None,
     });
 
@@ -216,11 +223,11 @@ async fn main() {
             }
             event::Event::WindowEvent {
                 event:
-                WindowEvent::Resized(size)
-                | WindowEvent::ScaleFactorChanged {
-                    new_inner_size: &mut size,
-                    ..
-                },
+                    WindowEvent::Resized(size)
+                    | WindowEvent::ScaleFactorChanged {
+                        new_inner_size: &mut size,
+                        ..
+                    },
                 ..
             } => {
                 // Once winit is fixed, the detection conditions here can be removed.
@@ -229,8 +236,7 @@ async fn main() {
                 if size.width > max_dimension || size.height > max_dimension {
                     println!(
                         "The resizing size {:?} exceeds the limit of {}.",
-                        size,
-                        max_dimension
+                        size, max_dimension
                     );
                 } else {
                     println!("Resizing to {:?}", size);
@@ -239,54 +245,61 @@ async fn main() {
                     surface.configure(&device, &config);
                 }
             }
-            event::Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
+            event::Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
                 *control_flow = winit::event_loop::ControlFlow::Exit;
-            },
+            }
             // On keyboard input, move the camera
             // W is forward, S is backward, A is left, D is right, Q is up, E is down
             // We are facing South
-            event::Event::WindowEvent { event: WindowEvent::KeyboardInput { input, .. }, .. } => {
+            event::Event::WindowEvent {
+                event: WindowEvent::KeyboardInput { input, .. },
+                ..
+            } => {
                 let mut changed = false;
                 if input.state == winit::event::ElementState::Pressed {
                     match input.virtual_keycode {
                         Some(winit::event::VirtualKeyCode::W) => {
                             camera.set_z(camera.get_z() + 0.5);
                             changed = true;
-                        },
+                        }
                         Some(winit::event::VirtualKeyCode::S) => {
                             camera.set_z(camera.get_z() - 0.5);
                             changed = true;
-                        },
+                        }
                         Some(winit::event::VirtualKeyCode::A) => {
                             camera.set_x(camera.get_x() + 0.5);
                             changed = true;
-                        },
+                        }
                         Some(winit::event::VirtualKeyCode::D) => {
                             camera.set_x(camera.get_x() - 0.5);
                             changed = true;
-                        },
+                        }
                         Some(winit::event::VirtualKeyCode::Q) => {
                             camera.set_y(camera.get_y() + 0.5);
                             changed = true;
-                        },
+                        }
                         Some(winit::event::VirtualKeyCode::E) => {
                             camera.set_y(camera.get_y() - 0.5);
                             changed = true;
-                        },
+                        }
                         // R
                         Some(winit::event::VirtualKeyCode::R) => {
                             println!("Triggering RenderDoc capture.");
                             renderdoc.trigger_capture();
-                        },
-                        _ => {},
+                        }
+                        _ => {}
                     }
                 }
                 if changed {
-                    let mx_total = camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
+                    let mx_total = camera
+                        .compute_view_position_matrix(config.width as f32 / config.height as f32);
                     let mx_ref: &[f32; 16] = mx_total.as_ref();
                     queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
                 }
-            },
+            }
             event::Event::RedrawRequested(_) => {
                 platform.update_time(start_time.elapsed().as_secs_f64());
 
@@ -392,13 +405,7 @@ async fn main() {
 
                 // Record all render passes.
                 egui_rpass
-                    .execute(
-                        &mut encoder,
-                        &view,
-                        &paint_jobs,
-                        &screen_descriptor,
-                        None,
-                    )
+                    .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
                     .unwrap();
                 // Submit the commands.
                 queue.submit(iter::once(encoder.finish()));
@@ -409,7 +416,8 @@ async fn main() {
 
                 frame.present();
 
-                let mx_total = camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
+                let mx_total =
+                    camera.compute_view_position_matrix(config.width as f32 / config.height as f32);
                 let mx_ref: &[f32; 16] = mx_total.as_ref();
                 queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
             }
@@ -419,22 +427,19 @@ async fn main() {
 }
 
 fn debug_ui(ctx: &Context, camera: &mut Camera) {
-    egui::Window::new("Camera")
-        .vscroll(true)
-        .show(ctx, |ui| {
-            ui.label("Camera");
-            ui.label("X");
-            ui.add(egui::DragValue::new(&mut camera.get_x()));
-            ui.label("Y");
-            ui.add(egui::DragValue::new(&mut camera.get_y()));
-            ui.label("Z");
-            ui.add(egui::DragValue::new(&mut camera.get_z()));
-            ui.label("Yaw");
-            ui.add(egui::DragValue::new(&mut camera.get_yaw()));
-            ui.label("Pitch");
-            ui.add(egui::DragValue::new(&mut camera.get_pitch()));
-            ui.label("Fov");
-            ui.add(egui::DragValue::new(&mut camera.get_fov()));
-        });
-
+    egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
+        ui.label("Camera");
+        ui.label("X");
+        ui.add(egui::DragValue::new(&mut camera.get_x()));
+        ui.label("Y");
+        ui.add(egui::DragValue::new(&mut camera.get_y()));
+        ui.label("Z");
+        ui.add(egui::DragValue::new(&mut camera.get_z()));
+        ui.label("Yaw");
+        ui.add(egui::DragValue::new(&mut camera.get_yaw()));
+        ui.label("Pitch");
+        ui.add(egui::DragValue::new(&mut camera.get_pitch()));
+        ui.label("Fov");
+        ui.add(egui::DragValue::new(&mut camera.get_fov()));
+    });
 }

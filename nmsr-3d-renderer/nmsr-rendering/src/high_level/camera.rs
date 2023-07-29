@@ -1,7 +1,6 @@
-
-use glam::{Mat4, Vec3};
 use crate::high_level::utils::camera_getters_setters;
 use crate::low_level::utils::minecraft_rotation_matrix;
+use glam::{Mat4, Vec3};
 
 pub struct CameraRotation {
     pub yaw: f32,
@@ -20,8 +19,7 @@ pub struct Camera {
     aspect_ratio: f32,
 
     dirty: bool,
-    cached_view_projection_matrix: Mat4
-
+    cached_view_projection_matrix: Mat4,
 }
 
 impl Camera {
@@ -32,7 +30,7 @@ impl Camera {
             fov,
             aspect_ratio,
             dirty: true,
-            cached_view_projection_matrix: Mat4::ZERO
+            cached_view_projection_matrix: Mat4::ZERO,
         }
     }
 

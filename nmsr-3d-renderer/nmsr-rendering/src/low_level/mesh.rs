@@ -7,15 +7,16 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn new(primitives: Vec<Box<dyn PartPrimitive>>) -> Self {
-        Mesh {
-            primitives,
-        }
+        Mesh { primitives }
     }
 }
 
 impl PartPrimitive for Mesh {
     fn get_vertices(&self) -> Vec<Vertex> {
-        self.primitives.iter().flat_map(|quad| quad.get_vertices()).collect()
+        self.primitives
+            .iter()
+            .flat_map(|quad| quad.get_vertices())
+            .collect()
     }
 
     fn get_indices(&self) -> Vec<u16> {

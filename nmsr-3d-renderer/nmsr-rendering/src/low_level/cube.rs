@@ -105,7 +105,7 @@ impl Cube {
                 Box::from(bottom_quad),
                 Box::from(left_quad),
                 Box::from(right_quad),
-            ])
+            ]),
         }
     }
 }

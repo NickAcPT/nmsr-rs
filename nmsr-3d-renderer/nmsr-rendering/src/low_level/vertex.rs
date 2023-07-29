@@ -12,9 +12,6 @@ pub struct Vertex {
 
 impl Vertex {
     pub fn new(position: Vec3, uv: Vec2) -> Self {
-        Vertex {
-            position,
-            uv,
-        }
+        Vertex { position, uv }
     }
 }

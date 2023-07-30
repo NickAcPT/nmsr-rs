@@ -13,6 +13,7 @@ use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
 use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
+use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::{NmsrPipeline, NmsrPipelineDescriptor};
 use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
@@ -21,7 +22,7 @@ use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), NMSRRenderingError> {
     let mut renderdoc =
         renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
 
@@ -40,41 +41,22 @@ async fn main() {
         i.create_surface(&window).unwrap()
     };
 
-    let (instance, device, surface) = NmsrPipeline::new(NmsrPipelineDescriptor {
+    let pipeline = NmsrPipeline::new(NmsrPipelineDescriptor {
         backends: Some(wgpu::Backends::all()),
         surface_provider: Box::new(provider),
-    }).await.expect("Expected Nmsr Pipeline").into();
+        default_size: (size.width, size.height)
+    }).await.expect("Expected Nmsr Pipeline");
 
-    let adapter = instance
-        .request_adapter(&RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::LowPower,
-            force_fallback_adapter: false,
-            compatible_surface: Some(&surface),
-        })
-        .await
-        .expect("Failed to find an appropriate adapter");
 
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
-    let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                features: wgpu::Features::empty(),
-                limits: wgpu::Limits::default(),
-            },
-            None,
-        )
-        .await
-        .expect("Unable to find a suitable GPU adapter!");
-
-    let mut config = surface
-        .get_default_config(&adapter, size.width, size.height)
-        .expect("Surface isn't supported by the adapter.");
-    let surface_view_format = config.format;
-    config.view_formats.push(surface_view_format);
-    surface.configure(&device, &config);
+    let instance = pipeline.wgpu_instance;
+    let device = pipeline.wgpu_device;
+    let queue = pipeline.wgpu_queue;
+    let surface = pipeline.wgpu_surface;
+    let mut config = pipeline.wgpu_surface_config;
+    let adapter = pipeline.wgpu_adapter;
 
     let uv = Vec2::new(0.0, 0.0);
     let uv2 = Vec2::new(1.0, 1.0);

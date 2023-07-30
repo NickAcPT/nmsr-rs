@@ -1,22 +1,20 @@
-use wgpu::{Device, Instance as WgpuInstance, Surface};
+use wgpu::{Adapter as WgpuAdapter, Instance as WgpuInstance, Device as WgpuDevice, Queue as WgpuQueue, Surface as WgpuSurface, RequestAdapterOptions, SurfaceConfiguration as WgpuSurfaceConfiguration};
 
 use crate::high_level::errors::{NMSRRenderingError, Result};
 
 pub struct NmsrPipeline {
-    wgpu_instance: WgpuInstance,
-    wgpu_device: Device,
-    wgpu_surface: Surface
+    pub wgpu_instance: WgpuInstance,
+    pub wgpu_device: WgpuDevice,
+    pub wgpu_queue: WgpuQueue,
+    pub wgpu_surface: WgpuSurface,
+    pub wgpu_surface_config: WgpuSurfaceConfiguration,
+    pub wgpu_adapter: WgpuAdapter,
 }
 
 pub struct NmsrPipelineDescriptor<'a> {
     pub backends: Option<wgpu::Backends>,
-    pub surface_provider: Box<dyn FnOnce(&WgpuInstance) -> Surface + 'a>,
-}
-
-impl From<NmsrPipeline> for (WgpuInstance, Device, Surface) {
-    fn from(value: NmsrPipeline) -> Self {
-        (value.wgpu_instance, value.wgpu_device, value.wgpu_surface)
-    }
+    pub surface_provider: Box<dyn FnOnce(&WgpuInstance) -> WgpuSurface + 'a>,
+    pub default_size: (u32, u32),
 }
 
 #[allow(unreachable_code)]
@@ -25,40 +23,52 @@ impl NmsrPipeline {
         let backends = wgpu::util::backend_bits_from_env().or(descriptor.backends).ok_or(NMSRRenderingError::NoBackendFound)?;
         let dx12_shader_compiler = wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default();
 
-        // Important:
-        let wgpu_instance = WgpuInstance::new(wgpu::InstanceDescriptor {
+        let instance = WgpuInstance::new(wgpu::InstanceDescriptor {
             backends,
             dx12_shader_compiler,
         });
 
-        let surface: Surface = (descriptor.surface_provider)(&wgpu_instance);
+        let surface = (descriptor.surface_provider)(&instance);
 
-        let adapter = wgpu::util::initialize_adapter_from_env_or_default(&wgpu_instance, Some(&surface))
+        let adapter = wgpu::util::initialize_adapter_from_env_or_default(&instance, Some(&surface))
             .await
             .ok_or(NMSRRenderingError::NoAdapterFound)?;
 
-        let (wgpu_device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    features: wgpu::Features::empty(),
-                    limits: wgpu::Limits::default(),
-                },
-                None,
-            ).await?;
+        let (device, queue) = adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::empty(),
+                limits: wgpu::Limits::default(),
+            },
+            None,
+        ).await?;
 
-        let mut config = surface
-            .get_default_config(&adapter, 1, 1)
-            .ok_or(NMSRRenderingError::NoAdapterFound)?;
+        let (default_width, default_height) = descriptor.default_size;
 
-        let surface_view_format = config.format;
-        config.view_formats.push(surface_view_format);
-        surface.configure(&wgpu_device, &config);
+        let mut surface_config = surface
+            .get_default_config(&adapter, default_width, default_height)
+            .ok_or(NMSRRenderingError::SurfaceNotSupported)?;
+
+        let surface_view_format = surface_config.format;
+        surface_config.view_formats.push(surface_view_format);
+        surface.configure(&device, &surface_config);
+
+        let adapter = instance
+            .request_adapter(&RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                force_fallback_adapter: false,
+                compatible_surface: Some(&surface),
+            })
+            .await
+            .ok_or(NMSRRenderingError::WgpuAdapterRequestError)?;
 
         Ok(NmsrPipeline {
-            wgpu_instance,
-            wgpu_device,
-            wgpu_surface: surface
+            wgpu_instance: instance,
+            wgpu_device: device,
+            wgpu_queue: queue,
+            wgpu_surface: surface,
+            wgpu_surface_config: surface_config,
+            wgpu_adapter: adapter
         })
     }
 }

@@ -10,6 +10,8 @@ pub enum NMSRRenderingError {
     WgpuRequestDeviceError(#[from] wgpu::RequestDeviceError),
     #[error("Surface is not supported by the adapter")]
     SurfaceNotSupported,
+    #[error("Unable to request adapter: {0}")]
+    WgpuAdapterRequestError
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRRenderingError>;

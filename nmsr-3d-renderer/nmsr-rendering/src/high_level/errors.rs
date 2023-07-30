@@ -10,7 +10,7 @@ pub enum NMSRRenderingError {
     WgpuRequestDeviceError(#[from] wgpu::RequestDeviceError),
     #[error("Surface is not supported by the adapter")]
     SurfaceNotSupported,
-    #[error("Unable to request adapter: {0}")]
+    #[error("Unable to request adapter")]
     WgpuAdapterRequestError
 }
 

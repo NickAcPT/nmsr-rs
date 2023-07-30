@@ -6,7 +6,7 @@ use egui::{Context, FontDefinitions};
 use egui::emath::Numeric;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
-use wgpu::{Instance, RenderPassDepthStencilAttachment, RequestAdapterOptions, Surface};
+use wgpu::{Backends, Instance, RenderPassDepthStencilAttachment};
 use wgpu::util::DeviceExt;
 use winit::event;
 use winit::event::WindowEvent;
@@ -14,7 +14,7 @@ use winit::event_loop::EventLoop;
 
 use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
 use nmsr_rendering::high_level::errors::NMSRRenderingError;
-use nmsr_rendering::high_level::pipeline::{NmsrPipeline, NmsrPipelineDescriptor};
+use nmsr_rendering::high_level::pipeline::{NmsrWgpuPipeline, NmsrPipelineDescriptor};
 use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::mesh::Mesh;
@@ -37,26 +37,23 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let size = window.inner_size();
 
-    let provider = |i: &Instance| unsafe {
-        i.create_surface(&window).unwrap()
-    };
-
-    let pipeline = NmsrPipeline::new(NmsrPipelineDescriptor {
+    let pipeline = NmsrWgpuPipeline::new(NmsrPipelineDescriptor {
         backends: Some(wgpu::Backends::all()),
-        surface_provider: Box::new(provider),
+        surface_provider: Box::new(|i: &Instance| unsafe {
+            Some(i.create_surface(&window).unwrap())
+        }),
         default_size: (size.width, size.height)
     }).await.expect("Expected Nmsr Pipeline");
 
+    let device = pipeline.device;
+    let queue = pipeline.queue;
+    let surface = pipeline.surface.expect("Expected surface");
+    let mut config = pipeline.surface_config.expect("Expected surface config")?;
+    let adapter = pipeline.adapter;
+    let surface_view_format = pipeline.surface_view_format.expect("Expected surface view format");
 
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
-
-    let instance = pipeline.wgpu_instance;
-    let device = pipeline.wgpu_device;
-    let queue = pipeline.wgpu_queue;
-    let surface = pipeline.wgpu_surface;
-    let mut config = pipeline.wgpu_surface_config;
-    let adapter = pipeline.wgpu_adapter;
 
     let uv = Vec2::new(0.0, 0.0);
     let uv2 = Vec2::new(1.0, 1.0);

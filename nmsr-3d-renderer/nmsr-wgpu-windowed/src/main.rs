@@ -6,7 +6,7 @@ use egui::{Context, FontDefinitions};
 use egui::emath::Numeric;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
-use wgpu::{Backends, Instance, RenderPassDepthStencilAttachment};
+use wgpu::{Instance, RenderPassDepthStencilAttachment};
 use wgpu::util::DeviceExt;
 use winit::event;
 use winit::event::WindowEvent;
@@ -14,10 +14,10 @@ use winit::event_loop::EventLoop;
 
 use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
 use nmsr_rendering::high_level::errors::NMSRRenderingError;
-use nmsr_rendering::high_level::pipeline::{NmsrWgpuPipeline, NmsrPipelineDescriptor};
+use nmsr_rendering::high_level::pipeline::scene::{Scene, Size};
+use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{NmsrPipelineDescriptor, NmsrWgpuPipeline};
 use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
-use nmsr_rendering::low_level::primitives::mesh::Mesh;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
 
@@ -42,7 +42,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         surface_provider: Box::new(|i: &Instance| unsafe {
             Some(i.create_surface(&window).unwrap())
         }),
-        default_size: (size.width, size.height)
+        default_size: (size.width, size.height),
     }).await.expect("Expected Nmsr Pipeline");
 
     let device = pipeline.device;
@@ -70,28 +70,35 @@ async fn main() -> Result<(), NMSRRenderingError> {
         aspect_ratio,
     );
 
-    let to_render = Mesh::new(vec![
-        Box::new(Cube::new(
-            Vec3::new(0.0, 4.0, 0.0),
-            Vec3::new(1.0, 1.0, 1.0),
-            [uv, uv2],
-            [uv, uv2],
-            [uv, uv2],
-            [uv, uv2],
-            [uv, uv2],
-            [uv, uv2],
-        )),
-        Box::new(Cube::new(
-            Vec3::new(0.0, 4.75, 0.0),
-            Vec3::new(0.5, 0.5, 0.5),
-            [uv2, uv],
-            [uv2, uv],
-            [uv2, uv],
-            [uv2, uv],
-            [uv2, uv],
-            [uv2, uv],
-        )),
-    ]);
+    let scene = Scene::new(
+        camera,
+        Size {
+            width: config.width,
+            height: config.height,
+        },
+        vec![
+            Box::new(Cube::new(
+                Vec3::new(0.0, 4.0, 0.0),
+                Vec3::new(1.0, 1.0, 1.0),
+                [uv, uv2],
+                [uv, uv2],
+                [uv, uv2],
+                [uv, uv2],
+                [uv, uv2],
+                [uv, uv2],
+            )),
+            Box::new(Cube::new(
+                Vec3::new(0.0, 4.75, 0.0),
+                Vec3::new(0.5, 0.5, 0.5),
+                [uv2, uv],
+                [uv2, uv],
+                [uv2, uv],
+                [uv2, uv],
+                [uv2, uv],
+                [uv2, uv],
+            )),
+        ]);
+
 
     // Create the vertex and index buffers
     let vertex_size = mem::size_of::<Vertex>();

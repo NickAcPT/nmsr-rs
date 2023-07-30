@@ -12,13 +12,14 @@ pub struct NmsrWgpuPipeline {
     pub adapter: Adapter,
 }
 
+pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface> + 'a;
+
 pub struct NmsrPipelineDescriptor<'a> {
     pub backends: Option<wgpu::Backends>,
-    pub surface_provider: Box<dyn FnOnce(&Instance) -> Option<Surface> + 'a>,
+    pub surface_provider: Box<ServiceProvider<'a>>,
     pub default_size: (u32, u32),
 }
 
-#[allow(unreachable_code)]
 impl NmsrWgpuPipeline {
     pub async fn new(descriptor: NmsrPipelineDescriptor<'_>) -> Result<Self> {
         let backends = wgpu::util::backend_bits_from_env().or(descriptor.backends).ok_or(NMSRRenderingError::NoBackendFound)?;
@@ -58,7 +59,7 @@ impl NmsrWgpuPipeline {
             if let Some(surface_view_format) = surface_view_format {
                 if let Some(Ok(surface_config)) = surface_config.as_mut() {
                     surface_config.view_formats.push(surface_view_format);
-                    surface.configure(&device, &surface_config);
+                    surface.configure(&device, surface_config);
                 }
             }
         }

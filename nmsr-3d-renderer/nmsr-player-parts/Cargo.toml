@@ -1,0 +1,17 @@
+[package]
+name = "nmsr-player-parts"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ears-rs = { git = "https://github.com/NickAcPT/ears-rs", optional = true }
+thiserror = "1.0.44"
+glam = "0.24.1"
+paste = "1.0.14"
+image = "0.24.6"
+
+[features]
+default = []
+ears = ["dep:ears-rs"]

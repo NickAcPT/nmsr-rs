@@ -66,12 +66,12 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
                 box_uv_start: (8, 8)
             },
             LeftLeg {
-                pos: [0, 0, -2],
+                pos: [-4, 0, -2],
                 size: [4, 12, 4],
                 box_uv_start: (20, 52)
             },
             RightLeg {
-                pos: [-4, 0, -2],
+                pos: [0, 0, -2],
                 size: [4, 12, 4],
                 box_uv_start: (4, 20)
             }

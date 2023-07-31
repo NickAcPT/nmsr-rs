@@ -8,7 +8,7 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use strum::IntoEnumIterator;
 use wgpu::util::DeviceExt;
-use wgpu::{BufferAddress, Instance, RenderPassDepthStencilAttachment};
+use wgpu::{BufferAddress, DepthBiasState, Instance, RenderPassDepthStencilAttachment};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -176,7 +176,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         label: None,
     });
 
-    let skin_bytes = include_bytes!("aaaa.png");
+    let skin_bytes = include_bytes!("ears_v0_sample1.png");
     let skin_image = image::load_from_memory(skin_bytes).unwrap();
     let mut skin_rgba = skin_image.to_rgba8();
 
@@ -305,9 +305,13 @@ async fn main() -> Result<(), NMSRRenderingError> {
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
             depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_compare: wgpu::CompareFunction::LessEqual,
             stencil: Default::default(),
-            bias: Default::default(),
+            bias: DepthBiasState {
+                constant: 5,
+                slope_scale: 2.0,
+                clamp: 20.0,
+            }
         }),
         multisample: wgpu::MultisampleState::default(),
         multiview: None,

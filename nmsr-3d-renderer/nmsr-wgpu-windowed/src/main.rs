@@ -74,9 +74,9 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let aspect_ratio = config.width as f32 / config.height as f32;
 
     let mut camera = Camera::new(
-        Vec3::new(0.0, 30.0, 20.0),
+        Vec3::new(0.0, 30.0, -20.0),
         CameraRotation {
-            yaw: -180.0,
+            yaw: 0.0,
             pitch: 0.0,
         },
         110f32,
@@ -177,7 +177,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
     });
 
 
-    let skin_bytes = include_bytes!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832 (10).png");
+    let skin_bytes = include_bytes!("aaaa.png");
     let skin_image = image::load_from_memory(skin_bytes).unwrap();
     let mut skin_rgba = skin_image.to_rgba8();
 

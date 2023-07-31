@@ -77,7 +77,7 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
 
                 let box_uv_offset: (i32, i32) = match non_layer_body_part_type {
                     Head => (32, 0),
-                    Body => (0, 32),
+                    Body => (0, 16),
                     LeftArm => (16, 0),
                     RightArm => (0, 16),
                     LeftLeg => (-16, 0),

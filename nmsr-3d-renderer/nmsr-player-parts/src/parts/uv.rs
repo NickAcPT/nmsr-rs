@@ -8,7 +8,7 @@ pub struct FaceUvPoint {
 }
 
 impl FaceUvPoint {
-    fn to_uv(&self, texture_size: Vec2) -> Vec2 {
+    pub fn to_uv(&self, texture_size: Vec2) -> Vec2 {
         Vec2::new(
             self.x as f32 / texture_size.x,
             self.y as f32 / texture_size.y,

@@ -4,13 +4,21 @@ use std::{iter, mem};
 
 use egui::emath::Numeric;
 use egui::{Context, FontDefinitions};
+use egui::TextStyle::Body;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
+use strum::IntoEnumIterator;
 use wgpu::util::DeviceExt;
 use wgpu::{Instance, RenderPassDepthStencilAttachment};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
+use nmsr_player_parts::parts::minecraft::MinecraftPlayerPartsProvider;
+use nmsr_player_parts::parts::part::Part;
+use nmsr_player_parts::parts::player_model::PlayerModel;
+use nmsr_player_parts::parts::provider::{PartsProvider, PlayerPartProviderContext};
+use nmsr_player_parts::parts::types::PlayerBodyPartType;
+use nmsr_player_parts::parts::uv::{CubeFaceUvs, FaceUv};
 
 use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
 use nmsr_rendering::high_level::errors::NMSRRenderingError;
@@ -22,6 +30,9 @@ use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
 use nmsr_rendering::low_level::{Vec2, Vec3};
+use nmsr_rendering::low_level::primitives::mesh::Mesh;
+use nmsr_rendering::low_level::primitives::quad::Quad;
+
 
 #[tokio::main]
 async fn main() -> Result<(), NMSRRenderingError> {
@@ -76,35 +87,15 @@ async fn main() -> Result<(), NMSRRenderingError> {
         aspect_ratio,
     );
 
-    let scene = Scene::new(
-        camera,
-        Size {
-            width: config.width,
-            height: config.height,
-        },
-        vec![
-            Box::new(Cube::new(
-                Vec3::new(0.0, 4.0, 0.0),
-                Vec3::new(1.0, 1.0, 1.0),
-                [uv, uv2],
-                [uv, uv2],
-                [uv, uv2],
-                [uv, uv2],
-                [uv, uv2],
-                [uv, uv2],
-            )),
-            Box::new(Cube::new(
-                Vec3::new(0.0, 4.75, 0.0),
-                Vec3::new(0.5, 0.5, 0.5),
-                [uv2, uv],
-                [uv2, uv],
-                [uv2, uv],
-                [uv2, uv],
-                [uv2, uv],
-                [uv2, uv],
-            )),
-        ],
-    );
+    let ctx = PlayerPartProviderContext {
+        model: PlayerModel::Alex
+    };
+
+    let to_render: Vec<_> = PlayerBodyPartType::iter()
+        .flat_map(|part| MinecraftPlayerPartsProvider.get_parts(&ctx, part))
+        .map(primitive_convert).collect();
+
+    let to_render = Mesh::new(to_render);
 
     // Create the vertex and index buffers
     let vertex_size = mem::size_of::<Vertex>();
@@ -482,4 +473,25 @@ where
         .clamp_range(min.to_f64()..=max.to_f64())
         .speed(0.25)
         .max_decimals(1)
+}
+
+fn primitive_convert(part: Part) -> Box<dyn PartPrimitive> {
+    Box::new(match part {
+        Part::Cube { position, size, face_uvs, .. } => {
+            // Compute center of cube
+            let center = position + size / 2.0;
+
+            Cube::new(center, size, uv(&face_uvs.north), uv(&face_uvs.south), uv(&face_uvs.up), uv(&face_uvs.down), uv(&face_uvs.west), uv(&face_uvs.east))
+        }
+        Part::Quad { .. } => {
+            unreachable!()
+        }
+    })
+}
+
+fn uv(face_uvs: &FaceUv) -> [Vec2; 2] {
+    [
+        face_uvs.top_left.to_uv([64f32, 64f32].into()),
+        face_uvs.bottom_right.to_uv([64f32, 64f32].into()),
+    ]
 }

@@ -17,7 +17,7 @@ macro_rules! body_part {
                     $size,
                     box_uv($uv_x, $uv_y, $size),
                 )),
-            ),*
+            )*
             _ => None
         }
     };
@@ -47,7 +47,7 @@ fn box_uv(x: u8, y: u8, size: [u8; 3]) -> [[u8; 4]; 6] {
 impl PartsProvider for MinecraftPlayerPartsProvider {
     fn get_parts(
         &self,
-        context: PlayerPartProviderContext,
+        context: &PlayerPartProviderContext,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
         let part = body_part!(
@@ -59,7 +59,7 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
                 box_uv_start: (20, 20)
             },
             Head {
-                pos: [0, 24, -2],
+                pos: [-4, 24, -4],
                 size: [8, 8, 8],
                 box_uv_start: (8, 8)
             }

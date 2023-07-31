@@ -1,4 +1,4 @@
-use crate::parts::minecraft::provider::MinecraftPlayerPartsProvider;
+use crate::parts::minecraft::MinecraftPlayerPartsProvider;
 use crate::parts::part::Part;
 use crate::parts::player_model::PlayerModel;
 use crate::parts::types::PlayerBodyPartType;
@@ -17,7 +17,7 @@ pub struct PlayerPartProviderContext {
 pub trait PartsProvider {
     fn get_parts(
         &self,
-        context: PlayerPartProviderContext,
+        context: &PlayerPartProviderContext,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part>;
 }
@@ -25,7 +25,7 @@ pub trait PartsProvider {
 impl PartsProvider for PlayerPartsProvider {
     fn get_parts(
         &self,
-        context: PlayerPartProviderContext,
+        context: &PlayerPartProviderContext,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
         match self {

@@ -23,11 +23,11 @@ macro_rules! body_part {
     };
 }
 
-fn uv_from_pos_and_size(x: u8, y: u8, size_x: u8, size_y: u8) -> [u8; 4] {
+fn uv_from_pos_and_size(x: u16, y: u16, size_x: u16, size_y: u16) -> [u16; 4] {
     [x, y, x + size_x, y + size_y]
 }
 
-fn box_uv(x: u8, y: u8, size: [u8; 3]) -> [[u8; 4]; 6] {
+fn box_uv(x: u16, y: u16, size: [u16; 3]) -> [[u16; 4]; 6] {
     let size_x = size[0];
     let size_y = size[1];
     let size_z = size[2];
@@ -64,6 +64,16 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
                 pos: [-4, 24, -4],
                 size: [8, 8, 8],
                 box_uv_start: (8, 8)
+            },
+            LeftLeg {
+                pos: [0, 0, -2],
+                size: [4, 12, 4],
+                box_uv_start: (20, 52)
+            },
+            RightLeg {
+                pos: [-4, 0, -2],
+                size: [4, 12, 4],
+                box_uv_start: (4, 20)
             }
         );
 
@@ -93,9 +103,9 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
 
                         let size = part.get_size();
                         *face_uvs = box_uv(
-                            current_box_uv.x + box_uv_offset.0 as u8,
-                            current_box_uv.y + box_uv_offset.1 as u8,
-                            [size.x as u8, size.y as u8, size.z as u8],
+                            (current_box_uv.x as i32 + box_uv_offset.0) as u16,
+                            (current_box_uv.y as i32 + box_uv_offset.1) as u16,
+                            [size.x as u16, size.y as u16, size.z as u16],
                         )
                         .into()
                     }

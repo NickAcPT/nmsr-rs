@@ -45,7 +45,7 @@ impl Part {
         texture: PlayerPartTextureType,
         pos: [i32; 3],
         size: [u32; 3],
-        uvs: [[u8; 4]; 6],
+        uvs: [[u16; 4]; 6],
     ) -> Self {
         Cube {
             position: MinecraftPosition::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),

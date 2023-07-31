@@ -8,7 +8,7 @@ pub struct MinecraftPlayerPartsProvider;
 
 macro_rules! body_part {
     // Matcher on many body parts
-    ($match_var: ident, $($name: ident {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr)}),*) => {
+    ($match_var: expr, $($name: ident {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr)}),*) => {
         match $match_var {
             $(
                 $name => Some(Part::new_cube(
@@ -50,8 +50,10 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
         context: &PlayerPartProviderContext,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
+        let non_layer_body_part_type = body_part.get_non_layer_part();
+
         let part = body_part!(
-            body_part,
+            non_layer_body_part_type,
             // Base parts
             Body {
                 pos: [-4, 12, -2],
@@ -64,6 +66,42 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
                 box_uv_start: (8, 8)
             }
         );
+
+        if let Some(part) = part {
+            if body_part.is_layer() {
+                let mut new_part = part.expand(if non_layer_body_part_type == Head {
+                    0.5
+                } else {
+                    0.25
+                });
+
+                let box_uv_offset: (i32, i32) = match non_layer_body_part_type {
+                    Head => (32, 0),
+                    Body => (0, 32),
+                    LeftArm => (16, 0),
+                    RightArm => (0, 16),
+                    LeftLeg => (-16, 0),
+                    RightLeg => (0, 16),
+                    _ => unreachable!()
+                };
+
+                match new_part {
+                    Part::Cube { ref mut face_uvs, .. } => {
+                        let current_box_uv = face_uvs.north.top_left;
+
+                        let size = part.get_size();
+                        *face_uvs = box_uv(current_box_uv.x + box_uv_offset.0 as u8, current_box_uv.y + box_uv_offset.1 as u8, [size.x as u8, size.y as u8, size.z as u8]).into()
+                    }
+                    Part::Quad { ref mut face_uv, .. } => {
+                        todo!("Quad support")
+                    }
+                }
+
+                return vec![
+                    new_part
+                ];
+            }
+        }
 
         part.into_iter().collect()
     }

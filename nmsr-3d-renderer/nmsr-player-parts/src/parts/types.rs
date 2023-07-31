@@ -1,6 +1,6 @@
 use strum::EnumIter;
 
-#[derive(Copy, Clone, EnumIter)]
+#[derive(Copy, Clone, EnumIter, Eq, PartialEq)]
 pub enum PlayerBodyPartType {
     // Normal body parts
     Head,
@@ -32,7 +32,7 @@ impl PlayerBodyPartType {
         )
     }
 
-    fn get_non_layer_part(&self) -> Self {
+    pub fn get_non_layer_part(&self) -> Self {
         match self {
             Self::HeadLayer => Self::Head,
             Self::BodyLayer => Self::Body,
@@ -45,6 +45,7 @@ impl PlayerBodyPartType {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum PlayerPartTextureType {
     Skin,
     Cape,

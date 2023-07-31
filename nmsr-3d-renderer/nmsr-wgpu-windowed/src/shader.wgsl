@@ -1,11 +1,17 @@
 struct VertexOutput {
     @location(0) tex_coord: vec2<f32>,
-    @builtin(position) position: vec4<f32>,
+    @builtin(position) @invariant position: vec4<f32>,
 };
 
 @group(0)
 @binding(0)
 var<uniform> transform: mat4x4<f32>;
+
+
+@group(1) @binding(0)
+var t_diffuse: texture_2d<f32>;
+@group(1)@binding(1)
+var s_diffuse: sampler;
 
 @vertex
 fn vs_main(
@@ -20,5 +26,9 @@ fn vs_main(
 
 @fragment
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(vertex.tex_coord, 0.0, 1.0);
+    var color: vec4<f32> = textureSample(t_diffuse, s_diffuse, vertex.tex_coord);
+    if (color.a == 0.0) {
+        discard;
+    }
+    return color;
 }

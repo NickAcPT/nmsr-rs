@@ -60,14 +60,22 @@ impl Part {
         let mut new_part = *self;
 
         match new_part {
-            Cube { ref mut size, ref mut position, .. } => {
+            Cube {
+                ref mut size,
+                ref mut position,
+                ..
+            } => {
                 // Increase the size of the cube by the amount specified.
                 *size += amount;
 
                 // Fix the position of the cube so that it is still centered.
                 *position -= amount / 2.0;
             }
-            Quad { ref mut size, ref mut position, .. } => {
+            Quad {
+                ref mut size,
+                ref mut position,
+                ..
+            } => {
                 // Increase the size of the quad by the amount specified.
                 *size += amount;
             }
@@ -96,6 +104,4 @@ impl Part {
             Quad { texture, .. } => *texture,
         }
     }
-
-
 }

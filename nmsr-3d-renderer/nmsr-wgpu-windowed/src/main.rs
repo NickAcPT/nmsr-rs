@@ -1,14 +1,14 @@
-use std::{iter, mem};
 use std::borrow::Cow;
 use std::time::Instant;
+use std::{iter, mem};
 
-use egui::{Context, FontDefinitions};
 use egui::emath::Numeric;
+use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use strum::IntoEnumIterator;
-use wgpu::{BufferAddress, Instance, RenderPassDepthStencilAttachment};
 use wgpu::util::DeviceExt;
+use wgpu::{BufferAddress, Instance, RenderPassDepthStencilAttachment};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -24,11 +24,11 @@ use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
     NmsrPipelineDescriptor, NmsrWgpuPipeline,
 };
-use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::mesh::Mesh;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
+use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() -> Result<(), NMSRRenderingError> {
@@ -53,8 +53,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
         }),
         default_size: (size.width, size.height),
     })
-        .await
-        .expect("Expected Nmsr Pipeline");
+    .await
+    .expect("Expected Nmsr Pipeline");
 
     let device = pipeline.device;
     let queue = pipeline.queue;
@@ -176,42 +176,38 @@ async fn main() -> Result<(), NMSRRenderingError> {
         label: None,
     });
 
-
     let skin_bytes = include_bytes!("aaaa.png");
     let skin_image = image::load_from_memory(skin_bytes).unwrap();
     let mut skin_rgba = skin_image.to_rgba8();
 
     ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
 
-    let skin_texture = device.create_texture(
-        &wgpu::TextureDescriptor {
-            // All textures are stored as 3D, we represent our 2D texture
-            // by setting depth to 1.
-            size: wgpu::Extent3d {
-                width: 64,
-                height: 64,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            // Most images are stored using sRGB so we need to reflect that here.
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
-            // COPY_DST means that we want to copy data to this texture
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            label: Some("skin_texture"),
-            // This is the same as with the SurfaceConfig. It
-            // specifies what texture formats can be used to
-            // create TextureViews for this texture. The base
-            // texture format (Rgba8UnormSrgb in this case) is
-            // always supported. Note that using a different
-            // texture format is not supported on the WebGL2
-            // backend.
-            view_formats: &[],
-        }
-    );
-
+    let skin_texture = device.create_texture(&wgpu::TextureDescriptor {
+        // All textures are stored as 3D, we represent our 2D texture
+        // by setting depth to 1.
+        size: wgpu::Extent3d {
+            width: 64,
+            height: 64,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        // Most images are stored using sRGB so we need to reflect that here.
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
+        // COPY_DST means that we want to copy data to this texture
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        label: Some("skin_texture"),
+        // This is the same as with the SurfaceConfig. It
+        // specifies what texture formats can be used to
+        // create TextureViews for this texture. The base
+        // texture format (Rgba8UnormSrgb in this case) is
+        // always supported. Note that using a different
+        // texture format is not supported on the WebGL2
+        // backend.
+        view_formats: &[],
+    });
 
     queue.write_texture(
         // Tells wgpu where to copy the pixel data
@@ -236,7 +232,6 @@ async fn main() -> Result<(), NMSRRenderingError> {
         },
     );
 
-
     let skin_texture_view = skin_texture.create_view(&wgpu::TextureViewDescriptor::default());
     let skin_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -254,7 +249,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
     });
 
     let vertex_buffers = [wgpu::VertexBufferLayout {
-        array_stride: vertex_size as wgpu::BufferAddress,
+        array_stride: vertex_size as BufferAddress,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &[
             wgpu::VertexAttribute {
@@ -270,22 +265,20 @@ async fn main() -> Result<(), NMSRRenderingError> {
         ],
     }];
 
-    let skin_bind_group = device.create_bind_group(
-        &wgpu::BindGroupDescriptor {
-            layout: &skin_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&skin_texture_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&skin_sampler),
-                }
-            ],
-            label: Some("diffuse_bind_group"),
-        }
-    );
+    let skin_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &skin_bind_group_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&skin_texture_view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(&skin_sampler),
+            },
+        ],
+        label: Some("diffuse_bind_group"),
+    });
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: None,
@@ -298,18 +291,14 @@ async fn main() -> Result<(), NMSRRenderingError> {
         fragment: Some(wgpu::FragmentState {
             module: &shader,
             entry_point: "fs_main",
-            targets: &[
-                Some(wgpu::ColorTargetState {
-                    format: config.view_formats[0],
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                    write_mask: wgpu::ColorWrites::ALL,
-                }
-                )
-            ],
-
+            targets: &[Some(wgpu::ColorTargetState {
+                format: config.view_formats[0],
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
         }),
         primitive: wgpu::PrimitiveState {
-            cull_mode: None,//Some(wgpu::Face::Back),
+            cull_mode: None, //Some(wgpu::Face::Back),
             front_face: wgpu::FrontFace::Cw,
             ..Default::default()
         },
@@ -345,11 +334,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
             }
             event::Event::WindowEvent {
                 event:
-                WindowEvent::Resized(size)
-                | WindowEvent::ScaleFactorChanged {
-                    new_inner_size: &mut size,
-                    ..
-                },
+                    WindowEvent::Resized(size)
+                    | WindowEvent::ScaleFactorChanged {
+                        new_inner_size: &mut size,
+                        ..
+                    },
                 ..
             } => {
                 // Once winit is fixed, the detection conditions here can be removed.
@@ -578,8 +567,8 @@ fn drag_value<T, I>(
     min: Option<T>,
     max: Option<T>,
 ) -> egui::DragValue
-    where
-        T: Numeric,
+where
+    T: Numeric,
 {
     let value = egui::DragValue::from_get_set(move |new| {
         if let Some(new) = new {

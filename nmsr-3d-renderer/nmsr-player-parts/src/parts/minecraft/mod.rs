@@ -82,24 +82,31 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
                     RightArm => (0, 16),
                     LeftLeg => (-16, 0),
                     RightLeg => (0, 16),
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 };
 
                 match new_part {
-                    Part::Cube { ref mut face_uvs, .. } => {
+                    Part::Cube {
+                        ref mut face_uvs, ..
+                    } => {
                         let current_box_uv = face_uvs.north.top_left;
 
                         let size = part.get_size();
-                        *face_uvs = box_uv(current_box_uv.x + box_uv_offset.0 as u8, current_box_uv.y + box_uv_offset.1 as u8, [size.x as u8, size.y as u8, size.z as u8]).into()
+                        *face_uvs = box_uv(
+                            current_box_uv.x + box_uv_offset.0 as u8,
+                            current_box_uv.y + box_uv_offset.1 as u8,
+                            [size.x as u8, size.y as u8, size.z as u8],
+                        )
+                        .into()
                     }
-                    Part::Quad { ref mut face_uv, .. } => {
+                    Part::Quad {
+                        ref mut face_uv, ..
+                    } => {
                         todo!("Quad support")
                     }
                 }
 
-                return vec![
-                    new_part
-                ];
+                return vec![new_part];
             }
         }
 

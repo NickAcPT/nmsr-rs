@@ -55,11 +55,11 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
         let part = body_part!(
             non_layer_body_part_type,
             // Base parts
-            Body {
+            /*Body {
                 pos: [-4, 12, -2],
                 size: [8, 12, 4],
                 box_uv_start: (20, 20)
-            },
+            },*/
             Head {
                 pos: [-4, 24, -4],
                 size: [8, 8, 8],

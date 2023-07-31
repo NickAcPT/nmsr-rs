@@ -620,8 +620,13 @@ fn primitive_convert(part: Part) -> Box<dyn PartPrimitive> {
 }
 
 fn uv(face_uvs: &FaceUv) -> [Vec2; 2] {
+    let mut top_left = face_uvs.top_left.to_uv([64f32, 64f32].into());
+    let mut bottom_right = face_uvs.bottom_right.to_uv([64f32, 64f32].into());
+    let small_offset= 1f32 / 16f32 / 64f32;
+    top_left += small_offset;
+    bottom_right -= small_offset;
     [
-        face_uvs.top_left.to_uv([64f32, 64f32].into()),
-        face_uvs.bottom_right.to_uv([64f32, 64f32].into()),
+        top_left,
+        bottom_right,
     ]
 }

@@ -29,14 +29,20 @@ pub struct CubeFaceUvs {
     pub east: FaceUv,
     pub west: FaceUv,
     pub up: FaceUv,
-    pub down: FaceUv
+    pub down: FaceUv,
 }
 
 impl From<[u8; 4]> for FaceUv {
     fn from(uvs: [u8; 4]) -> Self {
         Self {
-            top_left: FaceUvPoint { x: uvs[0], y: uvs[1] },
-            bottom_right: FaceUvPoint { x: uvs[2], y: uvs[3] },
+            top_left: FaceUvPoint {
+                x: uvs[0],
+                y: uvs[1],
+            },
+            bottom_right: FaceUvPoint {
+                x: uvs[2],
+                y: uvs[3],
+            },
         }
     }
 }

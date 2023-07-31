@@ -1,4 +1,7 @@
-use wgpu::{Adapter, Device, Instance, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, TextureFormat};
+use wgpu::{
+    Adapter, Device, Instance, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration,
+    TextureFormat,
+};
 
 use crate::high_level::errors::{NMSRRenderingError, Result};
 
@@ -22,7 +25,9 @@ pub struct NmsrPipelineDescriptor<'a> {
 
 impl NmsrWgpuPipeline {
     pub async fn new(descriptor: NmsrPipelineDescriptor<'_>) -> Result<Self> {
-        let backends = wgpu::util::backend_bits_from_env().or(descriptor.backends).ok_or(NMSRRenderingError::NoBackendFound)?;
+        let backends = wgpu::util::backend_bits_from_env()
+            .or(descriptor.backends)
+            .ok_or(NMSRRenderingError::NoBackendFound)?;
         let dx12_shader_compiler = wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default();
 
         let instance = Instance::new(wgpu::InstanceDescriptor {
@@ -32,28 +37,33 @@ impl NmsrWgpuPipeline {
 
         let surface = (descriptor.surface_provider)(&instance);
 
-        let adapter = wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
-            .await
-            .ok_or(NMSRRenderingError::NoAdapterFound)?;
+        let adapter =
+            wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
+                .await
+                .ok_or(NMSRRenderingError::NoAdapterFound)?;
 
-        let (device, queue) = adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                features: wgpu::Features::empty(),
-                limits: wgpu::Limits::default(),
-            },
-            None,
-        ).await?;
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: None,
+                    features: wgpu::Features::empty(),
+                    limits: wgpu::Limits::default(),
+                },
+                None,
+            )
+            .await?;
 
         let (default_width, default_height) = descriptor.default_size;
 
-        let mut surface_config = surface.as_ref()
-            .map(|surface| {
-                surface.get_default_config(&adapter, default_width, default_height)
-                    .ok_or(NMSRRenderingError::SurfaceNotSupported)
-            });
+        let mut surface_config = surface.as_ref().map(|surface| {
+            surface
+                .get_default_config(&adapter, default_width, default_height)
+                .ok_or(NMSRRenderingError::SurfaceNotSupported)
+        });
 
-        let surface_view_format = surface_config.as_ref().and_then(|s| s.as_ref().ok().map(|s| s.format));
+        let surface_view_format = surface_config
+            .as_ref()
+            .and_then(|s| s.as_ref().ok().map(|s| s.format));
 
         if let Some(surface) = &surface {
             if let Some(surface_view_format) = surface_view_format {

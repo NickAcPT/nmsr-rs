@@ -1,8 +1,8 @@
-pub mod provider;
-pub mod minecraft;
 pub mod ears;
-pub mod types;
-pub mod player_model;
-pub mod uv;
-mod utils;
+pub mod minecraft;
 mod part;
+pub mod player_model;
+pub mod provider;
+pub mod types;
+mod utils;
+pub mod uv;

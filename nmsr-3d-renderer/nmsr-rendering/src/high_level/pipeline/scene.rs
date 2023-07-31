@@ -16,7 +16,12 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn new(pipeline: NmsrWgpuPipeline, camera: Camera, viewport_size: Size, objects: Vec<Box<dyn PartPrimitive>>) -> Self {
+    pub fn new(
+        pipeline: NmsrWgpuPipeline,
+        camera: Camera,
+        viewport_size: Size,
+        objects: Vec<Box<dyn PartPrimitive>>,
+    ) -> Self {
         Self {
             camera,
             viewport_size,
@@ -25,4 +30,3 @@ impl Scene {
         }
     }
 }
-

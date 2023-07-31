@@ -28,7 +28,6 @@ pub enum Part {
 }
 
 impl Part {
-
     /// Creates a new cube part.
     ///
     /// # Arguments
@@ -40,7 +39,12 @@ impl Part {
     /// Each UV is in the following order: [Top left, Bottom right]
     ///
     /// returns: [Part]
-    pub fn new_cube(texture: PlayerPartTextureType, pos: [i32; 3], size: [u32; 3], uvs: [[u8; 4]; 6]) -> Self {
+    pub fn new_cube(
+        texture: PlayerPartTextureType,
+        pos: [i32; 3],
+        size: [u32; 3],
+        uvs: [[u8; 4]; 6],
+    ) -> Self {
         Cube {
             position: MinecraftPosition::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),

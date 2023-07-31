@@ -1,13 +1,13 @@
-use std::{iter, mem};
 use std::borrow::Cow;
 use std::time::Instant;
+use std::{iter, mem};
 
-use egui::{Context, FontDefinitions};
 use egui::emath::Numeric;
+use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
-use wgpu::{Instance, RenderPassDepthStencilAttachment};
 use wgpu::util::DeviceExt;
+use wgpu::{Instance, RenderPassDepthStencilAttachment};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -15,11 +15,13 @@ use winit::event_loop::EventLoop;
 use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
 use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::scene::{Scene, Size};
-use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{NmsrPipelineDescriptor, NmsrWgpuPipeline};
-use nmsr_rendering::low_level::{Vec2, Vec3};
+use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
+    NmsrPipelineDescriptor, NmsrWgpuPipeline,
+};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
+use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() -> Result<(), NMSRRenderingError> {
@@ -43,14 +45,18 @@ async fn main() -> Result<(), NMSRRenderingError> {
             Some(i.create_surface(&window).unwrap())
         }),
         default_size: (size.width, size.height),
-    }).await.expect("Expected Nmsr Pipeline");
+    })
+    .await
+    .expect("Expected Nmsr Pipeline");
 
     let device = pipeline.device;
     let queue = pipeline.queue;
     let surface = pipeline.surface.expect("Expected surface");
     let mut config = pipeline.surface_config.expect("Expected surface config")?;
     let adapter = pipeline.adapter;
-    let surface_view_format = pipeline.surface_view_format.expect("Expected surface view format");
+    let surface_view_format = pipeline
+        .surface_view_format
+        .expect("Expected surface view format");
 
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
@@ -97,8 +103,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 [uv2, uv],
                 [uv2, uv],
             )),
-        ]);
-
+        ],
+    );
 
     // Create the vertex and index buffers
     let vertex_size = mem::size_of::<Vertex>();
@@ -226,11 +232,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
             }
             event::Event::WindowEvent {
                 event:
-                WindowEvent::Resized(size)
-                | WindowEvent::ScaleFactorChanged {
-                    new_inner_size: &mut size,
-                    ..
-                },
+                    WindowEvent::Resized(size)
+                    | WindowEvent::ScaleFactorChanged {
+                        new_inner_size: &mut size,
+                        ..
+                    },
                 ..
             } => {
                 // Once winit is fixed, the detection conditions here can be removed.
@@ -458,8 +464,8 @@ fn drag_value<T, I>(
     min: Option<T>,
     max: Option<T>,
 ) -> egui::DragValue
-    where
-        T: Numeric,
+where
+    T: Numeric,
 {
     let value = egui::DragValue::from_get_set(move |new| {
         if let Some(new) = new {

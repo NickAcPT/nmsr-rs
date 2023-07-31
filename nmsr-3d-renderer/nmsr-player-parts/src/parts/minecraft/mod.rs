@@ -68,4 +68,3 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
         part.into_iter().collect()
     }
 }
-

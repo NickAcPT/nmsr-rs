@@ -65,20 +65,20 @@ impl Cube {
 
         // Top is facing towards the positive Y axis (Up).
         let top_quad = Quad::new(
-            Vec3::new(x_left, y_up, z_back),
             Vec3::new(x_right, y_up, z_back),
-            Vec3::new(x_left, y_up, z_front),
+            Vec3::new(x_left, y_up, z_back),
             Vec3::new(x_right, y_up, z_front),
+            Vec3::new(x_left, y_up, z_front),
             top_face_uv[0],
             top_face_uv[1],
         );
 
         // Bottom is facing towards the negative Y axis (Down).
         let bottom_quad = Quad::new(
-            Vec3::new(x_left, y_down, z_front),
-            Vec3::new(x_right, y_down, z_front),
-            Vec3::new(x_left, y_down, z_back),
             Vec3::new(x_right, y_down, z_back),
+            Vec3::new(x_left, y_down, z_back),
+            Vec3::new(x_right, y_down, z_front),
+            Vec3::new(x_left, y_down, z_front),
             bottom_face_uv[0],
             bottom_face_uv[1],
         );

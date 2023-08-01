@@ -1,14 +1,14 @@
+use std::{iter, mem};
 use std::borrow::Cow;
 use std::time::{Duration, Instant};
-use std::{iter, mem};
 
-use egui::emath::Numeric;
 use egui::{Context, FontDefinitions};
+use egui::emath::Numeric;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use strum::IntoEnumIterator;
+use wgpu::{BufferAddress, Device, Instance, RenderPassDepthStencilAttachment, StencilState, SurfaceConfiguration, Texture, TextureView};
 use wgpu::util::DeviceExt;
-use wgpu::{BufferAddress, Instance, RenderPassDepthStencilAttachment};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -24,11 +24,11 @@ use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
     NmsrPipelineDescriptor, NmsrWgpuPipeline,
 };
+use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::mesh::Mesh;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
-use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() -> Result<(), NMSRRenderingError> {
@@ -53,8 +53,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
         }),
         default_size: (size.width, size.height),
     })
-    .await
-    .expect("Expected Nmsr Pipeline");
+        .await
+        .expect("Expected Nmsr Pipeline");
 
     let device = pipeline.device;
     let queue = pipeline.queue;
@@ -323,21 +323,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         style: Default::default(),
     });
 
-    let mut depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-        size: wgpu::Extent3d {
-            width: config.width,
-            height: config.height,
-            depth_or_array_layers: 1,
-        },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        label: None,
-        view_formats: &[],
-    });
-    let mut depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let (mut depth_texture, mut depth) = create_depth(&device, &mut config);
 
     println!("Entering render loop...");
     let start_time = Instant::now();
@@ -352,11 +338,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
             }
             event::Event::WindowEvent {
                 event:
-                    WindowEvent::Resized(size)
-                    | WindowEvent::ScaleFactorChanged {
-                        new_inner_size: &mut size,
-                        ..
-                    },
+                WindowEvent::Resized(size)
+                | WindowEvent::ScaleFactorChanged {
+                    new_inner_size: &mut size,
+                    ..
+                },
                 ..
             } => {
                 // Once winit is fixed, the detection conditions here can be removed.
@@ -374,22 +360,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     surface.configure(&device, &config);
                     camera.set_aspect_ratio(config.width as f32 / config.height as f32);
 
-                    depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-                        size: wgpu::Extent3d {
-                            width: config.width,
-                            height: config.height,
-                            depth_or_array_layers: 1,
-                        },
-                        mip_level_count: 1,
-                        sample_count: 1,
-                        dimension: wgpu::TextureDimension::D2,
-                        format: wgpu::TextureFormat::Depth32Float,
-                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                        label: None,
-                        view_formats: &[],
-                    });
-
-                    depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default())
+                    (depth_texture, depth) = create_depth(&device, &config)
                 }
             }
             event::Event::WindowEvent {
@@ -549,6 +520,25 @@ async fn main() -> Result<(), NMSRRenderingError> {
     });
 }
 
+fn create_depth(device: &Device, config: &SurfaceConfiguration) -> (Texture, TextureView) {
+    let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+        size: wgpu::Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        label: None,
+        view_formats: &[],
+    });
+    let depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    (depth_texture, depth)
+}
+
 fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
@@ -628,8 +618,8 @@ fn drag_value<T, I>(
     min: Option<T>,
     max: Option<T>,
 ) -> egui::DragValue
-where
-    T: Numeric,
+    where
+        T: Numeric,
 {
     let value = egui::DragValue::from_get_set(move |new| {
         if let Some(new) = new {

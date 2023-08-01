@@ -5,7 +5,7 @@ use glam::{Vec2, Vec3};
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Vertex {
     /// The position of the vertex
-    position: Vec3,
+    pub position: Vec3,
     /// The uv coordinates of the vertex
     uv: Vec2,
 }

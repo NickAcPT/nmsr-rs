@@ -74,6 +74,16 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
                 pos: [0, 0, -2],
                 size: [4, 12, 4],
                 box_uv_start: (4, 20)
+            },
+            LeftArm {
+                pos: [-8, 12, -2],
+                size: [4, 12, 4],
+                box_uv_start: (36, 52)
+            },
+            RightArm {
+                pos: [4, 12, -2],
+                size: [4, 12, 4],
+                box_uv_start: (44, 20)
             }
         );
 

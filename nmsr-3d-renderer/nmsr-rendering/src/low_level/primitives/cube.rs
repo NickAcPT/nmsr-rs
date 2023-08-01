@@ -107,12 +107,12 @@ impl Cube {
 
         Cube {
             mesh: Mesh::new(vec![
-                Box::from(front_quad),
                 Box::from(back_quad),
                 Box::from(top_quad),
                 Box::from(bottom_quad),
                 Box::from(left_quad),
                 Box::from(right_quad),
+                Box::from(front_quad),
             ]),
         }
     }

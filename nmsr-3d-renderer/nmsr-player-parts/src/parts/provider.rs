@@ -1,4 +1,3 @@
-use crate::parts::minecraft::MinecraftPlayerPartsProvider;
 use crate::parts::part::Part;
 use crate::parts::player_model::PlayerModel;
 use crate::parts::types::PlayerBodyPartType;

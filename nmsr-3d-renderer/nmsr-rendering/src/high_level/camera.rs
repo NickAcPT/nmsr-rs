@@ -61,15 +61,14 @@ impl ProjectionParameters {
             ProjectionParameters::Perspective { fov } => {
                 Mat4::perspective_rh(fov.to_radians(), aspect_ratio, 0.1, 100.0)
             }
-            ProjectionParameters::Orthographic { aspect } => {
-                Mat4::orthographic_rh(
-                    -aspect * aspect_ratio,
-                    aspect * aspect_ratio,
-                    -*aspect,
-                    *aspect,
-                    0.1,
-                    100.0)
-            }
+            ProjectionParameters::Orthographic { aspect } => Mat4::orthographic_rh(
+                -aspect * aspect_ratio,
+                aspect * aspect_ratio,
+                -*aspect,
+                *aspect,
+                0.1,
+                100.0,
+            ),
         }
     }
 }
@@ -89,7 +88,12 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(position: Vec3, rotation: CameraRotation, projection: ProjectionParameters, aspect_ratio: f32) -> Self {
+    pub fn new(
+        position: Vec3,
+        rotation: CameraRotation,
+        projection: ProjectionParameters,
+        aspect_ratio: f32,
+    ) -> Self {
         Camera {
             position,
             rotation,

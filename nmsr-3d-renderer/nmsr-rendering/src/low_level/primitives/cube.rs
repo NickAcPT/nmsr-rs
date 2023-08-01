@@ -33,7 +33,7 @@ impl Cube {
         left_face_uv: [Vec2; 2],
         right_face_uv: [Vec2; 2],
     ) -> Self {
-        let small = 0f32;//1.0 / 256.0;
+        let small = 0f32; //1.0 / 256.0;
 
         // Generate the quads for the cube. Y is up. Z is front. X is left.
         let x_left = center.x - size.x / 2.0;

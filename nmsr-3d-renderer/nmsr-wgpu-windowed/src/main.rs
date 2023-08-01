@@ -8,7 +8,7 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use strum::IntoEnumIterator;
 use wgpu::util::DeviceExt;
-use wgpu::{BufferAddress, DepthBiasState, Instance, RenderPassDepthStencilAttachment};
+use wgpu::{BufferAddress, Instance, RenderPassDepthStencilAttachment};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -79,9 +79,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
             yaw: 0.0,
             pitch: 0.0,
         },
-        ProjectionParameters::Perspective {
-            fov: 110f32
-        },
+        ProjectionParameters::Perspective { fov: 110f32 },
         aspect_ratio,
     );
 
@@ -309,7 +307,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
             depth_write_enabled: true,
             depth_compare: wgpu::CompareFunction::LessEqual,
             stencil: Default::default(),
-            bias: Default::default()
+            bias: Default::default(),
         }),
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
@@ -589,8 +587,16 @@ fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
 
         ui.vertical(|ui| {
             ui.label("Projection");
-            ui.radio_value(projection, ProjectionParameters::Perspective { fov: 110f32 }, "Perspective");
-            ui.radio_value(projection, ProjectionParameters::Orthographic { aspect: 15.0f32 }, "Orthographic");
+            ui.radio_value(
+                projection,
+                ProjectionParameters::Perspective { fov: 110f32 },
+                "Perspective",
+            );
+            ui.radio_value(
+                projection,
+                ProjectionParameters::Orthographic { aspect: 15.0f32 },
+                "Orthographic",
+            );
         });
 
         if let ProjectionParameters::Perspective { .. } = projection {
@@ -673,11 +679,8 @@ fn primitive_convert(part: Part) -> Box<dyn PartPrimitive> {
 fn uv(face_uvs: &FaceUv) -> [Vec2; 2] {
     let mut top_left = face_uvs.top_left.to_uv([64f32, 64f32].into());
     let mut bottom_right = face_uvs.bottom_right.to_uv([64f32, 64f32].into());
-    let small_offset= 1f32 / 16f32 / 64f32;
+    let small_offset = 1f32 / 16f32 / 64f32;
     top_left += small_offset;
     bottom_right -= small_offset;
-    [
-        top_left,
-        bottom_right,
-    ]
+    [top_left, bottom_right]
 }

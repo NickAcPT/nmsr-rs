@@ -28,7 +28,6 @@ impl PartialEq for ProjectionParameters {
 }
 
 impl ProjectionParameters {
-
     pub fn get_fov(&self) -> Option<f32> {
         match self {
             ProjectionParameters::Perspective { fov } => Some(*fov),
@@ -73,7 +72,6 @@ impl ProjectionParameters {
             }
         }
     }
-
 }
 
 /// The camera used to view the scene

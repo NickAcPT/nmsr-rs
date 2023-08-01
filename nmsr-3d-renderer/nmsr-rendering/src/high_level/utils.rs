@@ -31,6 +31,10 @@ macro_rules! camera_inner_getters_setters {
                 self.$inner.$name
             }
 
+            pub fn [<get_ $name _as_mut>](&mut self) -> &mut $_type {
+                &mut self.$inner.$name
+            }
+
             pub fn [<set_ $name>](&mut self, $name: $_type) {
                 self.$inner.$name = $name;
                 self.dirty = true;

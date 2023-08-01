@@ -33,6 +33,8 @@ impl Cube {
         left_face_uv: [Vec2; 2],
         right_face_uv: [Vec2; 2],
     ) -> Self {
+        let small = 0f32;//1.0 / 256.0;
+
         // Generate the quads for the cube. Y is up. Z is front. X is left.
         let x_left = center.x - size.x / 2.0;
         let x_right = center.x + size.x / 2.0;
@@ -45,60 +47,60 @@ impl Cube {
 
         // Front is facing towards the negative Z axis (North).
         let front_quad = Quad::new(
-            Vec3::new(x_right, y_up, z_front),
-            Vec3::new(x_left, y_up, z_front),
-            Vec3::new(x_right, y_down, z_front),
-            Vec3::new(x_left, y_down, z_front),
+            Vec3::new(x_right, y_up, z_front + small),
+            Vec3::new(x_left, y_up, z_front + small),
+            Vec3::new(x_right, y_down, z_front + small),
+            Vec3::new(x_left, y_down, z_front + small),
             front_face_uv[0],
             front_face_uv[1],
         );
 
         // Back is facing towards the negative Z axis (South).
         let back_quad = Quad::new(
-            Vec3::new(x_left, y_up, z_back),
-            Vec3::new(x_right, y_up, z_back),
-            Vec3::new(x_left, y_down, z_back),
-            Vec3::new(x_right, y_down, z_back),
+            Vec3::new(x_left, y_up, z_back - small),
+            Vec3::new(x_right, y_up, z_back - small),
+            Vec3::new(x_left, y_down, z_back - small),
+            Vec3::new(x_right, y_down, z_back - small),
             back_face_uv[0],
             back_face_uv[1],
         );
 
         // Top is facing towards the positive Y axis (Up).
         let top_quad = Quad::new(
-            Vec3::new(x_right, y_up, z_back),
-            Vec3::new(x_left, y_up, z_back),
-            Vec3::new(x_right, y_up, z_front),
-            Vec3::new(x_left, y_up, z_front),
+            Vec3::new(x_right, y_up + small, z_back),
+            Vec3::new(x_left, y_up + small, z_back),
+            Vec3::new(x_right, y_up + small, z_front),
+            Vec3::new(x_left, y_up + small, z_front),
             top_face_uv[0],
             top_face_uv[1],
         );
 
         // Bottom is facing towards the negative Y axis (Down).
         let bottom_quad = Quad::new(
-            Vec3::new(x_right, y_down, z_back),
-            Vec3::new(x_left, y_down, z_back),
-            Vec3::new(x_right, y_down, z_front),
-            Vec3::new(x_left, y_down, z_front),
+            Vec3::new(x_right, y_down - small, z_back),
+            Vec3::new(x_left, y_down - small, z_back),
+            Vec3::new(x_right, y_down - small, z_front),
+            Vec3::new(x_left, y_down - small, z_front),
             bottom_face_uv[0],
             bottom_face_uv[1],
         );
 
         // Left is facing towards the negative X axis (West).
         let left_quad = Quad::new(
-            Vec3::new(x_left, y_up, z_front),
-            Vec3::new(x_left, y_up, z_back),
-            Vec3::new(x_left, y_down, z_front),
-            Vec3::new(x_left, y_down, z_back),
+            Vec3::new(x_left - small, y_up, z_front),
+            Vec3::new(x_left - small, y_up, z_back),
+            Vec3::new(x_left - small, y_down, z_front),
+            Vec3::new(x_left - small, y_down, z_back),
             left_face_uv[0],
             left_face_uv[1],
         );
 
         // Right is facing towards the positive X axis (East).
         let right_quad = Quad::new(
-            Vec3::new(x_right, y_up, z_back),
-            Vec3::new(x_right, y_up, z_front),
-            Vec3::new(x_right, y_down, z_back),
-            Vec3::new(x_right, y_down, z_front),
+            Vec3::new(x_right + small, y_up, z_back),
+            Vec3::new(x_right + small, y_up, z_front),
+            Vec3::new(x_right + small, y_down, z_back),
+            Vec3::new(x_right + small, y_down, z_front),
             right_face_uv[0],
             right_face_uv[1],
         );

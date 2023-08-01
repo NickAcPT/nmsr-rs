@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use std::{iter, mem};
 
 use egui::emath::Numeric;
@@ -309,11 +309,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
             depth_write_enabled: true,
             depth_compare: wgpu::CompareFunction::LessEqual,
             stencil: Default::default(),
-            bias: DepthBiasState {
-                constant: 5,
-                slope_scale: 2.0,
-                clamp: 20.0,
-            }
+            bias: Default::default()
         }),
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
@@ -329,8 +325,26 @@ async fn main() -> Result<(), NMSRRenderingError> {
         style: Default::default(),
     });
 
+    let mut depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+        size: wgpu::Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        label: None,
+        view_formats: &[],
+    });
+    let mut depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
     println!("Entering render loop...");
     let start_time = Instant::now();
+    let mut last_frame_time = Duration::ZERO;
+
     event_loop.run(move |event, _, control_flow| {
         platform.handle_event(&event);
 
@@ -360,6 +374,24 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     config.width = size.width.max(1);
                     config.height = size.height.max(1);
                     surface.configure(&device, &config);
+                    camera.set_aspect_ratio(config.width as f32 / config.height as f32);
+
+                    depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+                        size: wgpu::Extent3d {
+                            width: config.width,
+                            height: config.height,
+                            depth_or_array_layers: 1,
+                        },
+                        mip_level_count: 1,
+                        sample_count: 1,
+                        dimension: wgpu::TextureDimension::D2,
+                        format: wgpu::TextureFormat::Depth32Float,
+                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                        label: None,
+                        view_formats: &[],
+                    });
+
+                    depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default())
                 }
             }
             event::Event::WindowEvent {
@@ -406,6 +438,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
             }
             event::Event::RedrawRequested(_) => {
                 platform.update_time(start_time.elapsed().as_secs_f64());
+                let start = Instant::now();
 
                 let frame = match surface.get_current_texture() {
                     Ok(frame) => frame,
@@ -416,26 +449,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
                             .expect("Failed to acquire next surface texture!")
                     }
                 };
+
                 let view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
                     format: Some(surface_view_format),
                     ..wgpu::TextureViewDescriptor::default()
                 });
-
-                let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-                    size: wgpu::Extent3d {
-                        width: config.width,
-                        height: config.height,
-                        depth_or_array_layers: 1,
-                    },
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Depth32Float,
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    label: None,
-                    view_formats: &[],
-                });
-                let depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
                 device.push_error_scope(wgpu::ErrorFilter::Validation);
 
@@ -481,11 +499,12 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 queue.submit(Some(encoder.finish()));
 
                 // Begin to draw the UI frame.
+
                 platform.begin_frame();
 
                 // Draw the demo application.
                 {
-                    debug_ui(&platform.context(), &mut camera);
+                    debug_ui(&platform.context(), &mut camera, last_frame_time);
                 }
 
                 // End the UI frame. We could now handle the output and draw the UI with the backend.
@@ -521,6 +540,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                 frame.present();
 
+                last_frame_time = start.elapsed();
+
                 let mx_total = camera.get_view_projection_matrix();
                 let mx_ref: &[f32; 16] = mx_total.as_ref();
                 queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
@@ -530,8 +551,10 @@ async fn main() -> Result<(), NMSRRenderingError> {
     });
 }
 
-fn debug_ui(ctx: &Context, camera: &mut Camera) {
+fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
+        ui.label(format!("Last Frame time: {:?}", last_frame_time));
+
         ui.label("Camera");
         ui.label("X");
         ui.add(drag_value(camera, Camera::get_x, Camera::set_x, None, None));
@@ -568,7 +591,6 @@ fn debug_ui(ctx: &Context, camera: &mut Camera) {
             ui.label("Projection");
             ui.radio_value(projection, ProjectionParameters::Perspective { fov: 110f32 }, "Perspective");
             ui.radio_value(projection, ProjectionParameters::Orthographic { aspect: 15.0f32 }, "Orthographic");
-
         });
 
         if let ProjectionParameters::Perspective { .. } = projection {

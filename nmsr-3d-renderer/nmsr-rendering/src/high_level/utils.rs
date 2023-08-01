@@ -1,8 +1,12 @@
 macro_rules! camera_getters_setters {
     ($name: ident: $_type: ty) => {
         paste::paste! {
-            pub fn [<get_ $name>](&self) -> &$_type {
-                &self.$name
+            pub fn [<get_ $name>](&self) -> $_type {
+                self.$name
+            }
+
+            pub fn [<get_ $name _as_mut>](&mut self) -> &mut $_type {
+                &mut self.$name
             }
 
             pub fn [<set_ $name>](&mut self, $name: $_type) {
@@ -23,8 +27,8 @@ macro_rules! camera_getters_setters {
 macro_rules! camera_inner_getters_setters {
     ($inner: ident, $name: ident: $_type: ty) => {
         paste::paste! {
-            pub fn [<get_ $name>](&self) -> &$_type {
-                &self.$inner.$name
+            pub fn [<get_ $name>](&self) -> $_type {
+                self.$inner.$name
             }
 
             pub fn [<set_ $name>](&mut self, $name: $_type) {

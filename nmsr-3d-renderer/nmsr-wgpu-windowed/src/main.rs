@@ -19,7 +19,7 @@ use nmsr_player_parts::parts::player_model::PlayerModel;
 use nmsr_player_parts::parts::provider::{PartsProvider, PlayerPartProviderContext};
 use nmsr_player_parts::parts::types::PlayerBodyPartType;
 use nmsr_player_parts::parts::uv::FaceUv;
-use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
+use nmsr_rendering::high_level::camera::{Camera, CameraRotation, ProjectionParameters};
 use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
     NmsrPipelineDescriptor, NmsrWgpuPipeline,
@@ -79,7 +79,9 @@ async fn main() -> Result<(), NMSRRenderingError> {
             yaw: 0.0,
             pitch: 0.0,
         },
-        110f32,
+        ProjectionParameters::Perspective {
+            fov: 110f32
+        },
         aspect_ratio,
     );
 
@@ -553,20 +555,47 @@ fn debug_ui(ctx: &Context, camera: &mut Camera) {
             Some(-90.0f32),
             Some(90.0f32),
         ));
-        ui.label("Fov");
-        ui.add(drag_value(
-            camera,
-            Camera::get_fov,
-            Camera::set_fov,
-            None,
-            None,
-        ));
+
+        ui.separator();
+
+        // ProjectionParameters enum (enum variant takes in fov or aspect) { Perspective {fov: f32 }, Orthographic {aspect: f32} }
+        let projection = camera.get_projection_as_mut();
+
+        // Create a combo box with the enum variants
+        // Then show the appropriate fields for the selected variant
+
+        ui.vertical(|ui| {
+            ui.label("Projection");
+            ui.radio_value(projection, ProjectionParameters::Perspective { fov: 110f32 }, "Perspective");
+            ui.radio_value(projection, ProjectionParameters::Orthographic { aspect: 15.0f32 }, "Orthographic");
+
+        });
+
+        if let ProjectionParameters::Perspective { .. } = projection {
+            ui.label("FOV");
+            ui.add(drag_value(
+                camera,
+                Camera::get_fov,
+                Camera::set_fov,
+                None,
+                None,
+            ));
+        } else if let ProjectionParameters::Orthographic { .. } = projection {
+            ui.label("Aspect");
+            ui.add(drag_value(
+                camera,
+                Camera::get_aspect,
+                Camera::set_aspect,
+                None,
+                None,
+            ));
+        }
     });
 }
 
 fn drag_value<T, I>(
     value: &mut I,
-    get: fn(&I) -> &T,
+    get: fn(&I) -> T,
     set: fn(&mut I, T),
     min: Option<T>,
     max: Option<T>,

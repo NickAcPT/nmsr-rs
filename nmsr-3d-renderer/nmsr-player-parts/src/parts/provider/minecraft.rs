@@ -1,8 +1,7 @@
-use PlayerBodyPartType::*;
-
 use crate::parts::part::Part;
 use crate::parts::provider::{PartsProvider, PlayerPartProviderContext};
-use crate::parts::types::PlayerBodyPartType;
+use crate::types::PlayerBodyPartType;
+use crate::types::PlayerBodyPartType::*;
 
 pub struct MinecraftPlayerPartsProvider;
 
@@ -12,7 +11,7 @@ macro_rules! body_part {
         match $match_var {
             $(
                 $name => Some(Part::new_cube(
-                    crate::parts::types::PlayerPartTextureType::Skin,
+                    crate::types::PlayerPartTextureType::Skin,
                     $pos,
                     $size,
                     box_uv($uv_x, $uv_y, $size),
@@ -89,41 +88,23 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
 
         if let Some(part) = part {
             if body_part.is_layer() {
-                let mut new_part = part.expand(if non_layer_body_part_type == Head {
-                    0.5
-                } else {
-                    0.25
-                });
+                let expand_offset = get_layer_expand_offset(non_layer_body_part_type);
 
-                let box_uv_offset: (i32, i32) = match non_layer_body_part_type {
-                    Head => (32, 0),
-                    Body => (0, 16),
-                    LeftArm => (16, 0),
-                    RightArm => (0, 16),
-                    LeftLeg => (-16, 0),
-                    RightLeg => (0, 16),
-                    _ => unreachable!(),
-                };
+                let mut new_part = part.expand(expand_offset);
 
-                match new_part {
-                    Part::Cube {
-                        ref mut face_uvs, ..
-                    } => {
-                        let current_box_uv = face_uvs.north.top_left;
+                let box_uv_offset: (i32, i32) = get_body_part_layer_uv_offset(non_layer_body_part_type);
 
-                        let size = part.get_size();
-                        *face_uvs = box_uv(
-                            (current_box_uv.x as i32 + box_uv_offset.0) as u16,
-                            (current_box_uv.y as i32 + box_uv_offset.1) as u16,
-                            [size.x as u16, size.y as u16, size.z as u16],
-                        )
-                        .into()
-                    }
-                    Part::Quad {
-                        ref mut face_uv, ..
-                    } => {
-                        todo!("Quad support")
-                    }
+                if let Part::Quad { .. } = new_part {
+                    unreachable!("Got quad when expanding body part.")
+                } else if let Part::Cube { ref mut face_uvs, .. } = new_part {
+                    let current_box_uv = face_uvs.north.top_left;
+
+                    let size = part.get_size();
+                    *face_uvs = box_uv(
+                        (current_box_uv.x as i32 + box_uv_offset.0) as u16,
+                        (current_box_uv.y as i32 + box_uv_offset.1) as u16,
+                        [size.x as u16, size.y as u16, size.z as u16],
+                    ).into()
                 }
 
                 return vec![new_part];
@@ -131,5 +112,24 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
         }
 
         part.into_iter().collect()
+    }
+}
+
+fn get_body_part_layer_uv_offset(non_layer_body_part_type: PlayerBodyPartType) -> (i32, i32) {
+    match non_layer_body_part_type {
+        Head => (32, 0),
+        Body => (0, 16),
+        LeftArm => (16, 0),
+        RightArm => (0, 16),
+        LeftLeg => (-16, 0),
+        RightLeg => (0, 16),
+        _ => unreachable!("Tried to compute UV offset for unknown part {:?}", non_layer_body_part_type),
+    }
+}
+
+fn get_layer_expand_offset(body_part: PlayerBodyPartType) -> f32 {
+    match body_part {
+        Head => 0.5,
+        _ => 0.25
     }
 }

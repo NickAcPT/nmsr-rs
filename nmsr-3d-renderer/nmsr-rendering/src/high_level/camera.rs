@@ -8,7 +8,6 @@ use crate::low_level::utils::{look_from_yaw_pitch, minecraft_rotation_matrix};
 pub struct CameraRotation {
     pub yaw: f32,
     pub pitch: f32,
-    pub look_at: Option<Vec3>,
 }
 
 

@@ -1,6 +1,6 @@
+use glam::Vec3;
 use crate::parts::part::Part::{Cube, Quad};
-use crate::parts::types::{PlayerBodyPartType, PlayerPartTextureType};
-use crate::parts::utils::MinecraftPosition;
+use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
 
 #[derive(Copy, Clone)]
@@ -105,3 +105,11 @@ impl Part {
         }
     }
 }
+
+/// A position in 3D space.
+///
+/// Minecraft coordinates are structured as follows:
+/// - +X is east / -X is west
+/// - +Y is up / -Y is down
+/// - +Z is south / -Z is north
+pub(crate) type MinecraftPosition = Vec3;

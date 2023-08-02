@@ -16,11 +16,11 @@ use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
-use nmsr_player_parts::parts::minecraft::MinecraftPlayerPartsProvider;
+use nmsr_player_parts::parts::provider::minecraft::MinecraftPlayerPartsProvider;
 use nmsr_player_parts::parts::part::Part;
-use nmsr_player_parts::parts::player_model::PlayerModel;
+use nmsr_player_parts::player_model::PlayerModel;
 use nmsr_player_parts::parts::provider::{PartsProvider, PlayerPartProviderContext};
-use nmsr_player_parts::parts::types::PlayerBodyPartType;
+use nmsr_player_parts::types::PlayerBodyPartType;
 use nmsr_player_parts::parts::uv::FaceUv;
 use nmsr_rendering::high_level::camera::{
     Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
@@ -83,7 +83,6 @@ async fn main() -> Result<(), NMSRRenderingError> {
         CameraRotation {
             yaw: 0.0,
             pitch: 0.0,
-            look_at: Some(Vec3::new(0.0, 10.0, 0.0)),
         },
         ProjectionParameters::Perspective { fov: 110f32 },
         aspect_ratio,
@@ -182,7 +181,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         label: None,
     });
 
-    let skin_bytes = include_bytes!("ears_v0_sample1.png");
+    let skin_bytes = include_bytes!("819ba7dd7373fb71c763ac3ce0fe976a0acd16d4f7bc56d6b9c198e4bc379981.png");
     let skin_image = image::load_from_memory(skin_bytes).unwrap();
     let mut skin_rgba = skin_image.to_rgba8();
 
@@ -548,6 +547,21 @@ fn create_depth(device: &Device, config: &SurfaceConfiguration) -> (Texture, Tex
 fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
+
+        if ui.button("Visage").clicked() {
+            camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
+                14.85, 24.3, -40.85,
+            )));
+
+            camera.set_projection(ProjectionParameters::Perspective {
+                fov: 45.0,
+            });
+
+            camera.set_rotation(CameraRotation {
+                yaw: 20.0,
+                pitch: 10.0,
+            })
+        }
 
         ui.label("Camera");
 

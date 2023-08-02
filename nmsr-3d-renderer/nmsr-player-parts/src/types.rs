@@ -1,6 +1,6 @@
 use strum::EnumIter;
 
-#[derive(Copy, Clone, EnumIter, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, EnumIter, Eq, PartialEq)]
 pub enum PlayerBodyPartType {
     // Normal body parts
     Head,

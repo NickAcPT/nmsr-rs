@@ -4,8 +4,8 @@ use glam::Vec2;
 /// The values are in the range 0-255 since Minecraft skin textures are small.
 #[derive(Copy, Clone)]
 pub struct FaceUvPoint {
-    pub x: u16,
-    pub y: u16,
+    pub x: UvCoordinate,
+    pub y: UvCoordinate,
 }
 
 impl FaceUvPoint {
@@ -35,8 +35,8 @@ pub struct CubeFaceUvs {
     pub down: FaceUv,
 }
 
-impl From<[[u16; 4]; 6]> for CubeFaceUvs {
-    fn from(uvs: [[u16; 4]; 6]) -> Self {
+impl From<[[UvCoordinate; 4]; 6]> for CubeFaceUvs {
+    fn from(uvs: [[UvCoordinate; 4]; 6]) -> Self {
         Self {
             north: uvs[0].into(),
             south: uvs[1].into(),
@@ -48,8 +48,8 @@ impl From<[[u16; 4]; 6]> for CubeFaceUvs {
     }
 }
 
-impl From<[u16; 4]> for FaceUv {
-    fn from(uvs: [u16; 4]) -> Self {
+impl From<[UvCoordinate; 4]> for FaceUv {
+    fn from(uvs: [UvCoordinate; 4]) -> Self {
         Self {
             top_left: FaceUvPoint {
                 x: uvs[0],
@@ -62,3 +62,5 @@ impl From<[u16; 4]> for FaceUv {
         }
     }
 }
+
+pub(crate) type UvCoordinate = u16;

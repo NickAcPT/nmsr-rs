@@ -548,20 +548,37 @@ fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
 
-        if ui.button("Visage").clicked() {
-            camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
-                14.85, 24.3, -40.85,
-            )));
+        ui.horizontal(|ui| {
+            if ui.button("Visage").clicked() {
+                camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
+                    14.85, 24.3, -40.85,
+                )));
 
-            camera.set_projection(ProjectionParameters::Perspective {
-                fov: 45.0,
-            });
+                camera.set_projection(ProjectionParameters::Perspective {
+                    fov: 45.0,
+                });
 
-            camera.set_rotation(CameraRotation {
-                yaw: 20.0,
-                pitch: 10.0,
-            })
-        }
+                camera.set_rotation(CameraRotation {
+                    yaw: 20.0,
+                    pitch: 10.0,
+                })
+            }
+            if ui.button("Visage (Orbital)").clicked() {
+                camera.set_position_parameters(CameraPositionParameters::Orbital {
+                    look_at: [0.0, 16.75, 0.0].into(),
+                    distance: 42.321,
+                });
+
+                camera.set_projection(ProjectionParameters::Perspective {
+                    fov: 45.0,
+                });
+
+                camera.set_rotation(CameraRotation {
+                    yaw: 20.0,
+                    pitch: 10.0,
+                })
+            }
+        });
 
         ui.label("Camera");
 

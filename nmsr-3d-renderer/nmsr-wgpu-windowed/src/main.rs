@@ -1,14 +1,17 @@
-use std::{iter, mem};
 use std::borrow::Cow;
 use std::time::{Duration, Instant};
+use std::{iter, mem};
 
-use egui::{Context, FontDefinitions};
 use egui::emath::Numeric;
+use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use strum::IntoEnumIterator;
-use wgpu::{BufferAddress, Device, Instance, RenderPassDepthStencilAttachment, StencilState, SurfaceConfiguration, Texture, TextureView};
 use wgpu::util::DeviceExt;
+use wgpu::{
+    BufferAddress, Device, Instance, RenderPassDepthStencilAttachment, SurfaceConfiguration,
+    Texture, TextureView,
+};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -19,16 +22,18 @@ use nmsr_player_parts::parts::player_model::PlayerModel;
 use nmsr_player_parts::parts::provider::{PartsProvider, PlayerPartProviderContext};
 use nmsr_player_parts::parts::types::PlayerBodyPartType;
 use nmsr_player_parts::parts::uv::FaceUv;
-use nmsr_rendering::high_level::camera::{Camera, CameraRotation, ProjectionParameters};
+use nmsr_rendering::high_level::camera::{
+    Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
+};
 use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
     NmsrPipelineDescriptor, NmsrWgpuPipeline,
 };
-use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::mesh::Mesh;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
+use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() -> Result<(), NMSRRenderingError> {
@@ -53,8 +58,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
         }),
         default_size: (size.width, size.height),
     })
-        .await
-        .expect("Expected Nmsr Pipeline");
+    .await
+    .expect("Expected Nmsr Pipeline");
 
     let device = pipeline.device;
     let queue = pipeline.queue;
@@ -73,11 +78,12 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let aspect_ratio = config.width as f32 / config.height as f32;
 
-    let mut camera = Camera::new(
+    let mut camera = Camera::new_absolute(
         Vec3::new(0.0, 30.0, -20.0),
         CameraRotation {
             yaw: 0.0,
             pitch: 0.0,
+            look_at: Some(Vec3::new(0.0, 10.0, 0.0)),
         },
         ProjectionParameters::Perspective { fov: 110f32 },
         aspect_ratio,
@@ -338,11 +344,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
             }
             event::Event::WindowEvent {
                 event:
-                WindowEvent::Resized(size)
-                | WindowEvent::ScaleFactorChanged {
-                    new_inner_size: &mut size,
-                    ..
-                },
+                    WindowEvent::Resized(size)
+                    | WindowEvent::ScaleFactorChanged {
+                        new_inner_size: &mut size,
+                        ..
+                    },
                 ..
             } => {
                 // Once winit is fixed, the detection conditions here can be removed.
@@ -379,22 +385,22 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 if input.state == event::ElementState::Pressed {
                     match input.virtual_keycode {
                         Some(event::VirtualKeyCode::W) => {
-                            camera.set_z(camera.get_z() + 0.5);
+                            camera.set_position_z(camera.get_position_z() + 0.5);
                         }
                         Some(event::VirtualKeyCode::S) => {
-                            camera.set_z(camera.get_z() - 0.5);
+                            camera.set_position_z(camera.get_position_z() - 0.5);
                         }
                         Some(event::VirtualKeyCode::A) => {
-                            camera.set_x(camera.get_x() + 0.5);
+                            camera.set_position_x(camera.get_position_x() + 0.5);
                         }
                         Some(event::VirtualKeyCode::D) => {
-                            camera.set_x(camera.get_x() - 0.5);
+                            camera.set_position_x(camera.get_position_x() - 0.5);
                         }
                         Some(event::VirtualKeyCode::Q) => {
-                            camera.set_y(camera.get_y() + 0.5);
+                            camera.set_position_y(camera.get_position_y() + 0.5);
                         }
                         Some(event::VirtualKeyCode::E) => {
-                            camera.set_y(camera.get_y() - 0.5);
+                            camera.set_position_y(camera.get_position_y() - 0.5);
                         }
                         // R
                         Some(event::VirtualKeyCode::R) => {
@@ -544,12 +550,90 @@ fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
 
         ui.label("Camera");
-        ui.label("X");
-        ui.add(drag_value(camera, Camera::get_x, Camera::set_x, None, None));
-        ui.label("Y");
-        ui.add(drag_value(camera, Camera::get_y, Camera::set_y, None, None));
-        ui.label("Z");
-        ui.add(drag_value(camera, Camera::get_z, Camera::set_z, None, None));
+
+        {
+            let position_params = camera.get_position_parameters_as_mut();
+
+            ui.label("Position Parameters");
+            ui.horizontal(|ui| {
+                ui.radio_value(
+                    position_params,
+                    CameraPositionParameters::Absolute(Vec3::new(0.0, 30.0, -20.0)),
+                    "Absolute",
+                );
+                ui.radio_value(
+                    position_params,
+                    CameraPositionParameters::Orbital {
+                        look_at: Vec3::new(0.0, 20.0, 0.0),
+                        distance: 20.0,
+                    },
+                    "Orbital",
+                );
+            });
+        }
+
+        if let CameraPositionParameters::Absolute(_) = camera.get_position_parameters() {
+            ui.label("X");
+            ui.add(drag_value(
+                camera,
+                Camera::get_position_x,
+                Camera::set_position_x,
+                None,
+                None,
+            ));
+            ui.label("Y");
+            ui.add(drag_value(
+                camera,
+                Camera::get_position_y,
+                Camera::set_position_y,
+                None,
+                None,
+            ));
+            ui.label("Z");
+            ui.add(drag_value(
+                camera,
+                Camera::get_position_z,
+                Camera::set_position_z,
+                None,
+                None,
+            ));
+        }
+        if let CameraPositionParameters::Orbital { .. } = camera.get_position_parameters() {
+            ui.label("Look At: X");
+            ui.add(drag_value(
+                camera,
+                Camera::get_look_at_x,
+                Camera::set_look_at_x,
+                None,
+                None,
+            ));
+            ui.label("Look At: Y");
+            ui.add(drag_value(
+                camera,
+                Camera::get_look_at_y,
+                Camera::set_look_at_y,
+                None,
+                None,
+            ));
+            ui.label("Look At: Z");
+            ui.add(drag_value(
+                camera,
+                Camera::get_look_at_z,
+                Camera::set_look_at_z,
+                None,
+                None,
+            ));
+
+            ui.label("Distance");
+            ui.add(drag_value(
+                camera,
+                Camera::get_distance,
+                Camera::set_distance,
+                Some(0.0f32),
+                None,
+            ));
+        }
+
         ui.label("Yaw");
         ui.add(drag_value(
             camera,
@@ -572,11 +656,8 @@ fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
         // ProjectionParameters enum (enum variant takes in fov or aspect) { Perspective {fov: f32 }, Orthographic {aspect: f32} }
         let projection = camera.get_projection_as_mut();
 
-        // Create a combo box with the enum variants
-        // Then show the appropriate fields for the selected variant
-
-        ui.vertical(|ui| {
-            ui.label("Projection");
+        ui.label("Projection");
+        ui.horizontal(|ui| {
             ui.radio_value(
                 projection,
                 ProjectionParameters::Perspective { fov: 110f32 },
@@ -618,8 +699,8 @@ fn drag_value<T, I>(
     min: Option<T>,
     max: Option<T>,
 ) -> egui::DragValue
-    where
-        T: Numeric,
+where
+    T: Numeric,
 {
     let value = egui::DragValue::from_get_set(move |new| {
         if let Some(new) = new {

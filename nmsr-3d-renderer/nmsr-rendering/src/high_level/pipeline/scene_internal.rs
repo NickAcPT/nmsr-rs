@@ -1,3 +1,4 @@
+use crate::high_level::pipeline::scene::Size;
 use crate::high_level::pipeline::wgpu_pipeline::NmsrWgpuPipeline;
 
 pub struct SceneWgpuInternal {
@@ -5,7 +6,7 @@ pub struct SceneWgpuInternal {
 }
 
 impl SceneWgpuInternal {
-    pub fn new(pipeline: NmsrWgpuPipeline) -> Self {
-        todo!()
+    pub fn new(pipeline: NmsrWgpuPipeline, viewport_size: &Size) -> Self {
+        unimplemented!()
     }
 }

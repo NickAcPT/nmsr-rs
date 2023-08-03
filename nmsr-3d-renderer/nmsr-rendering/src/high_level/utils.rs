@@ -15,8 +15,6 @@ macro_rules! camera_getters_setters {
             }
         }
     };
-
-    // Allow to have multiple arguments of $name: $_type
     ($($name: ident: $_type: ty),*) => {
         $(
             camera_getters_setters!($name: $_type);

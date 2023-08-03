@@ -1,27 +1,24 @@
-use std::borrow::Cow;
-use std::time::{Duration, Instant};
 use std::{iter, mem};
+use std::time::{Duration, Instant};
 
-use egui::emath::Numeric;
 use egui::{Context, FontDefinitions};
+use egui::emath::Numeric;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
+use libloader::libloading;
 use strum::IntoEnumIterator;
+use wgpu::{Backends, BufferAddress, Device, include_wgsl, Instance, RenderPassDepthStencilAttachment, SurfaceConfiguration, Texture, TextureView};
 use wgpu::util::DeviceExt;
-use wgpu::{
-    BufferAddress, Device, Instance, RenderPassDepthStencilAttachment, SurfaceConfiguration,
-    Texture, TextureView,
-};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
-use nmsr_player_parts::parts::provider::minecraft::MinecraftPlayerPartsProvider;
 use nmsr_player_parts::parts::part::Part;
-use nmsr_player_parts::player_model::PlayerModel;
 use nmsr_player_parts::parts::provider::{PartsProvider, PlayerPartProviderContext};
-use nmsr_player_parts::types::PlayerBodyPartType;
+use nmsr_player_parts::parts::provider::minecraft::MinecraftPlayerPartsProvider;
 use nmsr_player_parts::parts::uv::FaceUv;
+use nmsr_player_parts::player_model::PlayerModel;
+use nmsr_player_parts::types::PlayerBodyPartType;
 use nmsr_rendering::high_level::camera::{
     Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
 };
@@ -29,14 +26,18 @@ use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
     NmsrPipelineDescriptor, NmsrWgpuPipeline,
 };
+use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::mesh::Mesh;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
-use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() -> Result<(), NMSRRenderingError> {
+    mem::forget(unsafe {
+        libloading::Library::new("D:\\IDEs\\CLionProjects\\nmsr-wgpu\\vulkan-1.dll").unwrap()
+    });
+
     let mut renderdoc =
         renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
 
@@ -61,6 +62,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
     .await
     .expect("Expected Nmsr Pipeline");
 
+    let instance = pipeline.instance;
+    instance.enumerate_adapters(Backends::all()).for_each(|d| {
+        println!("Adapter: {}", d.get_info().name);
+    });
+
     let device = pipeline.device;
     let queue = pipeline.queue;
     let surface = pipeline.surface.expect("Expected surface");
@@ -73,8 +79,6 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
-    let uv = Vec2::new(0.0, 0.0);
-    let uv2 = Vec2::new(1.0, 1.0);
 
     let aspect_ratio = config.width as f32 / config.height as f32;
 
@@ -233,6 +237,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         wgpu::Extent3d {
             width: 64,
             height: 64,
+
             depth_or_array_layers: 1,
         },
     );
@@ -248,10 +253,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         ..Default::default()
     });
 
-    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: None,
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
-    });
+    let shader = device.create_shader_module(include_wgsl!("shader.wgsl"));
 
     let vertex_buffers = [wgpu::VertexBufferLayout {
         array_stride: vertex_size as BufferAddress,
@@ -318,7 +320,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         multiview: None,
     });
 
-    let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
+    /*let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
 
     let mut platform = Platform::new(PlatformDescriptor {
         physical_width: config.width,
@@ -326,7 +328,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         scale_factor: window.scale_factor(),
         font_definitions: FontDefinitions::default(),
         style: Default::default(),
-    });
+    });*/
 
     let (mut depth_texture, mut depth) = create_depth(&device, &mut config);
 
@@ -334,8 +336,10 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let start_time = Instant::now();
     let mut last_frame_time = Duration::ZERO;
 
+    let mut last_camera_stuff: Option<(CameraPositionParameters, CameraRotation)> = None;
+
     event_loop.run(move |event, _, control_flow| {
-        platform.handle_event(&event);
+        //platform.handle_event(&event);
 
         match event {
             event::Event::RedrawEventsCleared => {
@@ -343,11 +347,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
             }
             event::Event::WindowEvent {
                 event:
-                    WindowEvent::Resized(size)
-                    | WindowEvent::ScaleFactorChanged {
-                        new_inner_size: &mut size,
-                        ..
-                    },
+                WindowEvent::Resized(size)
+                | WindowEvent::ScaleFactorChanged {
+                    new_inner_size: &mut size,
+                    ..
+                },
                 ..
             } => {
                 // Once winit is fixed, the detection conditions here can be removed.
@@ -401,9 +405,13 @@ async fn main() -> Result<(), NMSRRenderingError> {
                         Some(event::VirtualKeyCode::E) => {
                             camera.set_position_y(camera.get_position_y() - 0.5);
                         }
+                        Some(event::VirtualKeyCode::V) => {
+                            visage_orbital(&mut camera, &mut last_camera_stuff);
+                        }
                         // R
                         Some(event::VirtualKeyCode::R) => {
-                            println!("Triggering RenderDoc capture.");
+                            //println!("Triggering RenderDoc capture.");
+                            println!("Last frame time: {:?}", last_frame_time);
                             renderdoc.trigger_capture();
                         }
                         _ => {}
@@ -411,7 +419,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 }
             }
             event::Event::RedrawRequested(_) => {
-                platform.update_time(start_time.elapsed().as_secs_f64());
+                //platform.update_time(start_time.elapsed().as_secs_f64());
                 let start = Instant::now();
 
                 let frame = match surface.get_current_texture() {
@@ -474,23 +482,23 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                 // Begin to draw the UI frame.
 
-                platform.begin_frame();
+                //platform.begin_frame();
 
                 // Draw the demo application.
-                {
-                    debug_ui(&platform.context(), &mut camera, last_frame_time);
-                }
+                /*{
+                    debug_ui(&platform.context(), &mut camera, &mut last_camera_stuff, last_frame_time);
+                }*/
 
                 // End the UI frame. We could now handle the output and draw the UI with the backend.
-                let full_output = platform.end_frame(Some(&window));
-                let paint_jobs = platform.context().tessellate(full_output.shapes);
+                //let full_output = platform.end_frame(Some(&window));
+                //let paint_jobs = platform.context().tessellate(full_output.shapes);
 
-                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                /*let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("encoder"),
-                });
+                });*/
 
                 // Upload all resources for the GPU.
-                let screen_descriptor = ScreenDescriptor {
+               /* let screen_descriptor = ScreenDescriptor {
                     physical_width: config.width,
                     physical_height: config.height,
                     scale_factor: window.scale_factor() as f32,
@@ -499,18 +507,18 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 egui_rpass
                     .add_textures(&device, &queue, &tdelta)
                     .expect("add texture ok");
-                egui_rpass.update_buffers(&device, &queue, &paint_jobs, &screen_descriptor);
+                egui_rpass.update_buffers(&device, &queue, &paint_jobs, &screen_descriptor);*/
 
                 // Record all render passes.
-                egui_rpass
+                /*egui_rpass
                     .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
-                    .unwrap();
+                    .unwrap();*/
                 // Submit the commands.
-                queue.submit(iter::once(encoder.finish()));
+                //queue.submit(iter::once(encoder.finish()));
 
-                egui_rpass
+                /*egui_rpass
                     .remove_textures(tdelta)
-                    .expect("remove texture ok");
+                    .expect("remove texture ok");*/
 
                 frame.present();
 
@@ -544,39 +552,26 @@ fn create_depth(device: &Device, config: &SurfaceConfiguration) -> (Texture, Tex
     (depth_texture, depth)
 }
 
-fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
+fn debug_ui(ctx: &Context, camera: &mut Camera, last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>, last_frame_time: Duration) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
 
         ui.horizontal(|ui| {
             if ui.button("Visage").clicked() {
-                camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
-                    14.85, 24.3, -40.85,
-                )));
-
-                camera.set_projection(ProjectionParameters::Perspective {
-                    fov: 45.0,
-                });
-
-                camera.set_rotation(CameraRotation {
-                    yaw: 20.0,
-                    pitch: 10.0,
-                })
+                visage(camera, last_camera_stuff);
             }
             if ui.button("Visage (Orbital)").clicked() {
-                camera.set_position_parameters(CameraPositionParameters::Orbital {
-                    look_at: [0.0, 16.75, 0.0].into(),
-                    distance: 42.321,
-                });
+                visage_orbital(camera, last_camera_stuff);
+            }
 
-                camera.set_projection(ProjectionParameters::Perspective {
-                    fov: 45.0,
-                });
+            if last_camera_stuff.is_some() && ui.button("Last").clicked() {
+                let current = (camera.get_position_parameters(), camera.get_rotation());
 
-                camera.set_rotation(CameraRotation {
-                    yaw: 20.0,
-                    pitch: 10.0,
-                })
+                let (position, rotation) = last_camera_stuff.unwrap();
+                camera.set_position_parameters(position);
+                camera.set_rotation(rotation);
+
+                last_camera_stuff.replace(current);
             }
         });
 
@@ -723,6 +718,41 @@ fn debug_ui(ctx: &Context, camera: &mut Camera, last_frame_time: Duration) {
     });
 }
 
+fn visage_orbital(camera: &mut Camera, last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>) {
+    last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation()));
+
+    camera.set_position_parameters(CameraPositionParameters::Orbital {
+        look_at: [0.0, 16.65, 0.0].into(),
+        distance: 44.1,
+    });
+
+    camera.set_projection(ProjectionParameters::Perspective {
+        fov: 45.0,
+    });
+
+    camera.set_rotation(CameraRotation {
+        yaw: 20.0,
+        pitch: 10.0,
+    })
+}
+
+fn visage(camera: &mut Camera, last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>) {
+    last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation()));
+
+    camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
+        14.85, 24.3, -40.85,
+    )));
+
+    camera.set_projection(ProjectionParameters::Perspective {
+        fov: 45.0,
+    });
+
+    camera.set_rotation(CameraRotation {
+        yaw: 20.0,
+        pitch: 10.0,
+    })
+}
+
 fn drag_value<T, I>(
     value: &mut I,
     get: fn(&I) -> T,
@@ -730,8 +760,8 @@ fn drag_value<T, I>(
     min: Option<T>,
     max: Option<T>,
 ) -> egui::DragValue
-where
-    T: Numeric,
+    where
+        T: Numeric,
 {
     let value = egui::DragValue::from_get_set(move |new| {
         if let Some(new) = new {

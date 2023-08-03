@@ -22,11 +22,13 @@ impl Scene {
         viewport_size: Size,
         objects: Vec<Box<dyn PartPrimitive>>,
     ) -> Self {
+        let internal = SceneWgpuInternal::new(pipeline, &viewport_size);
+
         Self {
             camera,
             viewport_size,
             objects,
-            wgpu_internal: SceneWgpuInternal::new(pipeline),
+            wgpu_internal: internal,
         }
     }
 }

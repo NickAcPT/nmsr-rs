@@ -1,7 +1,9 @@
-use std::mem;
 use glam::{Mat4, Vec3};
+use std::mem;
 
-use crate::high_level::utils::{camera_getters_setters, camera_inner_getters_setters, camera_inner_getters_setters_opt};
+use crate::high_level::utils::{
+    camera_getters_setters, camera_inner_getters_setters, camera_inner_getters_setters_opt,
+};
 use crate::low_level::utils::{look_from_yaw_pitch, minecraft_rotation_matrix};
 
 #[derive(Copy, Clone)]
@@ -9,7 +11,6 @@ pub struct CameraRotation {
     pub yaw: f32,
     pub pitch: f32,
 }
-
 
 #[derive(Copy, Clone)]
 pub enum ProjectionParameters {
@@ -96,46 +97,49 @@ impl CameraPositionParameters {
     pub fn get_position(&self) -> Option<Vec3> {
         match self {
             CameraPositionParameters::Absolute(position) => Some(*position),
-            CameraPositionParameters::Orbital { .. } => None
+            CameraPositionParameters::Orbital { .. } => None,
         }
     }
 
     pub fn get_look_at(&self) -> Option<Vec3> {
         match self {
             CameraPositionParameters::Absolute(_) => None,
-            CameraPositionParameters::Orbital { look_at, .. } => Some(*look_at)
+            CameraPositionParameters::Orbital { look_at, .. } => Some(*look_at),
         }
     }
 
     pub fn get_distance(&self) -> Option<f32> {
         match self {
             CameraPositionParameters::Absolute(_) => None,
-            CameraPositionParameters::Orbital { distance, .. } => Some(*distance)
+            CameraPositionParameters::Orbital { distance, .. } => Some(*distance),
         }
     }
 
     pub fn as_mut_position(&mut self) -> Option<&mut Vec3> {
         match self {
             CameraPositionParameters::Absolute(ref mut position) => Some(position),
-            CameraPositionParameters::Orbital { .. } => None
+            CameraPositionParameters::Orbital { .. } => None,
         }
     }
 
     pub fn as_mut_look_at(&mut self) -> Option<&mut Vec3> {
         match self {
             CameraPositionParameters::Absolute(_) => None,
-            CameraPositionParameters::Orbital { ref mut look_at, .. } => Some(look_at)
+            CameraPositionParameters::Orbital {
+                ref mut look_at, ..
+            } => Some(look_at),
         }
     }
 
     pub fn as_mut_distance(&mut self) -> Option<&mut f32> {
         match self {
             CameraPositionParameters::Absolute(_) => None,
-            CameraPositionParameters::Orbital { ref mut distance, .. } => Some(distance)
+            CameraPositionParameters::Orbital {
+                ref mut distance, ..
+            } => Some(distance),
         }
     }
 }
-
 
 /// The camera used to view the scene
 pub struct Camera {
@@ -218,7 +222,7 @@ impl Camera {
                 let position = Mat4::from_translation(-pos);
 
                 view * position
-            },
+            }
             CameraPositionParameters::Orbital { look_at, distance } => {
                 // Look pos is a vector pointing in the direction the camera is looking (from the origin)
                 let look_pos = look_from_yaw_pitch(self.rotation.yaw, self.rotation.pitch);

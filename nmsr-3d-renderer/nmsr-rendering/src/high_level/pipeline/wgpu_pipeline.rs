@@ -6,7 +6,7 @@ pub use wgpu::{
 use crate::errors::{NMSRRenderingError, Result};
 
 #[derive(Debug)]
-pub struct NmsrWgpuPipeline {
+pub struct GraphicsContext {
     pub instance: Instance,
     pub device: Device,
     pub queue: Queue,
@@ -18,14 +18,14 @@ pub struct NmsrWgpuPipeline {
 
 pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface> + 'a;
 
-pub struct NmsrPipelineDescriptor<'a> {
+pub struct GraphicsContextDescriptor<'a> {
     pub backends: Option<wgpu::Backends>,
     pub surface_provider: Box<ServiceProvider<'a>>,
     pub default_size: (u32, u32),
 }
 
-impl NmsrWgpuPipeline {
-    pub async fn new(descriptor: NmsrPipelineDescriptor<'_>) -> Result<Self> {
+impl GraphicsContext {
+    pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {
         let backends = wgpu::util::backend_bits_from_env()
             .or(descriptor.backends)
             .ok_or(NMSRRenderingError::NoBackendFound)?;
@@ -84,7 +84,7 @@ impl NmsrWgpuPipeline {
             .await
             .ok_or(NMSRRenderingError::WgpuAdapterRequestError)?;
 
-        Ok(NmsrWgpuPipeline {
+        Ok(GraphicsContext {
             instance,
             device,
             queue,

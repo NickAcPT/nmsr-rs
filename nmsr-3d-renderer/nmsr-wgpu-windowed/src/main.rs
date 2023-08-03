@@ -24,7 +24,7 @@ use nmsr_rendering::high_level::camera::{
 };
 use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
-    NmsrPipelineDescriptor, NmsrWgpuPipeline,
+    GraphicsContextDescriptor, GraphicsContext,
 };
 use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
@@ -52,7 +52,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let size = window.inner_size();
 
-    let pipeline = NmsrWgpuPipeline::new(NmsrPipelineDescriptor {
+    let pipeline = GraphicsContext::new(GraphicsContextDescriptor {
         backends: Some(wgpu::Backends::all()),
         surface_provider: Box::new(|i: &Instance| unsafe {
             Some(i.create_surface(&window).unwrap())

@@ -1,6 +1,6 @@
 use crate::high_level::camera::Camera;
 use crate::high_level::pipeline::scene_internal::SceneWgpuInternal;
-use crate::high_level::pipeline::wgpu_pipeline::NmsrWgpuPipeline;
+use crate::high_level::pipeline::wgpu_pipeline::GraphicsContext;
 use crate::low_level::primitives::part_primitive::PartPrimitive;
 
 pub struct Size {
@@ -17,7 +17,7 @@ pub struct Scene {
 
 impl Scene {
     pub fn new(
-        pipeline: NmsrWgpuPipeline,
+        pipeline: GraphicsContext,
         camera: Camera,
         viewport_size: Size,
         objects: Vec<Box<dyn PartPrimitive>>,

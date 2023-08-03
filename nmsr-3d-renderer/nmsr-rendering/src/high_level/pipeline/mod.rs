@@ -1,3 +1,5 @@
 pub mod scene;
 mod scene_internal;
-pub mod wgpu_pipeline;
+mod wgpu_pipeline;
+
+pub use wgpu_pipeline::*;

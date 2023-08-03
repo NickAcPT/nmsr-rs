@@ -1,6 +1,6 @@
-pub use wgpu::{
-    Adapter, Device, Instance, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration,
-    TextureFormat,
+use wgpu::{
+    Adapter, Backends, Device, Instance, Queue, Surface,
+    SurfaceConfiguration, TextureFormat
 };
 
 use crate::errors::{NMSRRenderingError, Result};
@@ -19,7 +19,7 @@ pub struct GraphicsContext {
 pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface> + 'a;
 
 pub struct GraphicsContextDescriptor<'a> {
-    pub backends: Option<wgpu::Backends>,
+    pub backends: Option<Backends>,
     pub surface_provider: Box<ServiceProvider<'a>>,
     pub default_size: (u32, u32),
 }
@@ -29,6 +29,7 @@ impl GraphicsContext {
         let backends = wgpu::util::backend_bits_from_env()
             .or(descriptor.backends)
             .ok_or(NMSRRenderingError::NoBackendFound)?;
+
         let dx12_shader_compiler = wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default();
 
         let instance = Instance::new(wgpu::InstanceDescriptor {
@@ -75,12 +76,7 @@ impl GraphicsContext {
             }
         }
 
-        let adapter = instance
-            .request_adapter(&RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                force_fallback_adapter: false,
-                compatible_surface: surface.as_ref(),
-            })
+        let adapter = wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
             .await
             .ok_or(NMSRRenderingError::WgpuAdapterRequestError)?;
 

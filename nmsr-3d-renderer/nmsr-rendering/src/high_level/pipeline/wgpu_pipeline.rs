@@ -1,9 +1,9 @@
-use wgpu::{
+pub use wgpu::{
     Adapter, Device, Instance, Queue, RequestAdapterOptions, Surface, SurfaceConfiguration,
     TextureFormat,
 };
 
-use crate::high_level::errors::{NMSRRenderingError, Result};
+use crate::errors::{NMSRRenderingError, Result};
 
 #[derive(Debug)]
 pub struct NmsrWgpuPipeline {

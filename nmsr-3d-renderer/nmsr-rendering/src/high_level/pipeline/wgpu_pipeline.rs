@@ -5,6 +5,7 @@ use wgpu::{
 
 use crate::high_level::errors::{NMSRRenderingError, Result};
 
+#[derive(Debug)]
 pub struct NmsrWgpuPipeline {
     pub instance: Instance,
     pub device: Device,

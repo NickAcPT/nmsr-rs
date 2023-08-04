@@ -11,6 +11,7 @@ pub(crate) struct ServerConfiguration {
     pub(crate) port: u16,
 
     /// The path to the root directory of the parts folder.
+    #[cfg(feature = "uv")]
     pub(crate) parts: String,
 
     /// Tls keys

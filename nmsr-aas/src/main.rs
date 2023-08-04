@@ -42,11 +42,15 @@ use crate::mojang::caching::MojangCacheManager;
 use crate::routes::index_route::index_head;
 use crate::utils::Result;
 
+#[cfg(all(feature = "wgpu", feature = "uv"))]
+compile_error!("Cannot compile with both wgpu and uv features enabled. Please choose a single rendering engine.");
+
 mod config;
 mod manager;
 mod mojang;
 mod routes;
 mod utils;
+mod renderer;
 
 #[derive(Parser)]
 struct Args {
@@ -78,7 +82,7 @@ async fn main() -> Result<()> {
 
     info!("Loading parts manager...");
     let start = std::time::Instant::now();
-    let manager = NMSRaaSManager::new(&config.parts)?;
+    let manager = NMSRaaSManager::new(#[cfg(not(feature="wgpu"))] &config.parts).await?;
     info!("Parts manager loaded in {}ms", start.elapsed().as_millis());
 
     let cache_manager = MojangCacheManager::init(

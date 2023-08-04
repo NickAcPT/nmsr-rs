@@ -63,6 +63,8 @@ pub(crate) enum NMSRaaSError {
     ReqwestMiddlewareError(#[from] reqwest_middleware::Error),
     #[error("Log Tracing error: {0}")]
     LogTracingError(#[from] tracing_log::log::SetLoggerError),
+    #[error("Nmsr Rendering error: {0}")]
+    NMSRRenderingError(#[from] nmsr_rendering::errors::NMSRRenderingError),
 }
 
 impl actix_web::error::ResponseError for NMSRaaSError {

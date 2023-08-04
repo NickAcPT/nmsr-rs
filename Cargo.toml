@@ -2,7 +2,7 @@
 
 members = [
     "nmsr-lib",
-    "nmsr-jni",
+    #"nmsr-jni",
     "nmsr-aas",
     "utils/nmsr-multi-parts-organizer",
     "utils/nmsr-backfaces-optimizer",

@@ -1,22 +1,17 @@
-use std::borrow::Borrow;
-use std::io::{BufWriter, Cursor};
-
 use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag, CONTENT_TYPE};
 use actix_web::web::Path;
 use actix_web::{get, head, web, web::Buf, HttpResponse, Responder};
-use image::ImageFormat::Png;
 use parking_lot::RwLock;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::Deserialize;
 use xxhash_rust::xxh3::xxh3_64;
-
-use nmsr_lib::rendering::entry::RenderingEntry;
 
 use crate::config::{CacheConfiguration, MojankConfiguration};
 use crate::manager::{NMSRaaSManager, RenderMode};
 use crate::mojang::caching::MojangCacheManager;
 use crate::utils::errors::NMSRaaSError;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
+use crate::renderer::render_skin;
 
 #[derive(Deserialize, Default, Debug)]
 pub(crate) struct RenderData {
@@ -52,7 +47,7 @@ pub(crate) async fn render(
     let include_shading = skin_info.noshading.is_none();
     let include_layers = skin_info.nolayers.is_none();
 
-    let parts_manager = parts_manager.as_ref().get_manager(&mode)?;
+    let parts_manager = parts_manager.as_ref();
 
     // Fetch the skin hash, model and skin bytes
     let (hash, skin_bytes) = player
@@ -90,22 +85,14 @@ pub(crate) async fn render(
     } else {
         let skin_image = image::load_from_memory(skin_bytes.chunk())?;
 
-        let entry = RenderingEntry::new(
+        let render_bytes = render_skin(
+            parts_manager,
+            &mode,
             skin_image.into_rgba8(),
             slim_arms,
             include_shading,
             include_layers,
-        )?;
-
-        let render = entry.render(parts_manager.borrow())?;
-
-        let mut render_bytes = Vec::new();
-
-        // Write the image to a byte array
-        {
-            let mut writer = BufWriter::new(Cursor::new(&mut render_bytes));
-            render.write_to(&mut writer, Png)?;
-        }
+        ).await?;
 
         {
             cache_manager.write().cache_render(

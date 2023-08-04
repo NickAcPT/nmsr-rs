@@ -5,7 +5,11 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-nmsr-lib = { path = "../nmsr-lib", features = ["parallel_iters"] }
+# NMSR Lib - Library for rendering using NMSR's pre-baked UV files
+nmsr-lib = { path = "../nmsr-lib", features = ["parallel_iters"], optional = true }
+# NMSR Rendering - Library for rendering using a wgpu backed rendering engine
+nmsr-rendering = { path = "../../nmsr-wgpu/nmsr-rendering", optional = true }
+
 image = { version = "0.24.6", features = ["png"], default-features = false }
 
 serde = { version = "1.0.163", features = ["derive"] }
@@ -56,7 +60,9 @@ futures-util = { version = "0.3.28", optional = true }
 
 [features]
 lazy_parts = ["nmsr-lib/serializable_parts", "rayon"]
-ears = ["nmsr-lib/ears"]
+uv = ["dep:nmsr-lib"]
+wgpu = ["dep:nmsr-rendering"]
+ears = ["nmsr-lib/ears", "nmsr-rendering/ears"]
 tracing = ["dep:tracing-actix-web", "dep:tracing-opentelemetry", "dep:opentelemetry", "dep:opentelemetry-otlp", "reqwest-tracing/opentelemetry_0_19", "dep:futures-util"]
 
 [build-dependencies]

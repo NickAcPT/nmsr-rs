@@ -1,16 +1,29 @@
-use std::borrow::Cow;
-#[cfg(not(feature = "lazy_parts"))]
-use std::collections::HashMap;
-use std::path::Path;
+use std::sync::Arc;
 
-use strum::IntoEnumIterator;
+use nmsr_rendering::{
+    high_level::pipeline::{GraphicsContext, GraphicsContextDescriptor},
+    high_level::pipeline::Backends
+};
+
 use strum::{Display, EnumCount, EnumIter, EnumString};
+#[cfg(feature = "uv")]
+use {
+    tracing::instrument,
+    crate::utils::errors::NMSRaaSError::MissingPartManager,
+    strum::IntoEnumIterator,
+    std::borrow::Cow,
+    std::path::Path,
+    std::collections::HashMap
+};
+
 #[cfg(feature = "lazy_parts")]
 use tracing::debug;
-use tracing::instrument;
 
-use nmsr_lib::parts::manager::PartsManager;
-use nmsr_lib::vfs::{PhysicalFS, VfsPath};
+#[cfg(feature = "uv")]
+use nmsr_lib::{
+    parts::manager::PartsManager,
+    vfs::{PhysicalFS, VfsPath}
+};
 #[cfg(feature = "lazy_parts")]
 use {
     crate::utils::errors::NMSRaaSError,
@@ -18,7 +31,6 @@ use {
     std::io::{BufReader, BufWriter, Write},
 };
 
-use crate::utils::errors::NMSRaaSError::MissingPartManager;
 use crate::utils::Result;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumString, EnumIter, EnumCount, Display)]
@@ -33,6 +45,7 @@ pub(crate) enum RenderMode {
 }
 
 #[derive(Debug, Clone)]
+#[cfg(feature="uv")]
 pub(crate) struct NMSRaaSManager {
     #[cfg(feature = "lazy_parts")]
     part_root: VfsPath,
@@ -40,9 +53,39 @@ pub(crate) struct NMSRaaSManager {
     part_managers: HashMap<RenderMode, PartsManager>,
 }
 
+#[cfg(feature="wgpu")]
+#[derive(Debug, Clone)]
+pub(crate) struct NMSRaaSManager {
+    wgpu_pipeline: Arc<GraphicsContext>,
+}
+
+#[cfg(feature="wgpu")]
+impl NMSRaaSManager {
+
+    pub(crate) async fn new() -> Result<NMSRaaSManager> {
+        // Setup an nmsr wgpu rendering pipeline.
+        // Since we are not rendering to a surface (i.e. a window), we don't need to provide
+        // a surface, nor a default size.
+        let wgpu_pipeline = GraphicsContext::new(GraphicsContextDescriptor {
+            backends: Some(Backends::all()),
+            surface_provider: Box::new(|_| None),
+            default_size: (0, 0),
+        }).await?;
+
+        Ok(NMSRaaSManager {
+            wgpu_pipeline: Arc::new(wgpu_pipeline),
+        })
+    }
+
+    pub(crate) fn get_pipeline(&self) -> &GraphicsContext {
+        self.wgpu_pipeline.as_ref()
+    }
+}
+
+#[cfg(feature="uv")]
 impl NMSRaaSManager {
     #[instrument(level = "trace", skip(part_root))]
-    fn create_part_manager_for_mode(
+    async fn create_part_manager_for_mode(
         part_root: &VfsPath,
         render_type: &RenderMode,
     ) -> Result<PartsManager> {
@@ -53,6 +96,7 @@ impl NMSRaaSManager {
 }
 
 #[cfg(not(feature = "lazy_parts"))]
+#[cfg(feature="uv")]
 impl NMSRaaSManager {
     pub(crate) fn get_manager(&self, render_type: &RenderMode) -> Result<Cow<PartsManager>> {
         self.part_managers
@@ -61,8 +105,9 @@ impl NMSRaaSManager {
             .ok_or_else(|| MissingPartManager(render_type.clone()))
     }
 
+    #[cfg(feature="uv")]
     #[instrument(level = "trace", skip(part_root))]
-    pub(crate) fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
+    pub(crate) async fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
         let part_root: VfsPath = PhysicalFS::new(part_root).into();
         let mut map = HashMap::with_capacity(RenderMode::COUNT);
 

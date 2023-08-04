@@ -109,7 +109,7 @@ impl MojangCacheManager {
     fn get_cached_render_path(
         &self,
         mode: &RenderMode,
-        hash: &String,
+        hash: &str,
         render_data: &RenderDataCacheKey,
     ) -> PathBuf {
         self.get_cached_render_mode_path(mode).join(format!(
@@ -135,7 +135,7 @@ impl MojangCacheManager {
         }
     }
 
-    pub(crate) fn cache_skin(&self, hash: &String, bytes: &Bytes) -> Result<()> {
+    pub(crate) fn cache_skin(&self, hash: &str, bytes: &Bytes) -> Result<()> {
         let path = self.get_cached_skin_path(hash);
         fs::write(path, bytes)?;
         Ok(())
@@ -145,7 +145,7 @@ impl MojangCacheManager {
     pub(crate) fn get_cached_render(
         &self,
         mode: &RenderMode,
-        hash: &String,
+        hash: &str,
         render_data: &RenderDataCacheKey,
     ) -> Result<Option<Vec<u8>>> {
         debug!(
@@ -168,7 +168,7 @@ impl MojangCacheManager {
     pub(crate) fn cache_render(
         &self,
         mode: &RenderMode,
-        hash: &String,
+        hash: &str,
         render_data: &RenderDataCacheKey,
         bytes: &[u8],
     ) -> Result<()> {

@@ -1,7 +1,7 @@
+use std::sync::Arc;
+
 use crate::high_level::camera::Camera;
-use crate::high_level::pipeline::scene_internal::SceneWgpuInternal;
-use crate::high_level::pipeline::wgpu_pipeline::GraphicsContext;
-use crate::low_level::primitives::part_primitive::PartPrimitive;
+use crate::high_level::pipeline::SceneContext;
 
 pub struct Size {
     pub width: u32,
@@ -11,24 +11,22 @@ pub struct Size {
 pub struct Scene {
     pub camera: Camera,
     viewport_size: Size,
-    objects: Vec<Box<dyn PartPrimitive>>,
-    wgpu_internal: SceneWgpuInternal,
+    scene_context: Arc<SceneContext>,
 }
 
 impl Scene {
     pub fn new(
-        pipeline: GraphicsContext,
-        camera: Camera,
+        context: Arc<SceneContext>,
+        mut camera: Camera,
         viewport_size: Size,
-        objects: Vec<Box<dyn PartPrimitive>>,
     ) -> Self {
-        let internal = SceneWgpuInternal::new(pipeline, &viewport_size);
+        // Initialize our 
+        camera.set_aspect_ratio(viewport_size.width as f32 / viewport_size.height as f32);
 
         Self {
             camera,
             viewport_size,
-            objects,
-            wgpu_internal: internal,
+            scene_context: context,
         }
     }
 }

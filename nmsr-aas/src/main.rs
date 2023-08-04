@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
@@ -51,6 +53,7 @@ mod mojang;
 mod renderer;
 mod routes;
 mod utils;
+mod model;
 
 #[derive(Parser)]
 struct Args {

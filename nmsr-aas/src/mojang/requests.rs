@@ -150,7 +150,7 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
     tracing::instrument(skip(hash, client, textures_server))
 )]
 pub(crate) async fn fetch_skin_bytes_from_mojang(
-    hash: &String,
+    hash: &str,
     client: &ClientWithMiddleware,
     textures_server: &String,
 ) -> Result<Bytes> {

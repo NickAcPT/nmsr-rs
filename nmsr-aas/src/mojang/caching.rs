@@ -102,7 +102,7 @@ impl MojangCacheManager {
         Ok(manager)
     }
 
-    fn get_cached_skin_path(&self, hash: &String) -> PathBuf {
+    fn get_cached_skin_path(&self, hash: &str) -> PathBuf {
         self.skins.join(hash)
     }
 
@@ -123,7 +123,7 @@ impl MojangCacheManager {
     }
 
     #[cfg_attr(feature = "tracing", instrument(level = "trace", skip(self)))]
-    pub(crate) fn get_cached_skin(&self, hash: &String) -> Result<Option<Vec<u8>>> {
+    pub(crate) fn get_cached_skin(&self, hash: &str) -> Result<Option<Vec<u8>>> {
         debug!("Getting cached skin for hash {}", hash);
         let path = self.get_cached_skin_path(hash);
         if path.exists() {

@@ -1,19 +1,15 @@
 use std::sync::Arc;
 
 use nmsr_rendering::{
+    high_level::pipeline::Backends,
     high_level::pipeline::{GraphicsContext, GraphicsContextDescriptor},
-    high_level::pipeline::Backends
 };
 
 use strum::{Display, EnumCount, EnumIter, EnumString};
 #[cfg(feature = "uv")]
 use {
-    tracing::instrument,
-    crate::utils::errors::NMSRaaSError::MissingPartManager,
-    strum::IntoEnumIterator,
-    std::borrow::Cow,
-    std::path::Path,
-    std::collections::HashMap
+    crate::utils::errors::NMSRaaSError::MissingPartManager, std::borrow::Cow,
+    std::collections::HashMap, std::path::Path, strum::IntoEnumIterator, tracing::instrument,
 };
 
 #[cfg(feature = "lazy_parts")]
@@ -22,7 +18,7 @@ use tracing::debug;
 #[cfg(feature = "uv")]
 use nmsr_lib::{
     parts::manager::PartsManager,
-    vfs::{PhysicalFS, VfsPath}
+    vfs::{PhysicalFS, VfsPath},
 };
 #[cfg(feature = "lazy_parts")]
 use {
@@ -45,7 +41,7 @@ pub(crate) enum RenderMode {
 }
 
 #[derive(Debug, Clone)]
-#[cfg(feature="uv")]
+#[cfg(feature = "uv")]
 pub(crate) struct NMSRaaSManager {
     #[cfg(feature = "lazy_parts")]
     part_root: VfsPath,
@@ -53,15 +49,14 @@ pub(crate) struct NMSRaaSManager {
     part_managers: HashMap<RenderMode, PartsManager>,
 }
 
-#[cfg(feature="wgpu")]
+#[cfg(feature = "wgpu")]
 #[derive(Debug, Clone)]
 pub(crate) struct NMSRaaSManager {
     wgpu_pipeline: Arc<GraphicsContext>,
 }
 
-#[cfg(feature="wgpu")]
+#[cfg(feature = "wgpu")]
 impl NMSRaaSManager {
-
     pub(crate) async fn new() -> Result<NMSRaaSManager> {
         // Setup an nmsr wgpu rendering pipeline.
         // Since we are not rendering to a surface (i.e. a window), we don't need to provide
@@ -70,7 +65,8 @@ impl NMSRaaSManager {
             backends: Some(Backends::all()),
             surface_provider: Box::new(|_| None),
             default_size: (0, 0),
-        }).await?;
+        })
+        .await?;
 
         Ok(NMSRaaSManager {
             wgpu_pipeline: Arc::new(wgpu_pipeline),
@@ -82,7 +78,7 @@ impl NMSRaaSManager {
     }
 }
 
-#[cfg(feature="uv")]
+#[cfg(feature = "uv")]
 impl NMSRaaSManager {
     #[instrument(level = "trace", skip(part_root))]
     async fn create_part_manager_for_mode(
@@ -96,7 +92,7 @@ impl NMSRaaSManager {
 }
 
 #[cfg(not(feature = "lazy_parts"))]
-#[cfg(feature="uv")]
+#[cfg(feature = "uv")]
 impl NMSRaaSManager {
     pub(crate) fn get_manager(&self, render_type: &RenderMode) -> Result<Cow<PartsManager>> {
         self.part_managers
@@ -105,7 +101,7 @@ impl NMSRaaSManager {
             .ok_or_else(|| MissingPartManager(render_type.clone()))
     }
 
-    #[cfg(feature="uv")]
+    #[cfg(feature = "uv")]
     #[instrument(level = "trace", skip(part_root))]
     pub(crate) async fn new(part_root: impl AsRef<Path>) -> Result<NMSRaaSManager> {
         let part_root: VfsPath = PhysicalFS::new(part_root).into();

@@ -9,9 +9,9 @@ use xxhash_rust::xxh3::xxh3_64;
 use crate::config::{CacheConfiguration, MojankConfiguration};
 use crate::manager::{NMSRaaSManager, RenderMode};
 use crate::mojang::caching::MojangCacheManager;
+use crate::renderer::render_skin;
 use crate::utils::errors::NMSRaaSError;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
-use crate::renderer::render_skin;
 
 #[derive(Deserialize, Default, Debug)]
 pub(crate) struct RenderData {
@@ -31,7 +31,13 @@ pub(crate) struct RenderDataCacheKey {
 #[get("/{type}/{player}")]
 #[cfg_attr(
     feature = "tracing",
-    tracing::instrument(skip(cache_config, parts_manager, mojang_requests_client, cache_manager, mojank_config))
+    tracing::instrument(skip(
+        cache_config,
+        parts_manager,
+        mojang_requests_client,
+        cache_manager,
+        mojank_config
+    ))
 )]
 pub(crate) async fn render(
     path: Path<(String, String)>,
@@ -92,7 +98,8 @@ pub(crate) async fn render(
             slim_arms,
             include_shading,
             include_layers,
-        ).await?;
+        )
+        .await?;
 
         {
             cache_manager.write().cache_render(

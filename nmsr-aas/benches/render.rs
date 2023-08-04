@@ -2,14 +2,13 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use std::time::Duration;
 use rust_embed::RustEmbed;
+use std::time::Duration;
 use vfs::EmbeddedFS;
 
 use nmsr_lib::parts::manager::PartsManager;
 use nmsr_lib::rendering::entry::RenderingEntry;
 use nmsr_lib::vfs::PhysicalFS;
-
 
 #[derive(RustEmbed, Debug)]
 #[folder = "../parts/"]
@@ -41,10 +40,22 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     .expect("Failed to create entry");
 
     c.bench_function("fullbody", |b| {
-        b.iter(|| black_box(black_box(&entry).render(black_box(&normal_manager)).expect("Bruh")))
+        b.iter(|| {
+            black_box(
+                black_box(&entry)
+                    .render(black_box(&normal_manager))
+                    .expect("Bruh"),
+            )
+        })
     });
     c.bench_function("fullbody (bigger)", |b| {
-        b.iter(|| black_box(black_box(&entry).render(black_box(&bigger_manager)).expect("Bruh")))
+        b.iter(|| {
+            black_box(
+                black_box(&entry)
+                    .render(black_box(&bigger_manager))
+                    .expect("Bruh"),
+            )
+        })
     });
 }
 

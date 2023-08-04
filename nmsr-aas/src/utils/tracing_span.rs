@@ -1,7 +1,7 @@
 use actix_web::body::MessageBody;
-use actix_web::{dev, Error};
 use actix_web::dev::ServiceRequest;
 use actix_web::http::header;
+use actix_web::{dev, Error};
 use tracing::Span;
 use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder};
 
@@ -17,7 +17,10 @@ impl RootSpanBuilder for NMSRRootSpanBuilder {
         }
     }
 
-    fn on_request_end<B: MessageBody>(span: Span, outcome: &Result<dev::ServiceResponse<B>, Error>) {
+    fn on_request_end<B: MessageBody>(
+        span: Span,
+        outcome: &Result<dev::ServiceResponse<B>, Error>,
+    ) {
         DefaultRootSpanBuilder::on_request_end(span, outcome);
     }
 }

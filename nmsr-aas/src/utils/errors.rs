@@ -1,8 +1,8 @@
+use actix_web::http::StatusCode;
 #[cfg(feature = "tracing")]
 use opentelemetry::trace::TraceError;
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
-use actix_web::http::StatusCode;
 
 use thiserror::Error;
 
@@ -71,7 +71,7 @@ impl actix_web::error::ResponseError for NMSRaaSError {
     fn status_code(&self) -> StatusCode {
         match self {
             NMSRaaSError::InvalidPlayerUuidRequest(_, _) => StatusCode::BAD_REQUEST,
-            _ => StatusCode::INTERNAL_SERVER_ERROR
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

@@ -1,8 +1,8 @@
+use crate::config::MojankConfiguration;
 use actix_web::web::Bytes;
 use parking_lot::RwLock;
 use reqwest_middleware::ClientWithMiddleware;
 use tracing::trace_span;
-use crate::config::MojankConfiguration;
 
 use crate::mojang::caching::MojangCacheManager;
 use crate::mojang::requests;
@@ -62,8 +62,15 @@ impl PlayerRenderInput {
                         let guard = cache_manager.read();
                         guard.rate_limiter.clone()
                     };
-                    let result =
-                        { requests::get_skin_hash_and_model(client, &limiter, *id, &mojank_config.session_server) }.await?;
+                    let result = {
+                        requests::get_skin_hash_and_model(
+                            client,
+                            &limiter,
+                            *id,
+                            &mojank_config.session_server,
+                        )
+                    }
+                    .await?;
 
                     {
                         let _guard_span = trace_span!("write_rate_limiter_acquire").entered();
@@ -107,8 +114,12 @@ impl PlayerRenderInput {
         if let Some(bytes) = result {
             Ok((cached, Bytes::from(bytes)))
         } else {
-            let bytes_from_mojang =
-                requests::fetch_skin_bytes_from_mojang(skin_hash, client, &mojank_config.textures_server).await?;
+            let bytes_from_mojang = requests::fetch_skin_bytes_from_mojang(
+                skin_hash,
+                client,
+                &mojank_config.textures_server,
+            )
+            .await?;
             {
                 let _guard_span =
                     trace_span!(parent: &current_span, "write_cache_acquire").entered();

@@ -26,6 +26,7 @@ use routes::{
 };
 #[cfg(feature = "tracing")]
 use {
+    crate::utils::tracing_span::NMSRRootSpanBuilder,
     opentelemetry::{
         global,
         sdk::{propagation::TraceContextPropagator, trace, Resource},
@@ -33,7 +34,6 @@ use {
     },
     opentelemetry_otlp::WithExportConfig,
     tracing_actix_web::TracingLogger,
-    crate::utils::tracing_span::NMSRRootSpanBuilder,
 };
 
 use crate::config::{MojankConfiguration, ServerConfiguration};
@@ -48,9 +48,9 @@ compile_error!("Cannot compile with both wgpu and uv features enabled. Please ch
 mod config;
 mod manager;
 mod mojang;
+mod renderer;
 mod routes;
 mod utils;
-mod renderer;
 
 #[derive(Parser)]
 struct Args {
@@ -82,7 +82,11 @@ async fn main() -> Result<()> {
 
     info!("Loading parts manager...");
     let start = std::time::Instant::now();
-    let manager = NMSRaaSManager::new(#[cfg(not(feature="wgpu"))] &config.parts).await?;
+    let manager = NMSRaaSManager::new(
+        #[cfg(not(feature = "wgpu"))]
+        &config.parts,
+    )
+    .await?;
     info!("Parts manager loaded in {}ms", start.elapsed().as_millis());
 
     let cache_manager = MojangCacheManager::init(
@@ -204,24 +208,39 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn build_mojang_request_client(mojank_config: &Data<MojankConfiguration>) -> Result<ClientWithMiddleware> {
+fn build_mojang_request_client(
+    mojank_config: &Data<MojankConfiguration>,
+) -> Result<ClientWithMiddleware> {
     let mut mojang_requests_client = reqwest::Client::builder()
         .user_agent(format!("NMSR as a Service/{}", env!("CARGO_PKG_VERSION")));
 
-    if let Some(experimental_http2_prior_knowledge) = mojank_config.experimental_http2_prior_knowledge {
-        if experimental_http2_prior_knowledge { mojang_requests_client = mojang_requests_client.http2_prior_knowledge(); }
+    if let Some(experimental_http2_prior_knowledge) =
+        mojank_config.experimental_http2_prior_knowledge
+    {
+        if experimental_http2_prior_knowledge {
+            mojang_requests_client = mojang_requests_client.http2_prior_knowledge();
+        }
     }
 
-    if let Some(experimental_http2_keep_alive_while_idle) = mojank_config.experimental_http2_keep_alive_while_idle {
-        mojang_requests_client = mojang_requests_client.http2_keep_alive_while_idle(experimental_http2_keep_alive_while_idle);
+    if let Some(experimental_http2_keep_alive_while_idle) =
+        mojank_config.experimental_http2_keep_alive_while_idle
+    {
+        mojang_requests_client = mojang_requests_client
+            .http2_keep_alive_while_idle(experimental_http2_keep_alive_while_idle);
     }
 
-    if let Some(experimental_http2_keep_alive_interval) = mojank_config.experimental_http2_keep_alive_interval {
-        mojang_requests_client = mojang_requests_client.http2_keep_alive_interval(Duration::from_secs(experimental_http2_keep_alive_interval));
+    if let Some(experimental_http2_keep_alive_interval) =
+        mojank_config.experimental_http2_keep_alive_interval
+    {
+        mojang_requests_client = mojang_requests_client
+            .http2_keep_alive_interval(Duration::from_secs(experimental_http2_keep_alive_interval));
     }
 
-    if let Some(experimental_http2_keep_alive_timeout) = mojank_config.experimental_http2_keep_alive_timeout {
-        mojang_requests_client = mojang_requests_client.http2_keep_alive_timeout(Duration::from_secs(experimental_http2_keep_alive_timeout));
+    if let Some(experimental_http2_keep_alive_timeout) =
+        mojank_config.experimental_http2_keep_alive_timeout
+    {
+        mojang_requests_client = mojang_requests_client
+            .http2_keep_alive_timeout(Duration::from_secs(experimental_http2_keep_alive_timeout));
     }
 
     Ok(ClientBuilder::new(mojang_requests_client.build()?)

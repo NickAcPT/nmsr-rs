@@ -13,7 +13,7 @@
                     "build",
                     "--bin=nmsr-aas",
                     "--package=nmsr-aas",
-                    "--features=wgpu"
+                    "--features=wgpu,tracing"
                 ],
                 "filter": {
                     "name": "nmsr-aas",

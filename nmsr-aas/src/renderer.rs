@@ -42,7 +42,12 @@ pub(crate) async fn render_skin(
     include_shading: bool,
     include_layers: bool,
 ) -> Result<Vec<u8>> {
-    let graphics_context = parts_manager.get_graphics_context();
+    use nmsr_rendering::high_level::pipeline::scene::{Scene, Size};
+
+    let scene_context = parts_manager.get_scence_context();
+    let camera = mode.get_camera();
+    
+    let scene = Scene::new(scene_context, camera, Size {width: 832, height: 512});
 
     Ok(vec![])
     // unimplemented!("wgpu rendering is not yet implemented")

@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use nmsr_rendering::{
     high_level::pipeline::Backends,
-    high_level::pipeline::{GraphicsContext, GraphicsContextDescriptor},
+    high_level::{
+        camera::{Camera, CameraRotation, ProjectionParameters},
+        pipeline::{GraphicsContext, GraphicsContextDescriptor, SceneContext},
+    },
+    low_level::Vec3,
 };
 
 use strum::{Display, EnumCount, EnumIter, EnumString};
@@ -50,9 +54,29 @@ pub(crate) struct NMSRaaSManager {
 }
 
 #[cfg(feature = "wgpu")]
+impl RenderMode {
+    pub(crate) fn get_camera(&self) -> Camera {
+        match self {
+            RenderMode::FullBody => Camera::new_orbital(
+                [0.0, 16.65, 0.0].into(),
+                44.1,
+                CameraRotation {
+                    yaw: 20.0,
+                    pitch: 10.0,
+                },
+                ProjectionParameters::Perspective { fov: 45.0 },
+                1.0,
+            ),
+            _ => unimplemented!("wgpu rendering is not yet implemented"),
+        }
+    }
+}
+
+#[cfg(feature = "wgpu")]
 #[derive(Debug, Clone)]
 pub(crate) struct NMSRaaSManager {
-    wgpu_graphics_context: Arc<GraphicsContext>,
+    graphics_context: Arc<GraphicsContext>,
+    scene_context: Arc<SceneContext>,
 }
 
 #[cfg(feature = "wgpu")]
@@ -61,20 +85,24 @@ impl NMSRaaSManager {
         // Setup an nmsr wgpu rendering pipeline.
         // Since we are not rendering to a surface (i.e. a window), we don't need to provide
         // a surface, nor a default size.
-        let wgpu_pipeline = GraphicsContext::new(GraphicsContextDescriptor {
+        let graphics_context = GraphicsContext::new(GraphicsContextDescriptor {
             backends: Some(Backends::all()),
             surface_provider: Box::new(|_| None),
             default_size: (0, 0),
-        })
-        .await?;
+        }).await?;
+        
+        let graphics: Arc<GraphicsContext> = Arc::new(graphics_context);
+        
+        let scene_context = SceneContext::new(graphics.clone());
 
         Ok(NMSRaaSManager {
-            wgpu_graphics_context: Arc::new(wgpu_pipeline),
+            graphics_context: Arc::clone(&graphics),
+            scene_context: Arc::new(scene_context)
         })
     }
 
-    pub(crate) fn get_graphics_context(&self) -> &GraphicsContext {
-        self.wgpu_graphics_context.as_ref()
+    pub(crate) fn get_scence_context(&self) -> Arc<SceneContext> {
+        Arc::clone(&self.scene_context)
     }
 }
 

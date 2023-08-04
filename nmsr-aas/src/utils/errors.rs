@@ -6,6 +6,7 @@ use std::sync::PoisonError;
 
 use thiserror::Error;
 
+#[cfg(feature = "uv")]
 use nmsr_lib::vfs::VfsError;
 
 use crate::manager::RenderMode;
@@ -35,10 +36,12 @@ pub(crate) enum NMSRaaSError {
     #[error("Invalid skin: {0}")]
     InvalidImageError(#[from] image::ImageError),
     #[error("NMSR error: {0}")]
+    #[cfg(feature = "uv")]
     NMSRError(#[from] nmsr_lib::errors::NMSRError),
     #[error("IO error: {0}")]
     IOError(#[from] std::io::Error),
     #[error("IO error: {0}")]
+    #[cfg(feature = "uv")]
     VirtualIOError(VfsError),
     #[error("System time error: {0}")]
     SystemTimeError(#[from] std::time::SystemTimeError),
@@ -63,6 +66,8 @@ pub(crate) enum NMSRaaSError {
     ReqwestMiddlewareError(#[from] reqwest_middleware::Error),
     #[error("Log Tracing error: {0}")]
     LogTracingError(#[from] tracing_log::log::SetLoggerError),
+    #[error("Legacy Skin upgrade error")]
+    LegacySkinUpgradeError,
     #[error("Nmsr Rendering error: {0}")]
     NMSRRenderingError(#[from] nmsr_rendering::errors::NMSRRenderingError),
 }
@@ -88,6 +93,7 @@ impl<T> From<PoisonError<T>> for NMSRaaSError {
     }
 }
 
+#[cfg(feature = "uv")]
 impl From<VfsError> for NMSRaaSError {
     fn from(e: VfsError) -> Self {
         NMSRaaSError::VirtualIOError(e)

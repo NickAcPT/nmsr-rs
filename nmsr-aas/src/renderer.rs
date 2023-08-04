@@ -4,6 +4,7 @@ use image::RgbaImage;
 use nmsr_lib::rendering::entry::RenderingEntry;
 
 use crate::manager::{NMSRaaSManager, RenderMode};
+use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 
 #[cfg(feature = "uv")]
@@ -41,7 +42,25 @@ pub(crate) async fn render_skin(
     include_shading: bool,
     include_layers: bool,
 ) -> Result<Vec<u8>> {
-    let pipeline = parts_manager.get_pipeline();
+    let graphics_context = parts_manager.get_graphics_context();
 
-    unimplemented!("wgpu rendering is not yet implemented")
+    Ok(vec![])
+    // unimplemented!("wgpu rendering is not yet implemented")
+}
+
+pub(crate) fn process_skin(skin: RgbaImage) -> Result<RgbaImage> {
+    // Make sure the skin is 64x64
+    let mut skin = ears_rs::utils::legacy_upgrader::upgrade_skin_if_needed(skin)
+        .ok_or(NMSRaaSError::LegacySkinUpgradeError)?;
+
+    #[cfg(feature = "ears")]
+    {
+        // If using Ears, process the erase sections specified in the Alfalfa data
+        ears_rs::utils::eraser::process_erase_regions(&mut skin)?;
+    }
+
+    // Strip the alpha data from the skin
+    ears_rs::utils::alpha::strip_alpha(&mut skin);
+
+    Ok(skin)
 }

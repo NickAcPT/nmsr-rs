@@ -83,7 +83,7 @@ impl Default for ServerConfiguration {
         ServerConfiguration {
             address: "0.0.0.0".to_string(),
             port: 8080,
-            parts: "parts".to_string(),
+            #[cfg(feature = "uv")] parts: "parts".to_string(),
             tls: None,
             cache: CacheConfiguration::default(),
             #[cfg(feature = "tracing")]

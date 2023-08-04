@@ -9,8 +9,6 @@ use reqwest_middleware::ClientWithMiddleware;
 use serde::Deserialize;
 use xxhash_rust::xxh3::xxh3_64;
 
-use nmsr_lib::rendering::entry::RenderingEntry;
-
 use crate::config::{CacheConfiguration, MojankConfiguration};
 use crate::mojang::caching::MojangCacheManager;
 use crate::{routes::model::PlayerRenderInput, utils::Result};
@@ -43,7 +41,7 @@ pub(crate) async fn get_skin(
 
     if should_process {
         let image = image::load_from_memory(skin_bytes.chunk())?.into_rgba8();
-        let image = RenderingEntry::process_skin(image)?;
+        let image = crate::renderer::process_skin(image)?;
 
         let mut render_bytes = Vec::new();
 

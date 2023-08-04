@@ -52,7 +52,7 @@ pub(crate) struct NMSRaaSManager {
 #[cfg(feature = "wgpu")]
 #[derive(Debug, Clone)]
 pub(crate) struct NMSRaaSManager {
-    wgpu_pipeline: Arc<GraphicsContext>,
+    wgpu_graphics_context: Arc<GraphicsContext>,
 }
 
 #[cfg(feature = "wgpu")]
@@ -69,12 +69,12 @@ impl NMSRaaSManager {
         .await?;
 
         Ok(NMSRaaSManager {
-            wgpu_pipeline: Arc::new(wgpu_pipeline),
+            wgpu_graphics_context: Arc::new(wgpu_pipeline),
         })
     }
 
-    pub(crate) fn get_pipeline(&self) -> &GraphicsContext {
-        self.wgpu_pipeline.as_ref()
+    pub(crate) fn get_graphics_context(&self) -> &GraphicsContext {
+        self.wgpu_graphics_context.as_ref()
     }
 }
 

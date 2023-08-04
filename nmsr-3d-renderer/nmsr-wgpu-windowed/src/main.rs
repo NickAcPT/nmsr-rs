@@ -1,21 +1,24 @@
-use std::{iter, mem};
 use std::time::{Duration, Instant};
+use std::{iter, mem};
 
-use egui::{Context, FontDefinitions};
 use egui::emath::Numeric;
+use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use libloader::libloading;
 use strum::IntoEnumIterator;
-use wgpu::{Backends, BufferAddress, Device, include_wgsl, Instance, RenderPassDepthStencilAttachment, SurfaceConfiguration, Texture, TextureView};
 use wgpu::util::DeviceExt;
+use wgpu::{
+    include_wgsl, Backends, BufferAddress, Device, Instance, RenderPassDepthStencilAttachment,
+    SurfaceConfiguration, Texture, TextureView,
+};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
 use nmsr_player_parts::parts::part::Part;
-use nmsr_player_parts::parts::provider::{PartsProvider, PlayerPartProviderContext};
 use nmsr_player_parts::parts::provider::minecraft::MinecraftPlayerPartsProvider;
+use nmsr_player_parts::parts::provider::{PartsProvider, PlayerPartProviderContext};
 use nmsr_player_parts::parts::uv::FaceUv;
 use nmsr_player_parts::player_model::PlayerModel;
 use nmsr_player_parts::types::PlayerBodyPartType;
@@ -24,13 +27,13 @@ use nmsr_rendering::high_level::camera::{
 };
 use nmsr_rendering::high_level::errors::NMSRRenderingError;
 use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
-    GraphicsContextDescriptor, GraphicsContext,
+    GraphicsContext, GraphicsContextDescriptor,
 };
-use nmsr_rendering::low_level::{Vec2, Vec3};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::mesh::Mesh;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
+use nmsr_rendering::low_level::{Vec2, Vec3};
 
 #[tokio::main]
 async fn main() -> Result<(), NMSRRenderingError> {
@@ -78,7 +81,6 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
-
 
     let aspect_ratio = config.width as f32 / config.height as f32;
 
@@ -185,7 +187,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
         label: None,
     });
 
-    let skin_bytes = include_bytes!("819ba7dd7373fb71c763ac3ce0fe976a0acd16d4f7bc56d6b9c198e4bc379981.png");
+    let skin_bytes =
+        include_bytes!("819ba7dd7373fb71c763ac3ce0fe976a0acd16d4f7bc56d6b9c198e4bc379981.png");
     let skin_image = image::load_from_memory(skin_bytes).unwrap();
     let mut skin_rgba = skin_image.to_rgba8();
 
@@ -347,11 +350,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
             }
             event::Event::WindowEvent {
                 event:
-                WindowEvent::Resized(size)
-                | WindowEvent::ScaleFactorChanged {
-                    new_inner_size: &mut size,
-                    ..
-                },
+                    WindowEvent::Resized(size)
+                    | WindowEvent::ScaleFactorChanged {
+                        new_inner_size: &mut size,
+                        ..
+                    },
                 ..
             } => {
                 // Once winit is fixed, the detection conditions here can be removed.
@@ -498,7 +501,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 });*/
 
                 // Upload all resources for the GPU.
-               /* let screen_descriptor = ScreenDescriptor {
+                /* let screen_descriptor = ScreenDescriptor {
                     physical_width: config.width,
                     physical_height: config.height,
                     scale_factor: window.scale_factor() as f32,
@@ -511,14 +514,14 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                 // Record all render passes.
                 /*egui_rpass
-                    .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
-                    .unwrap();*/
+                .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
+                .unwrap();*/
                 // Submit the commands.
                 //queue.submit(iter::once(encoder.finish()));
 
                 /*egui_rpass
-                    .remove_textures(tdelta)
-                    .expect("remove texture ok");*/
+                .remove_textures(tdelta)
+                .expect("remove texture ok");*/
 
                 frame.present();
 
@@ -552,7 +555,12 @@ fn create_depth(device: &Device, config: &SurfaceConfiguration) -> (Texture, Tex
     (depth_texture, depth)
 }
 
-fn debug_ui(ctx: &Context, camera: &mut Camera, last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>, last_frame_time: Duration) {
+fn debug_ui(
+    ctx: &Context,
+    camera: &mut Camera,
+    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>,
+    last_frame_time: Duration,
+) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
 
@@ -718,7 +726,10 @@ fn debug_ui(ctx: &Context, camera: &mut Camera, last_camera_stuff: &mut Option<(
     });
 }
 
-fn visage_orbital(camera: &mut Camera, last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>) {
+fn visage_orbital(
+    camera: &mut Camera,
+    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>,
+) {
     last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation()));
 
     camera.set_position_parameters(CameraPositionParameters::Orbital {
@@ -726,9 +737,7 @@ fn visage_orbital(camera: &mut Camera, last_camera_stuff: &mut Option<(CameraPos
         distance: 44.1,
     });
 
-    camera.set_projection(ProjectionParameters::Perspective {
-        fov: 45.0,
-    });
+    camera.set_projection(ProjectionParameters::Perspective { fov: 45.0 });
 
     camera.set_rotation(CameraRotation {
         yaw: 20.0,
@@ -736,16 +745,17 @@ fn visage_orbital(camera: &mut Camera, last_camera_stuff: &mut Option<(CameraPos
     })
 }
 
-fn visage(camera: &mut Camera, last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>) {
+fn visage(
+    camera: &mut Camera,
+    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>,
+) {
     last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation()));
 
     camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
         14.85, 24.3, -40.85,
     )));
 
-    camera.set_projection(ProjectionParameters::Perspective {
-        fov: 45.0,
-    });
+    camera.set_projection(ProjectionParameters::Perspective { fov: 45.0 });
 
     camera.set_rotation(CameraRotation {
         yaw: 20.0,
@@ -760,8 +770,8 @@ fn drag_value<T, I>(
     min: Option<T>,
     max: Option<T>,
 ) -> egui::DragValue
-    where
-        T: Numeric,
+where
+    T: Numeric,
 {
     let value = egui::DragValue::from_get_set(move |new| {
         if let Some(new) = new {

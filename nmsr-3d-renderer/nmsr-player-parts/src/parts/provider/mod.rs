@@ -2,8 +2,8 @@ use crate::parts::part::Part;
 use crate::player_model::PlayerModel;
 use crate::types::PlayerBodyPartType;
 
-pub mod minecraft;
 pub mod ears;
+pub mod minecraft;
 
 pub enum PlayerPartsProvider {
     Minecraft,

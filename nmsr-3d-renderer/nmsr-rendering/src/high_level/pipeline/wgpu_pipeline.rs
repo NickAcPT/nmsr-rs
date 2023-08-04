@@ -1,6 +1,5 @@
 use wgpu::{
-    Adapter, Backends, Device, Instance, Queue, Surface,
-    SurfaceConfiguration, TextureFormat
+    Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
 };
 
 use crate::errors::{NMSRRenderingError, Result};
@@ -76,9 +75,10 @@ impl GraphicsContext {
             }
         }
 
-        let adapter = wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
-            .await
-            .ok_or(NMSRRenderingError::WgpuAdapterRequestError)?;
+        let adapter =
+            wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
+                .await
+                .ok_or(NMSRRenderingError::WgpuAdapterRequestError)?;
 
         Ok(GraphicsContext {
             instance,

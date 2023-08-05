@@ -1,14 +1,19 @@
-use std::{borrow::Cow, mem};
+use std::{
+    borrow::Cow,
+    mem,
+    sync::{Mutex, RwLock},
+};
 
 use glam::Vec3;
 pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
 };
 use wgpu::{
-    BindGroupDescriptor, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState,
-    BufferAddress, BufferBindingType, ColorTargetState, ColorWrites, CompareFunction,
-    DepthStencilState, FragmentState, PipelineLayoutDescriptor, RenderPipelineDescriptor,
-    ShaderModuleDescriptor, ShaderStages, VertexBufferLayout, BindGroupLayout, RenderPipeline, TextureViewDimension, TextureSampleType,
+    BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
+    BindingType, BlendState, BufferAddress, BufferBindingType, ColorTargetState, ColorWrites,
+    CompareFunction, DepthStencilState, FragmentState, PipelineLayoutDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType,
+    TextureViewDimension, VertexBufferLayout,
 };
 
 use crate::{
@@ -23,8 +28,8 @@ pub struct GraphicsContext {
     pub instance: Instance,
     pub device: Device,
     pub queue: Queue,
-    pub surface: Option<Surface>,
-    pub surface_config: Option<Result<SurfaceConfiguration>>,
+    pub surface: Option<RwLock<Surface>>,
+    pub surface_config: Option<Result<RwLock<SurfaceConfiguration>>>,
     pub surface_view_format: Option<TextureFormat>,
     pub adapter: Adapter,
 
@@ -46,8 +51,10 @@ impl GraphicsContext {
     pub const DEFAULT_TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
 
     pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {
-        let texture_format = descriptor.texture_format.unwrap_or(Self::DEFAULT_TEXTURE_FORMAT);
-        
+        let texture_format = descriptor
+            .texture_format
+            .unwrap_or(Self::DEFAULT_TEXTURE_FORMAT);
+
         let backends = wgpu::util::backend_bits_from_env()
             .or(descriptor.backends)
             .ok_or(NMSRRenderingError::NoBackendFound)?;
@@ -118,8 +125,7 @@ impl GraphicsContext {
                 }],
                 label: Some("Transform Bind Group Layout"),
             });
-            
-            
+
         let skin_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Skin Texture Bind Group"),
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -133,7 +139,7 @@ impl GraphicsContext {
                 count: None,
             }],
         });
-        
+
         let skin_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Skin Texture Bind Group"),
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -210,27 +216,34 @@ impl GraphicsContext {
             multiview: None,
         });
 
+        let surface_lock = surface.map(|s| RwLock::new(s));
+        let surface_config_lock = surface_config.map(|s| s.map(|s| RwLock::new(s)));
+
         Ok(GraphicsContext {
             instance,
             device,
             queue,
-            surface,
-            surface_config,
+            surface: surface_lock,
+            surface_config: surface_config_lock,
             surface_view_format,
             adapter,
             pipeline,
             transform_bind_group_layout,
-            skin_bind_group_layout
+            skin_bind_group_layout,
         })
     }
 
-    pub fn set_surface_size(&mut self, size: Size) {
-        if let Some(Ok(config)) = &mut self.surface_config {
-            config.width = size.width;
-            config.height = size.height;
-            
-            if let Some(surface) = &self.surface {
-                surface.configure(&self.device, config);
+    pub fn set_surface_size(&self, size: Size) {
+        if let Some(Ok(config_lock)) = &self.surface_config {
+            if let Ok(mut config) = config_lock.write() {
+                config.width = size.width;
+                config.height = size.height;
+
+                if let Some(surface_lock) = &self.surface {
+                    if let Ok(surface) = surface_lock.read() {
+                        surface.configure(&self.device, &config);
+                    }
+                }
             }
         }
     }

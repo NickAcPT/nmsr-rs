@@ -51,12 +51,13 @@ async fn main() -> Result<(), NMSRRenderingError> {
         .launch_replay_ui(true, None)
         .expect("Failed to launch RenderDoc replay UI");
 
-    let mut event_loop = EventLoop::new();
+    let event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
     builder = builder.with_title("NMSR WGPU Windowed");
     let window = builder.build(&event_loop).unwrap();
 
     let size = window.inner_size();
+    println!("Window size: {}x{}", size.width, size.height);
 
     let graphics_context = GraphicsContext::new(GraphicsContextDescriptor {
         backends: Some(wgpu::Backends::all()),
@@ -85,11 +86,13 @@ async fn main() -> Result<(), NMSRRenderingError> {
     }
 
     let (width, height) = {
-        let config = graphics_context
+        let config = &graphics_context
             .surface_config
             .as_ref()
-            .expect("Expected surface config")
+            .unwrap()
             .as_ref()
+            .unwrap()
+            .read()
             .unwrap();
 
         (config.width, config.height)
@@ -105,13 +108,20 @@ async fn main() -> Result<(), NMSRRenderingError> {
         1.0,
     );
 
+    
+    let mut has_captured_frame = false;
+    
+    if !has_captured_frame {
+        renderdoc.start_frame_capture(std::ptr::null(), std::ptr::null())
+    }
+    
+    
     let graphics_context = Arc::new(graphics_context);
 
     let scene_context = Arc::new(SceneContext::new(Arc::clone(&graphics_context)));
 
-    let scene = Scene::new(scene_context, camera, Size { width, height });
-    let scene_context = scene.get_context();
-    
+    let scene = Scene::new(scene_context.clone(), camera, Size { width, height });
+
     let mut camera = scene.camera;
 
     let ctx = PlayerPartProviderContext {
@@ -128,56 +138,22 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let to_render = Mesh::new(to_render);
 
     // Create the vertex and index buffers
-    let vertex_size = mem::size_of::<Vertex>();
     let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
 
-    let device = &graphics_context.device;
-    let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let vertex_buf = graphics_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
         contents: bytemuck::cast_slice(&vertex_data),
         usage: wgpu::BufferUsages::VERTEX,
     });
 
-    let index_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let index_buf = graphics_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Index Buffer"),
         contents: bytemuck::cast_slice(&index_data),
         usage: wgpu::BufferUsages::INDEX,
     });
 
     // Create pipeline layout
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: None,
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: wgpu::BufferSize::new(64),
-            },
-            count: None,
-        }],
-    });
-
     let skin_bind_group_layout = &graphics_context.skin_bind_group_layout;
-
-    let mx_total = camera.get_view_projection_matrix();
-    let mx_ref: &[f32; 16] = mx_total.as_ref();
-    let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Uniform Buffer"),
-        contents: bytemuck::cast_slice(mx_ref),
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-    });
-
-    // Create bind group
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        layout: &bind_group_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: uniform_buf.as_entire_binding(),
-        }],
-        label: None,
-    });
 
     let skin_bytes =
         include_bytes!("819ba7dd7373fb71c763ac3ce0fe976a0acd16d4f7bc56d6b9c198e4bc379981.png");
@@ -186,7 +162,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
 
-    let skin_texture = device.create_texture(&wgpu::TextureDescriptor {
+    let skin_texture = graphics_context.device.create_texture(&wgpu::TextureDescriptor {
         // All textures are stored as 3D, we represent our 2D texture
         // by setting depth to 1.
         size: wgpu::Extent3d {
@@ -239,35 +215,34 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let skin_texture_view = skin_texture.create_view(&Default::default());
 
-
-    let skin_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let skin_bind_group = graphics_context.device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: skin_bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(&skin_texture_view),
-            },
-        ],
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(&skin_texture_view),
+        }],
         label: Some("diffuse_bind_group"),
     });
 
-    let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
+    //EGUI:let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
 
-    let mut platform = Platform::new(PlatformDescriptor {
-        physical_width: width,
-        physical_height: height,
-        scale_factor: window.scale_factor(),
-        font_definitions: FontDefinitions::default(),
-        style: Default::default(),
-    });
+    //EGUI:let mut platform = Platform::new(PlatformDescriptor {
+    //EGUI:    physical_width: width,
+    //EGUI:    physical_height: height,
+    //EGUI:    scale_factor: window.scale_factor(),
+    //EGUI:    font_definitions: FontDefinitions::default(),
+    //EGUI:    style: Default::default(),
+    //EGUI:});
 
     let (mut depth_texture, mut depth) = create_depth(
-        device,
-        graphics_context
+        &graphics_context.device,
+        &graphics_context
             .surface_config
             .as_ref()
             .unwrap()
             .as_ref()
+            .unwrap()
+            .read()
             .unwrap(),
     );
 
@@ -277,8 +252,10 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let mut last_camera_stuff: Option<(CameraPositionParameters, CameraRotation)> = None;
 
-    event_loop.run_return(|event, _, control_flow| {
-        platform.handle_event(&event);
+    event_loop.run(move |event, _, control_flow| {
+        let graphics_context = graphics_context.clone();
+        
+        //EGUI:platform.handle_event(&event);
 
         match event {
             event::Event::RedrawEventsCleared => {
@@ -310,17 +287,19 @@ async fn main() -> Result<(), NMSRRenderingError> {
                         height: size.height.max(1),
                     };
 
-                    //TODO: graphics_context.set_surface_size(size);
+                    graphics_context.set_surface_size(size);
 
                     camera.set_aspect_ratio(size.width as f32 / size.height as f32);
 
                     (depth_texture, depth) = create_depth(
-                        device,
-                        graphics_context
+                        &graphics_context.device,
+                        &graphics_context
                             .surface_config
                             .as_ref()
                             .unwrap()
                             .as_ref()
+                            .unwrap()
+                            .read()
                             .unwrap(),
                     )
                 }
@@ -365,27 +344,34 @@ async fn main() -> Result<(), NMSRRenderingError> {
                         Some(event::VirtualKeyCode::R) => {
                             //println!("Triggering RenderDoc capture.");
                             println!("Last frame time: {:?}", last_frame_time);
-                            renderdoc.trigger_capture();
+                            has_captured_frame = false;
                         }
                         _ => {}
                     }
                 }
             }
             event::Event::RedrawRequested(_) => {
-                let surface = graphics_context.surface.as_ref().expect("Expected surface");
-                //platform.update_time(start_time.elapsed().as_secs_f64());
+                let surface = graphics_context
+                    .surface
+                    .as_ref()
+                    .expect("Expected surface")
+                    .read()
+                    .unwrap();
+                //EGUI:platform.update_time(start_time.elapsed().as_secs_f64());
                 let start = Instant::now();
 
                 let frame = match surface.get_current_texture() {
                     Ok(frame) => frame,
                     Err(_) => {
                         surface.configure(
-                            device,
-                            graphics_context
+                            &graphics_context.device,
+                            &graphics_context
                                 .surface_config
                                 .as_ref()
                                 .unwrap()
                                 .as_ref()
+                                .unwrap()
+                                .read()
                                 .unwrap(),
                         );
                         surface
@@ -399,10 +385,12 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     ..Default::default()
                 });
 
-                device.push_error_scope(wgpu::ErrorFilter::Validation);
+                graphics_context.device.push_error_scope(wgpu::ErrorFilter::Validation);
 
+                let queue = &graphics_context.queue;
+                
                 let mut encoder =
-                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+                    graphics_context.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Main Encoder") });
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Main render pass"),
@@ -431,7 +419,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                     rpass.push_debug_group("Prepare data for draw.");
                     rpass.set_pipeline(&graphics_context.pipeline);
-                    rpass.set_bind_group(0, &bind_group, &[]);
+                    rpass.set_bind_group(0, &scene_context.transform_bind_group, &[]);
                     rpass.set_bind_group(1, &skin_bind_group, &[]);
                     rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
                     rpass.set_vertex_buffer(0, vertex_buf.slice(..));
@@ -440,48 +428,48 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
                 }
 
-                graphics_context.queue.submit(Some(encoder.finish()));
+                queue.submit(Some(encoder.finish()));
 
                 // Begin to draw the UI frame.
 
-                platform.begin_frame();
+                //EGUI:platform.begin_frame();
 
                 // Draw the demo application.
-                {
-                    debug_ui(&platform.context(), &mut camera, &mut last_camera_stuff, last_frame_time);
-                }
+                //EGUI:{
+                //EGUI:    debug_ui(&platform.context(), &mut camera, &mut last_camera_stuff, last_frame_time);
+                //EGUI:}
 
                 // End the UI frame. We could now handle the output and draw the UI with the backend.
-                let full_output = platform.end_frame(Some(&window));
-                let paint_jobs = platform.context().tessellate(full_output.shapes);
+                //EGUI:let full_output = platform.end_frame(Some(&window));
+                //EGUI:let paint_jobs = platform.context().tessellate(full_output.shapes);
 
-                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Egui encoder"),
-                });
+                //EGUI:let mut encoder = graphics_context.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                //EGUI:    label: Some("Egui encoder"),
+                //EGUI:});
 
                 // Upload all resources for the GPU.
-                let screen_descriptor = ScreenDescriptor {
-                    physical_width: width,
-                    physical_height: height,
-                    scale_factor: window.scale_factor() as f32,
-                };
-                let tdelta: egui::TexturesDelta = full_output.textures_delta;
-                egui_rpass
-                    .add_textures(&device, &graphics_context.queue, &tdelta)
-                    .expect("add texture ok");
-                egui_rpass.update_buffers(&device, &graphics_context.queue, &paint_jobs, &screen_descriptor);
+                //EGUI:let screen_descriptor = ScreenDescriptor {
+                //EGUI:    physical_width: width,
+                //EGUI:    physical_height: height,
+                //EGUI:    scale_factor: window.scale_factor() as f32,
+                //EGUI:};
+                //EGUI:let tdelta: egui::TexturesDelta = full_output.textures_delta;
+                //EGUI:egui_rpass
+                //EGUI:    .add_textures(&device, &graphics_context.queue, &tdelta)
+                //EGUI:    .expect("add texture ok");
+                //EGUI:egui_rpass.update_buffers(&device, &graphics_context.queue, &paint_jobs, &screen_descriptor);
 
                 // Record all render passes.
-                egui_rpass
-                .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
-                .unwrap();
-            
-                // Submit the commands.
-                graphics_context.queue.submit(iter::once(encoder.finish()));
+                //EGUI:egui_rpass
+                //EGUI:.execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
+                //EGUI:.unwrap();
 
-                egui_rpass
-                .remove_textures(tdelta)
-                .expect("remove texture ok");
+                // Submit the commands.
+                //EGUI:graphics_context.queue.submit(iter::once(encoder.finish()));
+
+                //EGUI:egui_rpass
+                //EGUI:.remove_textures(tdelta)
+                //EGUI:.expect("remove texture ok");
 
                 frame.present();
 
@@ -491,13 +479,16 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 let mx_ref: &[f32; 16] = mx_total.as_ref();
                 graphics_context
                     .queue
-                    .write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
+                    .write_buffer(&scene_context.transform_matrix_buffer, 0, bytemuck::cast_slice(mx_ref));
+                
+                if !has_captured_frame {
+                    has_captured_frame = true;
+                    renderdoc.end_frame_capture(std::ptr::null(), std::ptr::null());
+                }
             }
             _ => {}
         }
     });
-
-    Ok(())
 }
 
 fn create_depth(device: &Device, config: &SurfaceConfiguration) -> (Texture, TextureView) {

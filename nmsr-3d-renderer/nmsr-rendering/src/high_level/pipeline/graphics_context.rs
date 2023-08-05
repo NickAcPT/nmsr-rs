@@ -1,7 +1,8 @@
 use std::{
     borrow::Cow,
+    marker::PhantomData,
     mem,
-    sync::{Mutex, RwLock}, marker::PhantomData,
+    sync::{Mutex, RwLock},
 };
 
 use glam::Vec3;
@@ -34,8 +35,21 @@ pub struct GraphicsContext {
     pub adapter: Adapter,
 
     pub pipeline: RenderPipeline,
+    pub layouts: GraphicsContextLayouts,
+}
+
+#[derive(Debug)]
+pub struct GraphicsContextLayouts {
     pub transform_bind_group_layout: BindGroupLayout,
     pub skin_bind_group_layout: BindGroupLayout,
+    pub pipeline_layout: wgpu::PipelineLayout,
+    pub shader: wgpu::ShaderModule,
+}
+
+impl GraphicsContext {
+    pub fn get_pipeline(&self) -> &RenderPipeline {
+        &self.pipeline
+    }
 }
 
 pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface> + 'a;
@@ -51,10 +65,6 @@ impl GraphicsContext {
     pub const DEFAULT_TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
 
     pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {
-        let texture_format = descriptor
-            .texture_format
-            .unwrap_or(Self::DEFAULT_TEXTURE_FORMAT);
-
         let backends = wgpu::util::backend_bits_from_env()
             .or(descriptor.backends)
             .ok_or(NMSRRenderingError::NoBackendFound)?;
@@ -104,7 +114,13 @@ impl GraphicsContext {
                 }
             }
         }
-
+        
+        let texture_format = surface_view_format
+            .or(descriptor.texture_format)
+            .unwrap_or(Self::DEFAULT_TEXTURE_FORMAT);
+        
+        println!("owo: {:?}", texture_format);
+        
         let adapter =
             wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
                 .await
@@ -125,20 +141,6 @@ impl GraphicsContext {
                 }],
                 label: Some("Transform Bind Group Layout"),
             });
-
-        let skin_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: Some("Skin Texture Bind Group"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::FRAGMENT,
-                ty: BindingType::Texture {
-                    multisampled: false,
-                    view_dimension: TextureViewDimension::D2,
-                    sample_type: TextureSampleType::Float { filterable: true },
-                },
-                count: None,
-            }],
-        });
 
         let skin_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Skin Texture Bind Group"),
@@ -225,8 +227,12 @@ impl GraphicsContext {
             surface_view_format,
             adapter,
             pipeline,
-            transform_bind_group_layout,
-            skin_bind_group_layout,
+            layouts: GraphicsContextLayouts {
+                shader,
+                pipeline_layout,
+                transform_bind_group_layout,
+                skin_bind_group_layout,
+            },
         })
     }
 

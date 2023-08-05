@@ -30,7 +30,7 @@ impl<'ctx> SceneContext<'ctx> {
 
         let transform_bind_group = device.create_bind_group(&BindGroupDescriptor {
             label: Some("Transform Bind Group"),
-            layout: &context.transform_bind_group_layout,
+            layout: &context.layouts.transform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: transform_matrix_buffer.as_entire_binding(),

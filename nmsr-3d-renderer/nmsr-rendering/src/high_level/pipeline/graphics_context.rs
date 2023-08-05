@@ -14,7 +14,7 @@ use wgpu::{
     BindingType, BlendState, BufferAddress, BufferBindingType, ColorTargetState, ColorWrites,
     CompareFunction, DepthStencilState, FragmentState, PipelineLayoutDescriptor, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType,
-    TextureViewDimension, VertexBufferLayout,
+    TextureViewDimension, VertexBufferLayout, BufferSize,
 };
 
 use crate::{
@@ -43,7 +43,6 @@ pub struct GraphicsContextLayouts {
     pub transform_bind_group_layout: BindGroupLayout,
     pub skin_bind_group_layout: BindGroupLayout,
     pub pipeline_layout: wgpu::PipelineLayout,
-    pub shader: wgpu::ShaderModule,
 }
 
 impl GraphicsContext {
@@ -119,8 +118,6 @@ impl GraphicsContext {
             .or(descriptor.texture_format)
             .unwrap_or(Self::DEFAULT_TEXTURE_FORMAT);
         
-        println!("owo: {:?}", texture_format);
-        
         let adapter =
             wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
                 .await
@@ -135,7 +132,7 @@ impl GraphicsContext {
                     ty: BindingType::Buffer {
                         ty: BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(64),
+                        min_binding_size: BufferSize::new(64),
                     },
                     count: None,
                 }],
@@ -228,7 +225,6 @@ impl GraphicsContext {
             adapter,
             pipeline,
             layouts: GraphicsContextLayouts {
-                shader,
                 pipeline_layout,
                 transform_bind_group_layout,
                 skin_bind_group_layout,

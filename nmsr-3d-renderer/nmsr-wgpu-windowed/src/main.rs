@@ -7,7 +7,7 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use libloader::libloading;
 use nmsr_rendering::errors::NMSRRenderingError;
-use nmsr_rendering::high_level::pipeline::{GraphicsContext, GraphicsContextDescriptor};
+use nmsr_rendering::high_level::pipeline::{GraphicsContext, GraphicsContextDescriptor, SceneContext};
 use nmsr_rendering::low_level::{Vec3, Vec2};
 use strum::IntoEnumIterator;
 use wgpu::util::DeviceExt;
@@ -65,6 +65,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
     })
     .await
     .expect("Expected Nmsr Pipeline");
+
+    let scene_context = SceneContext::new(&graphics);
 
     let instance = graphics.instance;
     instance.enumerate_adapters(Backends::all()).for_each(|a| {
@@ -124,27 +126,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
     });
 
     // Create pipeline layout
-    let bind_group_layout = &graphics.layouts.transform_bind_group_layout;
-
     let skin_bind_group_layout = &graphics.layouts.skin_bind_group_layout;
-
-    let mx_total = camera.get_view_projection_matrix();
-    let mx_ref: &[f32; 16] = mx_total.as_ref();
-    let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Uniform Buffer"),
-        contents: bytemuck::cast_slice(mx_ref),
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-    });
-
-    // Create bind group
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        layout: bind_group_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: uniform_buf.as_entire_binding(),
-        }],
-        label: None,
-    });
 
     let skin_bytes =
         include_bytes!("819ba7dd7373fb71c763ac3ce0fe976a0acd16d4f7bc56d6b9c198e4bc379981.png");
@@ -378,8 +360,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     });
 
                     rpass.push_debug_group("Prepare data for draw.");
-                    rpass.set_pipeline(&pipeline);
-                    rpass.set_bind_group(0, &bind_group, &[]);
+                    rpass.set_pipeline(pipeline);
+                    rpass.set_bind_group(0, &scene_context.transform_bind_group, &[]);
                     rpass.set_bind_group(1, &skin_bind_group, &[]);
                     rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
                     rpass.set_vertex_buffer(0, vertex_buf.slice(..));
@@ -436,7 +418,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                 let mx_total = camera.get_view_projection_matrix();
                 let mx_ref: &[f32; 16] = mx_total.as_ref();
-                queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
+                queue.write_buffer(&scene_context.transform_matrix_buffer, 0, bytemuck::cast_slice(mx_ref));
             }
             _ => {}
         }

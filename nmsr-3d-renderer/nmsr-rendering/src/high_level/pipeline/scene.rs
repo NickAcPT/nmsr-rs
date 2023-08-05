@@ -1,4 +1,3 @@
-use std::sync::Arc;
 
 use crate::high_level::camera::Camera;
 use crate::high_level::pipeline::SceneContext;
@@ -9,15 +8,15 @@ pub struct Size {
     pub height: u32,
 }
 
-pub struct Scene<'ctx> {
+pub struct Scene {
     pub camera: Camera,
     viewport_size: Size,
-    scene_context: SceneContext<'ctx>,
+    scene_context: SceneContext,
 }
 
-impl<'ctx> Scene<'ctx> {
+impl Scene {
     pub fn new(
-        context: SceneContext<'ctx>,
+        context: SceneContext,
         mut camera: Camera,
         viewport_size: Size,
     ) -> Self {
@@ -29,9 +28,5 @@ impl<'ctx> Scene<'ctx> {
             viewport_size,
             scene_context: context,
         }
-    }
-
-    pub fn get_context(&'ctx mut self) -> &'ctx mut SceneContext<'ctx> {
-        &mut self.scene_context
     }
 }

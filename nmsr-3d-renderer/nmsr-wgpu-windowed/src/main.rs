@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::{iter, mem};
 
@@ -6,6 +7,11 @@ use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use libloader::libloading;
+use nmsr_rendering::errors::NMSRRenderingError;
+use nmsr_rendering::high_level::pipeline::scene::{self, Scene, Size};
+use nmsr_rendering::high_level::pipeline::{
+    GraphicsContext, GraphicsContextDescriptor, SceneContext,
+};
 use strum::IntoEnumIterator;
 use wgpu::util::DeviceExt;
 use wgpu::{
@@ -25,15 +31,12 @@ use nmsr_player_parts::types::PlayerBodyPartType;
 use nmsr_rendering::high_level::camera::{
     Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
 };
-use nmsr_rendering::high_level::errors::NMSRRenderingError;
-use nmsr_rendering::high_level::pipeline::wgpu_pipeline::{
-    GraphicsContext, GraphicsContextDescriptor,
-};
 use nmsr_rendering::low_level::primitives::cube::Cube;
 use nmsr_rendering::low_level::primitives::mesh::Mesh;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use nmsr_rendering::low_level::primitives::vertex::Vertex;
 use nmsr_rendering::low_level::{Vec2, Vec3};
+use winit::platform::run_return::EventLoopExtRunReturn;
 
 #[tokio::main]
 async fn main() -> Result<(), NMSRRenderingError> {
@@ -48,41 +51,49 @@ async fn main() -> Result<(), NMSRRenderingError> {
         .launch_replay_ui(true, None)
         .expect("Failed to launch RenderDoc replay UI");
 
-    let event_loop = EventLoop::new();
+    let mut event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
     builder = builder.with_title("NMSR WGPU Windowed");
     let window = builder.build(&event_loop).unwrap();
 
     let size = window.inner_size();
 
-    let pipeline = GraphicsContext::new(GraphicsContextDescriptor {
+    let graphics_context = GraphicsContext::new(GraphicsContextDescriptor {
         backends: Some(wgpu::Backends::all()),
         surface_provider: Box::new(|i: &Instance| unsafe {
             Some(i.create_surface(&window).unwrap())
         }),
         default_size: (size.width, size.height),
+        texture_format: None,
     })
     .await
     .expect("Expected Nmsr Pipeline");
 
-    let instance = pipeline.instance;
+    let instance = &graphics_context.instance;
     instance.enumerate_adapters(Backends::all()).for_each(|d| {
         println!("Adapter: {}", d.get_info().name);
     });
 
-    let device = pipeline.device;
-    let queue = pipeline.queue;
-    let surface = pipeline.surface.expect("Expected surface");
-    let mut config = pipeline.surface_config.expect("Expected surface config")?;
-    let adapter = pipeline.adapter;
-    let surface_view_format = pipeline
+    let surface_view_format = graphics_context
         .surface_view_format
         .expect("Expected surface view format");
 
-    let adapter_info = adapter.get_info();
-    println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
+    {
+        let adapter = &graphics_context.adapter;
+        let adapter_info = adapter.get_info();
+        println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
+    }
 
-    let aspect_ratio = config.width as f32 / config.height as f32;
+    let (width, height) = {
+        let config = graphics_context
+            .surface_config
+            .as_ref()
+            .expect("Expected surface config")
+            .as_ref()
+            .unwrap();
+
+        (config.width, config.height)
+    };
 
     let mut camera = Camera::new_absolute(
         Vec3::new(0.0, 30.0, -20.0),
@@ -91,8 +102,15 @@ async fn main() -> Result<(), NMSRRenderingError> {
             pitch: 0.0,
         },
         ProjectionParameters::Perspective { fov: 110f32 },
-        aspect_ratio,
+        1.0,
     );
+
+    let graphics_context = Arc::new(graphics_context);
+
+    let scene_context = Arc::new(SceneContext::new(Arc::clone(&graphics_context)));
+
+    let scene = Scene::new(scene_context, camera, Size { width, height });
+    let mut camera = scene.camera;
 
     let ctx = PlayerPartProviderContext {
         model: PlayerModel::Alex,
@@ -111,6 +129,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let vertex_size = mem::size_of::<Vertex>();
     let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
 
+    let device = &graphics_context.device;
     let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
         contents: bytemuck::cast_slice(&vertex_data),
@@ -221,7 +240,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         view_formats: &[],
     });
 
-    queue.write_texture(
+    graphics_context.queue.write_texture(
         // Tells wgpu where to copy the pixel data
         wgpu::ImageCopyTexture {
             texture: &skin_texture,
@@ -245,7 +264,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         },
     );
 
-    let skin_texture_view = skin_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let skin_texture_view = skin_texture.create_view(&Default::default());
     let skin_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -255,8 +274,6 @@ async fn main() -> Result<(), NMSRRenderingError> {
         mipmap_filter: wgpu::FilterMode::Nearest,
         ..Default::default()
     });
-
-    let shader = device.create_shader_module(include_wgsl!("shader.wgsl"));
 
     let vertex_buffers = [wgpu::VertexBufferLayout {
         array_stride: vertex_size as BufferAddress,
@@ -290,39 +307,6 @@ async fn main() -> Result<(), NMSRRenderingError> {
         label: Some("diffuse_bind_group"),
     });
 
-    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: None,
-        layout: Some(&pipeline_layout),
-        vertex: wgpu::VertexState {
-            module: &shader,
-            entry_point: "vs_main",
-            buffers: &vertex_buffers,
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &shader,
-            entry_point: "fs_main",
-            targets: &[Some(wgpu::ColorTargetState {
-                format: config.view_formats[0],
-                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        }),
-        primitive: wgpu::PrimitiveState {
-            cull_mode: None, //Some(wgpu::Face::Back),
-            front_face: wgpu::FrontFace::Cw,
-            ..Default::default()
-        },
-        depth_stencil: Some(wgpu::DepthStencilState {
-            format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::LessEqual,
-            stencil: Default::default(),
-            bias: Default::default(),
-        }),
-        multisample: wgpu::MultisampleState::default(),
-        multiview: None,
-    });
-
     /*let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
 
     let mut platform = Platform::new(PlatformDescriptor {
@@ -333,7 +317,15 @@ async fn main() -> Result<(), NMSRRenderingError> {
         style: Default::default(),
     });*/
 
-    let (mut depth_texture, mut depth) = create_depth(&device, &mut config);
+    let (mut depth_texture, mut depth) = create_depth(
+        &device,
+        &graphics_context
+            .surface_config
+            .as_ref()
+            .unwrap()
+            .as_ref()
+            .unwrap(),
+    );
 
     println!("Entering render loop...");
     let start_time = Instant::now();
@@ -341,7 +333,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let mut last_camera_stuff: Option<(CameraPositionParameters, CameraRotation)> = None;
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run_return(|event, _, control_flow| {
         //platform.handle_event(&event);
 
         match event {
@@ -357,6 +349,8 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     },
                 ..
             } => {
+                let adapter = &graphics_context.adapter;
+
                 // Once winit is fixed, the detection conditions here can be removed.
                 // https://github.com/rust-windowing/winit/issues/2876
                 let max_dimension = adapter.limits().max_texture_dimension_2d;
@@ -367,12 +361,24 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     );
                 } else {
                     println!("Resizing to {:?}", size);
-                    config.width = size.width.max(1);
-                    config.height = size.height.max(1);
-                    surface.configure(&device, &config);
-                    camera.set_aspect_ratio(config.width as f32 / config.height as f32);
+                    let size = Size {
+                        width: size.width.max(1),
+                        height: size.height.max(1),
+                    };
 
-                    (depth_texture, depth) = create_depth(&device, &config)
+                    //TODO: graphics_context.set_surface_size(size);
+
+                    camera.set_aspect_ratio(size.width as f32 / size.height as f32);
+
+                    (depth_texture, depth) = create_depth(
+                        &device,
+                        &graphics_context
+                            .surface_config
+                            .as_ref()
+                            .unwrap()
+                            .as_ref()
+                            .unwrap(),
+                    )
                 }
             }
             event::Event::WindowEvent {
@@ -422,13 +428,22 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 }
             }
             event::Event::RedrawRequested(_) => {
+                let surface = graphics_context.surface.as_ref().expect("Expected surface");
                 //platform.update_time(start_time.elapsed().as_secs_f64());
                 let start = Instant::now();
 
                 let frame = match surface.get_current_texture() {
                     Ok(frame) => frame,
                     Err(_) => {
-                        surface.configure(&device, &config);
+                        surface.configure(
+                            &device,
+                            &graphics_context
+                                .surface_config
+                                .as_ref()
+                                .unwrap()
+                                .as_ref()
+                                .unwrap(),
+                        );
                         surface
                             .get_current_texture()
                             .expect("Failed to acquire next surface texture!")
@@ -437,7 +452,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                 let view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
                     format: Some(surface_view_format),
-                    ..wgpu::TextureViewDescriptor::default()
+                    ..Default::default()
                 });
 
                 device.push_error_scope(wgpu::ErrorFilter::Validation);
@@ -471,7 +486,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     });
 
                     rpass.push_debug_group("Prepare data for draw.");
-                    rpass.set_pipeline(&pipeline);
+                    rpass.set_pipeline(&graphics_context.pipeline);
                     rpass.set_bind_group(0, &bind_group, &[]);
                     rpass.set_bind_group(1, &skin_bind_group, &[]);
                     rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
@@ -481,7 +496,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
                 }
 
-                queue.submit(Some(encoder.finish()));
+                graphics_context.queue.submit(Some(encoder.finish()));
 
                 // Begin to draw the UI frame.
 
@@ -529,11 +544,15 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                 let mx_total = camera.get_view_projection_matrix();
                 let mx_ref: &[f32; 16] = mx_total.as_ref();
-                queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
+                graphics_context
+                    .queue
+                    .write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
             }
             _ => {}
         }
     });
+
+    Ok(())
 }
 
 fn create_depth(device: &Device, config: &SurfaceConfiguration) -> (Texture, TextureView) {
@@ -551,7 +570,7 @@ fn create_depth(device: &Device, config: &SurfaceConfiguration) -> (Texture, Tex
         label: None,
         view_formats: &[],
     });
-    let depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let depth = depth_texture.create_view(&Default::default());
     (depth_texture, depth)
 }
 

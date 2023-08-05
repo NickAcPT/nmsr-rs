@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::{iter, mem};
@@ -59,7 +60,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let size = window.inner_size();
     println!("Window size: {}x{}", size.width, size.height);
 
-    let graphics_context = GraphicsContext::new(GraphicsContextDescriptor {
+    let mut graphics_context = GraphicsContext::new(GraphicsContextDescriptor {
         backends: Some(wgpu::Backends::all()),
         surface_provider: Box::new(|i: &Instance| unsafe {
             Some(i.create_surface(&window).unwrap())
@@ -71,6 +72,9 @@ async fn main() -> Result<(), NMSRRenderingError> {
     .expect("Expected Nmsr Pipeline");
 
     let instance = &graphics_context.instance;
+    let surface = &graphics_context.surface;
+    let mut surface_config = graphics_context.surface_config.as_mut().unwrap().as_mut().unwrap();
+
     instance.enumerate_adapters(Backends::all()).for_each(|d| {
         println!("Adapter: {}", d.get_info().name);
     });
@@ -85,18 +89,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
         println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
     }
 
-    let (width, height) = {
-        let config = &graphics_context
-            .surface_config
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .read()
-            .unwrap();
-
-        (config.width, config.height)
-    };
+    let (width, height) = (surface_config.width, surface_config.height);
 
     let mut camera = Camera::new_absolute(
         Vec3::new(0.0, 30.0, -20.0),
@@ -108,19 +101,14 @@ async fn main() -> Result<(), NMSRRenderingError> {
         1.0,
     );
 
-    
     let mut has_captured_frame = false;
-    
+
     if !has_captured_frame {
         renderdoc.start_frame_capture(std::ptr::null(), std::ptr::null())
     }
-    
-    
-    let graphics_context = Arc::new(graphics_context);
 
-    let scene_context = Arc::new(SceneContext::new(Arc::clone(&graphics_context)));
-
-    let scene = Scene::new(scene_context.clone(), camera, Size { width, height });
+    let scene_context = SceneContext::new(&graphics_context);
+    let scene: Scene<'_> = Scene::new(scene_context, camera, Size { width, height });
 
     let mut camera = scene.camera;
 
@@ -140,17 +128,22 @@ async fn main() -> Result<(), NMSRRenderingError> {
     // Create the vertex and index buffers
     let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
 
-    let vertex_buf = graphics_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(&vertex_data),
-        usage: wgpu::BufferUsages::VERTEX,
-    });
+    let vertex_buf =
+        graphics_context
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(&vertex_data),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
 
-    let index_buf = graphics_context.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(&index_data),
-        usage: wgpu::BufferUsages::INDEX,
-    });
+    let index_buf = graphics_context
+        .device
+        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(&index_data),
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
     // Create pipeline layout
     let skin_bind_group_layout = &graphics_context.skin_bind_group_layout;
@@ -162,32 +155,34 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
 
-    let skin_texture = graphics_context.device.create_texture(&wgpu::TextureDescriptor {
-        // All textures are stored as 3D, we represent our 2D texture
-        // by setting depth to 1.
-        size: wgpu::Extent3d {
-            width: 64,
-            height: 64,
-            depth_or_array_layers: 1,
-        },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        // Most images are stored using sRGB so we need to reflect that here.
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
-        // COPY_DST means that we want to copy data to this texture
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-        label: Some("skin_texture"),
-        // This is the same as with the SurfaceConfig. It
-        // specifies what texture formats can be used to
-        // create TextureViews for this texture. The base
-        // texture format (Rgba8UnormSrgb in this case) is
-        // always supported. Note that using a different
-        // texture format is not supported on the WebGL2
-        // backend.
-        view_formats: &[],
-    });
+    let skin_texture = graphics_context
+        .device
+        .create_texture(&wgpu::TextureDescriptor {
+            // All textures are stored as 3D, we represent our 2D texture
+            // by setting depth to 1.
+            size: wgpu::Extent3d {
+                width: 64,
+                height: 64,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            // Most images are stored using sRGB so we need to reflect that here.
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
+            // COPY_DST means that we want to copy data to this texture
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            label: Some("skin_texture"),
+            // This is the same as with the SurfaceConfig. It
+            // specifies what texture formats can be used to
+            // create TextureViews for this texture. The base
+            // texture format (Rgba8UnormSrgb in this case) is
+            // always supported. Note that using a different
+            // texture format is not supported on the WebGL2
+            // backend.
+            view_formats: &[],
+        });
 
     graphics_context.queue.write_texture(
         // Tells wgpu where to copy the pixel data
@@ -234,17 +229,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
     //EGUI:    style: Default::default(),
     //EGUI:});
 
-    let (mut depth_texture, mut depth) = create_depth(
-        &graphics_context.device,
-        &graphics_context
-            .surface_config
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .read()
-            .unwrap(),
-    );
+    let (mut depth_texture, mut depth) = create_depth(&graphics_context.device, surface_config);
 
     println!("Entering render loop...");
     let start_time = Instant::now();
@@ -253,7 +238,9 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let mut last_camera_stuff: Option<(CameraPositionParameters, CameraRotation)> = None;
 
     event_loop.run(move |event, _, control_flow| {
-        let graphics_context = graphics_context.clone();
+        let surface = &graphics_context.surface.expect("Expected surface");
+        let queue = &graphics_context.queue;
+        
         
         //EGUI:platform.handle_event(&event);
 
@@ -270,11 +257,9 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     },
                 ..
             } => {
-                let adapter = &graphics_context.adapter;
-
                 // Once winit is fixed, the detection conditions here can be removed.
                 // https://github.com/rust-windowing/winit/issues/2876
-                let max_dimension = adapter.limits().max_texture_dimension_2d;
+                let max_dimension = graphics_context.adapter.limits().max_texture_dimension_2d;
                 if size.width > max_dimension || size.height > max_dimension {
                     println!(
                         "The resizing size {:?} exceeds the limit of {}.",
@@ -287,21 +272,12 @@ async fn main() -> Result<(), NMSRRenderingError> {
                         height: size.height.max(1),
                     };
 
+                    
                     graphics_context.set_surface_size(size);
-
+                    
                     camera.set_aspect_ratio(size.width as f32 / size.height as f32);
-
-                    (depth_texture, depth) = create_depth(
-                        &graphics_context.device,
-                        &graphics_context
-                            .surface_config
-                            .as_ref()
-                            .unwrap()
-                            .as_ref()
-                            .unwrap()
-                            .read()
-                            .unwrap(),
-                    )
+                    
+                    (depth_texture, depth) = create_depth(&graphics_context.device, surface_config)
                 }
             }
             event::Event::WindowEvent {
@@ -351,29 +327,13 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 }
             }
             event::Event::RedrawRequested(_) => {
-                let surface = graphics_context
-                    .surface
-                    .as_ref()
-                    .expect("Expected surface")
-                    .read()
-                    .unwrap();
                 //EGUI:platform.update_time(start_time.elapsed().as_secs_f64());
                 let start = Instant::now();
 
                 let frame = match surface.get_current_texture() {
                     Ok(frame) => frame,
                     Err(_) => {
-                        surface.configure(
-                            &graphics_context.device,
-                            &graphics_context
-                                .surface_config
-                                .as_ref()
-                                .unwrap()
-                                .as_ref()
-                                .unwrap()
-                                .read()
-                                .unwrap(),
-                        );
+                        surface.configure(&graphics_context.device, surface_config);
                         surface
                             .get_current_texture()
                             .expect("Failed to acquire next surface texture!")
@@ -387,10 +347,9 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                 graphics_context.device.push_error_scope(wgpu::ErrorFilter::Validation);
 
-                let queue = &graphics_context.queue;
-                
-                let mut encoder =
-                    graphics_context.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Main Encoder") });
+                let mut encoder = graphics_context.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Main Encoder"),
+                });
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Main render pass"),
@@ -477,10 +436,12 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                 let mx_total = camera.get_view_projection_matrix();
                 let mx_ref: &[f32; 16] = mx_total.as_ref();
-                graphics_context
-                    .queue
-                    .write_buffer(&scene_context.transform_matrix_buffer, 0, bytemuck::cast_slice(mx_ref));
-                
+                queue.write_buffer(
+                    &scene_context.transform_matrix_buffer,
+                    0,
+                    bytemuck::cast_slice(mx_ref),
+                );
+
                 if !has_captured_frame {
                     has_captured_frame = true;
                     renderdoc.end_frame_capture(std::ptr::null(), std::ptr::null());

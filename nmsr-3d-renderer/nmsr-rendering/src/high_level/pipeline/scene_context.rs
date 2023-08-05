@@ -12,14 +12,14 @@ use wgpu::{
 use crate::high_level::pipeline::graphics_context::GraphicsContext;
 
 #[derive(Debug)]
-pub struct SceneContext {
-    pub context: Arc<GraphicsContext>,
+pub struct SceneContext<'ctx> {
+    pub context: &'ctx GraphicsContext,
     pub transform_matrix_buffer: wgpu::Buffer,
     pub transform_bind_group: wgpu::BindGroup,
 }
 
-impl SceneContext {
-    pub fn new(context: Arc<GraphicsContext>) -> Self {
+impl<'ctx> SceneContext<'ctx> {
+    pub fn new(context: &'ctx GraphicsContext) -> Self {
         let device = &context.device;
 
         let transform_matrix_buffer = device.create_buffer_init(&BufferInitDescriptor {

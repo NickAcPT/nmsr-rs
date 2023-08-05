@@ -9,15 +9,15 @@ pub struct Size {
     pub height: u32,
 }
 
-pub struct Scene {
+pub struct Scene<'ctx> {
     pub camera: Camera,
     viewport_size: Size,
-    scene_context: Arc<SceneContext>,
+    scene_context: SceneContext<'ctx>,
 }
 
-impl Scene {
+impl<'ctx> Scene<'ctx> {
     pub fn new(
-        context: Arc<SceneContext>,
+        context: SceneContext<'ctx>,
         mut camera: Camera,
         viewport_size: Size,
     ) -> Self {
@@ -31,7 +31,7 @@ impl Scene {
         }
     }
 
-    pub fn get_context(&self) -> Arc<SceneContext> {
-        self.scene_context.clone()
+    pub fn get_context(&'ctx mut self) -> &'ctx mut SceneContext<'ctx> {
+        &mut self.scene_context
     }
 }

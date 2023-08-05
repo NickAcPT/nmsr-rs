@@ -1,7 +1,7 @@
 use std::{
     borrow::Cow,
     mem,
-    sync::{Mutex, RwLock},
+    sync::{Mutex, RwLock}, marker::PhantomData,
 };
 
 use glam::Vec3;
@@ -28,8 +28,8 @@ pub struct GraphicsContext {
     pub instance: Instance,
     pub device: Device,
     pub queue: Queue,
-    pub surface: Option<RwLock<Surface>>,
-    pub surface_config: Option<Result<RwLock<SurfaceConfiguration>>>,
+    pub surface: Option<Surface>,
+    pub surface_config: Option<Result<SurfaceConfiguration>>,
     pub surface_view_format: Option<TextureFormat>,
     pub adapter: Adapter,
 
@@ -216,15 +216,12 @@ impl GraphicsContext {
             multiview: None,
         });
 
-        let surface_lock = surface.map(|s| RwLock::new(s));
-        let surface_config_lock = surface_config.map(|s| s.map(|s| RwLock::new(s)));
-
         Ok(GraphicsContext {
             instance,
             device,
             queue,
-            surface: surface_lock,
-            surface_config: surface_config_lock,
+            surface,
+            surface_config,
             surface_view_format,
             adapter,
             pipeline,
@@ -233,17 +230,13 @@ impl GraphicsContext {
         })
     }
 
-    pub fn set_surface_size(&self, size: Size) {
-        if let Some(Ok(config_lock)) = &self.surface_config {
-            if let Ok(mut config) = config_lock.write() {
-                config.width = size.width;
-                config.height = size.height;
+    pub fn set_surface_size(&mut self, size: Size) {
+        if let Some(Ok(config)) = &mut self.surface_config {
+            config.width = size.width;
+            config.height = size.height;
 
-                if let Some(surface_lock) = &self.surface {
-                    if let Ok(surface) = surface_lock.read() {
-                        surface.configure(&self.device, &config);
-                    }
-                }
+            if let Some(surface) = &mut self.surface {
+                surface.configure(&self.device, &config);
             }
         }
     }

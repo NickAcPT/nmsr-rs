@@ -30,4 +30,8 @@ impl Scene {
             scene_context: context,
         }
     }
+
+    pub fn get_context(&self) -> Arc<SceneContext> {
+        self.scene_context.clone()
+    }
 }

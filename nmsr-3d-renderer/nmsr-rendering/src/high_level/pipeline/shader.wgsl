@@ -8,10 +8,9 @@ struct VertexOutput {
 var<uniform> transform: mat4x4<f32>;
 
 
-@group(1) @binding(0)
-var t_diffuse: texture_2d<f32>;
-@group(1)@binding(1)
-var s_diffuse: sampler;
+@group(1)
+@binding(0)
+var skin_texture: texture_2d<f32>;
 
 @vertex
 fn vs_main(
@@ -26,7 +25,12 @@ fn vs_main(
 
 @fragment
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
-    var color: vec4<f32> = textureSample(t_diffuse, s_diffuse, vertex.tex_coord);
+    var color: vec4<f32> = textureLoad(
+        skin_texture,
+        vec2<i32>(floor(vertex.tex_coord * vec2<f32>(textureDimensions(skin_texture)))),
+        0
+    );
+    
     if (color.a == 0.0) {
         discard;
     }

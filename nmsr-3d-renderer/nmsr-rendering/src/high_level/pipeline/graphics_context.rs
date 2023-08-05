@@ -8,7 +8,7 @@ use wgpu::{
     BindGroupDescriptor, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState,
     BufferAddress, BufferBindingType, ColorTargetState, ColorWrites, CompareFunction,
     DepthStencilState, FragmentState, PipelineLayoutDescriptor, RenderPipelineDescriptor,
-    ShaderModuleDescriptor, ShaderStages, VertexBufferLayout, BindGroupLayout, RenderPipeline,
+    ShaderModuleDescriptor, ShaderStages, VertexBufferLayout, BindGroupLayout, RenderPipeline, TextureViewDimension, TextureSampleType,
 };
 
 use crate::{
@@ -30,6 +30,7 @@ pub struct GraphicsContext {
 
     pub pipeline: RenderPipeline,
     pub transform_bind_group_layout: BindGroupLayout,
+    pub skin_bind_group_layout: BindGroupLayout,
 }
 
 pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface> + 'a;
@@ -117,11 +118,40 @@ impl GraphicsContext {
                 }],
                 label: Some("Transform Bind Group Layout"),
             });
+            
+            
+        let skin_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+            label: Some("Skin Texture Bind Group"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: ShaderStages::FRAGMENT,
+                ty: BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: TextureViewDimension::D2,
+                    sample_type: TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            }],
+        });
+        
+        let skin_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+            label: Some("Skin Texture Bind Group"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: ShaderStages::FRAGMENT,
+                ty: BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: TextureViewDimension::D2,
+                    sample_type: TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            }],
+        });
 
         // Create the pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Scene Pipeline Layout"),
-            bind_group_layouts: &[&transform_bind_group_layout],
+            bind_group_layouts: &[&transform_bind_group_layout, &skin_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -190,6 +220,7 @@ impl GraphicsContext {
             adapter,
             pipeline,
             transform_bind_group_layout,
+            skin_bind_group_layout
         })
     }
 

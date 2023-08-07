@@ -14,7 +14,7 @@ use wgpu::{
     BindingType, BlendState, BufferAddress, BufferBindingType, ColorTargetState, ColorWrites,
     CompareFunction, DepthStencilState, FragmentState, PipelineLayoutDescriptor, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType,
-    TextureViewDimension, VertexBufferLayout, BufferSize,
+    TextureViewDimension, VertexBufferLayout, BufferSize, VertexFormat, PrimitiveState, VertexState, MultisampleState,
 };
 
 use crate::{
@@ -31,7 +31,7 @@ pub struct GraphicsContext {
     pub queue: Queue,
     pub surface: Option<Surface>,
     pub surface_config: Option<Result<SurfaceConfiguration>>,
-    pub surface_view_format: Option<TextureFormat>,
+    pub texture_format: TextureFormat,
     pub adapter: Adapter,
 
     pub pipeline: RenderPipeline,
@@ -62,6 +62,7 @@ pub struct GraphicsContextDescriptor<'a> {
 
 impl GraphicsContext {
     pub const DEFAULT_TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
+    pub const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
     pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {
         let backends = wgpu::util::backend_bits_from_env()
@@ -170,12 +171,12 @@ impl GraphicsContext {
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3,
+                    format: VertexFormat::Float32x3,
                     offset: 0,
                     shader_location: 0,
                 },
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
+                    format: VertexFormat::Float32x2,
                     offset: mem::size_of::<Vec3>() as BufferAddress,
                     shader_location: 1,
                 },
@@ -185,24 +186,24 @@ impl GraphicsContext {
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
+            vertex: VertexState {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[vertex_buffer_layout],
             },
-            primitive: wgpu::PrimitiveState {
+            primitive: PrimitiveState {
                 cull_mode: None,
                 front_face: wgpu::FrontFace::Cw,
                 ..Default::default()
             },
             depth_stencil: Some(DepthStencilState {
-                format: TextureFormat::Depth32Float,
+                format: Self::DEPTH_TEXTURE_FORMAT,
                 depth_write_enabled: true,
                 depth_compare: CompareFunction::LessEqual,
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
-            multisample: wgpu::MultisampleState::default(),
+            multisample: MultisampleState::default(),
             fragment: Some(FragmentState {
                 module: &shader,
                 entry_point: "fs_main",
@@ -221,7 +222,7 @@ impl GraphicsContext {
             queue,
             surface,
             surface_config,
-            surface_view_format,
+            texture_format,
             adapter,
             pipeline,
             layouts: GraphicsContextLayouts {

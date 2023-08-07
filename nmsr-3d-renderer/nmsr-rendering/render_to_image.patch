@@ -1,0 +1,445 @@
+Subject: [PATCH] Render to image
+---
+Index: nmsr-wgpu-windowed/src/main.rs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/nmsr-wgpu-windowed/src/main.rs b/nmsr-wgpu-windowed/src/main.rs
+--- a/nmsr-wgpu-windowed/src/main.rs	
++++ b/nmsr-wgpu-windowed/src/main.rs	
+@@ -1,20 +1,15 @@
+-use std::{iter, mem};
++use std::{mem, ptr};
+ use std::borrow::Cow;
+-use std::time::Instant;
+ 
+-use egui::{Context, FontDefinitions};
++use egui::Context;
+ use egui::emath::Numeric;
+-use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
+-use egui_winit_platform::{Platform, PlatformDescriptor};
+-use wgpu::{Instance, RenderPassDepthStencilAttachment, RequestAdapterOptions, Surface};
++use tokio::sync::oneshot::channel;
++use wgpu::{BlendState, ColorTargetState, ColorWrites, Instance, RenderPassDepthStencilAttachment};
+ use wgpu::util::DeviceExt;
+-use winit::event;
+-use winit::event::WindowEvent;
+-use winit::event_loop::EventLoop;
+ 
+ use nmsr_rendering::high_level::camera::{Camera, CameraRotation};
+ use nmsr_rendering::high_level::errors::NMSRRenderingError;
+-use nmsr_rendering::high_level::pipeline::{NmsrPipeline, NmsrPipelineDescriptor};
++use nmsr_rendering::high_level::pipeline::{NmsrPipelineDescriptor, NmsrWgpuPipeline};
+ use nmsr_rendering::low_level::{Vec2, Vec3};
+ use nmsr_rendering::low_level::primitives::cube::Cube;
+ use nmsr_rendering::low_level::primitives::mesh::Mesh;
+@@ -30,38 +25,41 @@
+         .launch_replay_ui(true, None)
+         .expect("Failed to launch RenderDoc replay UI");
+ 
+-    let event_loop = EventLoop::new();
+-    let mut builder = winit::window::WindowBuilder::new();
+-    builder = builder.with_title("NMSR WGPU Windowed");
+-    let window = builder.build(&event_loop).unwrap();
++    //let event_loop = EventLoop::new();
++    //let mut builder = winit::window::WindowBuilder::new();
++    // builder = builder.with_title("NMSR WGPU Windowed");
++    //let window = builder.build(&event_loop).unwrap();
+ 
+-    let size = window.inner_size();
+ 
+     let provider = |i: &Instance| unsafe {
+-        i.create_surface(&window).unwrap()
++        None
+     };
+ 
+-    let pipeline = NmsrPipeline::new(NmsrPipelineDescriptor {
++    let width = 1920u32;
++    let height = 1080u32;
++
++    let mut pipeline = NmsrWgpuPipeline::new(NmsrPipelineDescriptor {
+         backends: Some(wgpu::Backends::all()),
+         surface_provider: Box::new(provider),
+-        default_size: (size.width, size.height)
++        default_size: (width, height),
+     }).await.expect("Expected Nmsr Pipeline");
+ 
++    renderdoc.start_frame_capture(ptr::null(), ptr::null());
++
++    let instance = pipeline.instance;
++    let device = pipeline.device;
++    let queue = pipeline.queue;
++    let surface = pipeline.surface;
++    let mut config = pipeline.surface_config;
++    let adapter = pipeline.adapter;
++    let surface_view_format = pipeline.surface_view_format;
+ 
+     let adapter_info = adapter.get_info();
+     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
+-
+-    let instance = pipeline.wgpu_instance;
+-    let device = pipeline.wgpu_device;
+-    let queue = pipeline.wgpu_queue;
+-    let surface = pipeline.wgpu_surface;
+-    let mut config = pipeline.wgpu_surface_config;
+-    let adapter = pipeline.wgpu_adapter;
+-
+     let uv = Vec2::new(0.0, 0.0);
+     let uv2 = Vec2::new(1.0, 1.0);
+ 
+-    let aspect_ratio = config.width as f32 / config.height as f32;
++    let aspect_ratio = width as f32 / height as f32;
+ 
+     let mut camera = Camera::new(
+         Vec3::new(0.0, 4.0, -2.0),
+@@ -183,7 +181,13 @@
+         fragment: Some(wgpu::FragmentState {
+             module: &shader,
+             entry_point: "fs_main",
+-            targets: &[Some(config.view_formats[0].into())],
++            targets: &[
++                Some(ColorTargetState {
++                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
++                    blend: Some(BlendState::REPLACE),
++                    write_mask: ColorWrites::ALL,
++                }
++                )],
+         }),
+         primitive: wgpu::PrimitiveState {
+             cull_mode: Some(wgpu::Face::Back),
+@@ -201,214 +205,137 @@
+         multiview: None,
+     });
+ 
+-    let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
+-
+-    let mut platform = Platform::new(PlatformDescriptor {
+-        physical_width: config.width,
+-        physical_height: config.height,
+-        scale_factor: window.scale_factor(),
+-        font_definitions: FontDefinitions::default(),
+-        style: Default::default(),
+-    });
+-
+-    println!("Entering render loop...");
+-    let start_time = Instant::now();
+-    event_loop.run(move |event, _, control_flow| {
+-        platform.handle_event(&event);
+-
+-        match event {
+-            event::Event::RedrawEventsCleared => {
+-                window.request_redraw();
+-            }
+-            event::Event::WindowEvent {
+-                event:
+-                WindowEvent::Resized(size)
+-                | WindowEvent::ScaleFactorChanged {
+-                    new_inner_size: &mut size,
+-                    ..
+-                },
+-                ..
+-            } => {
+-                // Once winit is fixed, the detection conditions here can be removed.
+-                // https://github.com/rust-windowing/winit/issues/2876
+-                let max_dimension = adapter.limits().max_texture_dimension_2d;
+-                if size.width > max_dimension || size.height > max_dimension {
+-                    println!(
+-                        "The resizing size {:?} exceeds the limit of {}.",
+-                        size, max_dimension
+-                    );
+-                } else {
+-                    println!("Resizing to {:?}", size);
+-                    config.width = size.width.max(1);
+-                    config.height = size.height.max(1);
+-                    surface.configure(&device, &config);
+-                }
+-            }
+-            event::Event::WindowEvent {
+-                event: WindowEvent::CloseRequested,
+-                ..
+-            } => {
+-                *control_flow = winit::event_loop::ControlFlow::Exit;
+-            }
+-            // On keyboard input, move the camera
+-            // W is forward, S is backward, A is left, D is right, Q is up, E is down
+-            // We are facing South
+-            event::Event::WindowEvent {
+-                event: WindowEvent::KeyboardInput { input, .. },
+-                ..
+-            } => {
+-                if input.state == event::ElementState::Pressed {
+-                    match input.virtual_keycode {
+-                        Some(event::VirtualKeyCode::W) => {
+-                            camera.set_z(camera.get_z() + 0.5);
+-                        }
+-                        Some(event::VirtualKeyCode::S) => {
+-                            camera.set_z(camera.get_z() - 0.5);
+-                        }
+-                        Some(event::VirtualKeyCode::A) => {
+-                            camera.set_x(camera.get_x() + 0.5);
+-                        }
+-                        Some(event::VirtualKeyCode::D) => {
+-                            camera.set_x(camera.get_x() - 0.5);
+-                        }
+-                        Some(event::VirtualKeyCode::Q) => {
+-                            camera.set_y(camera.get_y() + 0.5);
+-                        }
+-                        Some(event::VirtualKeyCode::E) => {
+-                            camera.set_y(camera.get_y() - 0.5);
+-                        }
+-                        // R
+-                        Some(event::VirtualKeyCode::R) => {
+-                            println!("Triggering RenderDoc capture.");
+-                            renderdoc.trigger_capture();
+-                        }
+-                        _ => {}
+-                    }
+-                }
+-            }
+-            event::Event::RedrawRequested(_) => {
+-                platform.update_time(start_time.elapsed().as_secs_f64());
+-
+-                let frame = match surface.get_current_texture() {
+-                    Ok(frame) => frame,
+-                    Err(_) => {
+-                        surface.configure(&device, &config);
+-                        surface
+-                            .get_current_texture()
+-                            .expect("Failed to acquire next surface texture!")
+-                    }
+-                };
+-                let view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
+-                    format: Some(surface_view_format),
+-                    ..wgpu::TextureViewDescriptor::default()
+-                });
++    let texture_desc = wgpu::TextureDescriptor {
++        size: wgpu::Extent3d {
++            width,
++            height,
++            depth_or_array_layers: 1,
++        },
++        mip_level_count: 1,
++        sample_count: 1,
++        dimension: wgpu::TextureDimension::D2,
++        format: wgpu::TextureFormat::Rgba8UnormSrgb,
++        usage: wgpu::TextureUsages::COPY_SRC
++            | wgpu::TextureUsages::RENDER_ATTACHMENT
++        ,
++        label: None,
++        view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
++    };
++    let texture = device.create_texture(&texture_desc);
++    let texture_view = texture.create_view(&Default::default());
+ 
+-                let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+-                    size: wgpu::Extent3d {
+-                        width: config.width,
+-                        height: config.height,
+-                        depth_or_array_layers: 1,
+-                    },
+-                    mip_level_count: 1,
+-                    sample_count: 1,
+-                    dimension: wgpu::TextureDimension::D2,
+-                    format: wgpu::TextureFormat::Depth32Float,
+-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+-                    label: None,
+-                    view_formats: &[],
+-                });
+-                let depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
++    let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
++        size: wgpu::Extent3d {
++            width,
++            height,
++            depth_or_array_layers: 1,
++        },
++        mip_level_count: 1,
++        sample_count: 1,
++        dimension: wgpu::TextureDimension::D2,
++        format: wgpu::TextureFormat::Depth32Float,
++        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
++        label: None,
++        view_formats: &[],
++    });
++    let depth = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+ 
+-                device.push_error_scope(wgpu::ErrorFilter::Validation);
++    // we need to store this for later
++    let u32_size = mem::size_of::<u32>() as u32;
++
++    let output_buffer_size = (u32_size * width * height) as wgpu::BufferAddress;
++    let output_buffer_desc = wgpu::BufferDescriptor {
++        size: output_buffer_size,
++        usage: wgpu::BufferUsages::COPY_DST
++            | wgpu::BufferUsages::MAP_READ,
++        label: None,
++        mapped_at_creation: false,
++    };
++    let output_buffer = device.create_buffer(&output_buffer_desc);
++
++    device.push_error_scope(wgpu::ErrorFilter::Validation);
+ 
+-                let mut encoder =
+-                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+-                {
+-                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+-                        label: Some("Main render pass"),
+-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+-                            view: &view,
+-                            resolve_target: None,
+-                            ops: wgpu::Operations {
+-                                load: wgpu::LoadOp::Clear(wgpu::Color {
+-                                    r: 0.1,
+-                                    g: 0.2,
+-                                    b: 0.3,
+-                                    a: 1.0,
+-                                }),
+-                                store: true,
+-                            },
+-                        })],
+-                        depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
+-                            view: &depth,
+-                            depth_ops: Some(wgpu::Operations {
+-                                load: wgpu::LoadOp::Clear(1.0),
+-                                store: true,
+-                            }),
+-                            stencil_ops: None,
+-                        }),
+-                    });
++    let mut encoder =
++        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Command Encoder") });
++
++    {
++        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
++            label: Some("Main render pass"),
++            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
++                view: &texture_view,
++                resolve_target: None,
++                ops: wgpu::Operations {
++                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
++                    store: true,
++                },
++            })],
++            depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
++                view: &depth,
++                depth_ops: Some(wgpu::Operations {
++                    load: wgpu::LoadOp::Clear(1.0),
++                    store: true,
++                }),
++                stencil_ops: None,
++            }),
++        });
+ 
+-                    rpass.push_debug_group("Prepare data for draw.");
+-                    rpass.set_pipeline(&pipeline);
+-                    rpass.set_bind_group(0, &bind_group, &[]);
+-                    rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
+-                    rpass.set_vertex_buffer(0, vertex_buf.slice(..));
+-                    rpass.pop_debug_group();
+-                    rpass.insert_debug_marker("Draw!");
+-                    rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
+-                }
++        rpass.push_debug_group("Prepare data for draw.");
++        rpass.set_pipeline(&pipeline);
++        rpass.set_bind_group(0, &bind_group, &[]);
++        rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
++        rpass.set_vertex_buffer(0, vertex_buf.slice(..));
++        rpass.pop_debug_group();
++        rpass.insert_debug_marker("Draw!");
++        rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
++    }
+ 
+-                queue.submit(Some(encoder.finish()));
++    encoder.copy_texture_to_buffer(
++        wgpu::ImageCopyTexture {
++            aspect: wgpu::TextureAspect::All,
++            texture: &texture,
++            mip_level: 0,
++            origin: wgpu::Origin3d::ZERO,
++        },
++        wgpu::ImageCopyBuffer {
++            buffer: &output_buffer,
++            layout: wgpu::ImageDataLayout {
++                offset: 0,
++                bytes_per_row: Some(u32_size * width),
++                rows_per_image: Some(height),
++            },
++        },
++        texture_desc.size,
++    );
++
++    queue.submit(Some(encoder.finish()));
+ 
+-                // Begin to draw the UI frame.
+-                platform.begin_frame();
++    renderdoc.end_frame_capture(ptr::null(), ptr::null());
++
+ 
+-                // Draw the demo application.
+-                {
+-                    debug_ui(&platform.context(), &mut camera);
+-                }
++    // We need to scope the mapping variables so that we can
++    // unmap the buffer
++    {
++        let buffer_slice = output_buffer.slice(..);
+ 
+-                // End the UI frame. We could now handle the output and draw the UI with the backend.
+-                let full_output = platform.end_frame(Some(&window));
+-                let paint_jobs = platform.context().tessellate(full_output.shapes);
+-
+-                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+-                    label: Some("encoder"),
+-                });
++        // NOTE: We have to create the mapping THEN device.poll() before await
++        // the future. Otherwise the application will freeze.
++        let (tx, rx) = channel();
++        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
++            tx.send(result).unwrap();
++        });
++        device.poll(wgpu::Maintain::Wait);
++        rx.await.unwrap().unwrap();
+ 
+-                // Upload all resources for the GPU.
+-                let screen_descriptor = ScreenDescriptor {
+-                    physical_width: config.width,
+-                    physical_height: config.height,
+-                    scale_factor: window.scale_factor() as f32,
+-                };
+-                let tdelta: egui::TexturesDelta = full_output.textures_delta;
+-                egui_rpass
+-                    .add_textures(&device, &queue, &tdelta)
+-                    .expect("add texture ok");
+-                egui_rpass.update_buffers(&device, &queue, &paint_jobs, &screen_descriptor);
++        let data = buffer_slice.get_mapped_range();
+ 
+-                // Record all render passes.
+-                egui_rpass
+-                    .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
+-                    .unwrap();
+-                // Submit the commands.
+-                queue.submit(iter::once(encoder.finish()));
+-
+-                egui_rpass
+-                    .remove_textures(tdelta)
+-                    .expect("remove texture ok");
++        use image::{ImageBuffer, Rgba};
++        let buffer =
++            ImageBuffer::<Rgba<u8>, _>::from_raw(width, height, data).unwrap();
++        buffer.save("image.png").unwrap();
++    }
++    output_buffer.unmap();
+ 
+-                frame.present();
+-
+-                let mx_total = camera.get_view_projection_matrix();
+-                let mx_ref: &[f32; 16] = mx_total.as_ref();
+-                queue.write_buffer(&uniform_buf, 0, bytemuck::cast_slice(mx_ref));
+-            }
+-            _ => {}
+-        }
+-    });
++    Ok(())
+ }
+ 
+ fn debug_ui(ctx: &Context, camera: &mut Camera) {

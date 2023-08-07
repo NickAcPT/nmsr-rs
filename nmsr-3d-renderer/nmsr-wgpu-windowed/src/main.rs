@@ -78,9 +78,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let surface = graphics.surface.expect("Expected surface");
     let mut config = graphics.surface_config.expect("Expected surface config")?;
     let adapter = graphics.adapter;
-    let surface_view_format = graphics
-        .surface_view_format
-        .expect("Expected surface view format");
+    let surface_view_format = graphics.texture_format;
 
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
@@ -209,8 +207,6 @@ async fn main() -> Result<(), NMSRRenderingError> {
     });
     
     println!("surface_view_format: {:?}", surface_view_format);
-
-    let pipeline = &graphics.pipeline;
 
     /*let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
 
@@ -360,7 +356,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
                     });
 
                     rpass.push_debug_group("Prepare data for draw.");
-                    rpass.set_pipeline(pipeline);
+                    rpass.set_pipeline(&graphics.pipeline);
                     rpass.set_bind_group(0, &scene_context.transform_bind_group, &[]);
                     rpass.set_bind_group(1, &skin_bind_group, &[]);
                     rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);

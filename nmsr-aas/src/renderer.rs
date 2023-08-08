@@ -93,7 +93,7 @@ pub(crate) async fn render_skin(
     scene.render(graphics_context)?;
 
     let render = scene
-        .copy_output_texture(graphics_context, WIDTH, HEIGHT)
+        .copy_output_texture(graphics_context)
         .await?;
 
     let mut render_bytes = Vec::new();

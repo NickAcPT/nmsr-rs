@@ -2,9 +2,12 @@ use crate::parts::part::Part;
 use crate::player_model::PlayerModel;
 use crate::types::PlayerBodyPartType;
 
+use self::minecraft::MinecraftPlayerPartsProvider;
+
 pub mod ears;
 pub mod minecraft;
 
+#[derive(Copy, Clone)]
 pub enum PlayerPartsProvider {
     Minecraft,
     #[cfg(feature = "ears")]
@@ -12,6 +15,7 @@ pub enum PlayerPartsProvider {
 }
 
 /// Context for player parts.
+#[derive(Copy, Clone)]
 pub struct PlayerPartProviderContext {
     pub model: PlayerModel,
 }
@@ -31,7 +35,7 @@ impl PartsProvider for PlayerPartsProvider {
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
         match self {
-            Self::Minecraft => todo!(),
+            Self::Minecraft => MinecraftPlayerPartsProvider.get_parts(context, body_part),
             _ => todo!(),
         }
     }

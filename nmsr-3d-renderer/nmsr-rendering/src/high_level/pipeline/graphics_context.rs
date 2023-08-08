@@ -11,10 +11,11 @@ pub use wgpu::{
 };
 use wgpu::{
     BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingType, BlendState, BufferAddress, BufferBindingType, ColorTargetState, ColorWrites,
-    CompareFunction, DepthStencilState, FragmentState, PipelineLayoutDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType,
-    TextureViewDimension, VertexBufferLayout, BufferSize, VertexFormat, PrimitiveState, VertexState, MultisampleState,
+    BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
+    ColorWrites, CompareFunction, DepthStencilState, FragmentState, MultisampleState,
+    PipelineLayoutDescriptor, PrimitiveState, RenderPipeline, RenderPipelineDescriptor,
+    ShaderModuleDescriptor, ShaderStages, TextureSampleType, TextureViewDimension,
+    VertexBufferLayout, VertexFormat, VertexState,
 };
 
 use crate::{
@@ -30,7 +31,7 @@ pub struct GraphicsContext {
     pub device: Device,
     pub queue: Queue,
     pub surface: Option<Surface>,
-    pub surface_config: Option<Result<SurfaceConfiguration>>,
+    pub surface_config: Result<Option<SurfaceConfiguration>>,
     pub texture_format: TextureFormat,
     pub adapter: Adapter,
 
@@ -76,7 +77,7 @@ impl GraphicsContext {
             dx12_shader_compiler,
         });
 
-        let surface = (descriptor.surface_provider)(&instance);
+        let mut surface = (descriptor.surface_provider)(&instance);
 
         let adapter =
             wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
@@ -96,29 +97,32 @@ impl GraphicsContext {
 
         let (default_width, default_height) = descriptor.default_size;
 
-        let mut surface_config = surface.as_ref().map(|surface| {
-            surface
-                .get_default_config(&adapter, default_width, default_height)
-                .ok_or(NMSRRenderingError::SurfaceNotSupported)
-        });
-
-        let surface_view_format = surface_config
-            .as_ref()
-            .and_then(|s| s.as_ref().ok().map(|s| s.format));
+        let mut surface_config = surface
+            .as_mut()
+            .map(|surface| {
+                surface
+                    .get_default_config(&adapter, default_width, default_height)
+                    .ok_or(NMSRRenderingError::SurfaceNotSupported)
+            })
+            .transpose();
 
         if let Some(surface) = &surface {
-            if let Some(surface_view_format) = surface_view_format {
-                if let Some(Ok(surface_config)) = surface_config.as_mut() {
-                    surface_config.view_formats.push(surface_view_format);
-                    surface.configure(&device, surface_config);
-                }
+            if let Ok(Some(surface_config)) = surface_config.as_mut() {
+                surface_config.view_formats.push(surface_config.format);
+                surface.configure(&device, surface_config);
             }
         }
         
+        let surface_view_format = {
+            surface_config
+                .as_ref()
+                .map(|s| s.as_ref().map(|s| s.format))
+        };
+
         let texture_format = surface_view_format
-            .or(descriptor.texture_format)
+            .unwrap_or(descriptor.texture_format)
             .unwrap_or(Self::DEFAULT_TEXTURE_FORMAT);
-        
+
         let adapter =
             wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
                 .await
@@ -142,7 +146,7 @@ impl GraphicsContext {
 
         let skin_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Skin Texture Bind Group"),
-            entries: &[wgpu::BindGroupLayoutEntry {
+            entries: &[BindGroupLayoutEntry {
                 binding: 0,
                 visibility: ShaderStages::FRAGMENT,
                 ty: BindingType::Texture {
@@ -234,7 +238,7 @@ impl GraphicsContext {
     }
 
     pub fn set_surface_size(&mut self, size: Size) {
-        if let Some(Ok(config)) = &mut self.surface_config {
+        if let Ok(Some(config)) = &mut self.surface_config {
             config.width = size.width;
             config.height = size.height;
 

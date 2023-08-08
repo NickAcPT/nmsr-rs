@@ -58,6 +58,7 @@ impl Part {
 
     pub fn expand(&self, amount: f32) -> Self {
         let mut new_part = *self;
+        let amount = amount * 2.0;
 
         match new_part {
             Cube {

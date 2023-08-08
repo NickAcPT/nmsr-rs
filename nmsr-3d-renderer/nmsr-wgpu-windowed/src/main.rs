@@ -7,13 +7,18 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use libloader::libloading;
 use nmsr_rendering::errors::NMSRRenderingError;
-use nmsr_rendering::high_level::pipeline::{GraphicsContext, GraphicsContextDescriptor, SceneContext};
-use nmsr_rendering::low_level::{Vec3, Vec2};
+use nmsr_rendering::high_level::pipeline::scene::{self, Scene};
+use nmsr_rendering::high_level::pipeline::{
+    GraphicsContext, GraphicsContextDescriptor, SceneContext,
+};
+use nmsr_rendering::low_level::{Vec2, Vec3};
 use strum::IntoEnumIterator;
 use wgpu::util::DeviceExt;
 use wgpu::{
-    include_wgsl, Backends, BufferAddress, Device, Instance, RenderPassDepthStencilAttachment,
-    SurfaceConfiguration, Texture, TextureView, RenderPipelineDescriptor, DepthStencilState, TextureFormat, CompareFunction, FragmentState, ColorTargetState, BlendState, ColorWrites,
+    include_wgsl, Backends, BlendState, BufferAddress, ColorTargetState, ColorWrites,
+    CompareFunction, DepthStencilState, Device, FragmentState, Instance,
+    RenderPassDepthStencilAttachment, RenderPipelineDescriptor, SurfaceConfiguration, Texture,
+    TextureFormat, TextureView,
 };
 use winit::event;
 use winit::event::WindowEvent;
@@ -54,31 +59,34 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let size = window.inner_size();
 
-    let graphics = GraphicsContext::new(GraphicsContextDescriptor
-         {
+    let graphics = GraphicsContext::new(GraphicsContextDescriptor {
         backends: Some(wgpu::Backends::all()),
         surface_provider: Box::new(|i: &Instance| unsafe {
             Some(i.create_surface(&window).unwrap())
         }),
         default_size: (size.width, size.height),
-        texture_format: None
+        texture_format: None,
     })
     .await
     .expect("Expected Nmsr Pipeline");
 
-    let scene_context = SceneContext::new(&graphics);
-
-    let instance = graphics.instance;
+    let instance = &graphics.instance;
     instance.enumerate_adapters(Backends::all()).for_each(|a| {
         println!("Adapter: {}", a.get_info().name);
     });
 
-    let device = graphics.device;
-    let queue = graphics.queue;
-    let surface = graphics.surface.expect("Expected surface");
-    let mut config = graphics.surface_config.expect("Expected surface config")?;
-    let adapter = graphics.adapter;
-    let surface_view_format = graphics.texture_format;
+    let device = &graphics.device;
+    let queue = &graphics.queue;
+    let surface = graphics.surface.as_ref().expect("Expected surface");
+    let mut config = graphics
+        .surface_config
+        .as_ref()
+        .ok()
+        .unwrap()
+        .as_ref()
+        .expect("OwO");
+    let adapter = &graphics.adapter;
+    let surface_view_format = &graphics.texture_format;
 
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
@@ -98,6 +106,18 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let ctx = PlayerPartProviderContext {
         model: PlayerModel::Alex,
     };
+
+    let scene = Scene::new(
+        &graphics,
+        SceneContext::new(&graphics),
+        camera,
+        scene::Size {
+            width: config.width,
+            height: config.height,
+        },
+        &ctx,
+        PlayerBodyPartType::iter()
+    );
 
     let to_render: Vec<_> = PlayerBodyPartType::iter()
         .flat_map(|part| MinecraftPlayerPartsProvider.get_parts(&ctx, part))
@@ -132,6 +152,13 @@ async fn main() -> Result<(), NMSRRenderingError> {
     let mut skin_rgba = skin_image.to_rgba8();
 
     ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
+
+    // Upload skin
+    scene.set_texture(
+        &graphics,
+        nmsr_player_parts::types::PlayerPartTextureType::Skin,
+        &skin_rgba,
+    );
 
     let skin_texture = device.create_texture(&wgpu::TextureDescriptor {
         // All textures are stored as 3D, we represent our 2D texture
@@ -197,15 +224,13 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
     let skin_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: skin_bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(&skin_texture_view),
-            }
-        ],
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(&skin_texture_view),
+        }],
         label: Some("diffuse_bind_group"),
     });
-    
+
     println!("surface_view_format: {:?}", surface_view_format);
 
     /*let mut egui_rpass = RenderPass::new(&device, surface_view_format, 1);
@@ -321,7 +346,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 };
 
                 let view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
-                    format: Some(surface_view_format),
+                    format: Some(*surface_view_format),
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
@@ -357,7 +382,7 @@ async fn main() -> Result<(), NMSRRenderingError> {
 
                     rpass.push_debug_group("Prepare data for draw.");
                     rpass.set_pipeline(&graphics.pipeline);
-                    rpass.set_bind_group(0, &scene_context.transform_bind_group, &[]);
+                    rpass.set_bind_group(0, &self.transform_bind_group, &[]);
                     rpass.set_bind_group(1, &skin_bind_group, &[]);
                     rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
                     rpass.set_vertex_buffer(0, vertex_buf.slice(..));
@@ -411,15 +436,11 @@ async fn main() -> Result<(), NMSRRenderingError> {
                 frame.present();
 
                 last_frame_time = start.elapsed();
-
-                let mx_total = camera.get_view_projection_matrix();
-                let mx_ref: &[f32; 16] = mx_total.as_ref();
-                queue.write_buffer(&scene_context.transform_matrix_buffer, 0, bytemuck::cast_slice(mx_ref));
             }
             _ => {}
         }
     });
-    
+
     Ok(())
 }
 

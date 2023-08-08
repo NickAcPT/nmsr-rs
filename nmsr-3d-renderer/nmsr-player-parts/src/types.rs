@@ -1,4 +1,4 @@
-use strum::EnumIter;
+use strum::{Display, EnumIter, IntoStaticStr};
 
 #[derive(Debug, Copy, Clone, EnumIter, Eq, PartialEq)]
 pub enum PlayerBodyPartType {
@@ -45,7 +45,7 @@ impl PlayerBodyPartType {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, Display, IntoStaticStr, PartialEq, Eq, Hash)]
 pub enum PlayerPartTextureType {
     Skin,
     Cape,

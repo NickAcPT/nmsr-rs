@@ -7,18 +7,13 @@ pub struct MinecraftPlayerPartsProvider;
 
 macro_rules! body_part {
     // Matcher on many body parts
-    ($match_var: expr, $($name: ident {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr)}),*) => {
-        match $match_var {
-            $(
-                $name => Some(Part::new_cube(
-                    crate::types::PlayerPartTextureType::Skin,
-                    $pos,
-                    $size,
-                    box_uv($uv_x, $uv_y, $size),
-                )),
-            )*
-            _ => None
-        }
+    {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr)} => {
+        Part::new_cube(
+            crate::types::PlayerPartTextureType::Skin,
+            $pos,
+            $size,
+            box_uv($uv_x, $uv_y, $size),
+        )
     };
 }
 
@@ -51,72 +46,88 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
     ) -> Vec<Part> {
         let non_layer_body_part_type = body_part.get_non_layer_part();
 
-        let part = body_part!(
-            non_layer_body_part_type,
-            // Base parts
-            Body {
-                pos: [-4, 12, -2],
-                size: [8, 12, 4],
-                box_uv_start: (20, 20)
-            },
-            Head {
+        let part = match non_layer_body_part_type {
+            Head => body_part! {
                 pos: [-4, 24, -4],
                 size: [8, 8, 8],
                 box_uv_start: (8, 8)
             },
-            LeftLeg {
+            Body => body_part! {
+                pos: [-4, 12, -2],
+                size: [8, 12, 4],
+                box_uv_start: (20, 20)
+            },
+            LeftArm => {
+                if context.model.is_slim_arms() {
+                    body_part! {
+                        pos: [-7, 12, -2],
+                        size: [3, 12, 4],
+                        box_uv_start: (36, 52)
+                    }
+                } else {
+                    body_part! {
+                        pos: [-8, 12, -2],
+                        size: [4, 12, 4],
+                        box_uv_start: (36, 52)
+                    }
+                }
+            }
+            RightArm => {
+                if context.model.is_slim_arms() {
+                    body_part! {
+                        pos: [4, 12, -2],
+                        size: [3, 12, 4],
+                        box_uv_start: (44, 20)
+                    }
+                } else {
+                    body_part! {
+                        pos: [4, 12, -2],
+                        size: [4, 12, 4],
+                        box_uv_start: (44, 20)
+                    }
+                }
+            }
+            LeftLeg => body_part! {
                 pos: [-4, 0, -2],
                 size: [4, 12, 4],
                 box_uv_start: (20, 52)
             },
-            RightLeg {
+            RightLeg => body_part! {
                 pos: [0, 0, -2],
                 size: [4, 12, 4],
                 box_uv_start: (4, 20)
             },
-            LeftArm {
-                pos: [-8, 12, -2],
-                size: [4, 12, 4],
-                box_uv_start: (36, 52)
-            },
-            RightArm {
-                pos: [4, 12, -2],
-                size: [4, 12, 4],
-                box_uv_start: (44, 20)
+            _ => unreachable!("Got layer body part type when getting non-layer body part type."),
+        };
+
+        if body_part.is_layer() {
+            let expand_offset = get_layer_expand_offset(non_layer_body_part_type);
+
+            let mut new_part = part.expand(expand_offset);
+
+            let box_uv_offset: (i32, i32) = get_body_part_layer_uv_offset(non_layer_body_part_type);
+
+            if let Part::Quad { .. } = new_part {
+                unreachable!("Got quad when expanding body part.")
+            } else if let Part::Cube {
+                ref mut face_uvs, ..
+            } = new_part
+            {
+                let current_box_uv = face_uvs.north.top_left;
+
+                let size = part.get_size();
+                *face_uvs = box_uv(
+                    (current_box_uv.x as i32 + box_uv_offset.0) as u16,
+                    (current_box_uv.y as i32 + box_uv_offset.1) as u16,
+                    [size.x as u16, size.y as u16, size.z as u16],
+                )
+                .into()
             }
-        );
 
-        if let Some(part) = part {
-            if body_part.is_layer() {
-                let expand_offset = get_layer_expand_offset(non_layer_body_part_type);
-
-                let mut new_part = part.expand(expand_offset);
-
-                let box_uv_offset: (i32, i32) =
-                    get_body_part_layer_uv_offset(non_layer_body_part_type);
-
-                if let Part::Quad { .. } = new_part {
-                    unreachable!("Got quad when expanding body part.")
-                } else if let Part::Cube {
-                    ref mut face_uvs, ..
-                } = new_part
-                {
-                    let current_box_uv = face_uvs.north.top_left;
-
-                    let size = part.get_size();
-                    *face_uvs = box_uv(
-                        (current_box_uv.x as i32 + box_uv_offset.0) as u16,
-                        (current_box_uv.y as i32 + box_uv_offset.1) as u16,
-                        [size.x as u16, size.y as u16, size.z as u16],
-                    )
-                    .into()
-                }
-
-                return vec![new_part];
-            }
+            return vec![new_part];
         }
 
-        part.into_iter().collect()
+        vec![part]
     }
 }
 

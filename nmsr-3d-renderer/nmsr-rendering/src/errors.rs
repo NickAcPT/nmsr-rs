@@ -1,4 +1,7 @@
+use nmsr_player_parts::types::PlayerPartTextureType;
 use thiserror::Error;
+use tokio::sync::oneshot::error::RecvError;
+use wgpu::BufferAsyncError;
 
 #[derive(Debug, Error)]
 pub enum NMSRRenderingError {
@@ -12,6 +15,17 @@ pub enum NMSRRenderingError {
     SurfaceNotSupported,
     #[error("Unable to request adapter")]
     WgpuAdapterRequestError,
+    #[error("SceneContext textures not initialized")]
+    SceneContextTexturesNotInitialized,
+    #[error("SceneContext Texture not set: {0}")]
+    SceneContextTextureNotSet(PlayerPartTextureType),
+    #[error("Buffer Async error: {0}")]
+    BufferAsyncError(#[from] BufferAsyncError),
+    #[error("RecvError: {0}")]
+    RecvError(#[from] RecvError),
+    #[error("Unable to convert image from raw bytes")]
+    ImageFromRawError,
+    
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRRenderingError>;

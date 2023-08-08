@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::mpsc::channel};
+use std::collections::HashMap;
 
 use glam::Vec2;
 use image::RgbaImage;
@@ -10,11 +10,10 @@ use nmsr_player_parts::{
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
-use strum::IntoEnumIterator;
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroupEntry, Color, LoadOp, Operations, RenderPassColorAttachment,
-    RenderPassDepthStencilAttachment, IndexFormat, BindGroupDescriptor,
+    BindGroupDescriptor, BindGroupEntry, Color, IndexFormat, LoadOp, Operations,
+    RenderPassColorAttachment, RenderPassDepthStencilAttachment, TextureView, CommandEncoder, Texture,
 };
 
 use crate::high_level::camera::Camera;
@@ -37,7 +36,6 @@ pub struct Scene {
     viewport_size: Size,
     scene_context: SceneContext,
     textures: HashMap<PlayerPartTextureType, SceneTexture>,
-    player_part_provider_context: PlayerPartProviderContext,
     computed_body_parts: Vec<Part>,
 }
 
@@ -54,9 +52,12 @@ impl Scene {
         T: IntoIterator<Item = PlayerBodyPartType>,
     {
         // Initialize our camera with the viewport size
-        camera.set_aspect_ratio(viewport_size.width as f32 / viewport_size.height as f32);
-
-        scene_context.init(graphics_context, &mut camera, viewport_size);
+        Self::update_scene_context(
+            &mut camera,
+            viewport_size,
+            &mut scene_context,
+            graphics_context,
+        );
 
         // Compute the body parts we need to render
         let computed_body_parts = Self::collect_player_parts(part_context, body_parts);
@@ -66,7 +67,6 @@ impl Scene {
             viewport_size,
             scene_context,
             textures: HashMap::new(),
-            player_part_provider_context: *part_context,
             computed_body_parts,
         }
     }
@@ -79,6 +79,10 @@ impl Scene {
         &mut self.camera
     }
 
+    pub fn viewport_size_mut(&mut self) -> &mut Size {
+        &mut self.viewport_size
+    }
+    
     pub fn set_texture(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -103,7 +107,15 @@ impl Scene {
             .collect()
     }
 
-    pub fn render(&self, graphics_context: &GraphicsContext) -> Result<()> {
+    pub fn render(&mut self, graphics_context: &GraphicsContext) -> Result<()> {
+        self.render_with_extra(graphics_context, None)
+    }
+    
+    pub fn render_with_extra(
+        &mut self,
+        graphics_context: &GraphicsContext,
+        extra_rendering: Option<Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera) + '_>>,
+    ) -> Result<()> {
         let pipeline = &graphics_context.pipeline;
         let device = &graphics_context.device;
         let queue = &graphics_context.queue;
@@ -128,15 +140,16 @@ impl Scene {
 
         let textures = self
             .scene_context
-            .textures.as_ref()
+            .textures
+            .as_ref()
             .ok_or(NMSRRenderingError::SceneContextTexturesNotInitialized)?;
-        
+
         let to_render: Vec<_> = self
             .computed_body_parts
             .iter()
             .map(primitive_convert)
             .collect();
-        
+
         let to_render = Mesh::new(to_render);
 
         let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
@@ -153,16 +166,30 @@ impl Scene {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-
         device.push_error_scope(wgpu::ErrorFilter::Validation);
 
+        let surface_texture = graphics_context
+            .surface
+            .as_ref()
+            .and_then(|s| s.get_current_texture().ok());
+
+        let surface_texture_view = surface_texture.as_ref().map(|t| {
+            t.texture
+                .create_view(&wgpu::TextureViewDescriptor::default())
+        });
+
+        
+        let final_view = surface_texture_view
+            .as_ref()
+            .unwrap_or(&textures.output_texture.view);
+        
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Main render pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &textures.output_texture.view,
+                    view: final_view,
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Clear(Color::TRANSPARENT),
@@ -178,7 +205,7 @@ impl Scene {
                     stencil_ops: None,
                 }),
             });
-            
+
             rpass.set_pipeline(pipeline);
             rpass.set_bind_group(0, transform_bind_group, &[]);
             rpass.set_bind_group(1, &skin_bind_group, &[]);
@@ -188,12 +215,53 @@ impl Scene {
         }
 
         queue.submit(Some(encoder.finish()));
-                
+        
+        if let Some(extra_rendering) = extra_rendering {
+            let mut extra_encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            
+            extra_rendering(final_view, &mut extra_encoder, &mut self.camera);
+            
+            queue.submit(Some(extra_encoder.finish()));
+        }
+        
+        if let Some(surface_texture) = surface_texture {
+            surface_texture.present();
+        }
+
         Ok(())
     }
-    
-    pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext, width: u32, height: u32) -> Result<RgbaImage> {
-        self.scene_context.copy_output_texture(graphics_context, width, height).await
+
+    pub async fn copy_output_texture(
+        &self,
+        graphics_context: &GraphicsContext,
+    ) -> Result<RgbaImage> {
+        self.scene_context
+            .copy_output_texture(
+                graphics_context,
+                self.viewport_size.width,
+                self.viewport_size.height,
+            )
+            .await
+    }
+
+    fn update_scene_context(
+        camera: &mut Camera,
+        viewport_size: Size,
+        scene_context: &mut SceneContext,
+        graphics_context: &GraphicsContext,
+    ) {
+        camera.set_aspect_ratio(viewport_size.width as f32 / viewport_size.height as f32);
+        scene_context.init(graphics_context, camera, viewport_size);
+    }
+
+    pub fn update(&mut self, graphics_context: &GraphicsContext) {
+        Self::update_scene_context(
+            &mut self.camera,
+            self.viewport_size,
+            &mut self.scene_context,
+            graphics_context,
+        );
     }
 }
 

@@ -1,8 +1,6 @@
 use std::{
     borrow::Cow,
-    marker::PhantomData,
     mem,
-    sync::{Mutex, RwLock},
 };
 
 use glam::Vec3;
@@ -10,7 +8,7 @@ pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
 };
 use wgpu::{
-    BindGroupDescriptor, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
+    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
     BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
     ColorWrites, CompareFunction, DepthStencilState, FragmentState, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, RenderPipeline, RenderPipelineDescriptor,
@@ -243,7 +241,7 @@ impl GraphicsContext {
             config.height = size.height;
 
             if let Some(surface) = &mut self.surface {
-                surface.configure(&self.device, &config);
+                surface.configure(&self.device, config);
             }
         }
     }

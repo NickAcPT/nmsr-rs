@@ -2,5 +2,5 @@
 members = [
     "nmsr-player-parts",
     "nmsr-rendering",
-    #"nmsr-wgpu-windowed"
+    "nmsr-wgpu-windowed"
 ]

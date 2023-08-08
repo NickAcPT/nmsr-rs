@@ -100,8 +100,6 @@ impl RenderRequestResolver {
         // First, we need to resolve the skin and cape textures.
         let resolved_textures = self.resolve_entry_textures(request.entry).await?;
         
-        
-
         unimplemented!()
     }
 }

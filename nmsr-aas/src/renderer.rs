@@ -42,15 +42,68 @@ pub(crate) async fn render_skin(
     include_shading: bool,
     include_layers: bool,
 ) -> Result<Vec<u8>> {
-    use nmsr_rendering::high_level::pipeline::scene::{Scene, Size};
+    use std::io::{BufWriter, Cursor};
 
-    let scene_context = parts_manager.get_scence_context();
-    let camera = mode.get_camera();
+    use image::ImageOutputFormat;
+    use nmsr_rendering::high_level::{
+        parts::provider::PlayerPartProviderContext,
+        pipeline::{
+            scene::{Scene, Size},
+            SceneContext,
+        },
+        player_model::PlayerModel, types::PlayerPartTextureType,
+    };
     
-    let scene = Scene::new(scene_context, camera, Size {width: 832, height: 512});
+    let skin_image = process_skin(skin_image)?;
 
-    Ok(vec![])
-    // unimplemented!("wgpu rendering is not yet implemented")
+    let graphics_context = &parts_manager.graphics_context;
+    let scene_context = SceneContext::new(graphics_context);
+    let camera = mode.get_camera();
+    let body_parts = mode.get_body_parts();
+
+    let model = if slim_arms {
+        PlayerModel::Alex
+    } else {
+        PlayerModel::Steve
+    };
+
+    let ctx = PlayerPartProviderContext { model };
+
+    const WIDTH: u32 = 512;
+    const HEIGHT: u32 = 832;
+
+    let mut scene = Scene::new(
+        graphics_context,
+        scene_context,
+        camera,
+        Size {
+            width: WIDTH,
+            height: HEIGHT,
+        },
+        &ctx,
+        body_parts,
+    );
+
+    scene.set_texture(
+        graphics_context,
+        PlayerPartTextureType::Skin,
+        &skin_image,
+    );
+
+    scene.render(graphics_context)?;
+
+    let render = scene
+        .copy_output_texture(graphics_context, WIDTH, HEIGHT)
+        .await?;
+
+    let mut render_bytes = Vec::new();
+    // Write the image to a byte array
+    {
+        let mut writer = BufWriter::new(Cursor::new(&mut render_bytes));
+        render.write_to(&mut writer, ImageOutputFormat::Png)?;
+    }
+
+    Ok(render_bytes)
 }
 
 pub(crate) fn process_skin(skin: RgbaImage) -> Result<RgbaImage> {

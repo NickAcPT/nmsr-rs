@@ -62,6 +62,7 @@ opentelemetry-otlp = { version = "*", optional = true, features = ["tls-roots"] 
 futures-util = { version = "0.3.28", optional = true }
 
 [features]
+default = ["wgpu", "tracing"]
 lazy_parts = ["nmsr-lib/serializable_parts", "rayon"]
 uv = ["dep:nmsr-lib"]
 wgpu = ["dep:nmsr-rendering"]

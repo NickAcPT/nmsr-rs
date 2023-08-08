@@ -1,15 +1,13 @@
-use std::sync::Arc;
 
 use nmsr_rendering::{
     high_level::pipeline::Backends,
     high_level::{
         camera::{Camera, CameraRotation, ProjectionParameters},
-        pipeline::{GraphicsContext, GraphicsContextDescriptor, SceneContext},
-    },
-    low_level::Vec3,
+        pipeline::{GraphicsContext, GraphicsContextDescriptor}, types::PlayerBodyPartType,
+    }
 };
 
-use strum::{Display, EnumCount, EnumIter, EnumString};
+use strum::{Display, EnumCount, EnumIter, EnumString, IntoEnumIterator};
 #[cfg(feature = "uv")]
 use {
     crate::utils::errors::NMSRaaSError::MissingPartManager, std::borrow::Cow,
@@ -70,13 +68,25 @@ impl RenderMode {
             _ => unimplemented!("wgpu rendering is not yet implemented"),
         }
     }
+    
+    pub(crate) fn get_body_parts(&self) -> Vec<PlayerBodyPartType> {
+        match self {
+            RenderMode::FullBody | RenderMode::FrontFull | RenderMode::FullBodyIso => {
+                PlayerBodyPartType::iter().collect()
+            },
+            RenderMode::Head | RenderMode::HeadIso | RenderMode::Face => vec![
+                PlayerBodyPartType::Head,
+                PlayerBodyPartType::HeadLayer,
+            ],
+        }
+        
+    }
 }
 
 #[cfg(feature = "wgpu")]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct NMSRaaSManager {
-    graphics_context: Arc<GraphicsContext>,
-    scene_context: Arc<SceneContext>,
+    pub graphics_context: GraphicsContext,
 }
 
 #[cfg(feature = "wgpu")]
@@ -89,20 +99,12 @@ impl NMSRaaSManager {
             backends: Some(Backends::all()),
             surface_provider: Box::new(|_| None),
             default_size: (0, 0),
+            texture_format: Some(GraphicsContext::DEFAULT_TEXTURE_FORMAT)
         }).await?;
         
-        let graphics: Arc<GraphicsContext> = Arc::new(graphics_context);
-        
-        let scene_context = SceneContext::new(graphics.clone());
-
         Ok(NMSRaaSManager {
-            graphics_context: Arc::clone(&graphics),
-            scene_context: Arc::new(scene_context)
+            graphics_context,
         })
-    }
-
-    pub(crate) fn get_scence_context(&self) -> Arc<SceneContext> {
-        Arc::clone(&self.scene_context)
     }
 }
 

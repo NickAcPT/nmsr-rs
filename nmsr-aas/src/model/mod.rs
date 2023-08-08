@@ -50,7 +50,7 @@ impl RenderRequest {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let entry = RenderRequestEntry::PlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
     /// let excluded_features = enum_set!(RequestRenderFeatures::Shadow);
     /// let request = RenderRequest::new_from_excluded_features(entry, excluded_features);

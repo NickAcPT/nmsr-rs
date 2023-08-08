@@ -84,11 +84,13 @@ async fn main() -> Result<()> {
     info!("Loading parts manager...");
     let start = std::time::Instant::now();
     let manager = NMSRaaSManager::new(
-        #[cfg(not(feature = "wgpu"))]
+        #[cfg(feature = "uv")]
         &config.parts,
     )
     .await?;
     info!("Parts manager loaded in {}ms", start.elapsed().as_millis());
+    
+    let manager = Data::new(manager);
 
     let cache_manager = MojangCacheManager::init(
         "cache",
@@ -144,7 +146,7 @@ async fn main() -> Result<()> {
 
         app.wrap(logger)
             .wrap(cors)
-            .app_data(Data::new(manager.clone()))
+            .app_data(manager.clone())
             .app_data(Data::new(mojang_requests_client.clone()))
             .app_data(mojank_config.clone())
             .app_data(cache_manager.clone())

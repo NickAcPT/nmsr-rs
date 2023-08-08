@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-use std::iter;
 use std::time::{Duration, Instant};
 
 use egui::emath::Numeric;
@@ -11,27 +9,22 @@ use nmsr_rendering::high_level::pipeline::scene::{self, Scene};
 use nmsr_rendering::high_level::pipeline::{
     GraphicsContext, GraphicsContextDescriptor, SceneContext,
 };
-use nmsr_rendering::low_level::{Vec2, Vec3};
+use nmsr_rendering::low_level::Vec3;
 use strum::IntoEnumIterator;
 
 use wgpu::{
-    Backends, Device, Instance, SurfaceConfiguration, Texture, TextureDescriptor, TextureUsages,
-    TextureView,
+    Backends, Instance,
 };
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
-use nmsr_player_parts::parts::part::Part;
 use nmsr_player_parts::parts::provider::PlayerPartProviderContext;
-use nmsr_player_parts::parts::uv::FaceUv;
 use nmsr_player_parts::player_model::PlayerModel;
 use nmsr_player_parts::types::PlayerBodyPartType;
 use nmsr_rendering::high_level::camera::{
     Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
 };
-use nmsr_rendering::low_level::primitives::cube::Cube;
-use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use winit::platform::run_return::EventLoopExtRunReturn;
 
 #[tokio::main]
@@ -531,41 +524,4 @@ where
         .clamp_range(min.to_f64()..=max.to_f64())
         .speed(0.25)
         .max_decimals(1)
-}
-
-fn primitive_convert(part: Part) -> Box<dyn PartPrimitive> {
-    Box::new(match part {
-        Part::Cube {
-            position,
-            size,
-            face_uvs,
-            ..
-        } => {
-            // Compute center of cube
-            let center = position + size / 2.0;
-
-            Cube::new(
-                center,
-                size,
-                uv(&face_uvs.north),
-                uv(&face_uvs.south),
-                uv(&face_uvs.up),
-                uv(&face_uvs.down),
-                uv(&face_uvs.west),
-                uv(&face_uvs.east),
-            )
-        }
-        Part::Quad { .. } => {
-            unreachable!()
-        }
-    })
-}
-
-fn uv(face_uvs: &FaceUv) -> [Vec2; 2] {
-    let mut top_left = face_uvs.top_left.to_uv([64f32, 64f32].into());
-    let mut bottom_right = face_uvs.bottom_right.to_uv([64f32, 64f32].into());
-    let small_offset = 1f32 / 16f32 / 64f32;
-    top_left += small_offset;
-    bottom_right -= small_offset;
-    [top_left, bottom_right]
 }

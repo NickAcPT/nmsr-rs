@@ -7,9 +7,10 @@ pub use wgpu::{
 use wgpu::{
     BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState,
     BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites, CompareFunction,
-    DepthStencilState, FragmentState, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
-    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages,
-    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexFormat, VertexState, FrontFace,
+    DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineLayoutDescriptor,
+    PrimitiveState, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages,
+    TextureFormatFeatureFlags, TextureSampleType, TextureViewDimension, VertexBufferLayout,
+    VertexFormat, VertexState,
 };
 
 use crate::{
@@ -31,6 +32,7 @@ pub struct GraphicsContext {
 
     pub pipeline: RenderPipeline,
     pub layouts: GraphicsContextLayouts,
+    pub sample_count: u32,
 }
 
 #[derive(Debug)]
@@ -58,7 +60,6 @@ pub struct GraphicsContextDescriptor<'a> {
 impl GraphicsContext {
     pub const DEFAULT_TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
     pub const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth32Float;
-    pub const SAMPLE_COUNT: u32 = 4;
 
     pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {
         let backends = wgpu::util::backend_bits_from_env()
@@ -83,7 +84,7 @@ impl GraphicsContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::default(),
+                    features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
                     limits: wgpu::Limits::default(),
                 },
                 None,
@@ -182,6 +183,8 @@ impl GraphicsContext {
             ],
         };
 
+        let sample_count = Self::max_available_sample_count(&adapter, &texture_format);
+
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
@@ -203,7 +206,7 @@ impl GraphicsContext {
                 bias: Default::default(),
             }),
             multisample: MultisampleState {
-                count: Self::SAMPLE_COUNT,
+                count: sample_count,
                 ..Default::default()
             },
             fragment: Some(FragmentState {
@@ -227,6 +230,7 @@ impl GraphicsContext {
             texture_format,
             adapter,
             pipeline,
+            sample_count,
             layouts: GraphicsContextLayouts {
                 pipeline_layout,
                 transform_bind_group_layout,
@@ -244,5 +248,14 @@ impl GraphicsContext {
                 surface.configure(&self.device, config);
             }
         }
+    }
+
+    fn max_available_sample_count(adapter: &Adapter, texture_format: &TextureFormat) -> u32 {
+        let sample_flags = adapter.get_texture_format_features(*texture_format).flags;
+
+        vec![16, 8, 4, 2, 1]
+            .iter().find(|&&sample_count| sample_flags.sample_count_supported(sample_count))
+            .copied()
+            .unwrap_or(1)
     }
 }

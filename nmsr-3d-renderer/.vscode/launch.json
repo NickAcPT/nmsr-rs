@@ -7,44 +7,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'nmsr-player-parts'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=nmsr-player-parts"
-                ],
-                "filter": {
-                    "name": "nmsr-player-parts",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in library 'nmsr-rendering'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=nmsr-rendering"
-                ],
-                "filter": {
-                    "name": "nmsr-rendering",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug executable 'nmsr-wgpu-windowed'",
             "cargo": {
                 "args": [
@@ -57,27 +19,14 @@
                     "kind": "bin"
                 }
             },
+            "sourceLanguages": ["rust"],
             "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'nmsr-wgpu-windowed'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=nmsr-wgpu-windowed",
-                    "--package=nmsr-wgpu-windowed"
-                ],
-                "filter": {
-                    "name": "nmsr-wgpu-windowed",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "WGPU_BACKEND": "dx12",
+                "RUST_BACKTRACE": "1",
+                //"VK_ICD_FILENAMES": "D:\\IDEs\\CLionProjects\\nmsr-wgpu\\lvp_icd.x86_64.json"
+            }
         }
     ]
 }

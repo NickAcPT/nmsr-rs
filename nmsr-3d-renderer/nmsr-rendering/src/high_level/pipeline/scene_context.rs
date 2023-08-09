@@ -18,8 +18,8 @@ use crate::high_level::pipeline::graphics_context::GraphicsContext;
 #[derive(Debug)]
 pub(crate) struct SceneContextTextures {
     pub(crate) depth_texture: SceneTexture,
-    pub(crate) multisampled_output_texture: SceneTexture,
     pub(crate) output_texture: SceneTexture,
+    pub(crate) multisampled_output_texture: SceneTexture,
 }
 
 #[derive(Debug)]
@@ -145,7 +145,7 @@ impl SceneContext {
             GraphicsContext::DEPTH_TEXTURE_FORMAT,
             TextureUsages::RENDER_ATTACHMENT,
             Some("Depth Texture"),
-            1
+            graphics_context.sample_count,
         );
 
         // Setup our output texture
@@ -156,7 +156,7 @@ impl SceneContext {
             graphics_context.texture_format,
             TextureUsages::RENDER_ATTACHMENT,
             Some("MultiSampled Output Texture"),
-            GraphicsContext::SAMPLE_COUNT
+            graphics_context.sample_count,
         );
         
         let output_texture = create_texture(
@@ -173,7 +173,7 @@ impl SceneContext {
         self.textures = Some(SceneContextTextures {
             depth_texture,
             output_texture,
-            multisampled_output_texture
+            multisampled_output_texture,
         })
     }
 

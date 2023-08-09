@@ -1,4 +1,4 @@
-use std::{borrow::Cow, mem};
+use std::{borrow::Cow, mem, env};
 
 use glam::Vec3;
 pub use wgpu::{
@@ -9,7 +9,7 @@ use wgpu::{
     BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites, CompareFunction,
     DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineLayoutDescriptor,
     PrimitiveState, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages,
-    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexFormat, VertexState,
+    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexFormat, VertexState, PresentMode,
 };
 
 use crate::{
@@ -104,6 +104,7 @@ impl GraphicsContext {
         if let Some(surface) = &surface {
             if let Ok(Some(surface_config)) = surface_config.as_mut() {
                 surface_config.view_formats.push(surface_config.format);
+                surface_config.present_mode = PresentMode::AutoNoVsync;
                 surface.configure(&device, surface_config);
             }
         }
@@ -253,6 +254,10 @@ impl GraphicsContext {
         adapter: &Adapter,
         texture_format: &TextureFormat,
     ) -> u32 {
+        if let Some(count) = env::var("NMSR_SAMPLE_COUNT").ok().and_then(|it| it.parse::<u32>().ok()) {
+            return count;
+        }
+        
         let sample_flags = adapter.get_texture_format_features(*texture_format).flags;
 
         vec![16, 8, 4, 2, 1]

@@ -11,6 +11,7 @@
             "cargo": {
                 "args": [
                     "build",
+                    //"--release",
                     "--bin=nmsr-wgpu-windowed",
                     "--package=nmsr-wgpu-windowed"
                 ],
@@ -25,6 +26,8 @@
             "env": {
                 "WGPU_BACKEND": "vulkan",
                 "RUST_BACKTRACE": "1",
+                "WGPU_POWER_PREF": "high",
+                "NMSR_SAMPLE_COUNT": "1",
                 //"VK_ICD_FILENAMES": "D:\\IDEs\\CLionProjects\\nmsr-wgpu\\lvp_icd.x86_64.json"
             }
         }

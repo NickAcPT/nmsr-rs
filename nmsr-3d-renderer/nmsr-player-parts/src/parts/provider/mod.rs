@@ -15,10 +15,12 @@ pub enum PlayerPartsProvider {
 }
 
 /// Context for player parts.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct PlayerPartProviderContext {
     pub model: PlayerModel,
+    pub has_layers: bool,
     pub has_cape: bool,
+    pub arm_rotation: f32,
 }
 
 pub trait PartsProvider {

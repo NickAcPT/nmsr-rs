@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, borrow::BorrowMut, cell::RefCell, sync::Arc};
 
 use glam::{Mat4, Vec2, Vec3, Quat};
 use image::RgbaImage;
@@ -282,6 +282,10 @@ impl Scene {
             graphics_context,
         );
     }
+    
+    pub fn rebuild_parts(&mut self, part_context: &PlayerPartProviderContext, body_parts: Vec<PlayerBodyPartType>) {
+        self.computed_body_parts = Self::collect_player_parts(part_context, body_parts);
+    }
 }
 
 fn primitive_convert(part: &Part) -> Box<dyn PartPrimitive> {
@@ -339,7 +343,7 @@ fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {
     let mut top_left = face_uvs.top_left.to_uv(texture_size);
     let mut bottom_right = face_uvs.bottom_right.to_uv(texture_size);
     
-    let small_offset = 1f32 / 16f32 / 64f32;
+    let small_offset = 0.001;
     
     top_left += small_offset;
     bottom_right -= small_offset;

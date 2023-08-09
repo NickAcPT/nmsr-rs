@@ -89,45 +89,14 @@ async fn main() -> anyhow::Result<()> {
         aspect_ratio,
     );
 
-    let ctx = PlayerPartProviderContext {
+    let mut ctx = PlayerPartProviderContext {
         model: PlayerModel::Alex,
-        has_cape: true
+        has_layers: true,
+        has_cape: true,
+        arm_rotation: 10.0,
     };
 
-    let mut scene = Scene::new(
-        &graphics,
-        SceneContext::new(&graphics),
-        camera,
-        scene::Size {
-            width: config.width,
-            height: config.height,
-        },
-        &ctx,
-        PlayerBodyPartType::iter(),
-    );
-
-    // Create pipeline layout
-    let skin_bytes =
-        include_bytes!("819ba7dd7373fb71c763ac3ce0fe976a0acd16d4f7bc56d6b9c198e4bc379981.png");
-    let skin_image = image::load_from_memory(skin_bytes).unwrap();
-    let mut skin_rgba = skin_image.to_rgba8();
-
-    ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
-
-    // Upload skin and cape
-    scene.set_texture(
-        &graphics,
-        nmsr_player_parts::types::PlayerPartTextureType::Skin,
-        &skin_rgba,
-    );
-
-    let cape_rgba = image::load_from_memory(include_bytes!("download (17).png")).unwrap().to_rgba8();
-    
-    scene.set_texture(
-        &graphics,
-        nmsr_player_parts::types::PlayerPartTextureType::Cape,
-        &cape_rgba,
-    );
+    let mut scene = build_scene(&graphics, config, &ctx, camera);
 
     println!("surface_view_format: {:?}", surface_view_format);
 
@@ -235,6 +204,9 @@ async fn main() -> anyhow::Result<()> {
             event::Event::RedrawRequested(_) => {
                 let start = Instant::now();
 
+                let mut needs_rebuild = false;
+                let mut needs_skin_rebuild = false;
+
                 scene
                     .render_with_extra(
                         &graphics,
@@ -249,6 +221,9 @@ async fn main() -> anyhow::Result<()> {
                                     camera,
                                     &mut last_camera_stuff,
                                     last_frame_time,
+                                    &mut ctx,
+                                    &mut needs_rebuild,
+                                    &mut needs_skin_rebuild,
                                 );
                             }
 
@@ -289,7 +264,32 @@ async fn main() -> anyhow::Result<()> {
 
                 scene.update(&graphics);
 
+                if needs_rebuild {
+                    scene.rebuild_parts(&ctx, PlayerBodyPartType::iter().collect());
+                }
+
+                if needs_skin_rebuild {
+                    let skin_bytes = match ctx.model {
+                        PlayerModel::Steve => include_bytes!("blockbench_steve.png").to_vec(),
+                        PlayerModel::Alex => include_bytes!("blockbench_alex.png").to_vec(),
+                    };
+                    let skin_image = image::load_from_memory(&skin_bytes).unwrap();
+                    let mut skin_rgba = skin_image.to_rgba8();
+
+                    ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
+
+                    // Upload skin and cape
+                    scene.set_texture(
+                        &graphics,
+                        nmsr_player_parts::types::PlayerPartTextureType::Skin,
+                        &skin_rgba,
+                    );
+                    
+                }
+
                 last_frame_time = start.elapsed();
+
+                *control_flow = winit::event_loop::ControlFlow::Poll;
             }
             _ => {}
         }
@@ -298,11 +298,60 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn build_scene(
+    graphics: &GraphicsContext,
+    config: &wgpu::SurfaceConfiguration,
+    ctx: &PlayerPartProviderContext,
+    camera: Camera,
+) -> Scene {
+    let mut scene = Scene::new(
+        graphics,
+        SceneContext::new(graphics),
+        camera,
+        scene::Size {
+            width: config.width,
+            height: config.height,
+        },
+        ctx,
+        PlayerBodyPartType::iter(),
+    );
+
+    // Create pipeline layout
+    let skin_bytes =
+        include_bytes!("blockbench_alex.png");
+    let skin_image = image::load_from_memory(skin_bytes).unwrap();
+    let mut skin_rgba = skin_image.to_rgba8();
+
+    ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
+
+    // Upload skin and cape
+    scene.set_texture(
+        graphics,
+        nmsr_player_parts::types::PlayerPartTextureType::Skin,
+        &skin_rgba,
+    );
+
+    let cape_rgba = image::load_from_memory(include_bytes!("download (17).png"))
+        .unwrap()
+        .to_rgba8();
+
+    scene.set_texture(
+        graphics,
+        nmsr_player_parts::types::PlayerPartTextureType::Cape,
+        &cape_rgba,
+    );
+
+    scene
+}
+
 fn debug_ui(
     ctx: &Context,
     camera: &mut Camera,
     last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>,
     last_frame_time: Duration,
+    part_ctx: &mut PlayerPartProviderContext,
+    needs_rebuild: &mut bool,
+    needs_skin_rebuild: &mut bool,
 ) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
@@ -467,6 +516,43 @@ fn debug_ui(
             ));
         }
     });
+
+    egui::Window::new("Part Context")
+        .vscroll(true)
+        .show(ctx, |ui| {
+            //part_ctx.has_cape
+            //part_ctx.has_layers
+            //part_ctx.model
+            //part_ctx.arm_rotation
+
+            ui.label("Model");
+            ui.horizontal(|ui| {
+                *needs_skin_rebuild |= ui
+                    .radio_value(&mut part_ctx.model, PlayerModel::Steve, "Steve")
+                    .changed();
+                *needs_skin_rebuild |= ui
+                    .radio_value(&mut part_ctx.model, PlayerModel::Alex, "Alex")
+                    .changed();
+
+                *needs_rebuild |= *needs_skin_rebuild;
+            });
+
+            ui.label("Arm Rotation");
+            *needs_rebuild |= ui
+                .add(drag_value(
+                    part_ctx,
+                    |ctx| ctx.arm_rotation,
+                    |ctx, v| ctx.arm_rotation = v,
+                    Some(0.0f32),
+                    Some(360.0f32),
+                ))
+                .changed();
+
+            *needs_rebuild |= ui
+                .checkbox(&mut part_ctx.has_layers, "Has Layers")
+                .changed();
+            *needs_rebuild |= ui.checkbox(&mut part_ctx.has_cape, "Has Cape").changed();
+        });
 }
 
 fn visage_orbital(

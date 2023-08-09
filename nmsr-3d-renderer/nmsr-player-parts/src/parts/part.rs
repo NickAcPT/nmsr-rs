@@ -108,6 +108,13 @@ impl Part {
         }
     }
     
+    pub fn rotation_mut(&mut self) -> &mut MinecraftPosition {
+        match self {
+            Cube { rotation, .. } => rotation,
+            Quad { rotation, .. } => rotation,
+        }
+    }
+    
     pub fn set_rotation(&mut self, rotation: MinecraftPosition) {
         match self {
             Cube { rotation: ref mut r, .. } => *r = rotation,

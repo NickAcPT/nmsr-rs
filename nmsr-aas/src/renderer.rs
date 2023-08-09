@@ -7,6 +7,8 @@ use crate::manager::{NMSRaaSManager, RenderMode};
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 
+use tracing::instrument;
+
 #[cfg(feature = "uv")]
 pub(crate) async fn render_skin(
     parts_manager: &NMSRaaSManager,
@@ -34,6 +36,7 @@ pub(crate) async fn render_skin(
 }
 
 #[cfg(feature = "wgpu")]
+#[instrument(level = "trace", skip(parts_manager, skin_image))]
 pub(crate) async fn render_skin(
     parts_manager: &NMSRaaSManager,
     mode: &RenderMode,
@@ -51,10 +54,12 @@ pub(crate) async fn render_skin(
             scene::{Scene, Size},
             SceneContext,
         },
-        player_model::PlayerModel, types::PlayerPartTextureType,
+        player_model::PlayerModel,
+        types::PlayerPartTextureType,
     };
-    
-    let skin_image = process_skin(skin_image)?;
+    use tracing::{trace_span, Span};
+
+    let skin_image = trace_span!("process_skin").in_scope(|| process_skin(skin_image))?;
 
     let graphics_context = &parts_manager.graphics_context;
     let scene_context = SceneContext::new(graphics_context);
@@ -72,33 +77,35 @@ pub(crate) async fn render_skin(
     const WIDTH: u32 = 512;
     const HEIGHT: u32 = 832;
 
-    let mut scene = Scene::new(
-        graphics_context,
-        scene_context,
-        camera,
-        Size {
-            width: WIDTH,
-            height: HEIGHT,
-        },
-        &ctx,
-        body_parts,
-    );
+    let mut scene = trace_span!("build_scene").in_scope(|| {
+        Scene::new(
+            graphics_context,
+            scene_context,
+            camera,
+            Size {
+                width: WIDTH,
+                height: HEIGHT,
+            },
+            &ctx,
+            body_parts,
+        )
+    });
 
-    scene.set_texture(
-        graphics_context,
-        PlayerPartTextureType::Skin,
-        &skin_image,
-    );
+    scene.set_texture(graphics_context, PlayerPartTextureType::Skin, &skin_image);
 
-    scene.render(graphics_context)?;
+    trace_span!("render").in_scope(|| scene.render(graphics_context))?;
 
-    let render = scene
-        .copy_output_texture(graphics_context)
-        .await?;
+    let render = {
+        let _guard = trace_span!(parent: Span::current(), "copy_output_texture").entered();
+
+        scene.copy_output_texture(graphics_context).await?
+    };
 
     let mut render_bytes = Vec::new();
     // Write the image to a byte array
     {
+        let _guard = trace_span!(parent: Span::current(), "write_image_bytes").entered();
+        
         let mut writer = BufWriter::new(Cursor::new(&mut render_bytes));
         render.write_to(&mut writer, ImageOutputFormat::Png)?;
     }

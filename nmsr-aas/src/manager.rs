@@ -22,6 +22,7 @@ use nmsr_lib::{
     parts::manager::PartsManager,
     vfs::{PhysicalFS, VfsPath},
 };
+use tracing::{instrument, info};
 #[cfg(feature = "lazy_parts")]
 use {
     crate::utils::errors::NMSRaaSError,
@@ -54,6 +55,8 @@ pub(crate) struct NMSRaaSManager {
 #[cfg(feature = "wgpu")]
 impl RenderMode {
     pub(crate) fn get_camera(&self) -> Camera {
+        
+        
         match self {
             RenderMode::FullBody => Camera::new_orbital(
                 [0.0, 16.65, 0.0].into(),
@@ -69,6 +72,7 @@ impl RenderMode {
         }
     }
     
+    #[instrument(level = "trace", skip(self))]
     pub(crate) fn get_body_parts(&self) -> Vec<PlayerBodyPartType> {
         match self {
             RenderMode::FullBody | RenderMode::FrontFull | RenderMode::FullBodyIso => {
@@ -101,6 +105,8 @@ impl NMSRaaSManager {
             default_size: (0, 0),
             texture_format: Some(GraphicsContext::DEFAULT_TEXTURE_FORMAT)
         }).await?;
+        
+        info!("Created graphics context with adapter {:?}", &graphics_context.adapter.get_info());
         
         Ok(NMSRaaSManager {
             graphics_context,

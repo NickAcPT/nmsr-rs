@@ -1,19 +1,15 @@
-use std::{
-    borrow::Cow,
-    mem,
-};
+use std::{borrow::Cow, mem};
 
 use glam::Vec3;
 pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
 };
 use wgpu::{
-    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
-    ColorWrites, CompareFunction, DepthStencilState, FragmentState, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, RenderPipeline, RenderPipelineDescriptor,
-    ShaderModuleDescriptor, ShaderStages, TextureSampleType, TextureViewDimension,
-    VertexBufferLayout, VertexFormat, VertexState,
+    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState,
+    BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites, CompareFunction,
+    DepthStencilState, FragmentState, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
+    RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages,
+    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexFormat, VertexState, FrontFace,
 };
 
 use crate::{
@@ -62,6 +58,7 @@ pub struct GraphicsContextDescriptor<'a> {
 impl GraphicsContext {
     pub const DEFAULT_TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
     pub const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth32Float;
+    pub const SAMPLE_COUNT: u32 = 4;
 
     pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {
         let backends = wgpu::util::backend_bits_from_env()
@@ -86,7 +83,7 @@ impl GraphicsContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::empty(),
+                    features: wgpu::Features::default(),
                     limits: wgpu::Limits::default(),
                 },
                 None,
@@ -110,7 +107,7 @@ impl GraphicsContext {
                 surface.configure(&device, surface_config);
             }
         }
-        
+
         let surface_view_format = {
             surface_config
                 .as_ref()
@@ -195,7 +192,7 @@ impl GraphicsContext {
             },
             primitive: PrimitiveState {
                 cull_mode: None,
-                front_face: wgpu::FrontFace::Cw,
+                front_face: FrontFace::Cw,
                 ..Default::default()
             },
             depth_stencil: Some(DepthStencilState {
@@ -205,7 +202,10 @@ impl GraphicsContext {
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
-            multisample: MultisampleState::default(),
+            multisample: MultisampleState {
+                count: Self::SAMPLE_COUNT,
+                ..Default::default()
+            },
             fragment: Some(FragmentState {
                 module: &shader,
                 entry_point: "fs_main",

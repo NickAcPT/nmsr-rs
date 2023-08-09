@@ -18,6 +18,7 @@ use crate::high_level::pipeline::graphics_context::GraphicsContext;
 #[derive(Debug)]
 pub(crate) struct SceneContextTextures {
     pub(crate) depth_texture: SceneTexture,
+    pub(crate) multisampled_output_texture: SceneTexture,
     pub(crate) output_texture: SceneTexture,
 }
 
@@ -144,22 +145,35 @@ impl SceneContext {
             GraphicsContext::DEPTH_TEXTURE_FORMAT,
             TextureUsages::RENDER_ATTACHMENT,
             Some("Depth Texture"),
+            1
         );
 
         // Setup our output texture
+        let multisampled_output_texture = create_texture(
+            graphics_context,
+            viewport_size.width,
+            viewport_size.height,
+            graphics_context.texture_format,
+            TextureUsages::RENDER_ATTACHMENT,
+            Some("MultiSampled Output Texture"),
+            GraphicsContext::SAMPLE_COUNT
+        );
+        
         let output_texture = create_texture(
             graphics_context,
             viewport_size.width,
             viewport_size.height,
             graphics_context.texture_format,
             TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
-            Some("Output Texture"),
+            Some("Final Output Texture"),
+            1
         );
 
         // Save our textures
         self.textures = Some(SceneContextTextures {
             depth_texture,
             output_texture,
+            multisampled_output_texture
         })
     }
 
@@ -219,6 +233,7 @@ fn create_texture(
     format: TextureFormat,
     usage: TextureUsages,
     label: Option<&str>,
+    sample_count: u32,
 ) -> SceneTexture {
     let texture = context.device.create_texture(&TextureDescriptor {
         size: wgpu::Extent3d {
@@ -227,7 +242,7 @@ fn create_texture(
             depth_or_array_layers: 1,
         },
         mip_level_count: 1,
-        sample_count: 1,
+        sample_count,
         dimension: TextureDimension::D2,
         format,
         usage,

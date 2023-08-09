@@ -12,8 +12,8 @@ use nmsr_player_parts::{
 };
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroupDescriptor, BindGroupEntry, Color, IndexFormat, LoadOp, Operations,
-    RenderPassColorAttachment, RenderPassDepthStencilAttachment, TextureView, CommandEncoder, Texture,
+    BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, IndexFormat, LoadOp, Operations,
+    RenderPassColorAttachment, RenderPassDepthStencilAttachment, Texture, TextureView,
 };
 
 use crate::high_level::camera::Camera;
@@ -82,7 +82,7 @@ impl Scene {
     pub fn viewport_size_mut(&mut self) -> &mut Size {
         &mut self.viewport_size
     }
-    
+
     pub fn set_texture(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -110,11 +110,13 @@ impl Scene {
     pub fn render(&mut self, graphics_context: &GraphicsContext) -> Result<()> {
         self.render_with_extra(graphics_context, None)
     }
-    
+
     pub fn render_with_extra(
         &mut self,
         graphics_context: &GraphicsContext,
-        extra_rendering: Option<Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera) + '_>>,
+        extra_rendering: Option<
+            Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera) + '_>,
+        >,
     ) -> Result<()> {
         let pipeline = &graphics_context.pipeline;
         let device = &graphics_context.device;
@@ -178,6 +180,7 @@ impl Scene {
                 .create_view(&wgpu::TextureViewDescriptor::default())
         });
 
+        let multisampled_view = &textures.multisampled_output_texture.view;
         
         let final_view = surface_texture_view
             .as_ref()
@@ -189,8 +192,8 @@ impl Scene {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Main render pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: final_view,
-                    resolve_target: None,
+                    view: multisampled_view,
+                    resolve_target: Some(final_view),
                     ops: Operations {
                         load: LoadOp::Clear(Color::TRANSPARENT),
                         store: true,

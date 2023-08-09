@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 wgpu = "0.17.0"
-wgpu-core = "0.17.0"
 bytemuck = { version = "1.13.1", features = ["derive"] }
 glam = { version = "0.24.1", features = ["bytemuck"] }
 paste = "1.0.14"

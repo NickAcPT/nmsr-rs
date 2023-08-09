@@ -18,6 +18,7 @@ pub enum PlayerPartsProvider {
 #[derive(Copy, Clone)]
 pub struct PlayerPartProviderContext {
     pub model: PlayerModel,
+    pub has_cape: bool,
 }
 
 pub trait PartsProvider {

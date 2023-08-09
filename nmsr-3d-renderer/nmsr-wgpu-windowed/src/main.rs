@@ -91,6 +91,7 @@ async fn main() -> anyhow::Result<()> {
 
     let ctx = PlayerPartProviderContext {
         model: PlayerModel::Alex,
+        has_cape: true
     };
 
     let mut scene = Scene::new(
@@ -113,11 +114,19 @@ async fn main() -> anyhow::Result<()> {
 
     ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
 
-    // Upload skin
+    // Upload skin and cape
     scene.set_texture(
         &graphics,
         nmsr_player_parts::types::PlayerPartTextureType::Skin,
         &skin_rgba,
+    );
+
+    let cape_rgba = image::load_from_memory(include_bytes!("download (17).png")).unwrap().to_rgba8();
+    
+    scene.set_texture(
+        &graphics,
+        nmsr_player_parts::types::PlayerPartTextureType::Cape,
+        &cape_rgba,
     );
 
     println!("surface_view_format: {:?}", surface_view_format);

@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use glam::{Vec2, Vec3};
+use glam::{Vec2, Vec3, Mat4};
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -13,5 +13,16 @@ pub struct Vertex {
 impl Vertex {
     pub fn new(position: Vec3, uv: Vec2) -> Self {
         Vertex { position, uv }
+    }
+    
+    pub(crate) fn transform(&self, model_trasform: Mat4) -> Self {
+        if model_trasform == Mat4::IDENTITY {
+            return *self;
+        }
+        
+        Vertex {
+            position: model_trasform.transform_point3(self.position),
+            uv: self.uv,
+        }
     }
 }

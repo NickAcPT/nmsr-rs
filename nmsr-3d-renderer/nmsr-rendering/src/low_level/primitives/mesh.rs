@@ -1,13 +1,19 @@
+use glam::Mat4;
+
 use crate::low_level::primitives::part_primitive::PartPrimitive;
 use crate::low_level::primitives::vertex::Vertex;
 
 pub struct Mesh {
     primitives: Vec<Box<dyn PartPrimitive>>,
+    model_transform: Mat4,
 }
 
 impl Mesh {
     pub fn new(primitives: Vec<Box<dyn PartPrimitive>>) -> Self {
-        Mesh { primitives }
+        Mesh { primitives, model_transform: Mat4::IDENTITY }
+    }
+    pub fn new_with_transform(primitives: Vec<Box<dyn PartPrimitive>>, model_transform: Mat4) -> Self {
+        Mesh { primitives, model_transform }
     }
 }
 
@@ -16,6 +22,7 @@ impl PartPrimitive for Mesh {
         self.primitives
             .iter()
             .flat_map(|quad| quad.get_vertices())
+            .map(|v| v.transform(self.model_transform))
             .collect()
     }
 

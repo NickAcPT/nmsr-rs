@@ -1,4 +1,4 @@
-use glam::{Vec2, Vec3};
+use glam::{Vec2, Vec3, Mat4};
 
 use crate::low_level::primitives::mesh::Mesh;
 use crate::low_level::primitives::part_primitive::PartPrimitive;
@@ -26,6 +26,7 @@ impl Cube {
     pub fn new(
         center: Vec3,
         size: Vec3,
+        model_transform: Mat4,
         front_face_uv: [Vec2; 2],
         back_face_uv: [Vec2; 2],
         top_face_uv: [Vec2; 2],
@@ -106,14 +107,14 @@ impl Cube {
         );
 
         Cube {
-            mesh: Mesh::new(vec![
+            mesh: Mesh::new_with_transform(vec![
                 Box::from(back_quad),
                 Box::from(top_quad),
                 Box::from(bottom_quad),
                 Box::from(left_quad),
                 Box::from(right_quad),
                 Box::from(front_quad),
-            ]),
+            ], model_transform),
         }
     }
 }

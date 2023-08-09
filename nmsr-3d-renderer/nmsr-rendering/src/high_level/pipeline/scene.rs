@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
-use glam::Vec2;
+use glam::{Mat4, Vec2, Vec3, Quat};
 use image::RgbaImage;
+use itertools::Itertools;
 use nmsr_player_parts::{
     parts::{
-        part::Part,
+        part::{Part, PartAnchorInfo},
         provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
         uv::FaceUv,
     },
@@ -123,50 +124,11 @@ impl Scene {
         let queue = &graphics_context.queue;
         let transform_bind_group = &self.scene_context.transform_bind_group;
 
-        let skin_texture_view = &self
-            .textures
-            .get(&PlayerPartTextureType::Skin)
-            .ok_or(NMSRRenderingError::SceneContextTextureNotSet(
-                PlayerPartTextureType::Skin,
-            ))?
-            .view;
-
-        let skin_bind_group = device.create_bind_group(&BindGroupDescriptor {
-            layout: &graphics_context.layouts.skin_bind_group_layout,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(skin_texture_view),
-            }],
-            label: Some("diffuse_bind_group"),
-        });
-
         let textures = self
             .scene_context
             .textures
             .as_ref()
             .ok_or(NMSRRenderingError::SceneContextTexturesNotInitialized)?;
-
-        let to_render: Vec<_> = self
-            .computed_body_parts
-            .iter()
-            .map(primitive_convert)
-            .collect();
-
-        let to_render = Mesh::new(to_render);
-
-        let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
-
-        let vertex_buf = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertex_data),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
-        let index_buf = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(&index_data),
-            usage: wgpu::BufferUsages::INDEX,
-        });
 
         device.push_error_scope(wgpu::ErrorFilter::Validation);
 
@@ -196,21 +158,64 @@ impl Scene {
 
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        let (mut load_op, mut depth_load_opt) =
+            (LoadOp::Clear(Color::TRANSPARENT), LoadOp::Clear(1.0));
+
+        for (texture, parts) in &self
+            .computed_body_parts
+            .iter()
+            .group_by(|p| p.get_texture())
         {
+            let texture_view = &self
+                .textures
+                .get(&texture)
+                .ok_or(NMSRRenderingError::SceneContextTextureNotSet(texture))?
+                .view;
+
+            let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
+                layout: &graphics_context.layouts.skin_bind_group_layout,
+                entries: &[BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(texture_view),
+                }],
+                label: Some(texture.into()),
+            });
+
+            let parts = parts.collect::<Vec<&Part>>();
+
+            let to_render: Vec<_> = parts.iter().map(|&p| primitive_convert(p)).collect();
+
+            let to_render = Mesh::new(to_render);
+
+            let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
+
+            let vertex_buf = device.create_buffer_init(&BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(&vertex_data),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+            let index_buf = device.create_buffer_init(&BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(&index_data),
+                usage: wgpu::BufferUsages::INDEX,
+            });
+
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Main render pass"),
+                label: Some(format!("Render pass for {}", texture).as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: attachment,
                     resolve_target,
                     ops: Operations {
-                        load: LoadOp::Clear(Color::TRANSPARENT),
+                        load: load_op,
                         store: true,
                     },
                 })],
                 depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
                     view: &textures.depth_texture.view,
                     depth_ops: Some(Operations {
-                        load: LoadOp::Clear(1.0),
+                        load: depth_load_opt,
                         store: true,
                     }),
                     stencil_ops: None,
@@ -219,10 +224,13 @@ impl Scene {
 
             rpass.set_pipeline(pipeline);
             rpass.set_bind_group(0, transform_bind_group, &[]);
-            rpass.set_bind_group(1, &skin_bind_group, &[]);
+            rpass.set_bind_group(1, &texture_bind_group, &[]);
             rpass.set_index_buffer(index_buf.slice(..), IndexFormat::Uint16);
             rpass.set_vertex_buffer(0, vertex_buf.slice(..));
             rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
+
+            load_op = LoadOp::Load;
+            depth_load_opt = LoadOp::Load;
         }
 
         queue.submit(Some(encoder.finish()));
@@ -280,6 +288,8 @@ fn primitive_convert(part: &Part) -> Box<dyn PartPrimitive> {
     Box::new(match part {
         Part::Cube {
             position,
+            rotation,
+            anchor,
             size,
             face_uvs,
             ..
@@ -287,15 +297,34 @@ fn primitive_convert(part: &Part) -> Box<dyn PartPrimitive> {
             // Compute center of cube
             let center = *position + *size / 2.0;
 
+            let translation = anchor
+                .or_else(|| Some(PartAnchorInfo { anchor: Vec3::ZERO }))
+                .unwrap();
+            
+            let translation_mat = Mat4::from_translation(translation.anchor);
+            let neg_translation_mat = Mat4::from_translation(-translation.anchor);
+
+            let rotation = Mat4::from_quat(Quat::from_euler(
+                glam::EulerRot::YXZ,
+                rotation.y.to_radians(),
+                rotation.x.to_radians(),
+                rotation.z.to_radians(),
+            ));
+                
+            let model_transform = translation_mat * rotation * neg_translation_mat;
+
+            let texture_size = part.get_texture().get_texture_size();
+
             Cube::new(
                 center,
                 *size,
-                uv(&face_uvs.north),
-                uv(&face_uvs.south),
-                uv(&face_uvs.up),
-                uv(&face_uvs.down),
-                uv(&face_uvs.west),
-                uv(&face_uvs.east),
+                model_transform,
+                uv(&face_uvs.north, texture_size),
+                uv(&face_uvs.south, texture_size),
+                uv(&face_uvs.up, texture_size),
+                uv(&face_uvs.down, texture_size),
+                uv(&face_uvs.west, texture_size),
+                uv(&face_uvs.east, texture_size),
             )
         }
         Part::Quad { .. } => {
@@ -304,10 +333,14 @@ fn primitive_convert(part: &Part) -> Box<dyn PartPrimitive> {
     })
 }
 
-fn uv(face_uvs: &FaceUv) -> [Vec2; 2] {
-    let mut top_left = face_uvs.top_left.to_uv([64f32, 64f32].into());
-    let mut bottom_right = face_uvs.bottom_right.to_uv([64f32, 64f32].into());
+fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {
+    let texture_size = Vec2::new(texture_size.0 as f32, texture_size.1 as f32);
+
+    let mut top_left = face_uvs.top_left.to_uv(texture_size);
+    let mut bottom_right = face_uvs.bottom_right.to_uv(texture_size);
+    
     let small_offset = 1f32 / 16f32 / 64f32;
+    
     top_left += small_offset;
     bottom_right -= small_offset;
     [top_left, bottom_right]

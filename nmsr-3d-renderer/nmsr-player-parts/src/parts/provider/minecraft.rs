@@ -1,4 +1,4 @@
-use crate::parts::part::Part;
+use crate::parts::part::{Part, PartAnchorInfo};
 use crate::parts::provider::{PartsProvider, PlayerPartProviderContext};
 use crate::types::PlayerBodyPartType;
 use crate::types::PlayerBodyPartType::*;
@@ -8,8 +8,16 @@ pub struct MinecraftPlayerPartsProvider;
 macro_rules! body_part {
     // Matcher on many body parts
     {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr)} => {
+        body_part! {
+            pos: $pos,
+            size: $size,
+            box_uv_start: ($uv_x, $uv_y),
+            texture_type: Skin
+        }
+    };
+    {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr), texture_type: $texture_type: ident} => {
         Part::new_cube(
-            crate::types::PlayerPartTextureType::Skin,
+            crate::types::PlayerPartTextureType::$texture_type,
             $pos,
             $size,
             box_uv($uv_x, $uv_y, $size),
@@ -126,8 +134,27 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
 
             return vec![new_part];
         }
+        
+        let mut result = vec![part];
 
-        vec![part]
+        if body_part == Body && context.has_cape {
+            let mut cape = body_part! {
+                pos: [-5, 8, 1],
+                size: [10, 16, 1],
+                box_uv_start: (1, 1),
+                texture_type: Cape
+            };
+            
+            cape.set_anchor(Some(PartAnchorInfo {
+                anchor: [0.0, 24.0, 2.0].into()
+            }));
+        
+            cape.set_rotation([5.0, 180.0, 0.0].into());
+            
+            result.push(cape);
+        }
+        
+        result
     }
 }
 

@@ -52,3 +52,12 @@ pub enum PlayerPartTextureType {
     #[cfg(feature = "ears")]
     Ears,
 }
+
+impl PlayerPartTextureType {
+    pub fn get_texture_size(&self) -> (u32, u32) {
+        match self {
+            Self::Skin => (64, 64),
+            Self::Cape => (64, 32),
+        }
+    }
+}

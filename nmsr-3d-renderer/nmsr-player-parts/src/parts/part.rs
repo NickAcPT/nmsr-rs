@@ -5,7 +5,6 @@ use glam::Vec3;
 
 #[derive(Copy, Clone)]
 pub struct PartAnchorInfo {
-    pub part_type: PlayerBodyPartType,
     pub anchor: MinecraftPosition,
 }
 
@@ -15,6 +14,7 @@ pub enum Part {
     Cube {
         position: MinecraftPosition,
         size: MinecraftPosition,
+        rotation: MinecraftPosition,
         face_uvs: CubeFaceUvs,
         texture: PlayerPartTextureType,
         anchor: Option<PartAnchorInfo>,
@@ -23,6 +23,7 @@ pub enum Part {
     Quad {
         position: MinecraftPosition,
         size: MinecraftPosition,
+        rotation: MinecraftPosition,
         face_uv: FaceUv,
         texture: PlayerPartTextureType,
         anchor: Option<PartAnchorInfo>,
@@ -50,6 +51,7 @@ impl Part {
         Cube {
             position: MinecraftPosition::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
+            rotation: MinecraftPosition::ZERO,
             face_uvs: uvs.into(),
             texture,
             anchor: None,
@@ -83,6 +85,34 @@ impl Part {
         }
 
         new_part
+    }
+    
+    pub fn get_anchor(&self) -> Option<PartAnchorInfo> {
+        match self {
+            Cube { anchor, .. } => *anchor,
+            Quad { anchor, .. } => *anchor,
+        }
+    }
+    
+    pub fn set_anchor(&mut self, anchor: Option<PartAnchorInfo>) {
+        match self {
+            Cube { anchor: ref mut a, .. } => *a = anchor,
+            Quad { anchor: ref mut a, .. } => *a = anchor,
+        }
+    }
+    
+    pub fn get_rotation(&self) -> MinecraftPosition {
+        match self {
+            Cube { rotation, .. } => *rotation,
+            Quad { rotation, .. } => *rotation,
+        }
+    }
+    
+    pub fn set_rotation(&mut self, rotation: MinecraftPosition) {
+        match self {
+            Cube { rotation: ref mut r, .. } => *r = rotation,
+            Quad { rotation: ref mut r, .. } => *r = rotation,
+        }
     }
 
     pub fn get_size(&self) -> MinecraftPosition {

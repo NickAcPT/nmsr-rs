@@ -8,8 +8,7 @@ use wgpu::{
     BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState,
     BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites, CompareFunction,
     DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineLayoutDescriptor,
-    PrimitiveState, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages,
-    TextureFormatFeatureFlags, TextureSampleType, TextureViewDimension, VertexBufferLayout,
+    PrimitiveState, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout,
     VertexFormat, VertexState,
 };
 

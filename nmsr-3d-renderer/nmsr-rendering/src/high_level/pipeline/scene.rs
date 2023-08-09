@@ -13,7 +13,7 @@ use nmsr_player_parts::{
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, IndexFormat, LoadOp, Operations,
-    RenderPassColorAttachment, RenderPassDepthStencilAttachment, Texture, TextureView,
+    RenderPassColorAttachment, RenderPassDepthStencilAttachment, TextureView,
 };
 
 use crate::high_level::camera::Camera;
@@ -38,6 +38,8 @@ pub struct Scene {
     textures: HashMap<PlayerPartTextureType, SceneTexture>,
     computed_body_parts: Vec<Part>,
 }
+
+type ExtraRenderFunc<'a> = Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera) + 'a>;
 
 impl Scene {
     pub fn new<T>(
@@ -114,9 +116,7 @@ impl Scene {
     pub fn render_with_extra(
         &mut self,
         graphics_context: &GraphicsContext,
-        extra_rendering: Option<
-            Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera) + '_>,
-        >,
+        extra_rendering: Option<ExtraRenderFunc>,
     ) -> Result<()> {
         let pipeline = &graphics_context.pipeline;
         let device = &graphics_context.device;

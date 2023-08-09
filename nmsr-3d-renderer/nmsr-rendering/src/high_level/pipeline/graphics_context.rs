@@ -250,7 +250,7 @@ impl GraphicsContext {
         }
     }
 
-    fn max_available_sample_count(adapter: &Adapter, texture_format: &TextureFormat) -> u32 {
+    pub(crate) fn max_available_sample_count(adapter: &Adapter, texture_format: &TextureFormat) -> u32 {
         let sample_flags = adapter.get_texture_format_features(*texture_format).flags;
 
         vec![16, 8, 4, 2, 1]

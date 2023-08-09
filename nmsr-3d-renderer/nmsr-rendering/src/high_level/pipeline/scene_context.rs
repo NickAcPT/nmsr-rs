@@ -11,7 +11,7 @@ use wgpu::{
     TextureView,
 };
 
-use crate::errors::{Result, NMSRRenderingError};
+use crate::errors::{NMSRRenderingError, Result};
 use crate::high_level::camera::Camera;
 use crate::high_level::pipeline::graphics_context::GraphicsContext;
 
@@ -19,7 +19,7 @@ use crate::high_level::pipeline::graphics_context::GraphicsContext;
 pub(crate) struct SceneContextTextures {
     pub(crate) depth_texture: SceneTexture,
     pub(crate) output_texture: SceneTexture,
-    pub(crate) multisampled_output_texture: SceneTexture,
+    pub(crate) multisampled_output_texture: Option<SceneTexture>,
 }
 
 #[derive(Debug)]
@@ -98,7 +98,8 @@ impl SceneTexture {
 
             let data = buffer_slice.get_mapped_range();
 
-            RgbaImage::from_raw(width, height, data.to_vec()).ok_or(NMSRRenderingError::ImageFromRawError)
+            RgbaImage::from_raw(width, height, data.to_vec())
+                .ok_or(NMSRRenderingError::ImageFromRawError)
         }
 
         read_buffer(device, &output_buffer, width, height).await
@@ -148,17 +149,22 @@ impl SceneContext {
             graphics_context.sample_count,
         );
 
+        // Setup our output texture for multisampling if we need to use it
+        let multisampled_output_texture = if graphics_context.sample_count > 1 {
+            Some(create_texture(
+                graphics_context,
+                viewport_size.width,
+                viewport_size.height,
+                graphics_context.texture_format,
+                TextureUsages::RENDER_ATTACHMENT,
+                Some("MultiSampled Output Texture"),
+                graphics_context.sample_count,
+            ))
+        } else {
+            None
+        };
+
         // Setup our output texture
-        let multisampled_output_texture = create_texture(
-            graphics_context,
-            viewport_size.width,
-            viewport_size.height,
-            graphics_context.texture_format,
-            TextureUsages::RENDER_ATTACHMENT,
-            Some("MultiSampled Output Texture"),
-            graphics_context.sample_count,
-        );
-        
         let output_texture = create_texture(
             graphics_context,
             viewport_size.width,
@@ -166,7 +172,7 @@ impl SceneContext {
             graphics_context.texture_format,
             TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
             Some("Final Output Texture"),
-            1
+            1,
         );
 
         // Save our textures
@@ -222,7 +228,9 @@ impl SceneContext {
         let textures = self.try_textures()?;
         let output_texture = &textures.output_texture;
 
-        output_texture.copy_texture_from_gpu(graphics_context, width, height).await
+        output_texture
+            .copy_texture_from_gpu(graphics_context, width, height)
+            .await
     }
 }
 

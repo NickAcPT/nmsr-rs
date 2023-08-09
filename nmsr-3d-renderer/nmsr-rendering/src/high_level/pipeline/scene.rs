@@ -180,20 +180,28 @@ impl Scene {
                 .create_view(&wgpu::TextureViewDescriptor::default())
         });
 
-        let multisampled_view = &textures.multisampled_output_texture.view;
-        
         let final_view = surface_texture_view
             .as_ref()
             .unwrap_or(&textures.output_texture.view);
-        
+
+        let (attachment, resolve_target) = if graphics_context.sample_count > 1 {
+            if let Some(multisampled_view) = &textures.multisampled_output_texture {
+                (&multisampled_view.view, Some(final_view))
+            } else {
+                (final_view, None)
+            }
+        } else {
+            (final_view, None)
+        };
+
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Main render pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: multisampled_view,
-                    resolve_target: Some(final_view),
+                    view: attachment,
+                    resolve_target,
                     ops: Operations {
                         load: LoadOp::Clear(Color::TRANSPARENT),
                         store: true,
@@ -218,16 +226,16 @@ impl Scene {
         }
 
         queue.submit(Some(encoder.finish()));
-        
+
         if let Some(extra_rendering) = extra_rendering {
             let mut extra_encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-            
+                device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
             extra_rendering(final_view, &mut extra_encoder, &mut self.camera);
-            
+
             queue.submit(Some(extra_encoder.finish()));
         }
-        
+
         if let Some(surface_texture) = surface_texture {
             surface_texture.present();
         }

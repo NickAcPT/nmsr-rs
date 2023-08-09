@@ -12,9 +12,7 @@ use nmsr_rendering::high_level::pipeline::{
 use nmsr_rendering::low_level::Vec3;
 use strum::IntoEnumIterator;
 
-use wgpu::{
-    Backends, Instance,
-};
+use wgpu::{Backends, Instance};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;

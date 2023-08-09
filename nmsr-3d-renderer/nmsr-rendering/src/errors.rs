@@ -25,7 +25,6 @@ pub enum NMSRRenderingError {
     RecvError(#[from] RecvError),
     #[error("Unable to convert image from raw bytes")]
     ImageFromRawError,
-    
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRRenderingError>;

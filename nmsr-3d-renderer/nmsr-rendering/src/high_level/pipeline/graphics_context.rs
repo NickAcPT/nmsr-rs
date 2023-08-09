@@ -8,8 +8,8 @@ use wgpu::{
     BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState,
     BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites, CompareFunction,
     DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineLayoutDescriptor,
-    PrimitiveState, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout,
-    VertexFormat, VertexState,
+    PrimitiveState, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages,
+    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexFormat, VertexState,
 };
 
 use crate::{
@@ -249,11 +249,15 @@ impl GraphicsContext {
         }
     }
 
-    pub(crate) fn max_available_sample_count(adapter: &Adapter, texture_format: &TextureFormat) -> u32 {
+    pub(crate) fn max_available_sample_count(
+        adapter: &Adapter,
+        texture_format: &TextureFormat,
+    ) -> u32 {
         let sample_flags = adapter.get_texture_format_features(*texture_format).flags;
 
         vec![16, 8, 4, 2, 1]
-            .iter().find(|&&sample_count| sample_flags.sample_count_supported(sample_count))
+            .iter()
+            .find(|&&sample_count| sample_flags.sample_count_supported(sample_count))
             .copied()
             .unwrap_or(1)
     }

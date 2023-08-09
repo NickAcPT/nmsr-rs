@@ -1,10 +1,10 @@
-
 use nmsr_rendering::{
     high_level::pipeline::Backends,
     high_level::{
         camera::{Camera, CameraRotation, ProjectionParameters},
-        pipeline::{GraphicsContext, GraphicsContextDescriptor}, types::PlayerBodyPartType,
-    }
+        pipeline::{GraphicsContext, GraphicsContextDescriptor},
+        types::PlayerBodyPartType,
+    },
 };
 
 use strum::{Display, EnumCount, EnumIter, EnumString, IntoEnumIterator};
@@ -22,7 +22,7 @@ use nmsr_lib::{
     parts::manager::PartsManager,
     vfs::{PhysicalFS, VfsPath},
 };
-use tracing::{instrument, info};
+use tracing::{info, instrument};
 #[cfg(feature = "lazy_parts")]
 use {
     crate::utils::errors::NMSRaaSError,
@@ -55,8 +55,6 @@ pub(crate) struct NMSRaaSManager {
 #[cfg(feature = "wgpu")]
 impl RenderMode {
     pub(crate) fn get_camera(&self) -> Camera {
-        
-        
         match self {
             RenderMode::FullBody => Camera::new_orbital(
                 [0.0, 16.65, 0.0].into(),
@@ -71,19 +69,17 @@ impl RenderMode {
             _ => unimplemented!("wgpu rendering is not yet implemented"),
         }
     }
-    
+
     #[instrument(level = "trace", skip(self))]
     pub(crate) fn get_body_parts(&self) -> Vec<PlayerBodyPartType> {
         match self {
             RenderMode::FullBody | RenderMode::FrontFull | RenderMode::FullBodyIso => {
                 PlayerBodyPartType::iter().collect()
-            },
-            RenderMode::Head | RenderMode::HeadIso | RenderMode::Face => vec![
-                PlayerBodyPartType::Head,
-                PlayerBodyPartType::HeadLayer,
-            ],
+            }
+            RenderMode::Head | RenderMode::HeadIso | RenderMode::Face => {
+                vec![PlayerBodyPartType::Head, PlayerBodyPartType::HeadLayer]
+            }
         }
-        
     }
 }
 
@@ -103,14 +99,17 @@ impl NMSRaaSManager {
             backends: Some(Backends::all()),
             surface_provider: Box::new(|_| None),
             default_size: (0, 0),
-            texture_format: Some(GraphicsContext::DEFAULT_TEXTURE_FORMAT)
-        }).await?;
-        
-        info!("Created graphics context with adapter {:?} and we're using {} MSAA samples.", &graphics_context.adapter.get_info(), graphics_context.sample_count);
-        
-        Ok(NMSRaaSManager {
-            graphics_context,
+            texture_format: Some(GraphicsContext::DEFAULT_TEXTURE_FORMAT),
         })
+        .await?;
+
+        info!(
+            "Created graphics context with adapter {:?} and we're using {} MSAA samples.",
+            &graphics_context.adapter.get_info(),
+            graphics_context.sample_count
+        );
+
+        Ok(NMSRaaSManager { graphics_context })
     }
 }
 

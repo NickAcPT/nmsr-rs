@@ -7,7 +7,7 @@ use strum::EnumString;
 pub(crate) enum RenderRequestEntry {
     PlayerUuid(uuid::Uuid),
     TextureHash(String),
-    PlayerSkin(Vec<u8>)
+    PlayerSkin(Vec<u8>),
 }
 
 #[derive(Debug, Default)]
@@ -20,7 +20,12 @@ pub(crate) enum RenderRequestEntryModel {
 #[derive(EnumSetType, EnumString, Debug)]
 #[strum(serialize_all = "snake_case")]
 pub(crate) enum RequestRenderFeatures {
-    #[strum(serialize = "overlay", serialize = "overlays", serialize = "body_layers", serialize = "layers")]
+    #[strum(
+        serialize = "overlay",
+        serialize = "overlays",
+        serialize = "body_layers",
+        serialize = "layers"
+    )]
     BodyLayers,
     #[strum(serialize = "helmet", serialize = "hat", serialize = "hat_layer")]
     HatLayer,
@@ -55,7 +60,11 @@ impl RenderRequest {
     /// let excluded_features = enum_set!(RequestRenderFeatures::Shadow);
     /// let request = RenderRequest::new_from_excluded_features(entry, excluded_features);
     /// ```
-    pub(crate) fn new_from_excluded_features(entry: RenderRequestEntry, model: RenderRequestEntryModel, excluded_features: EnumSet<RequestRenderFeatures>) -> Self {
+    pub(crate) fn new_from_excluded_features(
+        entry: RenderRequestEntry,
+        model: RenderRequestEntryModel,
+        excluded_features: EnumSet<RequestRenderFeatures>,
+    ) -> Self {
         RenderRequest {
             entry,
             model,

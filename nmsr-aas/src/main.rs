@@ -47,11 +47,11 @@ compile_error!("Cannot compile with both wgpu and uv features enabled. Please ch
 
 mod config;
 mod manager;
+mod model;
 mod mojang;
 mod renderer;
 mod routes;
 mod utils;
-mod model;
 
 #[derive(Parser)]
 struct Args {
@@ -89,7 +89,7 @@ async fn main() -> Result<()> {
     )
     .await?;
     info!("Parts manager loaded in {}ms", start.elapsed().as_millis());
-    
+
     let manager = Data::new(manager);
 
     let cache_manager = MojangCacheManager::init(

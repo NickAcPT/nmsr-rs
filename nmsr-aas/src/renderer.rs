@@ -105,7 +105,7 @@ pub(crate) async fn render_skin(
     // Write the image to a byte array
     {
         let _guard = trace_span!(parent: Span::current(), "write_image_bytes").entered();
-        
+
         let mut writer = BufWriter::new(Cursor::new(&mut render_bytes));
         render.write_to(&mut writer, ImageOutputFormat::Png)?;
     }

@@ -25,7 +25,8 @@
                 "config.toml"
             ],
             "terminal": "integrated",
-            "cwd": "${workspaceFolder}/run"
+            "cwd": "${workspaceFolder}/run",
+            "sourceLanguages": ["rust"]
         }
     ]
 }

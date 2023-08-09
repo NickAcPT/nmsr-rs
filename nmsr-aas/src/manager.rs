@@ -106,7 +106,7 @@ impl NMSRaaSManager {
             texture_format: Some(GraphicsContext::DEFAULT_TEXTURE_FORMAT)
         }).await?;
         
-        info!("Created graphics context with adapter {:?}", &graphics_context.adapter.get_info());
+        info!("Created graphics context with adapter {:?} and we're using {} MSAA samples.", &graphics_context.adapter.get_info(), graphics_context.sample_count);
         
         Ok(NMSRaaSManager {
             graphics_context,

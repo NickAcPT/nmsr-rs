@@ -64,6 +64,7 @@ pub(crate) async fn render_skin(
     let graphics_context = &parts_manager.graphics_context;
     let scene_context = SceneContext::new(graphics_context);
     let camera = mode.get_camera();
+    let arm_rotation = mode.get_arm_rotation();
     let body_parts = mode.get_body_parts();
 
     let model = if slim_arms {
@@ -72,7 +73,12 @@ pub(crate) async fn render_skin(
         PlayerModel::Steve
     };
 
-    let ctx = PlayerPartProviderContext { model };
+    let ctx = PlayerPartProviderContext {
+        model,
+        has_layers: include_layers,
+        arm_rotation,
+        has_cape: false,
+    };
 
     const WIDTH: u32 = 512;
     const HEIGHT: u32 = 832;

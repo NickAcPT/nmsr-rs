@@ -54,6 +54,8 @@ pub(crate) struct NMSRaaSManager {
 
 #[cfg(feature = "wgpu")]
 impl RenderMode {
+    
+    
     pub(crate) fn get_camera(&self) -> Camera {
         match self {
             RenderMode::FullBody => Camera::new_orbital(
@@ -69,6 +71,14 @@ impl RenderMode {
             _ => unimplemented!("wgpu rendering is not yet implemented"),
         }
     }
+    
+    pub(crate) fn get_arm_rotation(&self) -> f32 {
+        match self {
+            RenderMode::FullBody | RenderMode::FrontFull | RenderMode::FullBodyIso => 10.0,
+            _ => 0.0
+        }
+    }
+    
 
     #[instrument(level = "trace", skip(self))]
     pub(crate) fn get_body_parts(&self) -> Vec<PlayerBodyPartType> {

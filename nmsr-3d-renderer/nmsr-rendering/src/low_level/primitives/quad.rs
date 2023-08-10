@@ -1,7 +1,11 @@
-use glam::{Vec2, Vec3};
+use glam::Vec3;
 
 use crate::low_level::primitives::part_primitive::PartPrimitive;
 use crate::low_level::primitives::vertex::Vertex;
+
+use super::vertex::VertexUvCoordinates;
+
+
 
 pub struct Quad {
     top_left: Vertex,
@@ -32,13 +36,13 @@ impl Quad {
         top_right: Vec3,
         bottom_left: Vec3,
         bottom_right: Vec3,
-        top_left_uv: Vec2,
-        bottom_right_uv: Vec2,
+        top_left_uv: VertexUvCoordinates,
+        bottom_right_uv: VertexUvCoordinates,
     ) -> Self {
         Quad {
             top_left: Vertex::new(top_left, top_left_uv),
-            top_right: Vertex::new(top_right, Vec2::new(bottom_right_uv.x, top_left_uv.y)),
-            bottom_left: Vertex::new(bottom_left, Vec2::new(top_left_uv.x, bottom_right_uv.y)),
+            top_right: Vertex::new(top_right, [bottom_right_uv.x, top_left_uv.y].into()),
+            bottom_left: Vertex::new(bottom_left, [top_left_uv.x, bottom_right_uv.y].into()),
             bottom_right: Vertex::new(bottom_right, bottom_right_uv),
         }
     }

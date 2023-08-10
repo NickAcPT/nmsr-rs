@@ -99,6 +99,7 @@ async fn main() -> anyhow::Result<()> {
     let mut scene = build_scene(&graphics, config, &ctx, camera);
 
     println!("surface_view_format: {:?}", surface_view_format);
+    println!("MSAA samples: {:?}", &graphics.sample_count);
 
     println!("Entering render loop...");
     let start_time = Instant::now();
@@ -146,6 +147,7 @@ async fn main() -> anyhow::Result<()> {
 
                     new_config.width = size.width.max(1);
                     new_config.height = size.height.max(1);
+                    device.poll(wgpu::MaintainBase::Poll);
                     surface.configure(device, &new_config);
                     camera.set_aspect_ratio(new_config.width as f32 / new_config.height as f32);
 

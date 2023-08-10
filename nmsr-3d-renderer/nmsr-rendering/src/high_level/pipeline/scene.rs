@@ -104,10 +104,15 @@ impl Scene {
     where
         T: IntoIterator<Item = PlayerBodyPartType>,
     {
-        body_parts
+        let mut parts = body_parts
             .into_iter()
             .flat_map(|part| PlayerPartsProvider::Minecraft.get_parts(part_provider_context, part))
-            .collect()
+            .collect::<Vec<Part>>();
+        
+        // Sort the parts by texture. This allows us to render all parts with the same texture in one go.
+        parts.sort_by_key(|p| p.get_texture());
+            
+        parts
     }
 
     pub fn render(&mut self, graphics_context: &GraphicsContext) -> Result<()> {

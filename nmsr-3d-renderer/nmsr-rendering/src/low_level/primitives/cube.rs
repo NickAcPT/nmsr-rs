@@ -1,9 +1,11 @@
-use glam::{Vec2, Vec3, Mat4};
+use glam::{Vec3, Mat4};
 
 use crate::low_level::primitives::mesh::Mesh;
 use crate::low_level::primitives::part_primitive::PartPrimitive;
 use crate::low_level::primitives::quad::Quad;
 use crate::low_level::primitives::vertex::Vertex;
+
+use super::vertex::VertexUvCoordinates;
 
 pub struct Cube {
     mesh: Mesh,
@@ -27,12 +29,12 @@ impl Cube {
         center: Vec3,
         size: Vec3,
         model_transform: Mat4,
-        front_face_uv: [Vec2; 2],
-        back_face_uv: [Vec2; 2],
-        top_face_uv: [Vec2; 2],
-        bottom_face_uv: [Vec2; 2],
-        left_face_uv: [Vec2; 2],
-        right_face_uv: [Vec2; 2],
+        front_face_uv: [VertexUvCoordinates; 2],
+        back_face_uv: [VertexUvCoordinates; 2],
+        top_face_uv: [VertexUvCoordinates; 2],
+        bottom_face_uv: [VertexUvCoordinates; 2],
+        left_face_uv: [VertexUvCoordinates; 2],
+        right_face_uv: [VertexUvCoordinates; 2],
     ) -> Self {
         let small = 0f32; //1.0 / 256.0;
 

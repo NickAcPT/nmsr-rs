@@ -45,7 +45,7 @@ impl PlayerBodyPartType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Display, IntoStaticStr, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, Display, IntoStaticStr, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PlayerPartTextureType {
     Skin,
     Cape,

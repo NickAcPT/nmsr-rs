@@ -38,12 +38,12 @@ impl RenderRequestResolver {
     ) -> Result<ResolvedRenderEntryTextures> {
         let current_span = Span::current();
         let skin_texture: Option<Vec<u8>>;
-        let mut cape_texture: Option<Vec<u8>> = None;
+        let cape_texture: Option<Vec<u8>> = None;
         #[cfg(feature = "ears")]
         let mut ears_texture = todo!("Implement ears texture");
 
         match entry {
-            RenderRequestEntry::PlayerUuid(id) => {
+            RenderRequestEntry::PlayerUuid(_id) => {
                 todo!("Request profile from Mojang");
             }
             RenderRequestEntry::TextureHash(skin_hash) => {
@@ -96,7 +96,7 @@ impl RenderRequestResolver {
 
     async fn resolve(&self, request: RenderRequest) -> Result<()> {
         // First, we need to resolve the skin and cape textures.
-        let resolved_textures = self.resolve_entry_textures(request.entry).await?;
+        let _resolved_textures = self.resolve_entry_textures(request.entry).await?;
         
         unimplemented!()
     }

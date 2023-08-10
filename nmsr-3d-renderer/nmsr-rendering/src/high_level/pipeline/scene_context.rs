@@ -1,3 +1,4 @@
+use bytemuck::Pod;
 use std::mem;
 use tokio::sync::oneshot::channel;
 
@@ -6,14 +7,16 @@ use image::buffer::ConvertBuffer;
 use image::RgbaImage;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, Buffer, BufferDescriptor, BufferUsages,
-    Extent3d, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
-    TextureView,
+    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, Buffer, BufferDescriptor,
+    BufferUsages, Extent3d, Texture, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsages, TextureView,
 };
 
 use crate::errors::{NMSRRenderingError, Result};
 use crate::high_level::camera::Camera;
 use crate::high_level::pipeline::graphics_context::GraphicsContext;
+
+use super::scene::SunInformation;
 
 #[derive(Debug)]
 pub(crate) struct SceneContextTextures {
@@ -26,6 +29,8 @@ pub(crate) struct SceneContextTextures {
 pub struct SceneContext {
     pub transform_matrix_buffer: Buffer,
     pub transform_bind_group: BindGroup,
+    pub sun_information_buffer: Buffer,
+    pub sun_information_bind_group: BindGroup,
     pub(crate) textures: Option<SceneContextTextures>,
 }
 
@@ -110,12 +115,25 @@ impl SceneContext {
     pub fn new(context: &GraphicsContext) -> Self {
         let device = &context.device;
 
-        let (transform_matrix_buffer, transform_bind_group) =
-            create_transform_buffer_and_bind_group(device, context);
+        let (transform_matrix_buffer, transform_bind_group) = create_buffer_and_bind_group(
+            device,
+            "Transform Matrix",
+            &context.layouts.transform_bind_group_layout,
+            Mat4::IDENTITY.as_ref(),
+        );
+
+        let (sun_information_buffer, sun_information_bind_group) = create_buffer_and_bind_group(
+            device,
+            "Sun",
+            &context.layouts.sun_bind_group_layout,
+            &[SunInformation::default()],
+        );
 
         Self {
             transform_bind_group,
             transform_matrix_buffer,
+            sun_information_buffer,
+            sun_information_bind_group,
             textures: None,
         }
     }
@@ -128,15 +146,29 @@ impl SceneContext {
             bytemuck::cast_slice(matrix.as_ref()),
         );
     }
+    
+    fn set_sun_information(&self, context: &GraphicsContext, sun_information: &SunInformation) {
+        let binding = [*sun_information];
+        let data = bytemuck::cast_slice(&binding);
+        context.queue.write_buffer(
+            &self.sun_information_buffer,
+            0,
+            data,
+        );
+    }
 
     pub(crate) fn init(
         &mut self,
         graphics_context: &GraphicsContext,
         camera: &mut Camera,
+        sun: &SunInformation,
         viewport_size: super::scene::Size,
     ) {
         // Setup camera matrix
         self.set_camera_parameters(graphics_context, camera);
+        
+        // Setup sun information
+        self.set_sun_information(graphics_context, sun);
 
         // Setup our depth texture
         let depth_texture = create_texture(
@@ -262,23 +294,25 @@ fn create_texture(
     SceneTexture { texture, view }
 }
 
-fn create_transform_buffer_and_bind_group(
+fn create_buffer_and_bind_group<T: Pod>(
     device: &wgpu::Device,
-    context: &GraphicsContext,
+    label: &str,
+    layout: &BindGroupLayout,
+    value: &[T],
 ) -> (Buffer, BindGroup) {
-    let transform_matrix_buffer = device.create_buffer_init(&BufferInitDescriptor {
-        label: Some("Transform Matrix Buffer"),
-        contents: bytemuck::cast_slice(Mat4::IDENTITY.as_ref()),
+    let buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: Some((label.to_owned() + " Buffer").as_str()),
+        contents: bytemuck::cast_slice(value),
         usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     });
 
     let transform_bind_group = device.create_bind_group(&BindGroupDescriptor {
-        label: Some("Transform Bind Group"),
-        layout: &context.layouts.transform_bind_group_layout,
+        label: Some((label.to_owned() + " Bind group").as_str()),
+        layout: layout,
         entries: &[BindGroupEntry {
             binding: 0,
-            resource: transform_matrix_buffer.as_entire_binding(),
+            resource: buffer.as_entire_binding(),
         }],
     });
-    (transform_matrix_buffer, transform_bind_group)
+    (buffer, transform_bind_group)
 }

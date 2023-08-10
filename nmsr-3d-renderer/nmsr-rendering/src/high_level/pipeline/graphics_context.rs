@@ -17,8 +17,8 @@ use crate::{
     low_level::primitives::vertex::Vertex,
 };
 
-use super::scene::Size;
-
+use super::scene::{Size, SunInformation};
+ 
 #[derive(Debug)]
 pub struct GraphicsContext {
     pub instance: Instance,
@@ -39,6 +39,7 @@ pub struct GraphicsContextLayouts {
     pub transform_bind_group_layout: BindGroupLayout,
     pub skin_bind_group_layout: BindGroupLayout,
     pub pipeline_layout: wgpu::PipelineLayout,
+    pub sun_bind_group_layout: BindGroupLayout,
 }
 
 impl GraphicsContext {
@@ -153,11 +154,25 @@ impl GraphicsContext {
                 count: None,
             }],
         });
-
+        
+        let sun_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+            label: Some("Sun Bind Group"),
+            entries: &[BindGroupLayoutEntry {
+                binding: 0,
+                visibility: ShaderStages::FRAGMENT,
+                ty: BindingType::Buffer {
+                    ty: BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: BufferSize::new(mem::size_of::<SunInformation>() as u64),
+                },
+                count: None,
+            }],
+        });
+        
         // Create the pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Scene Pipeline Layout"),
-            bind_group_layouts: &[&transform_bind_group_layout, &skin_bind_group_layout],
+            bind_group_layouts: &[&transform_bind_group_layout, &skin_bind_group_layout, &sun_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -169,7 +184,7 @@ impl GraphicsContext {
         let vertex_buffer_layout = VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &vertex_attr_array![0 => Float32x3, 1 => Float32x2],
+            attributes: &vertex_attr_array![0 => Float32x3, 1 => Float32x2, 2 => Float32x3],
         };
 
         let sample_count = Self::max_available_sample_count(&adapter, &texture_format);
@@ -225,6 +240,7 @@ impl GraphicsContext {
                 pipeline_layout,
                 transform_bind_group_layout,
                 skin_bind_group_layout,
+                sun_bind_group_layout
             },
         })
     }

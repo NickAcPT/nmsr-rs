@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use glam::{Mat4, Vec2, Vec3, Quat};
+use bytemuck::{Pod, Zeroable};
+use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
 use image::RgbaImage;
 use itertools::Itertools;
 use nmsr_player_parts::{
@@ -17,12 +18,12 @@ use wgpu::{
     RenderPassColorAttachment, RenderPassDepthStencilAttachment, TextureView,
 };
 
-use crate::{high_level::camera::Camera, low_level::primitives::mesh::PrimitiveDispatch};
 use crate::high_level::pipeline::SceneContext;
 use crate::{
     errors::{NMSRRenderingError, Result},
     low_level::primitives::{cube::Cube, mesh::Mesh, part_primitive::PartPrimitive},
 };
+use crate::{high_level::camera::Camera, low_level::primitives::mesh::PrimitiveDispatch};
 
 use super::{GraphicsContext, SceneTexture};
 
@@ -38,15 +39,46 @@ pub struct Scene {
     scene_context: SceneContext,
     textures: HashMap<PlayerPartTextureType, SceneTexture>,
     computed_body_parts: Vec<Part>,
+    sun_information: SunInformation,
 }
 
-type ExtraRenderFunc<'a> = Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera) + 'a>;
+#[derive(Copy, Clone, Pod, Zeroable)]
+#[repr(C)]
+pub struct SunInformation {
+    pub direction: Vec3,
+    pub intensity: f32,
+    pub ambient: f32,
+    _padding_0: f32,
+    _padding_1: f64,
+}
+
+impl Default for SunInformation {
+    fn default() -> Self {
+        Self { direction: Vec3::ONE, intensity: 1.0, ambient: Self::DEFAULT_AMBIENT_LIGHT, _padding_0: 0.0, _padding_1: 0.0 }
+    }
+}
+
+impl SunInformation {
+    pub const DEFAULT_AMBIENT_LIGHT: f32 = 0.1;
+    
+    pub fn new(direction: Vec3, intensity: f32, ambient: f32) -> Self {
+        Self {
+            direction,
+            intensity,
+            ambient,
+            ..Default::default()
+        }
+    }
+}
+
+type ExtraRenderFunc<'a> = Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera, &mut SunInformation) + 'a>;
 
 impl Scene {
     pub fn new<T>(
         graphics_context: &GraphicsContext,
         mut scene_context: SceneContext,
         mut camera: Camera,
+        sun: SunInformation,
         viewport_size: Size,
         part_context: &PlayerPartProviderContext,
         body_parts: T,
@@ -57,6 +89,7 @@ impl Scene {
         // Initialize our camera with the viewport size
         Self::update_scene_context(
             &mut camera,
+            &sun,
             viewport_size,
             &mut scene_context,
             graphics_context,
@@ -71,6 +104,7 @@ impl Scene {
             scene_context,
             textures: HashMap::new(),
             computed_body_parts,
+            sun_information: Default::default(),
         }
     }
 
@@ -108,10 +142,10 @@ impl Scene {
             .into_iter()
             .flat_map(|part| PlayerPartsProvider::Minecraft.get_parts(part_provider_context, part))
             .collect::<Vec<Part>>();
-        
+
         // Sort the parts by texture. This allows us to render all parts with the same texture in one go.
         parts.sort_by_key(|p| p.get_texture());
-            
+
         parts
     }
 
@@ -128,6 +162,7 @@ impl Scene {
         let device = &graphics_context.device;
         let queue = &graphics_context.queue;
         let transform_bind_group = &self.scene_context.transform_bind_group;
+        let sun_bind_group = &self.scene_context.sun_information_bind_group;
 
         let textures = self
             .scene_context
@@ -230,6 +265,7 @@ impl Scene {
             rpass.set_pipeline(pipeline);
             rpass.set_bind_group(0, transform_bind_group, &[]);
             rpass.set_bind_group(1, &texture_bind_group, &[]);
+            rpass.set_bind_group(2, sun_bind_group, &[]);
             rpass.set_index_buffer(index_buf.slice(..), IndexFormat::Uint16);
             rpass.set_vertex_buffer(0, vertex_buf.slice(..));
             rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
@@ -244,7 +280,7 @@ impl Scene {
             let mut extra_encoder =
                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-            extra_rendering(final_view, &mut extra_encoder, &mut self.camera);
+            extra_rendering(final_view, &mut extra_encoder, &mut self.camera, &mut self.sun_information);
 
             queue.submit(Some(extra_encoder.finish()));
         }
@@ -271,24 +307,30 @@ impl Scene {
 
     fn update_scene_context(
         camera: &mut Camera,
+        sun: &SunInformation,
         viewport_size: Size,
         scene_context: &mut SceneContext,
         graphics_context: &GraphicsContext,
     ) {
         camera.set_aspect_ratio(viewport_size.width as f32 / viewport_size.height as f32);
-        scene_context.init(graphics_context, camera, viewport_size);
+        scene_context.init(graphics_context, camera, sun, viewport_size);
     }
 
     pub fn update(&mut self, graphics_context: &GraphicsContext) {
         Self::update_scene_context(
             &mut self.camera,
+            &self.sun_information,
             self.viewport_size,
             &mut self.scene_context,
             graphics_context,
         );
     }
-    
-    pub fn rebuild_parts(&mut self, part_context: &PlayerPartProviderContext, body_parts: Vec<PlayerBodyPartType>) {
+
+    pub fn rebuild_parts(
+        &mut self,
+        part_context: &PlayerPartProviderContext,
+        body_parts: Vec<PlayerBodyPartType>,
+    ) {
         self.computed_body_parts = Self::collect_player_parts(part_context, body_parts);
     }
 }
@@ -309,7 +351,7 @@ fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             let translation = anchor
                 .or_else(|| Some(PartAnchorInfo { anchor: Vec3::ZERO }))
                 .unwrap();
-            
+
             let translation_mat = Mat4::from_translation(translation.anchor);
             let neg_translation_mat = Mat4::from_translation(-translation.anchor);
 
@@ -319,7 +361,7 @@ fn primitive_convert(part: &Part) -> PrimitiveDispatch {
                 rotation.x.to_radians(),
                 rotation.z.to_radians(),
             ));
-                
+
             let model_transform = translation_mat * rotation * neg_translation_mat;
 
             let texture_size = part.get_texture().get_texture_size();
@@ -339,7 +381,8 @@ fn primitive_convert(part: &Part) -> PrimitiveDispatch {
         Part::Quad { .. } => {
             unreachable!()
         }
-    }).into()
+    })
+    .into()
 }
 
 fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {
@@ -347,9 +390,9 @@ fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {
 
     let mut top_left = face_uvs.top_left.to_uv(texture_size);
     let mut bottom_right = face_uvs.bottom_right.to_uv(texture_size);
-    
+
     let small_offset = 0.001;
-    
+
     top_left += small_offset;
     bottom_right -= small_offset;
     [top_left, bottom_right]

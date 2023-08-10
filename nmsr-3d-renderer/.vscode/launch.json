@@ -24,11 +24,11 @@
             "args": [],
             "cwd": "${workspaceFolder}",
             "env": {
-                "WGPU_BACKEND": "vulkan",
+                //"WGPU_BACKEND": "dx12",
                 "RUST_BACKTRACE": "1",
                 "WGPU_POWER_PREF": "high",
                 "NMSR_SAMPLE_COUNT": "1",
-                "VK_ICD_FILENAMES": "D:\\IDEs\\CLionProjects\\nmsr-wgpu\\lvp_icd.x86_64.json"
+                //"VK_ICD_FILENAMES": "D:\\IDEs\\CLionProjects\\nmsr-wgpu\\lvp_icd.x86_64.json"
             }
         }
     ]

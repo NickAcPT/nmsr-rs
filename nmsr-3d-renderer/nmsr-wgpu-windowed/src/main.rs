@@ -5,7 +5,7 @@ use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 
-use nmsr_rendering::high_level::pipeline::scene::{self, Scene};
+use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation};
 use nmsr_rendering::high_level::pipeline::{
     GraphicsContext, GraphicsContextDescriptor, SceneContext,
 };
@@ -79,6 +79,8 @@ async fn main() -> anyhow::Result<()> {
 
     let aspect_ratio = config.width as f32 / config.height as f32;
 
+    let sun = SunInformation::default();
+    
     let camera = Camera::new_absolute(
         Vec3::new(0.0, 30.0, -20.0),
         CameraRotation {
@@ -96,7 +98,7 @@ async fn main() -> anyhow::Result<()> {
         arm_rotation: 10.0,
     };
 
-    let mut scene = build_scene(&graphics, config, &ctx, camera);
+    let mut scene: Scene = build_scene(&graphics, config, &ctx, camera, sun);
 
     println!("surface_view_format: {:?}", surface_view_format);
     println!("MSAA samples: {:?}", &graphics.sample_count);
@@ -212,7 +214,7 @@ async fn main() -> anyhow::Result<()> {
                 scene
                     .render_with_extra(
                         &graphics,
-                        Some(Box::new(|view, enc, camera| {
+                        Some(Box::new(|view, enc, camera, sun| {
                             platform.update_time(start_time.elapsed().as_secs_f64());
 
                             platform.begin_frame();
@@ -221,6 +223,7 @@ async fn main() -> anyhow::Result<()> {
                                 debug_ui(
                                     &platform.context(),
                                     camera,
+                                    sun,
                                     &mut last_camera_stuff,
                                     last_frame_time,
                                     &mut ctx,
@@ -305,11 +308,13 @@ fn build_scene(
     config: &wgpu::SurfaceConfiguration,
     ctx: &PlayerPartProviderContext,
     camera: Camera,
+    sun: SunInformation
 ) -> Scene {
     let mut scene = Scene::new(
         graphics,
         SceneContext::new(graphics),
         camera,
+        sun,
         scene::Size {
             width: config.width,
             height: config.height,
@@ -349,6 +354,7 @@ fn build_scene(
 fn debug_ui(
     ctx: &Context,
     camera: &mut Camera,
+    sun: &mut SunInformation,
     last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>,
     last_frame_time: Duration,
     part_ctx: &mut PlayerPartProviderContext,
@@ -555,6 +561,60 @@ fn debug_ui(
                 .changed();
             *needs_rebuild |= ui.checkbox(&mut part_ctx.has_cape, "Has Cape").changed();
         });
+        
+    egui::Window::new("Sun")
+    .vscroll(true)
+    .show(ctx, |ui| {
+        // sun direction
+        // sun intensity
+        
+        ui.label("Direction");
+        ui.horizontal(|ui| {
+            ui.label("X");
+            *needs_rebuild |= ui.add(drag_value(
+                sun,
+                |sun| sun.direction.x,
+                |sun, v| sun.direction.x = v,
+                None,
+                None,
+            )).changed();
+            ui.label("Y");
+            *needs_rebuild |= ui.add(drag_value(
+                sun,
+                |sun| sun.direction.y,
+                |sun, v| sun.direction.y = v,
+                None,
+                None,
+            )).changed();
+            ui.label("Z");
+            *needs_rebuild |= ui.add(drag_value(
+                sun,
+                |sun| sun.direction.z,
+                |sun, v| sun.direction.z = v,
+                None,
+                None,
+            )).changed();
+        });
+        
+        ui.label("Intensity");
+        *needs_rebuild |= ui.add(drag_value(
+            sun,
+            |sun| sun.intensity,
+            |sun, v| sun.intensity = v,
+            None,
+            None,
+        )).changed();
+        
+        ui.label("Ambient");
+        *needs_rebuild |= ui.add(drag_value(
+            sun,
+            |sun| sun.ambient,
+            |sun, v| sun.ambient = v,
+            None,
+            None,
+        )).changed();
+        
+    });
 }
 
 fn visage_orbital(

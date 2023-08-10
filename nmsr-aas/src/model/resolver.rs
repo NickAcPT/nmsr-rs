@@ -3,7 +3,6 @@ use crate::model::RenderRequest;
 use crate::mojang::caching::MojangCacheManager;
 use crate::mojang::requests;
 use crate::utils::Result;
-use actix_web::web::Bytes;
 use parking_lot::RwLock;
 use reqwest_middleware::ClientWithMiddleware;
 use std::collections::HashMap;
@@ -38,7 +37,7 @@ impl RenderRequestResolver {
         entry: RenderRequestEntry,
     ) -> Result<ResolvedRenderEntryTextures> {
         let current_span = Span::current();
-        let mut skin_texture: Option<Vec<u8>> = None;
+        let skin_texture: Option<Vec<u8>>;
         let mut cape_texture: Option<Vec<u8>> = None;
         #[cfg(feature = "ears")]
         let mut ears_texture = todo!("Implement ears texture");
@@ -98,7 +97,7 @@ impl RenderRequestResolver {
     async fn resolve(&self, request: RenderRequest) -> Result<()> {
         // First, we need to resolve the skin and cape textures.
         let resolved_textures = self.resolve_entry_textures(request.entry).await?;
-
+        
         unimplemented!()
     }
 }

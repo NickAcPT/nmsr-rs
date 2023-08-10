@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use image::imageops::crop;
 use image::{GenericImage, ImageBuffer, Pixel, Rgba};
 #[cfg(feature = "parallel_iters")]
@@ -71,9 +69,9 @@ impl RenderingEntry {
             let current = tracing::Span::current();
 
             par_iterator_if_enabled!(all_parts)
-                .map(|p| {
+                .map(|&p| {
                     (
-                        p.deref(),
+                        p,
                         self.apply_uv_and_overlay(parts_manager, p, &self.skin, &current),
                     )
                 })

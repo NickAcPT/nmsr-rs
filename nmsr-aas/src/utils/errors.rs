@@ -9,6 +9,7 @@ use thiserror::Error;
 #[cfg(feature = "uv")]
 use nmsr_lib::vfs::VfsError;
 
+#[cfg(feature = "uv")]
 use crate::manager::RenderMode;
 
 #[derive(Error, Debug)]
@@ -48,6 +49,7 @@ pub(crate) enum NMSRaaSError {
     #[error("Failed to accquire lock on cache manager")]
     MutexPoisonError,
     #[error("Failed to find part manager for mode: {0}")]
+    #[cfg(feature = "uv")] 
     MissingPartManager(RenderMode),
     #[error("Invalid render mode: {0}")]
     InvalidRenderMode(String),

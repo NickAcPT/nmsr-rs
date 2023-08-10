@@ -59,10 +59,12 @@ pub(crate) async fn render_skin(
     };
     use tracing::{trace_span, Span};
 
+    let setup_guard = trace_span!(parent: Span::current(), "setup").entered();
     let skin_image = trace_span!("process_skin").in_scope(|| process_skin(skin_image))?;
 
     let graphics_context = &parts_manager.graphics_context;
-    let scene_context = SceneContext::new(graphics_context);
+    let scene_context =
+        trace_span!("build_scene_context").in_scope(|| SceneContext::new(graphics_context));
     let camera = mode.get_camera();
     let arm_rotation = mode.get_arm_rotation();
     let body_parts = mode.get_body_parts();
@@ -97,7 +99,11 @@ pub(crate) async fn render_skin(
         )
     });
 
-    scene.set_texture(graphics_context, PlayerPartTextureType::Skin, &skin_image);
+    trace_span!("set_textures").in_scope(|| {
+        scene.set_texture(graphics_context, PlayerPartTextureType::Skin, &skin_image);
+    });
+    
+    drop(setup_guard);
 
     trace_span!("render").in_scope(|| scene.render(graphics_context))?;
 
@@ -110,7 +116,7 @@ pub(crate) async fn render_skin(
     let mut render_bytes = Vec::new();
     // Write the image to a byte array
     {
-        let _guard = trace_span!(parent: Span::current(), "write_image_bytes").entered();
+        let _guard = trace_span!("write_image_bytes").entered();
 
         let mut writer = BufWriter::new(Cursor::new(&mut render_bytes));
         render.write_to(&mut writer, ImageOutputFormat::Png)?;

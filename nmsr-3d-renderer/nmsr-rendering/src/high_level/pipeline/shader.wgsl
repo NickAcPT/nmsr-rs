@@ -1,3 +1,8 @@
+struct VertexInput {
+    @location(0) position: vec4<f32>,
+    @location(1) tex_coord: vec2<f32>,
+};
+
 struct VertexOutput {
     @location(0) tex_coord: vec2<f32>,
     @builtin(position) position: vec4<f32>,
@@ -7,19 +12,17 @@ struct VertexOutput {
 @binding(0)
 var<uniform> transform: mat4x4<f32>;
 
-
 @group(1)
 @binding(0)
 var skin_texture: texture_2d<f32>;
 
 @vertex
 fn vs_main(
-    @location(0) position: vec4<f32>,
-    @location(1) tex_coord: vec2<f32>,
+    vertex: VertexInput,
 ) -> VertexOutput {
     var result: VertexOutput;
-    result.tex_coord = tex_coord;
-    result.position = transform * position;
+    result.tex_coord = vertex.tex_coord;
+    result.position = transform * vertex.position;
     return result;
 }
 

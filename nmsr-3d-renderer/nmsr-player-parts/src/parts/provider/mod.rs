@@ -39,7 +39,6 @@ impl PartsProvider for PlayerPartsProvider {
     ) -> Vec<Part> {
         match self {
             Self::Minecraft => MinecraftPlayerPartsProvider.get_parts(context, body_part),
-            _ => todo!(),
         }
     }
 }

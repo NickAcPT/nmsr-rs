@@ -271,7 +271,7 @@ async fn main() -> anyhow::Result<()> {
                 if needs_skin_rebuild {
                     let skin_bytes = match ctx.model {
                         PlayerModel::Steve => include_bytes!("blockbench_steve.png").to_vec(),
-                        PlayerModel::Alex => include_bytes!("blockbench_alex.png").to_vec(),
+                        PlayerModel::Alex => include_bytes!("6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb (1).png").to_vec(),
                     };
                     let skin_image = image::load_from_memory(&skin_bytes).unwrap();
                     let mut skin_rgba = skin_image.to_rgba8();

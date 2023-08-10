@@ -1,4 +1,4 @@
-use std::{collections::HashMap, borrow::BorrowMut, cell::RefCell, sync::Arc};
+use std::collections::HashMap;
 
 use glam::{Mat4, Vec2, Vec3, Quat};
 use image::RgbaImage;
@@ -17,7 +17,7 @@ use wgpu::{
     RenderPassColorAttachment, RenderPassDepthStencilAttachment, TextureView,
 };
 
-use crate::high_level::camera::Camera;
+use crate::{high_level::camera::Camera, low_level::primitives::mesh::PrimitiveDispatch};
 use crate::high_level::pipeline::SceneContext;
 use crate::{
     errors::{NMSRRenderingError, Result},
@@ -288,8 +288,8 @@ impl Scene {
     }
 }
 
-fn primitive_convert(part: &Part) -> Box<dyn PartPrimitive> {
-    Box::new(match part {
+fn primitive_convert(part: &Part) -> PrimitiveDispatch {
+    (match part {
         Part::Cube {
             position,
             rotation,
@@ -334,7 +334,7 @@ fn primitive_convert(part: &Part) -> Box<dyn PartPrimitive> {
         Part::Quad { .. } => {
             unreachable!()
         }
-    })
+    }).into()
 }
 
 fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {

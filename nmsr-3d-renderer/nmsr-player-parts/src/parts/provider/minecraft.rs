@@ -1,5 +1,3 @@
-use std::ops::DerefMut;
-
 use glam::Vec3;
 
 use crate::parts::part::{Part, PartAnchorInfo};
@@ -136,7 +134,7 @@ fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, context: &Pla
     }
 }
 
-fn perform_arm_part_rotation(non_layer_body_part_type: PlayerBodyPartType, part: &mut Part, rotation_angle: f32) {;
+fn perform_arm_part_rotation(non_layer_body_part_type: PlayerBodyPartType, part: &mut Part, rotation_angle: f32) {
     let normal_part_size = compute_base_part(non_layer_body_part_type, &PlayerPartProviderContext::default()).get_size();
     
     if non_layer_body_part_type == LeftArm {

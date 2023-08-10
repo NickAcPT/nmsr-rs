@@ -1,15 +1,15 @@
-use std::{borrow::Cow, mem, env};
+use std::{borrow::Cow, env, mem};
 
-use glam::Vec3;
+use wgpu::{
+    vertex_attr_array, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
+    BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
+    ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
+    PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType,
+    TextureViewDimension, VertexBufferLayout, VertexState,
+};
 pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
-};
-use wgpu::{
-    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BlendState,
-    BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites, CompareFunction,
-    DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineLayoutDescriptor,
-    PrimitiveState, RenderPipeline, RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages,
-    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexFormat, VertexState, PresentMode,
 };
 
 use crate::{
@@ -169,18 +169,7 @@ impl GraphicsContext {
         let vertex_buffer_layout = VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    format: VertexFormat::Float32x3,
-                    offset: 0,
-                    shader_location: 0,
-                },
-                wgpu::VertexAttribute {
-                    format: VertexFormat::Float32x2,
-                    offset: mem::size_of::<Vec3>() as BufferAddress,
-                    shader_location: 1,
-                },
-            ],
+            attributes: &vertex_attr_array![0 => Float32x3, 1 => Float32x2],
         };
 
         let sample_count = Self::max_available_sample_count(&adapter, &texture_format);
@@ -207,6 +196,7 @@ impl GraphicsContext {
             }),
             multisample: MultisampleState {
                 count: sample_count,
+                alpha_to_coverage_enabled: true,
                 ..Default::default()
             },
             fragment: Some(FragmentState {
@@ -254,10 +244,13 @@ impl GraphicsContext {
         adapter: &Adapter,
         texture_format: &TextureFormat,
     ) -> u32 {
-        if let Some(count) = env::var("NMSR_SAMPLE_COUNT").ok().and_then(|it| it.parse::<u32>().ok()) {
+        if let Some(count) = env::var("NMSR_SAMPLE_COUNT")
+            .ok()
+            .and_then(|it| it.parse::<u32>().ok())
+        {
             return count;
         }
-        
+
         let sample_flags = adapter.get_texture_format_features(*texture_format).flags;
 
         vec![16, 8, 4, 2, 1]

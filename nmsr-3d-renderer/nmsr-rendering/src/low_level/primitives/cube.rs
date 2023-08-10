@@ -108,12 +108,12 @@ impl Cube {
 
         Cube {
             mesh: Mesh::new_with_transform(vec![
-                Box::from(back_quad),
-                Box::from(top_quad),
-                Box::from(bottom_quad),
-                Box::from(left_quad),
-                Box::from(right_quad),
-                Box::from(front_quad),
+                back_quad.into(),
+                top_quad.into(),
+                bottom_quad.into(),
+                left_quad.into(),
+                right_quad.into(),
+                front_quad.into(),
             ], model_transform),
         }
     }

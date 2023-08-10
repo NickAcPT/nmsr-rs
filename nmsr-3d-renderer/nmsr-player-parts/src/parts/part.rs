@@ -1,6 +1,6 @@
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
-use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
+use crate::types::PlayerPartTextureType;
 use glam::Vec3;
 
 #[derive(Copy, Clone)]

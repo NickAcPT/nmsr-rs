@@ -51,7 +51,7 @@ pub(crate) async fn render_skin(
     use nmsr_rendering::high_level::{
         parts::provider::PlayerPartProviderContext,
         pipeline::{
-            scene::{Scene, Size},
+            scene::{Scene, Size, SunInformation},
             SceneContext,
         },
         player_model::PlayerModel,
@@ -66,6 +66,7 @@ pub(crate) async fn render_skin(
     let scene_context =
         trace_span!("build_scene_context").in_scope(|| SceneContext::new(graphics_context));
     let camera = mode.get_camera();
+    let sun = SunInformation::default(); // TODO: Allow sun to be configured per-mode
     let arm_rotation = mode.get_arm_rotation();
     let body_parts = mode.get_body_parts();
 
@@ -90,6 +91,7 @@ pub(crate) async fn render_skin(
             graphics_context,
             scene_context,
             camera,
+            sun,
             Size {
                 width: WIDTH,
                 height: HEIGHT,

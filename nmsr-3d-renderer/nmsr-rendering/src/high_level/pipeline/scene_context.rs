@@ -1,6 +1,7 @@
 use bytemuck::Pod;
 use std::mem;
 use tokio::sync::oneshot::channel;
+use tracing::{instrument, trace_span, Span};
 
 use glam::Mat4;
 use image::buffer::ConvertBuffer;
@@ -41,6 +42,7 @@ pub struct SceneTexture {
 }
 
 impl SceneTexture {
+    #[instrument(skip(self, graphics_context))]
     pub async fn copy_texture_from_gpu(
         &self,
         graphics_context: &GraphicsContext,
@@ -86,6 +88,7 @@ impl SceneTexture {
 
         queue.submit(Some(encoder.finish()));
 
+        #[instrument(skip(device, output_buffer, width, height))]
         async fn read_buffer(
             device: &wgpu::Device,
             output_buffer: &wgpu::Buffer,
@@ -99,12 +102,17 @@ impl SceneTexture {
                 tx.send(result).unwrap();
             });
             device.poll(wgpu::Maintain::Wait);
+            let span_guard =
+                trace_span!(parent: Span::current(), "Awaiting buffer slice").entered();
             rx.await??;
+            drop(span_guard);
 
             let data = buffer_slice.get_mapped_range();
 
-            RgbaImage::from_raw(width, height, data.to_vec())
-                .ok_or(NMSRRenderingError::ImageFromRawError)
+            trace_span!("image_from_raw").in_scope(|| {
+                RgbaImage::from_raw(width, height, data.to_vec())
+                    .ok_or(NMSRRenderingError::ImageFromRawError)
+            })
         }
 
         read_buffer(device, &output_buffer, width, height).await
@@ -146,17 +154,16 @@ impl SceneContext {
             bytemuck::cast_slice(matrix.as_ref()),
         );
     }
-    
+
     fn set_sun_information(&self, context: &GraphicsContext, sun_information: &SunInformation) {
         let binding = [*sun_information];
         let data = bytemuck::cast_slice(&binding);
-        context.queue.write_buffer(
-            &self.sun_information_buffer,
-            0,
-            data,
-        );
+        context
+            .queue
+            .write_buffer(&self.sun_information_buffer, 0, data);
     }
 
+    #[instrument(skip(self, graphics_context, camera, sun, viewport_size))]
     pub(crate) fn init(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -166,7 +173,7 @@ impl SceneContext {
     ) {
         // Setup camera matrix
         self.set_camera_parameters(graphics_context, camera);
-        
+
         // Setup sun information
         self.set_sun_information(graphics_context, sun);
 
@@ -266,6 +273,7 @@ impl SceneContext {
     }
 }
 
+#[instrument(skip(context, usage))]
 fn create_texture(
     context: &GraphicsContext,
     width: u32,
@@ -294,6 +302,7 @@ fn create_texture(
     SceneTexture { texture, view }
 }
 
+#[instrument(skip(device, layout, value))]
 fn create_buffer_and_bind_group<T: Pod>(
     device: &wgpu::Device,
     label: &str,

@@ -3,12 +3,12 @@ use crate::parts::uv::{CubeFaceUvs, FaceUv};
 use crate::types::PlayerPartTextureType;
 use glam::Vec3;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct PartAnchorInfo {
     pub anchor: MinecraftPosition,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum Part {
     /// Represents a cube as a part of a player model.
     Cube {

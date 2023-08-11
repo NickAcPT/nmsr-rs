@@ -5,11 +5,13 @@ use egui::{Context, FontDefinitions};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 
+use nmsr_player_parts::parts::part::Part;
 use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation};
 use nmsr_rendering::high_level::pipeline::{
     GraphicsContext, GraphicsContextDescriptor, SceneContext,
 };
 use nmsr_rendering::low_level::Vec3;
+use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use strum::IntoEnumIterator;
 
 use wgpu::{Backends, Instance};
@@ -118,6 +120,8 @@ async fn main() -> anyhow::Result<()> {
         font_definitions: FontDefinitions::default(),
         style: Default::default(),
     });
+    
+    let mut last_computed_parts = scene.parts().to_vec();
 
     event_loop.run_return(|event, _, control_flow| {
         platform.handle_event(&event);
@@ -229,6 +233,7 @@ async fn main() -> anyhow::Result<()> {
                                     &mut ctx,
                                     &mut needs_rebuild,
                                     &mut needs_skin_rebuild,
+                                    &last_computed_parts
                                 );
                             }
 
@@ -270,11 +275,11 @@ async fn main() -> anyhow::Result<()> {
                 scene.update(&graphics);
 
                 if needs_rebuild {
-                    scene.rebuild_parts(&ctx, PlayerBodyPartType::iter().collect());
+                    last_computed_parts = scene.rebuild_parts(&ctx, PlayerBodyPartType::iter().collect()).to_vec();
                 }
 
                 if needs_skin_rebuild {
-                    let skin_bytes = match ctx.model {
+                    let skin_bytes: Vec<u8> = match ctx.model {
                         PlayerModel::Steve => include_bytes!("blockbench_steve.png").to_vec(),
                         PlayerModel::Alex => include_bytes!("6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb (1).png").to_vec(),
                     };
@@ -360,6 +365,7 @@ fn debug_ui(
     part_ctx: &mut PlayerPartProviderContext,
     needs_rebuild: &mut bool,
     needs_skin_rebuild: &mut bool,
+    last_computed_parts: &Vec<Part>
 ) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
@@ -522,6 +528,52 @@ fn debug_ui(
                 None,
                 None,
             ));
+        }
+        
+        if ui.button("Center isometric").clicked() {
+            
+            // First thing we do is get our scene parts
+            let parts_pos: Vec<_> = last_computed_parts.iter()
+                .map(scene::primitive_convert)
+                .flat_map(|p| p.get_vertices())
+                .map(|v| v.position)
+                .collect();
+            
+            let first = parts_pos.first().unwrap();
+            
+            let min = parts_pos.iter().fold(*first, |acc, v| acc.min(*v));
+            let max = parts_pos.iter().fold(*first, |acc, v| acc.max(*v));
+            
+            let center = (min + max) / 2.0;
+            
+            let center = center * Into::<Vec3>::into([-1.0, 1.0, -1.0]);
+            
+            camera.set_position_parameters(CameraPositionParameters::Absolute(center));
+            
+            // Isometric camera rotation
+            camera.set_rotation(CameraRotation {
+                yaw: 45.0,
+                pitch: 30.0f32.to_radians().asin().to_degrees(),
+            });
+            
+            let diameter = (max - min).length();
+            let aspect = camera.get_aspect_ratio();
+            
+            println!("max - min: {}", max - min);
+            println!("aspect: {}", aspect);
+            println!("diameter / 2.0 / aspect: {}", diameter / 2.0 / aspect);
+            println!("diameter / 2.0 * aspect: {}", diameter / 2.0 * aspect);
+            println!("diameter / 2.0: {}", diameter / 2.0);
+            
+            let scale = if aspect > 1.0 {
+                diameter / 2.0
+            } else {
+                diameter / 2.0 / aspect
+            };
+            
+            println!("Diameter: {diameter:?}, Min: {min:?}, Max: {max:?}, Center: {center:?}");
+            
+            camera.set_projection(ProjectionParameters::Orthographic { aspect: scale })
         }
     });
 

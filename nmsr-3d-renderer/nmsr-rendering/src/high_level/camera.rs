@@ -69,7 +69,7 @@ impl ProjectionParameters {
                 aspect * aspect_ratio,
                 -*aspect,
                 *aspect,
-                0.1,
+                -100.0,
                 100.0,
             ),
         }

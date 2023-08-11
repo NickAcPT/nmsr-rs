@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Quat, Vec2, Vec3};
@@ -12,6 +12,7 @@ use nmsr_player_parts::{
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
+use tracing::{trace_span, instrument};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, IndexFormat, LoadOp, Operations,
@@ -84,7 +85,7 @@ impl Scene {
         body_parts: T,
     ) -> Self
     where
-        T: IntoIterator<Item = PlayerBodyPartType>,
+        T: IntoIterator<Item = PlayerBodyPartType> + Debug,
     {
         // Initialize our camera with the viewport size
         Self::update_scene_context(
@@ -120,6 +121,10 @@ impl Scene {
         &mut self.viewport_size
     }
 
+    pub fn parts(&self) -> &[Part] {
+        &self.computed_body_parts
+    }
+    
     pub fn set_texture(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -131,12 +136,13 @@ impl Scene {
         self.textures.insert(texture_type, texture);
     }
 
+    #[instrument(skip(part_provider_context))]
     fn collect_player_parts<T>(
         part_provider_context: &PlayerPartProviderContext,
         body_parts: T,
     ) -> Vec<Part>
     where
-        T: IntoIterator<Item = PlayerBodyPartType>,
+        T: IntoIterator<Item = PlayerBodyPartType> + Debug,
     {
         let mut parts = body_parts
             .into_iter()
@@ -207,6 +213,8 @@ impl Scene {
             .iter()
             .group_by(|p| p.get_texture())
         {
+            let _pass_span = trace_span!("render_pass", texture = Into::<&str>::into(texture)).entered();
+            
             let texture_view = &self
                 .textures
                 .get(&texture)
@@ -330,12 +338,16 @@ impl Scene {
         &mut self,
         part_context: &PlayerPartProviderContext,
         body_parts: Vec<PlayerBodyPartType>,
-    ) {
+    ) -> &[Part] {
         self.computed_body_parts = Self::collect_player_parts(part_context, body_parts);
+        
+        self.parts()
     }
 }
 
-fn primitive_convert(part: &Part) -> PrimitiveDispatch {
+
+#[instrument]
+pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
     (match part {
         Part::Cube {
             position,

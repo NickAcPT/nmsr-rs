@@ -54,18 +54,16 @@ pub(crate) struct NMSRaaSManager {
 
 #[cfg(feature = "wgpu")]
 impl RenderMode {
-    
-    
     pub(crate) fn get_camera(&self) -> Camera {
         match self {
             RenderMode::FullBody => Camera::new_orbital(
-                [0.0, 16.65, 0.0].into(),
-                44.1,
+                [0.2, 16.5, 0.5].into(),
+                53.0,
                 CameraRotation {
-                    yaw: 20.0,
-                    pitch: 10.0,
+                    yaw: 24.28,
+                    pitch: 11.83,
                 },
-                ProjectionParameters::Perspective { fov: 45.0 },
+                ProjectionParameters::Perspective { fov: 37.5 },
                 1.0,
             ),
             _ => unimplemented!("wgpu rendering is not yet implemented"),

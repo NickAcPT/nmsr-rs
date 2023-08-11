@@ -26,7 +26,14 @@
             ],
             "terminal": "integrated",
             "cwd": "${workspaceFolder}/run",
-            "sourceLanguages": ["rust"]
+            "sourceLanguages": ["rust"],
+            "env": {
+                "WGPU_BACKEND": "vulkan",
+                "RUST_BACKTRACE": "1",
+                "WGPU_POWER_PREF": "low",
+                //"NMSR_SAMPLE_COUNT": "1",
+                //"VK_ICD_FILENAMES": "D:\\IDEs\\CLionProjects\\nmsr-wgpu\\lvp_icd.x86_64.json"
+            }
         }
     ]
 }

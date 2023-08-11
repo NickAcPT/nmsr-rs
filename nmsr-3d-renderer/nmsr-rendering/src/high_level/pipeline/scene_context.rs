@@ -105,18 +105,19 @@ impl SceneTexture {
             let span_guard = trace_span!(parent: Span::current(), "buffer_slice_wait").entered();
             rx.await??;
             drop(span_guard);
-            
+
             let data = buffer_slice.get_mapped_range();
 
             trace_span!("image_from_raw").in_scope(|| {
-                let mut vec = data.to_vec();
-                
-                unmultiply_alpha_rgba(&mut vec);
-                
-                let result = RgbaImage::from_raw(width, height, vec)
+                let vec = data.to_vec();
+
+                let mut result = RgbaImage::from_raw(width, height, vec)
                     .ok_or(NMSRRenderingError::ImageFromRawError);
-                
-                
+
+                if let Ok(image) = result.as_mut() {
+                    unmultiply_alpha(image);
+                }
+
                 drop(data);
                 output_buffer.unmap();
 
@@ -126,19 +127,6 @@ impl SceneTexture {
 
         read_buffer(device, &output_buffer, width, height).await
     }
-}
-
-/// Converts premultiplied RBGA to unmultipled RGBA.
-fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
-    rgba.chunks_exact_mut(4).for_each(|rgba| {
-        let a = rgba[3];
-        if a > 0 {
-            let a = f32::from(a) / 255.0;
-            rgba[0] = (f32::from(rgba[0]) / a) as u8;
-            rgba[1] = (f32::from(rgba[1]) / a) as u8;
-            rgba[2] = (f32::from(rgba[2]) / a) as u8;
-        }
-    })
 }
 
 impl SceneContext {
@@ -249,7 +237,9 @@ impl SceneContext {
         image: &RgbaImage,
         label: Option<&str>,
     ) -> SceneTexture {
-        let image: RgbaImage = image.convert();
+        let mut image: RgbaImage = image.convert();
+
+        premultiply_alpha(&mut image);
 
         let texture = context.device.create_texture_with_data(
             &context.queue,
@@ -292,6 +282,26 @@ impl SceneContext {
         output_texture
             .copy_texture_from_gpu(graphics_context, width, height)
             .await
+    }
+}
+
+fn premultiply_alpha(image: &mut RgbaImage) {
+    for pixel in image.pixels_mut() {
+        let alpha = pixel[3] as f32 / 255.0;
+        pixel[0] = (pixel[0] as f32 * alpha) as u8;
+        pixel[1] = (pixel[1] as f32 * alpha) as u8;
+        pixel[2] = (pixel[2] as f32 * alpha) as u8;
+    }
+}
+
+fn unmultiply_alpha(image: &mut RgbaImage) {
+    for pixel in image.pixels_mut() {
+        let alpha = pixel[3] as f32 / 255.0;
+        if alpha > 0.0 {
+            pixel[0] = (pixel[0] as f32 / alpha) as u8;
+            pixel[1] = (pixel[1] as f32 / alpha) as u8;
+            pixel[2] = (pixel[2] as f32 / alpha) as u8;
+        }
     }
 }
 

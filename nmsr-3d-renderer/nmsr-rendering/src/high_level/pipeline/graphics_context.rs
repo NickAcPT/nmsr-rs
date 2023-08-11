@@ -6,7 +6,7 @@ use wgpu::{
     ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
     PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType,
-    TextureViewDimension, VertexBufferLayout, VertexState,
+    TextureViewDimension, VertexBufferLayout, VertexState, BlendComponent, BlendFactor, BlendOperation,
 };
 pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
@@ -211,7 +211,7 @@ impl GraphicsContext {
             }),
             multisample: MultisampleState {
                 count: sample_count,
-                alpha_to_coverage_enabled: true,
+                alpha_to_coverage_enabled: false,
                 ..Default::default()
             },
             fragment: Some(FragmentState {
@@ -219,7 +219,7 @@ impl GraphicsContext {
                 entry_point: "fs_main",
                 targets: &[Some(ColorTargetState {
                     format: texture_format,
-                    blend: Some(BlendState::ALPHA_BLENDING),
+                    blend: Some(BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask: ColorWrites::ALL,
                 })],
             }),

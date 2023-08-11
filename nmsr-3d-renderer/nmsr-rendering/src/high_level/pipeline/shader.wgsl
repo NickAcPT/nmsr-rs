@@ -49,7 +49,7 @@ fn compute_sun_lighting(
     
     var sun_color: vec3<f32> = vec3<f32>(1.0, 1.0, 1.0) * clamp(sun.intensity * sun_dot, sun.ambient, MAX_LIGHT);
     
-    return color * vec4<f32>(sun_color, color.a);
+    return color * vec4<f32>(sun_color, 1.0);
 }
 
 @fragment
@@ -60,9 +60,15 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
         0
     );
     
-    //if (color.a == 0.0) {
-    //    discard;
-    //}
+    //if (color.a > 0.0) {
+    //    color.r /= color.a;
+    //    color.g /= color.a;
+    //    color.b /= color.a;
+    //} 
     
-    return color;//compute_sun_lighting(color, vertex.normal);
+    if (color.a == 0.0) {
+        discard;
+    }
+    
+    return compute_sun_lighting(color, vertex.normal);
 }

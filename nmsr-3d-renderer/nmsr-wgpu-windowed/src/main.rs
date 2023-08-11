@@ -109,7 +109,7 @@ async fn main() -> anyhow::Result<()> {
     let start_time = Instant::now();
     let mut last_frame_time = Duration::ZERO;
 
-    let mut last_camera_stuff: Option<(CameraPositionParameters, CameraRotation)> = None;
+    let mut last_camera_stuff: Option<(CameraPositionParameters, CameraRotation, ProjectionParameters)> = None;
 
     let mut egui_rpass = RenderPass::new(device, *surface_view_format, 1);
 
@@ -280,7 +280,7 @@ async fn main() -> anyhow::Result<()> {
 
                 if needs_skin_rebuild {
                     let skin_bytes: Vec<u8> = match ctx.model {
-                        PlayerModel::Steve => include_bytes!("blockbench_steve.png").to_vec(),
+                        PlayerModel::Steve => include_bytes!("aaaa.png").to_vec(),
                         PlayerModel::Alex => include_bytes!("6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb (1).png").to_vec(),
                     };
                     let skin_image = image::load_from_memory(&skin_bytes).unwrap();
@@ -360,7 +360,7 @@ fn debug_ui(
     ctx: &Context,
     camera: &mut Camera,
     sun: &mut SunInformation,
-    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>,
+    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation, ProjectionParameters)>,
     last_frame_time: Duration,
     part_ctx: &mut PlayerPartProviderContext,
     needs_rebuild: &mut bool,
@@ -369,6 +369,10 @@ fn debug_ui(
 ) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
+        
+        ui.separator();
+        
+        ui.label("Presets");
 
         ui.horizontal(|ui| {
             if ui.button("Visage").clicked() {
@@ -379,16 +383,88 @@ fn debug_ui(
             }
 
             if last_camera_stuff.is_some() && ui.button("Last").clicked() {
-                let current = (camera.get_position_parameters(), camera.get_rotation());
+                let current = (camera.get_position_parameters(), camera.get_rotation(), camera.get_projection());
 
-                let (position, rotation) = last_camera_stuff.unwrap();
+                let (position, rotation, projection) = last_camera_stuff.unwrap();
                 camera.set_position_parameters(position);
                 camera.set_rotation(rotation);
+                camera.set_projection(projection);
 
                 last_camera_stuff.replace(current);
             }
         });
 
+        ui.horizontal(|ui| {
+            if ui.button("NMSR (Full Body)").clicked() {
+
+                camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
+                    21.47,
+                    27.31,
+                    -46.48,
+                )));
+
+                camera.set_rotation(CameraRotation {
+                    yaw: 24.28,
+                    pitch: 11.83,
+                });
+
+                camera.set_projection(ProjectionParameters::Perspective { fov: 37.6772850524784 });
+            }
+            
+            if ui.button("NMSR (Head)").clicked() {
+                camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
+                    10.16,
+                    33.5,
+                    -22.40,
+                )));
+                
+                camera.set_rotation(CameraRotation {
+                    yaw: 25.26,
+                    pitch: 14.95,
+                });
+                
+                camera.set_projection(ProjectionParameters::Perspective { fov: 27.1 });
+                
+            }
+            
+        });
+
+        ui.horizontal(|ui| {
+            if ui.button("NMSR (Full Body) (Orbital)").clicked() {
+
+                camera.set_position_parameters(CameraPositionParameters::Orbital{
+                    distance: 53.0,
+                    look_at: [0.2, 16.5, 0.5].into()
+                });
+
+                camera.set_rotation(CameraRotation {
+                    yaw: 24.28,
+                    pitch: 11.83,
+                });
+
+                camera.set_projection(ProjectionParameters::Perspective { fov: 37.5 });
+            }
+            
+            if ui.button("NMSR (Head) (Orbital)").clicked() {
+                camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
+                    10.15629061247147,
+                    33.73435909438063,
+                    -22.408843189323385,
+                )));
+                
+                camera.set_rotation(CameraRotation {
+                    yaw: 25.264535906746477,
+                    pitch: 14.953989778518544,
+                });
+                
+                camera.set_projection(ProjectionParameters::Perspective { fov: 23.444515728494967 });
+                
+            }
+            
+        });
+        
+        ui.separator();
+        
         ui.label("Camera");
 
         {
@@ -671,9 +747,9 @@ fn debug_ui(
 
 fn visage_orbital(
     camera: &mut Camera,
-    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>,
+    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation, ProjectionParameters)>,
 ) {
-    last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation()));
+    last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation(), camera.get_projection()));
 
     camera.set_position_parameters(CameraPositionParameters::Orbital {
         look_at: [0.0, 16.65, 0.0].into(),
@@ -690,9 +766,9 @@ fn visage_orbital(
 
 fn visage(
     camera: &mut Camera,
-    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation)>,
+    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation, ProjectionParameters)>,
 ) {
-    last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation()));
+    last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation(), camera.get_projection()));
 
     camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
         14.85, 24.3, -40.85,

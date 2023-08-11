@@ -238,16 +238,21 @@ impl Scene {
 
             let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
 
-            let vertex_buf = device.create_buffer_init(&BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&vertex_data),
-                usage: wgpu::BufferUsages::VERTEX,
+            
+            let vertex_buf = trace_span!("vertex_buffer_create").in_scope(|| {
+                device.create_buffer_init(&BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: bytemuck::cast_slice(&vertex_data),
+                    usage: wgpu::BufferUsages::VERTEX,
+                })
             });
 
-            let index_buf = device.create_buffer_init(&BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(&index_data),
-                usage: wgpu::BufferUsages::INDEX,
+            let index_buf = trace_span!("index_buffer_create").in_scope(|| {
+                device.create_buffer_init(&BufferInitDescriptor {
+                    label: Some("Index Buffer"),
+                    contents: bytemuck::cast_slice(&index_data),
+                    usage: wgpu::BufferUsages::INDEX,
+                })
             });
 
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

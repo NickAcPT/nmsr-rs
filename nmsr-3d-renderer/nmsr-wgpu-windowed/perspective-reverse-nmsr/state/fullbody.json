@@ -1,0 +1,106 @@
+{
+    "points": [
+        {
+            "wx": 4,
+            "wy": 32,
+            "wz": -4,
+            "px": 154.105,
+            "py": 0.044
+        },
+        {
+            "wx": -4,
+            "wy": 32,
+            "wz": -4,
+            "px": 297.963,
+            "py": 8.043
+        },
+        {
+            "wx": 4,
+            "wy": 25,
+            "wz": -3,
+            "px": 147.962,
+            "py": 147.078
+        },
+        {
+            "wx": 4,
+            "wy": 25,
+            "wz": 3,
+            "px": 108.033,
+            "py": 143.012
+        },
+        {
+            "wx": 4,
+            "wy": 31,
+            "wz": 3,
+            "px": 106.011,
+            "py": 33.002
+        },
+        {
+            "wx": 4,
+            "wy": 24,
+            "wz": 4,
+            "px": 103.017,
+            "py": 159.983
+        },
+        {
+            "wx": 4,
+            "wy": 11,
+            "wz": -1,
+            "px": 136.936,
+            "py": 400.046
+        },
+        {
+            "wx": -4,
+            "wy": 0,
+            "wz": -2,
+            "px": 267.988,
+            "py": 560.979
+        },
+        {
+            "wx": 4,
+            "wy": 1,
+            "wz": 1,
+            "px": 126.063,
+            "py": 550.953
+        },
+        {
+            "wx": 4,
+            "wy": 0,
+            "wz": 2,
+            "px": 121.078,
+            "py": 558.156
+        }
+    ],
+    "selectedPoint": null,
+    "selectedPointHistory": [
+        5,
+        1,
+        2,
+        4,
+        7,
+        0,
+        3,
+        6,
+        8,
+        9
+    ],
+    "lines": [],
+    "selectedLine": null,
+    "showGrid": false,
+    "showBlur": false,
+    "showProjected": true,
+    "offsetBy01": false,
+    "cameraX": 21.470300912521708,
+    "cameraXLocked": false,
+    "cameraY": 26.80804195028469,
+    "cameraYLocked": false,
+    "cameraZ": -46.48178651583734,
+    "cameraZLocked": false,
+    "cameraYaw": 24.280391033092915,
+    "cameraYawLocked": false,
+    "cameraPitch": 11.826240366471636,
+    "cameraPitchLocked": false,
+    "cameraFov": 36.5772850524784,
+    "cameraFovLocked": false,
+    "iterations": 500000
+}

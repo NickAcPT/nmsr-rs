@@ -102,21 +102,43 @@ impl SceneTexture {
                 tx.send(result).unwrap();
             });
             device.poll(wgpu::Maintain::Wait);
-            let span_guard =
-                trace_span!(parent: Span::current(), "Awaiting buffer slice").entered();
+            let span_guard = trace_span!(parent: Span::current(), "buffer_slice_wait").entered();
             rx.await??;
             drop(span_guard);
-
+            
             let data = buffer_slice.get_mapped_range();
 
             trace_span!("image_from_raw").in_scope(|| {
-                RgbaImage::from_raw(width, height, data.to_vec())
-                    .ok_or(NMSRRenderingError::ImageFromRawError)
+                let mut vec = data.to_vec();
+                
+                unmultiply_alpha_rgba(&mut vec);
+                
+                let result = RgbaImage::from_raw(width, height, vec)
+                    .ok_or(NMSRRenderingError::ImageFromRawError);
+                
+                
+                drop(data);
+                output_buffer.unmap();
+
+                result
             })
         }
 
         read_buffer(device, &output_buffer, width, height).await
     }
+}
+
+/// Converts premultiplied RBGA to unmultipled RGBA.
+fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
+    rgba.chunks_exact_mut(4).for_each(|rgba| {
+        let a = rgba[3];
+        if a > 0 {
+            let a = f32::from(a) / 255.0;
+            rgba[0] = (f32::from(rgba[0]) / a) as u8;
+            rgba[1] = (f32::from(rgba[1]) / a) as u8;
+            rgba[2] = (f32::from(rgba[2]) / a) as u8;
+        }
+    })
 }
 
 impl SceneContext {

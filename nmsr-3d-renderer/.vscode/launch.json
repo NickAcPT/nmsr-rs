@@ -1,0 +1,35 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'nmsr-wgpu-windowed'",
+            "cargo": {
+                "args": [
+                    "build",
+                    //"--release",
+                    "--bin=nmsr-wgpu-windowed",
+                    "--package=nmsr-wgpu-windowed"
+                ],
+                "filter": {
+                    "name": "nmsr-wgpu-windowed",
+                    "kind": "bin"
+                }
+            },
+            "sourceLanguages": ["rust"],
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "WGPU_BACKEND": "vulkan",
+                "RUST_BACKTRACE": "1",
+                "WGPU_POWER_PREF": "low",
+                "NMSR_SAMPLE_COUNT": "1",
+                //"VK_ICD_FILENAMES": "D:\\IDEs\\CLionProjects\\nmsr-wgpu\\lvp_icd.x86_64.json"
+            }
+        }
+    ]
+}

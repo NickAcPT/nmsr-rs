@@ -37,6 +37,8 @@ use crate::utils::Result;
 pub(crate) enum RenderMode {
     FullBody,
     FrontFull,
+    #[cfg(feature = "wgpu")]
+    Bust,
     FullBodyIso,
     Head,
     HeadIso,
@@ -93,6 +95,11 @@ impl RenderMode {
             }
             RenderMode::Head | RenderMode::HeadIso | RenderMode::Face => {
                 vec![PlayerBodyPartType::Head, PlayerBodyPartType::HeadLayer]
+            }
+            RenderMode::Bust => {
+                let excluded = vec![PlayerBodyPartType::LeftLeg, PlayerBodyPartType::RightLeg];
+                
+                PlayerBodyPartType::iter().filter(|m| excluded.contains(&m.get_non_layer_part())).collect()
             }
         }
     }

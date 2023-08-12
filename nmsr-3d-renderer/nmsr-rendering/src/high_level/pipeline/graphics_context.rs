@@ -58,7 +58,7 @@ pub struct GraphicsContextDescriptor<'a> {
 }
 
 impl GraphicsContext {
-    pub const DEFAULT_TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
+    pub const DEFAULT_TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8Unorm;
     pub const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
     pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {

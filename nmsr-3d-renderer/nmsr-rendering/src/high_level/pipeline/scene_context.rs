@@ -240,6 +240,12 @@ impl SceneContext {
         let mut image: RgbaImage = image.convert();
 
         premultiply_alpha(&mut image);
+        
+        let format = if context.texture_format.is_srgb() {
+            TextureFormat::Rgba8UnormSrgb
+        } else {
+            TextureFormat::Rgba8Unorm
+        };
 
         let texture = context.device.create_texture_with_data(
             &context.queue,
@@ -252,7 +258,7 @@ impl SceneContext {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: TextureDimension::D2,
-                format: TextureFormat::Rgba8UnormSrgb,
+                format,
                 usage: TextureUsages::TEXTURE_BINDING,
                 label,
                 view_formats: &[],

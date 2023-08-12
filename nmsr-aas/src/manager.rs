@@ -2,7 +2,7 @@ use nmsr_rendering::{
     high_level::pipeline::Backends,
     high_level::{
         camera::{Camera, CameraRotation, ProjectionParameters},
-        pipeline::{GraphicsContext, GraphicsContextDescriptor},
+        pipeline::{GraphicsContext, GraphicsContextDescriptor, scene::SunInformation},
         types::PlayerBodyPartType,
     },
 };
@@ -70,9 +70,16 @@ impl RenderMode {
         }
     }
     
+    pub(crate) fn get_lighting(&self) -> SunInformation {
+        match self {
+            RenderMode::FullBody | RenderMode::FullBodyIso => SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.25),
+            _ => unimplemented!("wgpu rendering is not yet implemented"),
+        }
+    }
+    
     pub(crate) fn get_arm_rotation(&self) -> f32 {
         match self {
-            RenderMode::FullBody | RenderMode::FrontFull | RenderMode::FullBodyIso => 10.0,
+            RenderMode::FullBody | RenderMode::FullBodyIso => 10.0,
             _ => 0.0
         }
     }

@@ -43,7 +43,7 @@ pub(crate) async fn render_skin(
 pub(crate) async fn render_skin(
     parts_manager: &NMSRaaSManager,
     mode: &RenderMode,
-    resolved: ResolvedRenderRequest,
+    mut resolved: ResolvedRenderRequest,
     include_shading: bool,
     include_layers: bool,
 ) -> Result<Vec<u8>> {
@@ -56,7 +56,6 @@ pub(crate) async fn render_skin(
             scene::{Scene, Size},
             SceneContext,
         },
-        player_model::PlayerModel,
         types::PlayerPartTextureType,
     };
     use tracing::{trace_span, Span};
@@ -65,20 +64,28 @@ pub(crate) async fn render_skin(
 
     let setup_guard = trace_span!(parent: Span::current(), "setup").entered();
 
-    let skin_image =
-        trace_span!("process_skin").in_scope(|| {
-            resolved.textures.get(&RenderEntryTextureType::Skin).ok_or(
-                NMSRaaSError::GameProfileError("Missing skin texture".to_owned()),
-            )
-        })?;
+    let skin_image = trace_span!("process_skin").in_scope(|| {
+        resolved
+            .textures
+            .remove(&RenderEntryTextureType::Skin)
+            .ok_or(NMSRaaSError::GameProfileError(
+                "Missing skin texture".to_owned(),
+            ))
+    })?;
+    
+    let cape_image = resolved.textures.get(&RenderEntryTextureType::Cape);
+
+    let skin_image = process_skin(skin_image)?;
 
     let graphics_context = &parts_manager.graphics_context;
     let scene_context =
         trace_span!("build_scene_context").in_scope(|| SceneContext::new(graphics_context));
     let camera = mode.get_camera();
-    let sun = mode.get_lighting();
+    let sun = mode.get_lighting(!include_shading);
     let arm_rotation = mode.get_arm_rotation();
-    let body_parts = mode.get_body_parts();
+    let mut body_parts = mode.get_body_parts();
+    
+    body_parts.retain(|p| include_layers || !p.is_layer());
 
     let model = resolved.model.into();
 
@@ -86,7 +93,7 @@ pub(crate) async fn render_skin(
         model,
         has_layers: include_layers,
         arm_rotation,
-        has_cape: false,
+        has_cape: cape_image.is_some(),
     };
 
     const WIDTH: u32 = 512;
@@ -109,6 +116,10 @@ pub(crate) async fn render_skin(
 
     trace_span!("set_textures").in_scope(|| {
         scene.set_texture(graphics_context, PlayerPartTextureType::Skin, &skin_image);
+        
+        if let Some(cape) = cape_image {
+            scene.set_texture(graphics_context, PlayerPartTextureType::Cape, cape);
+        }
     });
 
     drop(setup_guard);

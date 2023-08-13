@@ -2,7 +2,7 @@ use nmsr_rendering::{
     high_level::pipeline::Backends,
     high_level::{
         camera::{Camera, CameraRotation, ProjectionParameters},
-        pipeline::{GraphicsContext, GraphicsContextDescriptor, scene::SunInformation},
+        pipeline::{scene::SunInformation, GraphicsContext, GraphicsContextDescriptor},
         types::PlayerBodyPartType,
     },
 };
@@ -57,35 +57,52 @@ pub(crate) struct NMSRaaSManager {
 #[cfg(feature = "wgpu")]
 impl RenderMode {
     pub(crate) fn get_camera(&self) -> Camera {
+        let look_at = [0.0, 16.5, 0.0].into();
+
         match self {
             RenderMode::FullBody => Camera::new_orbital(
-                [0.2, 16.5, 0.5].into(),
-                53.0,
+                look_at,
+                45.0,
                 CameraRotation {
-                    yaw: 24.28,
-                    pitch: 11.83,
+                    yaw: 25.0,
+                    pitch: 11.5,
                 },
-                ProjectionParameters::Perspective { fov: 37.5 },
+                ProjectionParameters::Perspective { fov: 45.0 },
+                1.0,
+            ),
+            RenderMode::FullBodyIso => Camera::new_orbital(
+                look_at,
+                45.0,
+                CameraRotation {
+                    yaw: 45.0,
+                    pitch: std::f32::consts::FRAC_1_SQRT_2.atan().to_degrees(),
+                },
+                ProjectionParameters::Orthographic { aspect: 17.0 },
                 1.0,
             ),
             _ => unimplemented!("wgpu rendering is not yet implemented"),
         }
     }
-    
-    pub(crate) fn get_lighting(&self) -> SunInformation {
-        match self {
-            RenderMode::FullBody | RenderMode::FullBodyIso => SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.25),
-            _ => unimplemented!("wgpu rendering is not yet implemented"),
+
+    pub(crate) fn get_lighting(&self, no_shading: bool) -> SunInformation {
+        if no_shading {
+            return SunInformation::new([0.0; 3].into(), 0.0, 1.0);
+        } else {
+            match self {
+                RenderMode::FullBody | RenderMode::FullBodyIso => {
+                    SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.7)
+                }
+                _ => SunInformation::new([0.0; 3].into(), 0.0, 1.0),
+            }
         }
     }
-    
+
     pub(crate) fn get_arm_rotation(&self) -> f32 {
         match self {
-            RenderMode::FullBody | RenderMode::FullBodyIso => 10.0,
-            _ => 0.0
+            RenderMode::FullBody => 10.0,
+            _ => 0.0,
         }
     }
-    
 
     #[instrument(level = "trace", skip(self))]
     pub(crate) fn get_body_parts(&self) -> Vec<PlayerBodyPartType> {
@@ -98,8 +115,10 @@ impl RenderMode {
             }
             RenderMode::Bust => {
                 let excluded = vec![PlayerBodyPartType::LeftLeg, PlayerBodyPartType::RightLeg];
-                
-                PlayerBodyPartType::iter().filter(|m| excluded.contains(&m.get_non_layer_part())).collect()
+
+                PlayerBodyPartType::iter()
+                    .filter(|m| excluded.contains(&m.get_non_layer_part()))
+                    .collect()
             }
         }
     }

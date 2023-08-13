@@ -408,7 +408,7 @@ fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {
     let mut top_left = face_uvs.top_left.to_uv(texture_size);
     let mut bottom_right = face_uvs.bottom_right.to_uv(texture_size);
 
-    let small_offset = 0.0;//001;
+    let small_offset = 0.0001;
 
     top_left += small_offset;
     bottom_right -= small_offset;

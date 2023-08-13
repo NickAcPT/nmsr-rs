@@ -8,7 +8,7 @@ build = "build.rs"
 # NMSR Lib - Library for rendering using NMSR's pre-baked UV files
 nmsr-lib = { path = "../nmsr-lib", features = ["parallel_iters"], optional = true }
 # NMSR Rendering - Library for rendering using a wgpu backed rendering engine
-nmsr-rendering = { path = "../../nmsr-wgpu/nmsr-rendering", optional = true }
+nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering", optional = true }
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
 
 image = { version = "0.24.6", features = ["png"], default-features = false }

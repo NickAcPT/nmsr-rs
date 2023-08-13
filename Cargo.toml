@@ -6,6 +6,9 @@ members = [
     "nmsr-aas",
     "utils/nmsr-multi-parts-organizer",
     "utils/nmsr-backfaces-optimizer",
+    "nmsr-3d-renderer/nmsr-player-parts",
+    "nmsr-3d-renderer/nmsr-rendering",
+    "nmsr-3d-renderer/nmsr-wgpu-windowed",
 ]
 
 [profile.dev.package.image]

@@ -10,11 +10,10 @@ use xxhash_rust::xxh3::xxh3_64;
 use crate::config::{CacheConfiguration, MojankConfiguration};
 use crate::manager::{NMSRaaSManager, RenderMode};
 use crate::model::resolver::RenderRequestResolver;
-use crate::model::{RenderRequest, RenderRequestEntry};
-use crate::mojang::caching::MojangCacheManager;
+use crate::model::{RenderRequest, RenderRequestEntry, RenderRequestEntryModel};
 use crate::renderer::render_skin;
 use crate::utils::errors::NMSRaaSError;
-use crate::{routes::model::PlayerRenderInput, utils::Result};
+use crate::utils::Result;
 
 #[derive(Deserialize, Default, Debug)]
 pub(crate) struct RenderData {
@@ -49,7 +48,20 @@ pub(crate) async fn render(
 
     let parts_manager = parts_manager.as_ref();
 
-    let render_request = RenderRequest::new_from_excluded_features(entry, None, EnumSet::EMPTY);
+    let steve_model = skin_info
+        .steve
+        .as_ref()
+        .map(|_| RenderRequestEntryModel::Steve);
+
+    let alex_model = skin_info
+        .alex
+        .as_ref()
+        .map(|_| RenderRequestEntryModel::Alex);
+
+    let model = steve_model
+        .or(alex_model);
+        
+    let render_request = RenderRequest::new_from_excluded_features(entry, model, EnumSet::EMPTY);
     let resolved = render_request_resolver.resolve(render_request).await?;
 
     let render_bytes = render_skin(
@@ -67,7 +79,11 @@ pub(crate) async fn render(
         .content_type("image/png")
         .append_header(CacheControl(vec![
             CacheDirective::Public,
-            CacheDirective::MaxAge(render_request_resolver.cache_config().mojang_profile_request_expiry),
+            CacheDirective::MaxAge(
+                render_request_resolver
+                    .cache_config()
+                    .mojang_profile_request_expiry,
+            ),
         ]))
         .append_header(ETag(EntityTag::new_strong(format!("{hash:x}"))))
         .body(render_bytes);
@@ -82,7 +98,7 @@ pub(crate) async fn render_head(
 ) -> Result<impl Responder> {
     let (_, entry) = get_render_data(path)?;
     let render_request = RenderRequest::new_from_excluded_features(entry, None, EnumSet::EMPTY);
-    
+
     drop(render_request_resolver.resolve(render_request).await?);
 
     Ok(HttpResponse::Ok()

@@ -39,8 +39,8 @@ pub(crate) enum NMSRaaSError {
     #[error("NMSR error: {0}")]
     #[cfg(feature = "uv")]
     NMSRError(#[from] nmsr_lib::errors::NMSRError),
-    #[error("IO error: {0}")]
-    IOError(#[from] std::io::Error),
+    #[error("IO error: {1} -> {0}")]
+    ExplainedIOError(std::io::Error, String),
     #[error("IO error: {0}")]
     #[cfg(feature = "uv")]
     VirtualIOError(VfsError),
@@ -99,5 +99,21 @@ impl<T> From<PoisonError<T>> for NMSRaaSError {
 impl From<VfsError> for NMSRaaSError {
     fn from(e: VfsError) -> Self {
         NMSRaaSError::VirtualIOError(e)
+    }
+}
+
+pub trait ExplainableIoError<R> {
+    fn explain<S>(self, explanation: S) -> R where S: Into<String>;
+}
+
+impl ExplainableIoError<NMSRaaSError> for std::io::Error {
+    fn explain<S>(self, explanation: S) -> NMSRaaSError where S: Into<String> {
+        NMSRaaSError::ExplainedIOError(self, explanation.into())
+    }
+}
+
+impl<T> ExplainableIoError<std::result::Result<T, NMSRaaSError>> for std::result::Result<T, std::io::Error> {
+    fn explain<S>(self, explanation: S) -> std::result::Result<T, NMSRaaSError> where S: Into<String> {
+        self.map_err(|e| e.explain(explanation))
     }
 }

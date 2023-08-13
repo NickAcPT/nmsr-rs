@@ -2,10 +2,10 @@ use std::{
     collections::HashMap,
     fs,
     path::PathBuf,
-    time::{Duration, SystemTime}, fmt::format,
+    time::{Duration, SystemTime},
 };
 
-use crate::utils::Result;
+use crate::utils::{errors::ExplainableIoError, Result};
 use strum::IntoEnumIterator;
 
 #[cfg(feature = "tracing")]
@@ -78,7 +78,8 @@ impl ModelCache {
     }
 
     fn get_texture_path(&self, name: &str) -> PathBuf {
-        self.get_base_texture_path().join(format!("{}{}", Into::<&str>::into(name), ".png"))
+        self.get_base_texture_path()
+            .join(format!("{}{}", Into::<&str>::into(name), ".png"))
     }
 
     fn get_base_resolved_path(&self) -> PathBuf {
@@ -118,7 +119,14 @@ impl ModelCache {
                 return Ok(true);
             }
 
-            let expiry = marker_path.metadata()?.modified()? + *duration;
+            let expiry = marker_path
+                .metadata()
+                .and_then(|m| m.modified())
+                .explain(format!(
+                    "Unable to get Marker modified metadata for {:?}",
+                    k
+                ))?
+                + *duration;
 
             return Ok(expiry < SystemTime::now());
         }
@@ -130,7 +138,8 @@ impl ModelCache {
         let path = self.get_texture_path(&name);
 
         if path.exists() {
-            let data = fs::read(path)?;
+            let data =
+                fs::read(path).explain(format!("Unable to read cached texture {:?}", name))?;
 
             Ok(Some(MojangTexture::new_named(name.to_owned(), data)))
         } else {
@@ -142,7 +151,8 @@ impl ModelCache {
         let texture_path = self.get_texture_path(&name);
 
         if !texture_path.exists() {
-            fs::write(&texture_path, data)?;
+            fs::write(&texture_path, data)
+                .explain(format!("Unable to write texture {:?} to cache", name))?;
         }
 
         Ok(texture_path)
@@ -163,16 +173,14 @@ impl ModelCache {
                 self.cache_remove(k)?;
                 return Ok(None);
             }
-            
-            
+
             let marker_path = self.marker_path(&k);
             if marker_path.is_none() {
                 return Ok(None);
             }
             let marker_path = marker_path.unwrap();
-            let marker = fs::read(marker_path)?;
-            
-                        
+            let marker =
+                fs::read(marker_path).explain(format!("Unable to read marker file for {:?}", k))?;
 
             let mut textures: HashMap<RenderEntryTextureType, MojangTexture> = HashMap::new();
 
@@ -180,11 +188,15 @@ impl ModelCache {
                 let texture_path = self.get_entry_texture_path(k, &texture);
 
                 if texture_path.exists() {
-                    textures.insert(texture, MojangTexture::new_unnamed(fs::read(texture_path)?));
+                    let read = fs::read(texture_path)
+                        .explain(format!("Unable to read texture {:?} for {:?}", texture, k))?;
+                    textures.insert(texture, MojangTexture::new_unnamed(read));
                 }
             }
 
-            Ok(Some(ResolvedRenderEntryTextures::new_from_marker_slice(textures, &marker)))
+            Ok(Some(ResolvedRenderEntryTextures::new_from_marker_slice(
+                textures, &marker,
+            )))
         } else {
             Ok(None)
         }
@@ -198,12 +210,14 @@ impl ModelCache {
         let base_path = self.get_base_path(k);
 
         if let Some(base_path) = base_path {
-            fs::create_dir_all(base_path)?;
+            fs::create_dir_all(base_path)
+                .explain(format!("Unable to create cache directory for {:?}", k))?;
 
             // Write our marker file to denote when we cached this entry
             let marker_path = self.marker_path(&k);
             if let Some(path) = marker_path {
-                fs::write(path, v.to_marker_slice())?;
+                fs::write(path, v.to_marker_slice())
+                    .explain(format!("Unable to write marker file for {:?}", k))?;
             }
 
             for (tex_type, texture) in v.textures.iter() {
@@ -212,7 +226,14 @@ impl ModelCache {
                     let cache_path = self.cache_texture(&texture.data, hash)?;
 
                     if !entry_texture_path.exists() {
-                        symlink::symlink_file(cache_path.canonicalize()?, entry_texture_path.canonicalize()?)?;
+                        let cache_path = cache_path
+                            .canonicalize()
+                            .explain(format!("Unable to canonicalize cache path for {:?}", hash))?;
+
+                        symlink::symlink_file(cache_path, entry_texture_path).explain(format!(
+                            "Unable to create symlink for texture {:?} for {:?}",
+                            hash, k
+                        ))?;
                     }
                 } else {
                     return Err(NMSRaaSError::InvalidPlayerRequest(
@@ -233,7 +254,8 @@ impl ModelCache {
 
         if let Some(path) = base_path {
             if path.exists() {
-                fs::remove_dir_all(path)?;
+                fs::remove_dir_all(path)
+                    .explain(format!("Unable to remove cache directory for {:?}", k))?;
             }
         }
 
@@ -248,7 +270,8 @@ impl ModelCache {
         ];
 
         for path in paths {
-            fs::create_dir_all(path)?;
+            fs::create_dir_all(&path)
+                .explain(format!("Unable to create cache directory {:?}", &path))?;
         }
 
         Ok(())

@@ -44,6 +44,7 @@ use crate::model::resolver::RenderRequestResolver;
 use crate::mojang::caching::MojangCacheManager;
 use crate::routes::index_route::index_head;
 use crate::utils::Result;
+use crate::utils::errors::ExplainableIoError;
 
 #[cfg(all(feature = "wgpu", feature = "uv"))]
 compile_error!("Cannot compile with both wgpu and uv features enabled. Please choose a single rendering engine.");
@@ -67,7 +68,7 @@ async fn main() -> Result<()> {
     let args = Args::parse();
 
     let config = match args.config {
-        Some(path) => toml::from_str(fs::read_to_string(path)?.as_str())?,
+        Some(path) => toml::from_str(fs::read_to_string(path).explain("Unable to read config file")?.as_str())?,
         None => ServerConfiguration::default(),
     };
     let config = Data::new(config);
@@ -185,8 +186,8 @@ async fn main() -> Result<()> {
 
         let certificate_chain = &tls.certificate_chain;
 
-        let cert_file = &mut BufReader::new(File::open(certificate_chain)?);
-        let key_file = &mut BufReader::new(File::open(private_key)?);
+        let cert_file = &mut BufReader::new(File::open(certificate_chain).explain("Unable to open certificate chain file")?);
+        let key_file = &mut BufReader::new(File::open(private_key).explain("Unable to open private key file")?);
 
         let cert_chain = certs(cert_file)
             .unwrap()
@@ -214,14 +215,14 @@ async fn main() -> Result<()> {
     info!("Binding to {:?}...", &addr);
 
     let server = if let Some(config) = tls_config {
-        server.bind_rustls(addr, config)?
+        server.bind_rustls(addr, config).explain("Failed to bind to address")?
     } else {
-        server.bind(addr)?
+        server.bind(addr).explain("Failed to bind to address")?
     };
 
     drop(server_init_span);
 
-    server.run().await?;
+    server.run().await.explain("Failed to run server")?;
 
     // Ensure all spans have been shipped.
     #[cfg(feature = "tracing")]

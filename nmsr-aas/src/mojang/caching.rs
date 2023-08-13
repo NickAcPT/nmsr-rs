@@ -19,6 +19,7 @@ use walkdir::WalkDir;
 use crate::manager::RenderMode;
 use crate::routes::render_body_route::RenderDataCacheKey;
 use crate::utils::Result;
+use crate::utils::errors::ExplainableIoError;
 
 use super::requests::UnwrappedGameProfileMetadata;
 
@@ -53,9 +54,9 @@ impl MojangCacheManager {
             if !entry.path().is_file() {
                 continue;
             }
-            let modified = entry.metadata()?.modified()?;
+            let modified = entry.metadata()?.modified().explain(format!("Failed to get modified time for {}", entry.path().display()))?;
             if now.duration_since(modified)? > self.renders_and_skin_cache_expiry {
-                fs::remove_file(entry.path())?;
+                fs::remove_file(entry.path()).explain(format!("Failed to remove {}", entry.path().display()))?;
             }
         }
 
@@ -77,9 +78,9 @@ impl MojangCacheManager {
             NonZeroU32::new(mojang_api_rate_limit).expect("mojang_api_rate_limit must be > 0"),
         ));
 
-        fs::create_dir_all(&root_path)?;
-        fs::create_dir_all(&skins_path)?;
-        fs::create_dir_all(&renders_path)?;
+        fs::create_dir_all(&root_path).explain(format!("Unable to create dir {}", &root_path.display()))?;
+        fs::create_dir_all(&skins_path).explain(format!("Unable to create dir {}", &skins_path.display()))?;
+        fs::create_dir_all(&renders_path).explain(format!("Unable to create dir {}", &renders_path.display()))?;
 
         let manager = MojangCacheManager {
             root: root_path,
@@ -97,7 +98,7 @@ impl MojangCacheManager {
         };
 
         for mode in RenderMode::iter() {
-            fs::create_dir_all(manager.get_cached_render_mode_path(&mode))?;
+            fs::create_dir_all(manager.get_cached_render_mode_path(&mode)).explain(format!("Unable to create dir for cached render mode {:?}", mode))?;
         }
 
         Ok(manager)
@@ -129,7 +130,9 @@ impl MojangCacheManager {
         let path = self.get_cached_skin_path(hash);
         if path.exists() {
             debug!("Found cached skin for hash {}", hash);
-            Ok(Some(fs::read(path)?))
+            let file = fs::read(path).explain(format!("Failed to read cached skin for hash {}", hash))?;
+            
+            Ok(Some(file))
         } else {
             debug!("No cached skin for hash {}", hash);
             Ok(None)
@@ -138,7 +141,7 @@ impl MojangCacheManager {
 
     pub(crate) fn cache_skin(&self, hash: &str, bytes: &Bytes) -> Result<()> {
         let path = self.get_cached_skin_path(hash);
-        fs::write(path, bytes)?;
+        fs::write(path, bytes).explain(format!("Failed to write cached skin for hash {}", hash))?;
         Ok(())
     }
 
@@ -158,7 +161,9 @@ impl MojangCacheManager {
         let path = self.get_cached_render_path(mode, hash, render_data);
         if path.exists() {
             debug!("Found cached render for hash {}", hash);
-            Ok(Some(fs::read(path)?))
+            let file = fs::read(path).explain(format!("Failed to read cached render for hash {}", hash))?;
+            
+            Ok(Some(file))
         } else {
             debug!("No cached render for hash {}", hash);
             Ok(None)
@@ -174,7 +179,7 @@ impl MojangCacheManager {
         bytes: &[u8],
     ) -> Result<()> {
         let path = self.get_cached_render_path(mode, hash, render_data);
-        fs::write(path, bytes)?;
+        fs::write(path, bytes).explain(format!("Failed to write cached render for hash {}", hash))?;
         Ok(())
     }
 

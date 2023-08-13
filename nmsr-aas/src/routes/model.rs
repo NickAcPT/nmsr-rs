@@ -6,7 +6,7 @@ use tracing::trace_span;
 
 use crate::mojang::caching::MojangCacheManager;
 use crate::mojang::requests;
-use crate::mojang::requests::CachedSkinHash;
+use crate::mojang::requests::UnwrappedGameProfileMetadata;
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 
@@ -45,7 +45,7 @@ impl PlayerRenderInput {
         mojank_config: &MojankConfiguration,
         client: &ClientWithMiddleware,
         _span: &tracing::Span,
-    ) -> Result<CachedSkinHash> {
+    ) -> Result<UnwrappedGameProfileMetadata> {
         Ok(match self {
             PlayerRenderInput::PlayerUuid(id) => {
                 let option = cache_manager
@@ -63,7 +63,7 @@ impl PlayerRenderInput {
                         guard.rate_limiter.clone()
                     };
                     let result = {
-                        requests::get_skin_hash_and_model(
+                        requests::get_unwrapped_gameprofile(
                             client,
                             &limiter,
                             *id,
@@ -83,8 +83,10 @@ impl PlayerRenderInput {
                     result
                 }
             }
-            PlayerRenderInput::TextureHash(hash) => CachedSkinHash::WithoutModel {
-                skin_hash: hash.clone(),
+            PlayerRenderInput::TextureHash(hash) => UnwrappedGameProfileMetadata {
+                skin_texture_hash: hash.clone(),
+                cape_texture_hash: None,
+                slim_arms: false
             },
         })
     }
@@ -96,13 +98,13 @@ impl PlayerRenderInput {
         mojank_config: &MojankConfiguration,
         client: &ClientWithMiddleware,
         _span: &tracing::Span,
-    ) -> Result<(CachedSkinHash, Bytes)> {
+    ) -> Result<(UnwrappedGameProfileMetadata, Bytes)> {
         let current_span = tracing::Span::current();
         let cached = self
             .fetch_skin_hash_and_model(cache_manager, mojank_config, client, &current_span)
             .await?;
 
-        let skin_hash = cached.get_hash();
+        let skin_hash = &cached.skin_texture_hash;
 
         let result = {
             let _guard_span = trace_span!(parent: &current_span, "read_cache_acquire").entered();
@@ -114,7 +116,7 @@ impl PlayerRenderInput {
         if let Some(bytes) = result {
             Ok((cached, Bytes::from(bytes)))
         } else {
-            let bytes_from_mojang = requests::fetch_skin_bytes_from_mojang(
+            let bytes_from_mojang = requests::fetch_texture_from_mojang(
                 skin_hash,
                 client,
                 &mojank_config.textures_server,

@@ -10,5 +10,3 @@ members = [
 
 [profile.dev.package.image]
 opt-level = 3
-[profile.release]
-debug = true

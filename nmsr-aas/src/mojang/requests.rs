@@ -32,11 +32,13 @@ struct GameProfileTextures {
 #[derive(Debug, Serialize, Deserialize)]
 struct Textures {
     #[serde(rename = "SKIN")]
-    pub(crate) skin: Skin,
+    pub(crate) skin: Texture,
+    #[serde(rename = "CAPE")]
+    pub(crate) cape: Option<Texture>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Skin {
+struct Texture {
     pub(crate) url: String,
     pub(crate) metadata: Option<SkinMetadata>,
 }
@@ -47,27 +49,11 @@ struct SkinMetadata {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum CachedSkinHash {
-    WithoutModel { skin_hash: String },
-    WithModel { skin_hash: String, slim_arms: bool },
+pub(crate) struct UnwrappedGameProfileMetadata {
+    pub(crate) skin_texture_hash: String,
+    pub(crate) cape_texture_hash: Option<String>,
+    pub(crate) slim_arms: bool,
 }
-
-impl CachedSkinHash {
-    pub(crate) fn get_hash(&self) -> &String {
-        match self {
-            CachedSkinHash::WithoutModel { skin_hash } => skin_hash,
-            CachedSkinHash::WithModel { skin_hash, .. } => skin_hash,
-        }
-    }
-
-    pub(crate) fn is_slim_arms(&self) -> bool {
-        match self {
-            CachedSkinHash::WithoutModel { .. } => false,
-            CachedSkinHash::WithModel { slim_arms, .. } => *slim_arms,
-        }
-    }
-}
-
 impl GameProfile {
     fn get_textures(&self) -> Result<GameProfileTextures> {
         let textures = self
@@ -112,36 +98,32 @@ async fn get_player_game_profile(
     feature = "tracing",
     instrument(level = "trace", skip(client, rate_limiter, id, session_server))
 )]
-pub(crate) async fn get_skin_hash_and_model(
+pub(crate) async fn get_unwrapped_gameprofile(
     client: &ClientWithMiddleware,
     rate_limiter: &RateLimiterType,
     id: Uuid,
     session_server: &String,
-) -> Result<CachedSkinHash> {
+) -> Result<UnwrappedGameProfileMetadata> {
     rate_limiter.until_ready().await;
 
     let game_profile = get_player_game_profile(client, session_server, id).await?;
-    let textures = game_profile.get_textures()?;
-    let skin = textures.textures.skin;
+    let gameprofile_textures = game_profile.get_textures()?;
+    let textures = gameprofile_textures.textures;
 
-    let url = skin.url;
+    let slim_arms = textures.skin.metadata.map(|m| m.model == "slim").unwrap_or(false);
 
-    let slim = skin.metadata.map(|m| m.model == "slim").unwrap_or(false);
+    let skin_texture_hash = get_texture_hash_from_url(textures.skin.url)?;
+    
+    let cape_texture_hash = textures.cape.and_then(|t| get_texture_hash_from_url(t.url).ok());
 
-    // Take only after last slash
-    let hash = get_skin_hash_from_url(url)?;
-
-    Ok(CachedSkinHash::WithModel {
-        skin_hash: hash,
-        slim_arms: slim,
-    })
+    Ok(UnwrappedGameProfileMetadata { skin_texture_hash , cape_texture_hash, slim_arms })
 }
 
-pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
+pub(crate) fn get_texture_hash_from_url(url: String) -> Result<String> {
     Ok(url
         .split('/')
         .last()
-        .ok_or_else(|| NMSRaaSError::InvalidHashSkinUrl(url.to_string()))?
+        .ok_or_else(|| NMSRaaSError::InvalidHashTextureUrl(url.to_string()))?
         .to_string())
 }
 
@@ -149,7 +131,7 @@ pub(crate) fn get_skin_hash_from_url(url: String) -> Result<String> {
     feature = "tracing",
     tracing::instrument(skip(hash, client, textures_server))
 )]
-pub(crate) async fn fetch_skin_bytes_from_mojang(
+pub(crate) async fn fetch_texture_from_mojang(
     hash: &str,
     client: &ClientWithMiddleware,
     textures_server: &String,
@@ -160,7 +142,7 @@ pub(crate) async fn fetch_skin_bytes_from_mojang(
         .await?;
 
     if !response.status().is_success() {
-        return Err(NMSRaaSError::InvalidHashSkinUrl(hash.to_string()));
+        return Err(NMSRaaSError::InvalidHashTextureUrl(hash.to_string()));
     }
 
     let bytes = response.bytes().await?;

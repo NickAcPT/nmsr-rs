@@ -17,16 +17,17 @@ use uuid::Uuid;
 use walkdir::WalkDir;
 
 use crate::manager::RenderMode;
-use crate::mojang::requests::CachedSkinHash;
 use crate::routes::render_body_route::RenderDataCacheKey;
 use crate::utils::Result;
+
+use super::requests::UnwrappedGameProfileMetadata;
 
 pub(crate) type RateLimiterType = RateLimiter<NotKeyed, InMemoryState, DefaultClock>;
 
 #[derive(Debug, Clone)]
 struct CachedUuidToSkinHash {
     time: Instant,
-    value: CachedSkinHash,
+    value: UnwrappedGameProfileMetadata,
 }
 
 #[derive(Debug)]
@@ -177,7 +178,7 @@ impl MojangCacheManager {
         Ok(())
     }
 
-    pub(crate) fn get_cached_uuid_to_skin_hash(&self, uuid: &Uuid) -> Option<&CachedSkinHash> {
+    pub(crate) fn get_cached_uuid_to_skin_hash(&self, uuid: &Uuid) -> Option<&UnwrappedGameProfileMetadata> {
         debug!("Checking cache for {}", uuid);
         if let Some(cached) = self.resolved_uuid_to_skin_hash_cache.get(uuid) {
             return if Self::is_cached_uuid_to_skin_hash_expired(
@@ -195,7 +196,7 @@ impl MojangCacheManager {
         None
     }
 
-    pub(crate) fn cache_uuid_to_skin_hash_and_model(&mut self, uuid: &Uuid, data: CachedSkinHash) {
+    pub(crate) fn cache_uuid_to_skin_hash_and_model(&mut self, uuid: &Uuid, data: UnwrappedGameProfileMetadata) {
         self.resolved_uuid_to_skin_hash_cache.insert(
             *uuid,
             CachedUuidToSkinHash {

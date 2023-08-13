@@ -3,10 +3,13 @@ use image::RgbaImage;
 #[cfg(feature = "uv")]
 use nmsr_lib::rendering::entry::RenderingEntry;
 
+use crate::model::resolver::ResolvedRenderRequest;
+
 use crate::manager::{NMSRaaSManager, RenderMode};
 use crate::utils::errors::NMSRaaSError;
 use crate::utils::Result;
 
+#[cfg(feature = "tracing")]
 use tracing::instrument;
 
 #[cfg(feature = "uv")]
@@ -36,12 +39,11 @@ pub(crate) async fn render_skin(
 }
 
 #[cfg(feature = "wgpu")]
-#[instrument(level = "trace", skip(parts_manager, skin_image))]
+#[cfg_attr(feature = "tracing", instrument(level = "trace", skip(parts_manager)))]
 pub(crate) async fn render_skin(
     parts_manager: &NMSRaaSManager,
     mode: &RenderMode,
-    skin_image: RgbaImage,
-    slim_arms: bool,
+    resolved: ResolvedRenderRequest,
     include_shading: bool,
     include_layers: bool,
 ) -> Result<Vec<u8>> {
@@ -59,8 +61,16 @@ pub(crate) async fn render_skin(
     };
     use tracing::{trace_span, Span};
 
+    use crate::model::resolver::RenderEntryTextureType;
+
     let setup_guard = trace_span!(parent: Span::current(), "setup").entered();
-    let skin_image = trace_span!("process_skin").in_scope(|| process_skin(skin_image))?;
+
+    let skin_image =
+        trace_span!("process_skin").in_scope(|| {
+            resolved.textures.get(&RenderEntryTextureType::Skin).ok_or(
+                NMSRaaSError::GameProfileError("Missing skin texture".to_owned()),
+            )
+        })?;
 
     let graphics_context = &parts_manager.graphics_context;
     let scene_context =
@@ -70,11 +80,7 @@ pub(crate) async fn render_skin(
     let arm_rotation = mode.get_arm_rotation();
     let body_parts = mode.get_body_parts();
 
-    let model = if slim_arms {
-        PlayerModel::Alex
-    } else {
-        PlayerModel::Steve
-    };
+    let model = resolved.model.into();
 
     let ctx = PlayerPartProviderContext {
         model,
@@ -104,7 +110,7 @@ pub(crate) async fn render_skin(
     trace_span!("set_textures").in_scope(|| {
         scene.set_texture(graphics_context, PlayerPartTextureType::Skin, &skin_image);
     });
-    
+
     drop(setup_guard);
 
     trace_span!("render").in_scope(|| scene.render(graphics_context))?;

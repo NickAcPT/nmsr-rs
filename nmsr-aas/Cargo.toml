@@ -48,6 +48,8 @@ xxhash-rust = { version = "0.8.6", features = ["xxh3"] }
 
 enumset = "1.1.2"
 
+symlink = "0.1.0"
+
 # Tracing for the win!
 tracing = { version = "0.1.37" }
 tracing-log = "0.1.3"

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::BufReader;
@@ -38,6 +39,8 @@ use {
 
 use crate::config::{MojankConfiguration, ServerConfiguration};
 use crate::manager::NMSRaaSManager;
+use crate::model::caching_v2::{ModelCache, ModelCacheConfiguration};
+use crate::model::resolver::RenderRequestResolver;
 use crate::mojang::caching::MojangCacheManager;
 use crate::routes::index_route::index_head;
 use crate::utils::Result;
@@ -100,6 +103,7 @@ async fn main() -> Result<()> {
     )?;
 
     let cache_manager = Data::new(RwLock::new(cache_manager));
+
     let cache_ref = cache_manager.clone().into_inner();
 
     actix_web::rt::spawn(async move {
@@ -128,6 +132,22 @@ async fn main() -> Result<()> {
     });
 
     let mojang_requests_client = build_mojang_request_client(&mojank_config)?;
+    let mojang_requests_client = Data::new(mojang_requests_client);
+    
+    let model_cache = ModelCache::new(HashMap::new(), "cache2".into(), ModelCacheConfiguration {
+        model_resolve_cache_duration: Duration::from_secs(config.cache.mojang_profile_request_expiry as u64),
+    });
+    let model_cache = Data::new(model_cache);
+
+    let request_resolver = RenderRequestResolver::new(
+        cache_config.clone().into_inner(),
+        mojang_requests_client.clone().into_inner(),
+        cache_manager.clone().into_inner(),
+        mojank_config.clone().into_inner(),
+        model_cache.into_inner(),
+    );
+    
+    let request_resolver = Data::new(request_resolver);
 
     info!("Starting server...");
 
@@ -147,10 +167,11 @@ async fn main() -> Result<()> {
         app.wrap(logger)
             .wrap(cors)
             .app_data(manager.clone())
-            .app_data(Data::new(mojang_requests_client.clone()))
+            .app_data(mojang_requests_client.clone())
             .app_data(mojank_config.clone())
             .app_data(cache_manager.clone())
             .app_data(cache_config.clone())
+            .app_data(request_resolver.clone())
             .service(index)
             .service(index_head)
             .service(get_skin)

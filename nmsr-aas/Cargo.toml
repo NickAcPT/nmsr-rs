@@ -1,84 +1,12 @@
 [package]
 name = "nmsr-aas"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 build = "build.rs"
 
 [dependencies]
 # NMSR Lib - Library for rendering using NMSR's pre-baked UV files
 nmsr-lib = { path = "../nmsr-lib", features = ["parallel_iters"], optional = true }
-# NMSR Rendering - Library for rendering using a wgpu backed rendering engine
-nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering", optional = true }
-ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
-
-image = { version = "0.24.6", features = ["png"], default-features = false }
-
-serde = { version = "1.0.163", features = ["derive"] }
-serde_json = "1.0.96"
-rayon = { version = "1.7.0", optional = true }
-bincode = "1.3.3"
-
-base64 = "0.21.2"
-
-actix-web = { version = "4.3.1", features = ["rustls"] }
-actix-cors = "0.6.4"
-reqwest = { version = "0.11.18", features = ["json", "rustls-tls"], default-features = false }
-
-reqwest-middleware = "0.2.2"
-reqwest-tracing = "0.4.5"
-
-rustls = { version = "0.20.8", features = ["logging"] }
-rustls-pemfile = "1.0.3"
-
-uuid = "1.4.1"
-thiserror = "1.0.43"
-
-parking_lot = "0.12.1"
-
-strum = { version = "0.25.0", features = ["derive"] }
-
-walkdir = "2.3.3"
-
-clap = { version = "4.3.15", features = ["derive"] }
-toml = "0.7.6"
-
-governor = "0.6.0"
-
-xxhash-rust = { version = "0.8.6", features = ["xxh3"] }
-
-enumset = "1.1.2"
-
-symlink = "0.1.0"
-
-# Tracing for the win!
-tracing = { version = "0.1.37" }
-tracing-log = "0.1.3"
-# Allows logging to console
-tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
-# Allows tracing of actix-web
-tracing-actix-web = { version = "0.7.5", optional = true, features = ["opentelemetry_0_19"] }
-# Allows tracing to opentelemetry
-tracing-opentelemetry = { version = "0.19.0", optional = true }
-opentelemetry = { version = "0.19.0", optional = true, features = ["rt-tokio-current-thread"] }
-opentelemetry-otlp = { version = "*", optional = true, features = ["tls-roots"] }
-futures-util = { version = "0.3.28", optional = true }
-
-mtpng = "0.3.5"
-renderdoc = { version = "0.11.0",features = ["ci"], optional = true }
-
-[features]
-default = ["wgpu", "tracing"]
-lazy_parts = ["nmsr-lib/serializable_parts", "rayon"]
-uv = ["dep:nmsr-lib"]
-wgpu = ["dep:nmsr-rendering"]
-renderdoc = ["dep:renderdoc"]
-ears = ["nmsr-lib/ears", "nmsr-rendering/ears"]
-tracing = ["dep:tracing-actix-web", "dep:tracing-opentelemetry", "dep:opentelemetry", "dep:opentelemetry-otlp", "reqwest-tracing/opentelemetry_0_19", "dep:futures-util"]
 
 [build-dependencies]
 vergen = { version = "8.2.1", default-features = false, features = ["git", "gitcl"] }
-
-[dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
-vfs = { version = "0.9.0", features = ["embedded-fs"] }
-rust-embed = "6.3.0"

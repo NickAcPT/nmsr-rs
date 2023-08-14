@@ -150,6 +150,11 @@ async fn main() -> Result<()> {
     
     let request_resolver = Data::new(request_resolver);
 
+    info!("Pre-warming the skin renderer...");
+    // Pre-warm the skin renderer (This guarantees that the first request will be fast if using LavaPipe)
+    manager.clone().pre_warm(request_resolver.clone().into_inner()).await?;
+    
+    
     info!("Starting server...");
 
     let server = HttpServer::new(move || {

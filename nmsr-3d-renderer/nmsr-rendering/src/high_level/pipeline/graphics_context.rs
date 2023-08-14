@@ -2,11 +2,11 @@ use std::{borrow::Cow, env, mem};
 
 use wgpu::{
     vertex_attr_array, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
-    ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
-    PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderStages, TextureSampleType,
-    TextureViewDimension, VertexBufferLayout, VertexState, BlendComponent, BlendFactor, BlendOperation,
+    BindingType, BlendState, BufferAddress, BufferBindingType,
+    BufferSize, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState, FragmentState,
+    FrontFace, MultisampleState, PipelineLayoutDescriptor, PresentMode, PrimitiveState,
+    RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
+    ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 use super::scene::{Size, SunInformation};
- 
+
 #[derive(Debug)]
 pub struct GraphicsContext {
     pub instance: Instance,
@@ -37,7 +37,7 @@ pub struct GraphicsContext {
 #[derive(Debug)]
 pub struct GraphicsContextLayouts {
     pub transform_bind_group_layout: BindGroupLayout,
-    pub skin_bind_group_layout: BindGroupLayout,
+    pub skin_sampler_bind_group_layout: BindGroupLayout,
     pub pipeline_layout: wgpu::PipelineLayout,
     pub sun_bind_group_layout: BindGroupLayout,
 }
@@ -142,19 +142,27 @@ impl GraphicsContext {
             });
 
         let skin_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: Some("Skin Texture Bind Group"),
-            entries: &[BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::FRAGMENT,
-                ty: BindingType::Texture {
-                    multisampled: false,
-                    view_dimension: TextureViewDimension::D2,
-                    sample_type: TextureSampleType::Float { filterable: true },
+            label: Some("Texture Bind Group"),
+            entries: &[
+                BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: TextureViewDimension::D2,
+                        sample_type: TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+                BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
         });
-        
+
         let sun_bind_group_layout = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: Some("Sun Bind Group"),
             entries: &[BindGroupLayoutEntry {
@@ -168,11 +176,15 @@ impl GraphicsContext {
                 count: None,
             }],
         });
-        
+
         // Create the pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Scene Pipeline Layout"),
-            bind_group_layouts: &[&transform_bind_group_layout, &skin_bind_group_layout, &sun_bind_group_layout],
+            bind_group_layouts: &[
+                &transform_bind_group_layout,
+                &skin_bind_group_layout,
+                &sun_bind_group_layout,
+            ],
             push_constant_ranges: &[],
         });
 
@@ -239,8 +251,8 @@ impl GraphicsContext {
             layouts: GraphicsContextLayouts {
                 pipeline_layout,
                 transform_bind_group_layout,
-                skin_bind_group_layout,
-                sun_bind_group_layout
+                skin_sampler_bind_group_layout: skin_bind_group_layout,
+                sun_bind_group_layout,
             },
         })
     }

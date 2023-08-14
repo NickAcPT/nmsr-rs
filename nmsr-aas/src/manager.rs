@@ -1,3 +1,9 @@
+use std::sync::Arc;
+
+#[cfg(feature = "renderdoc")]
+use std::sync::Mutex;
+
+use enumset::EnumSet;
 use nmsr_rendering::{
     high_level::pipeline::Backends,
     high_level::{
@@ -30,7 +36,10 @@ use {
     std::io::{BufReader, BufWriter, Write},
 };
 
-use crate::utils::Result;
+use crate::{renderer, utils::Result};
+
+#[cfg(feature = "wgpu")]
+use crate::model::{resolver::RenderRequestResolver, RenderRequest, RenderRequestEntry};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumString, EnumIter, EnumCount, Display)]
 #[strum(serialize_all = "lowercase")]
@@ -128,11 +137,18 @@ impl RenderMode {
 #[derive(Debug)]
 pub(crate) struct NMSRaaSManager {
     pub graphics_context: GraphicsContext,
+
+    #[cfg(feature = "renderdoc")]
+    pub renderdoc: Arc<Mutex<renderdoc::RenderDoc<renderdoc::V140>>>,
 }
 
 #[cfg(feature = "wgpu")]
 impl NMSRaaSManager {
     pub(crate) async fn new() -> Result<NMSRaaSManager> {
+        #[cfg(feature = "renderdoc")]
+        let renderdoc =
+            renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
+
         // Setup an nmsr wgpu rendering pipeline.
         // Since we are not rendering to a surface (i.e. a window), we don't need to provide
         // a surface, nor a default size.
@@ -150,7 +166,55 @@ impl NMSRaaSManager {
             graphics_context.sample_count
         );
 
-        Ok(NMSRaaSManager { graphics_context })
+        #[cfg(feature = "renderdoc")]
+        renderdoc
+            .launch_replay_ui(true, None)
+            .expect("Failed to launch RenderDoc replay UI");
+
+        let manager = NMSRaaSManager {
+            graphics_context,
+            #[cfg(feature = "renderdoc")]
+            renderdoc: Arc::new(Mutex::new(renderdoc)),
+        };
+
+        Ok(manager)
+    }
+
+    // Pre-warm the graphics context by rendering a single skin.
+    pub(crate) async fn pre_warm(&self, resolver: Arc<RenderRequestResolver>) -> Result<()> {
+        use crate::model::RenderRequestEntryModel;
+
+        // Generate a render request entry for NickAc (ad4569f3-7576-4376-a7c7-8e8cfcd9b832)
+        let model = RenderRequestEntry::TextureHash(
+            "86ed67a77cf4e00350b6e3a966f312d4f5a0170a028c0699e6043a2374f99ff5".to_owned(),
+        );
+        let request = RenderRequest::new_from_excluded_features(
+            model,
+            Some(RenderRequestEntryModel::Alex),
+            EnumSet::EMPTY,
+        );
+
+        let render = resolver.resolve(request).await?;
+
+        let _ = renderer::render_skin(self, &RenderMode::FullBody, render, false, true).await;
+
+        Ok(())
+    }
+
+    #[cfg(feature = "renderdoc")]
+    pub(crate) fn start_frame_capture(&self) {
+        self.renderdoc
+            .lock()
+            .expect("RenderDocMut")
+            .start_frame_capture(std::ptr::null(), std::ptr::null());
+    }
+
+    #[cfg(feature = "renderdoc")]
+    pub(crate) fn end_frame_capture(&self) {
+        self.renderdoc
+            .lock()
+            .expect("RenderDocMut")
+            .end_frame_capture(std::ptr::null(), std::ptr::null());
     }
 }
 

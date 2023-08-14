@@ -16,7 +16,7 @@ use tracing::{trace_span, instrument};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, IndexFormat, LoadOp, Operations,
-    RenderPassColorAttachment, RenderPassDepthStencilAttachment, TextureView,
+    RenderPassColorAttachment, RenderPassDepthStencilAttachment, TextureView, SamplerDescriptor, AddressMode, FilterMode, Extent3d,
 };
 
 use crate::high_level::pipeline::SceneContext;
@@ -220,12 +220,31 @@ impl Scene {
                 .get(&texture)
                 .ok_or(NMSRRenderingError::SceneContextTextureNotSet(texture))?
                 .view;
+            
+            let texture_sampler = device.create_sampler(&SamplerDescriptor {
+                label: Some(texture.into()),
+                address_mode_u: AddressMode::ClampToEdge,
+                address_mode_v: AddressMode::ClampToEdge,
+                address_mode_w: AddressMode::ClampToEdge,
+                mag_filter: FilterMode::Nearest,
+                min_filter: FilterMode::Nearest,
+                mipmap_filter: FilterMode::Nearest,
+                lod_min_clamp: 0.0,
+                lod_max_clamp: 0.0,
+                compare: None,
+                anisotropy_clamp: 1,
+                border_color: None,
+            });
 
-            let texture_bind_group = device.create_bind_group(&BindGroupDescriptor {
-                layout: &graphics_context.layouts.skin_bind_group_layout,
+            let texture_sampler_bind_group = device.create_bind_group(&BindGroupDescriptor {
+                layout: &graphics_context.layouts.skin_sampler_bind_group_layout,
                 entries: &[BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(texture_view),
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&texture_sampler),
                 }],
                 label: Some(texture.into()),
             });
@@ -277,7 +296,7 @@ impl Scene {
 
             rpass.set_pipeline(pipeline);
             rpass.set_bind_group(0, transform_bind_group, &[]);
-            rpass.set_bind_group(1, &texture_bind_group, &[]);
+            rpass.set_bind_group(1, &texture_sampler_bind_group, &[]);
             rpass.set_bind_group(2, sun_bind_group, &[]);
             rpass.set_index_buffer(index_buf.slice(..), IndexFormat::Uint16);
             rpass.set_vertex_buffer(0, vertex_buf.slice(..));
@@ -286,6 +305,30 @@ impl Scene {
             load_op = LoadOp::Load;
             depth_load_opt = LoadOp::Load;
         }
+        
+        let u32_size = std::mem::size_of::<u32>() as u32;
+        
+        encoder.copy_texture_to_buffer(
+            wgpu::ImageCopyTexture {
+                aspect: wgpu::TextureAspect::All,
+                texture: &textures.output_texture.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            wgpu::ImageCopyBuffer {
+                buffer: &textures.texture_output_buffer,
+                layout: wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(u32_size * self.viewport_size.width),
+                    rows_per_image: Some(self.viewport_size.height),
+                },
+            },
+            Extent3d {
+                width: self.viewport_size.width,
+                height: self.viewport_size.height,
+                depth_or_array_layers: 1,
+            },
+        );
 
         queue.submit(Some(encoder.finish()));
 
@@ -308,12 +351,10 @@ impl Scene {
     pub async fn copy_output_texture(
         &self,
         graphics_context: &GraphicsContext,
-    ) -> Result<RgbaImage> {
+    ) -> Result<Vec<u8>> {
         self.scene_context
             .copy_output_texture(
                 graphics_context,
-                self.viewport_size.width,
-                self.viewport_size.height,
             )
             .await
     }
@@ -408,7 +449,7 @@ fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {
     let mut top_left = face_uvs.top_left.to_uv(texture_size);
     let mut bottom_right = face_uvs.bottom_right.to_uv(texture_size);
 
-    let small_offset = 0.0001;
+    let small_offset = 0.001;//Vec2::ONE / texture_size / 32.0;//001;
 
     top_left += small_offset;
     bottom_right -= small_offset;

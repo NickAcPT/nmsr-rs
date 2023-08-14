@@ -47,9 +47,11 @@ pub(crate) async fn render_skin(
     include_shading: bool,
     include_layers: bool,
 ) -> Result<Vec<u8>> {
+    #[cfg(feature = "renderdoc")]
+    parts_manager.start_frame_capture();
+    
     use std::io::{BufWriter, Cursor};
 
-    use image::ImageOutputFormat;
     use nmsr_rendering::high_level::{
         parts::provider::PlayerPartProviderContext,
         pipeline::{
@@ -96,9 +98,9 @@ pub(crate) async fn render_skin(
         has_cape: cape_image.is_some(),
     };
 
-    const WIDTH: u32 = 512;
-    const HEIGHT: u32 = 832;
-
+    const WIDTH: u32 = 512/*  * 4 */;
+    const HEIGHT: u32 = 832/*  * 4 */;
+    
     let mut scene = trace_span!("build_scene").in_scope(|| {
         Scene::new(
             graphics_context,
@@ -126,20 +128,34 @@ pub(crate) async fn render_skin(
 
     trace_span!("render").in_scope(|| scene.render(graphics_context))?;
 
+    // Raw pixel bytes
     let render = {
         let _guard = trace_span!(parent: Span::current(), "copy_output_texture").entered();
 
         scene.copy_output_texture(graphics_context).await?
     };
-
-    let mut render_bytes = Vec::new();
+    
     // Write the image to a byte array
-    {
+    let render_bytes = {
+        let render_bytes = Vec::new();
+        
         let _guard = trace_span!("write_image_bytes").entered();
 
-        let mut writer = BufWriter::new(Cursor::new(&mut render_bytes));
-        render.write_to(&mut writer, ImageOutputFormat::Png)?;
-    }
+        let mut header = mtpng::Header::new();
+        header.set_size(WIDTH, HEIGHT).expect("Buddy, I expected this to work 1");
+        header.set_color(mtpng::ColorType::TruecolorAlpha, 8).expect("Buddy, I expected this to work 2");
+
+        let mut options = mtpng::encoder::Options::new();
+
+        let mut encoder = mtpng::encoder::Encoder::new(render_bytes, &options);
+
+        encoder.write_header(&header).expect("Buddy, I expected this to work 3");
+        encoder.write_image_rows(&render).expect("Buddy, I expected this to work 4");
+        encoder.finish().expect("Buddy, I expected this to work 5")
+    };
+
+    #[cfg(feature = "renderdoc")]
+    parts_manager.end_frame_capture();
 
     Ok(render_bytes)
 }

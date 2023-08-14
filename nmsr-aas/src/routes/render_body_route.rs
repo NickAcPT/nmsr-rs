@@ -1,13 +1,10 @@
 use actix_web::http::header::{CacheControl, CacheDirective, ETag, EntityTag, CONTENT_TYPE};
 use actix_web::web::Path;
-use actix_web::{get, head, web, web::Buf, HttpResponse, Responder};
-use enumset::{enum_set, EnumSet};
-use parking_lot::RwLock;
-use reqwest_middleware::ClientWithMiddleware;
+use actix_web::{get, head, web, HttpResponse, Responder};
+use enumset::EnumSet;
 use serde::Deserialize;
 use xxhash_rust::xxh3::xxh3_64;
 
-use crate::config::{CacheConfiguration, MojankConfiguration};
 use crate::manager::{NMSRaaSManager, RenderMode};
 use crate::model::resolver::RenderRequestResolver;
 use crate::model::{RenderRequest, RenderRequestEntry, RenderRequestEntryModel};

@@ -24,6 +24,7 @@ pub(crate) struct SceneContextTextures {
     pub(crate) depth_texture: SceneTexture,
     pub(crate) output_texture: SceneTexture,
     pub(crate) multisampled_output_texture: Option<SceneTexture>,
+    pub(crate) texture_output_buffer: Buffer
 }
 
 #[derive(Debug)]
@@ -39,94 +40,6 @@ pub struct SceneContext {
 pub struct SceneTexture {
     pub(crate) texture: Texture,
     pub(crate) view: TextureView,
-}
-
-impl SceneTexture {
-    #[instrument(skip(self, graphics_context))]
-    pub async fn copy_texture_from_gpu(
-        &self,
-        graphics_context: &GraphicsContext,
-        width: u32,
-        height: u32,
-    ) -> Result<RgbaImage> {
-        let device = &graphics_context.device;
-        let queue = &graphics_context.queue;
-
-        let u32_size = mem::size_of::<u32>() as u32;
-        let output_buffer_size = (u32_size * width * height) as wgpu::BufferAddress;
-        let output_buffer_desc = BufferDescriptor {
-            size: output_buffer_size,
-            usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
-            label: None,
-            mapped_at_creation: false,
-        };
-        let output_buffer = device.create_buffer(&output_buffer_desc);
-
-        let mut encoder = device.create_command_encoder(&Default::default());
-
-        encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture {
-                aspect: wgpu::TextureAspect::All,
-                texture: &self.texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            wgpu::ImageCopyBuffer {
-                buffer: &output_buffer,
-                layout: wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(u32_size * width),
-                    rows_per_image: Some(height),
-                },
-            },
-            Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        queue.submit(Some(encoder.finish()));
-
-        #[instrument(skip(device, output_buffer, width, height))]
-        async fn read_buffer(
-            device: &wgpu::Device,
-            output_buffer: &wgpu::Buffer,
-            width: u32,
-            height: u32,
-        ) -> Result<RgbaImage> {
-            let buffer_slice = output_buffer.slice(..);
-
-            let (tx, rx) = channel();
-            buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
-                tx.send(result).unwrap();
-            });
-            device.poll(wgpu::Maintain::Wait);
-            let span_guard = trace_span!(parent: Span::current(), "buffer_slice_wait").entered();
-            rx.await??;
-            drop(span_guard);
-
-            let data = buffer_slice.get_mapped_range();
-
-            trace_span!("image_from_raw").in_scope(|| {
-                let vec = data.to_vec();
-
-                let mut result = RgbaImage::from_raw(width, height, vec)
-                    .ok_or(NMSRRenderingError::ImageFromRawError);
-
-                if let Ok(image) = result.as_mut() {
-                    unmultiply_alpha(image);
-                }
-
-                drop(data);
-                output_buffer.unmap();
-
-                result
-            })
-        }
-
-        read_buffer(device, &output_buffer, width, height).await
-    }
 }
 
 impl SceneContext {
@@ -146,7 +59,7 @@ impl SceneContext {
             &context.layouts.sun_bind_group_layout,
             &[SunInformation::default()],
         );
-
+        
         Self {
             transform_bind_group,
             transform_matrix_buffer,
@@ -223,12 +136,24 @@ impl SceneContext {
             Some("Final Output Texture"),
             1,
         );
+        
+        let u32_size = mem::size_of::<u32>() as u32;
+        let output_buffer_size = (u32_size * viewport_size.width * viewport_size.height) as wgpu::BufferAddress;
+        let output_buffer_desc = BufferDescriptor {
+            size: output_buffer_size,
+            usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
+            label: Some("Output Texture Buffer"),
+            mapped_at_creation: false,
+        };
+        
+        let texture_output_buffer = graphics_context.device.create_buffer(&output_buffer_desc);
 
         // Save our textures
         self.textures = Some(SceneContextTextures {
             depth_texture,
             output_texture,
             multisampled_output_texture,
+            texture_output_buffer
         })
     }
 
@@ -279,15 +204,39 @@ impl SceneContext {
     pub async fn copy_output_texture(
         &self,
         graphics_context: &GraphicsContext,
-        width: u32,
-        height: u32,
-    ) -> Result<RgbaImage> {
+        
+    ) -> Result<Vec<u8>> {
         let textures = self.try_textures()?;
-        let output_texture = &textures.output_texture;
+        
+        Self::read_buffer(&graphics_context.device, &textures.texture_output_buffer).await
+    }
+    
+    #[instrument(skip(device, output_buffer))]
+    async fn read_buffer(
+        device: &wgpu::Device,
+        output_buffer: &wgpu::Buffer,
+    ) -> Result<Vec<u8>> {
+        let span_guard = trace_span!(parent: Span::current(), "buffer_slice_wait").entered();
+        let buffer_slice = output_buffer.slice(..);
 
-        output_texture
-            .copy_texture_from_gpu(graphics_context, width, height)
-            .await
+        let (tx, rx) = channel();
+        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
+            tx.send(result).unwrap();
+        });
+        device.poll(wgpu::Maintain::Wait);
+        rx.await??;
+        drop(span_guard);
+
+        let data = buffer_slice.get_mapped_range();
+
+        trace_span!("image_from_raw").in_scope(|| {
+            let vec = data.to_vec();
+
+            drop(data);
+            output_buffer.unmap();
+
+            Ok(vec)
+        })
     }
 }
 
@@ -300,6 +249,7 @@ fn premultiply_alpha(image: &mut RgbaImage) {
     }
 }
 
+#[instrument(skip(image))]
 fn unmultiply_alpha(image: &mut RgbaImage) {
     for pixel in image.pixels_mut() {
         let alpha = pixel[3] as f32 / 255.0;

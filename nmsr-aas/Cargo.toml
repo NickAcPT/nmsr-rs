@@ -5,8 +5,77 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
-# NMSR Lib - Library for rendering using NMSR's pre-baked UV files
-nmsr-lib = { path = "../nmsr-lib", features = ["parallel_iters"], optional = true }
+# NMSR Rendering - Library for rendering using a wgpu backed rendering engine
+nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering", optional = true }
+
+# Axum - Web server framework
+axum = "0.6.20"
+
+# async-trait - Async trait support because Rust is bad at async
+async-trait = "0.1.73"
+
+# Twelf - Configuration library
+twelf = { version = "0.12.0", default-features = false, features = [
+    "env",
+    "toml",
+] }
+
+# Serde - Serialization and Deserialization framework
+serde = "1.0.183"
+serde_json = "1.0.105"
+
+base64 = "0.21.2"
+
+# Hyper - HTTP client
+hyper = { version = "0.14.27", features = ["full"] }
+hyper-tls = "0.5.0"
+
+# Tokio - Async runtime
+tokio = { version = "1.12.0", features = ["full"] }
+
+# Tracing - Logging framework
+tracing = "0.1.37"
+
+# Tracing subscriber - Composing Tracing subscribers
+tracing-subscriber = "0.3.17"
+
+# OpenTelemetry - Tracing framework
+opentelemetry = { version = "0.20.0", optional = true, features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.13.0", default-features = true }
+
+# Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
+tracing-opentelemetry = "0.20.0"
+
+# Strum - Enum helper library
+strum = { version = "0.25.0", features = ["derive"] }
+# Enumset - Enumset library
+enumset = "1.1.2"
+
+# Uuid - Uuid library
+uuid = { version = "1.4.1", features = ["serde"] }
+
+# ThisError - Error library
+thiserror = "1.0.45"
+
+# Derive More - More derive macros because Rust's standard library doesn't have enough
+derive_more = { version = "1.0.0-beta.3", features = ["deref", "debug"] }
+
+# Tower - Service framework
+tower = { version = "0.4.13", features = ["limit", "retry"] }
+
+# rkyv - Serialization library for model chaching markers
+rkyv = "0.7.42"
+
+# symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
+symlink = "0.1.0"
+humantime-serde = "1.1.1"
+
+[features]
+default = ["opentelemetry"]
+opentelemetry = ["dep:opentelemetry"]
 
 [build-dependencies]
-vergen = { version = "8.2.1", default-features = false, features = ["git", "gitcl"] }
+vergen = { version = "8.2.4", default-features = false, features = [
+    "git",
+    "gitcl",
+] }

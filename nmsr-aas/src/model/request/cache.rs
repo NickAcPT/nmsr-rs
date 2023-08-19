@@ -1,20 +1,11 @@
-use std::{
-    collections::HashMap,
-    fs::Metadata,
-    marker::{self, PhantomData},
-    path::PathBuf,
-    time::Duration,
-};
+use std::{collections::HashMap, path::PathBuf, time::Duration, marker::PhantomData};
 
-use async_trait::async_trait;
-use derive_more::Deref;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use tracing::instrument;
 
 use crate::{
     config::ModelCacheConfiguration,
-    error::ModelCacheResult,
     model::resolver::{MojangTexture, ResolvedRenderEntryTextureType, ResolvedRenderEntryTextures},
 };
 
@@ -24,127 +15,9 @@ pub(crate) enum CacheBias {
     CacheIndefinitely,
 }
 
-pub(crate) struct ModelTexturesCacheHandler;
-
-#[derive(Deref)]
-#[repr(transparent)]
 pub(crate) struct ModelCache {
-    cache: CacheSystem<
-        RenderRequestEntry,
-        ResolvedRenderEntryTextures,
-        ModelCacheConfiguration,
-        (),
-        ModelTexturesCacheHandler,
-    >,
-}
-
-#[async_trait]
-impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheConfiguration, ()>
-    for ModelTexturesCacheHandler
-{
-    async fn get_cache_key(
-        &self,
-        entry: &RenderRequestEntry,
-        _config: &ModelCacheConfiguration,
-    ) -> Result<Option<String>> {
-        Ok(match entry {
-            RenderRequestEntry::PlayerUuid(u) => Some(u.to_string()),
-            RenderRequestEntry::TextureHash(h) => Some(h.to_string()),
-            RenderRequestEntry::PlayerSkin(_) => None,
-        })
-    }
-    async fn is_expired(
-        &self,
-        entry: &RenderRequestEntry,
-        config: &ModelCacheConfiguration,
-        marker: (),
-        marker_metadata: Metadata,
-    ) -> Result<bool> {
-        let bias = config.cache_biases.get(entry);
-
-        let duration = if let Some(bias) = bias {
-            match bias {
-                CacheBias::KeepCachedFor(duration) => duration,
-                CacheBias::CacheIndefinitely => &Duration::MAX,
-            }
-        } else {
-            &config.resolve_cache_duration
-        };
-
-        // Short-circuit never expiring entry.
-        if duration == &Duration::MAX {
-            return Ok(false);
-        }
-
-        let expiry = marker_metadata.modified().explain(format!(
-            "Unable to get marker modified date for entry {:?}",
-            &entry
-        ))? + *duration;
-
-        return Ok(expiry < SystemTime::now());
-    }
-
-    async fn write_cache(
-        &self,
-        entry: &RenderRequestEntry,
-        value: &ResolvedRenderEntryTextures,
-        config: &ModelCacheConfiguration,
-        file: PathBuf,
-    ) -> Result<()> {
-    }
-
-    async fn read_cache(
-        &self,
-        entry: &RenderRequestEntry,
-        config: &ModelCacheConfiguration,
-        base: PathBuf,
-        marker: (),
-    ) -> Result<Option<ResolvedRenderEntryTextures>> {
-        let mut textures = HashMap::new();
-
-        for texture in ResolvedRenderEntryTextureType::iter() {
-            let mut texture_path = base.clone();
-            texture_path.push(format!("{}{}", Into::<&str>::into(texture), ".png"));
-
-            if texture_path.exists() {
-                let read = fs::read(texture_path).explain(format!(
-                    "Unable to read texture {:?} for {:?}",
-                    texture, &entry
-                ))?;
-
-                textures.insert(texture, MojangTexture::new_unnamed(read));
-            }
-        }
-
-        let marker = [3];
-
-        Ok(Some(ResolvedRenderEntryTextures::new_from_marker_slice(
-            textures, &marker,
-        )))
-    }
-
-    async fn read_marker(
-        &self,
-        entry: &RenderRequestEntry,
-        config: &ModelCacheConfiguration,
-        marker: PathBuf,
-    ) -> Result<()> {
-        // TODO: Read marker file
-        Ok(())
-    }
-
-    async fn write_marker(
-        &self,
-        entry: &RenderRequestEntry,
-        value: &ResolvedRenderEntryTextures,
-        config: &ModelCacheConfiguration,
-        marker: PathBuf,
-    ) -> Result<()> {
-        fs::write(marker, value.to_marker_slice())
-            .explain(format!("Unable to write marker file for {:?}", entry))?;
-
-        Ok(())
-    }
+    cache_path: PathBuf,
+    cache_config: ModelCacheConfiguration,
 }
 
 use std::{fs, time::SystemTime};
@@ -153,76 +26,21 @@ use crate::error::{ExplainableExt, ModelCacheError, Result};
 
 use super::entry::RenderRequestEntry;
 
-struct CacheSystem<
-    Key,
-    ResultEntry,
-    Config,
-    Marker,
-    Handler: CacheHandler<Key, ResultEntry, Config, Marker>,
-> {
+struct CacheSystem<Entry, Config> {
     config: Config,
-    handler: Handler,
-    _phantom: PhantomData<(Key, ResultEntry, Marker)>,
-}
-
-#[async_trait]
-trait CacheHandler<Key, Value, Config, Marker> {
-    /// Gets the cache key for the given entry.
-    ///
-    /// If the entry is not cached, this should return `None`.
-    async fn get_cache_key(&self, entry: &Key, config: &Config) -> Result<Option<String>>;
-
-    /// Checks whether the given entry is expired.
-    ///
-    /// If the entry is expired, it will be removed from the cache if it exists.
-    async fn is_expired(
-        &self,
-        entry: &Key,
-        config: &Config,
-        marker: Marker,
-        marker_metadata: Metadata,
-    ) -> Result<bool>;
-
-    /// Writes the given entry to the cache.
-    async fn write_cache(
-        &self,
-        entry: &Key,
-        value: &Value,
-        config: &Config,
-        file: PathBuf,
-    ) -> Result<()>;
-
-    /// Reads the given entry from the cache.
-    async fn read_cache(
-        &self,
-        entry: &Key,
-        config: &Config,
-        file: PathBuf,
-        marker: Marker,
-    ) -> Result<Option<Value>>;
-
-    /// Read the marker file for the given entry.
-    ///
-    /// The marker file is used to denote when the entry was cached.
-    /// It can be empty, but it must exist.
-    async fn read_marker(&self, entry: &Key, config: &Config, marker: PathBuf) -> Result<Marker>;
-
-    /// Writes the marker file for the given entry.
-    ///
-    /// The marker file is used to denote when the entry was cached.
-    /// It can be empty, but it must exist.
-    async fn write_marker(
-        &self,
-        entry: &Key,
-        value: &Value,
-        config: &Config,
-        marker: PathBuf,
-    ) -> Result<()>;
+    _phantom: PhantomData<Entry>,
 }
 
 impl ModelCache {
-    pub(crate) fn new(cache_path: PathBuf, cache_config: ModelCacheConfiguration) -> Result<()> {
-        Ok(())
+    pub(crate) fn new(cache_path: PathBuf, cache_config: ModelCacheConfiguration) -> Result<Self> {
+        let cache = Self {
+            cache_path,
+            cache_config,
+        };
+
+        cache.init_dirs()?;
+
+        Ok(cache)
     }
 
     fn as_key(k: &RenderRequestEntry) -> Option<String> {
@@ -231,6 +49,98 @@ impl ModelCache {
             RenderRequestEntry::TextureHash(h) => Some(h.to_string()),
             RenderRequestEntry::PlayerSkin(_) => None,
         }
+    }
+
+    fn get_entry_texture_path(
+        &self,
+        entry: &RenderRequestEntry,
+        texture: &ResolvedRenderEntryTextureType,
+    ) -> PathBuf {
+        self.get_base_path(&entry)
+            .map(|p| p.join(format!("{}{}", Into::<&str>::into(texture), ".png")))
+            .unwrap()
+    }
+
+    fn get_base_texture_path(&self) -> PathBuf {
+        self.cache_path.join("textures")
+    }
+
+    fn get_texture_path(&self, name: &str) -> PathBuf {
+        self.get_base_texture_path()
+            .join(format!("{}{}", Into::<&str>::into(name), ".png"))
+    }
+
+    fn get_base_resolved_path(&self) -> PathBuf {
+        self.cache_path.join("resolved")
+    }
+
+    fn get_base_path(&self, k: &RenderRequestEntry) -> Option<PathBuf> {
+        Self::as_key(k).map(|p| self.get_base_resolved_path().join(p))
+    }
+
+    fn marker_path(&self, k: &RenderRequestEntry) -> Option<PathBuf> {
+        self.get_base_path(k).map(|p| p.join("marker"))
+    }
+
+    fn is_expired(&self, k: &RenderRequestEntry) -> Result<bool> {
+        let bias = self.cache_config.cache_biases.get(k);
+
+        let duration = if let Some(bias) = bias {
+            match bias {
+                CacheBias::KeepCachedFor(duration) => duration,
+                CacheBias::CacheIndefinitely => &Duration::MAX,
+            }
+        } else {
+            &self.cache_config.resolve_cache_duration
+        };
+
+        // Short-circuit never expiring entry.
+        if duration == &Duration::MAX {
+            return Ok(false);
+        }
+
+        let marker_path = self.marker_path(k);
+
+        if let Some(marker_path) = marker_path {
+            // Our marker doesn't exist, expire the cache because something went wrong when writing to the cache
+            if !marker_path.exists() {
+                return Ok(true);
+            }
+
+            let expiry = marker_path
+                .metadata()
+                .and_then(|m| m.modified())
+                .map_err(|_| ModelCacheError::MarkerMetadataError(k.clone()))?
+                + *duration;
+
+            return Ok(expiry < SystemTime::now());
+        }
+
+        Ok(false)
+    }
+
+    pub(crate) fn get_cached_texture(&self, name: &str) -> Result<Option<MojangTexture>> {
+        let path = self.get_texture_path(&name);
+
+        if path.exists() {
+            let data =
+                fs::read(path).explain(format!("Unable to read cached texture {:?}", name))?;
+
+            Ok(Some(MojangTexture::new_named(name.to_owned(), data)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub(crate) fn cache_texture(&self, data: &[u8], name: &str) -> Result<PathBuf> {
+        let texture_path = self.get_texture_path(&name);
+
+        if !texture_path.exists() {
+            fs::write(&texture_path, data)
+                .explain(format!("Unable to write texture {:?} to cache", name))?;
+        }
+
+        Ok(texture_path)
     }
 
     #[instrument(skip(self))]

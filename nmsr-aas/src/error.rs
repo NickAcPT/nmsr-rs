@@ -20,7 +20,6 @@ pub enum RenderRequestError {
     InvalidPlayerRequest(String),
     #[error("Io error: {0}")]
     ExplainedIoError(std::io::Error, String),
-    
 }
 
 #[derive(Error, Debug)]
@@ -30,7 +29,6 @@ pub enum ModelCacheError {
     #[error("Invalid player request attempt: {0}")]
     InvalidRequestCacheAttempt(String),
 }
-
 
 #[derive(Error, Debug)]
 pub enum MojangRequestError {
@@ -46,7 +44,6 @@ pub enum MojangRequestError {
     InvalidTexturesProperty(serde_json::Error),
 }
 
-
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;
 pub(crate) type RenderRequestResult<T> = std::result::Result<T, RenderRequestError>;
 pub(crate) type ModelCacheResult<T> = std::result::Result<T, ModelCacheError>;
@@ -59,5 +56,5 @@ pub trait ExplainableExt<T> {
 impl<T> ExplainableExt<T> for std::result::Result<T, std::io::Error> {
     fn explain(self, message: String) -> Result<T> {
         self.map_err(|e| RenderRequestError::ExplainedIoError(e, message).into())
-    }    
+    }
 }

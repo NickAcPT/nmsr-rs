@@ -1,7 +1,7 @@
-mod routes;
-mod model;
 mod config;
 pub mod error;
+mod model;
+mod routes;
 
 use tokio::main;
 

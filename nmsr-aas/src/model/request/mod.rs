@@ -1,11 +1,11 @@
 use derive_more::Debug;
-use enumset::{EnumSetType, EnumSet};
+use enumset::{EnumSet, EnumSetType};
 use strum::EnumString;
 
 use self::entry::{RenderRequestEntry, RenderRequestEntryModel};
 
-pub mod entry;
 pub mod cache;
+pub mod entry;
 
 #[derive(EnumSetType, EnumString, Debug)]
 #[strum(serialize_all = "snake_case")]

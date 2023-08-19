@@ -1,10 +1,4 @@
-use std::{
-    collections::HashMap,
-    fs::Metadata,
-    marker::PhantomData,
-    path::PathBuf,
-    time::Duration,
-};
+use std::{collections::HashMap, fs::Metadata, marker::PhantomData, path::PathBuf, time::Duration};
 
 use async_trait::async_trait;
 use derive_more::Deref;

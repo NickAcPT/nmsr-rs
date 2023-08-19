@@ -1,14 +1,14 @@
-use std::{time::Duration, collections::HashMap};
+use std::{collections::HashMap, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use twelf::config;
 
-use crate::model::request::{entry::RenderRequestEntry, cache::CacheBias};
+use crate::model::request::{cache::CacheBias, entry::RenderRequestEntry};
 
 #[config]
 #[derive(Default)]
 pub struct Configuration {
-    pub caching: ModelCacheConfiguration    
+    pub caching: ModelCacheConfiguration,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -23,7 +23,7 @@ pub struct ModelCacheConfiguration {
     /// This is effectively for how long to cache the rendered outputs.
     #[serde(with = "humantime_serde")]
     pub(crate) render_cache_duration: Duration,
-    
+
     /// Cache biases for specific entries.
     /// A cache bias is a duration of time to keep a specific entry in the cache.
     /// This is useful for entries that are requested often, such as the models in the home page.

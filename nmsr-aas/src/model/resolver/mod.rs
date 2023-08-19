@@ -116,7 +116,8 @@ impl RenderRequestResolver {
     async fn resolve_entry_textures(
         &self,
         entry: RenderRequestEntry,
-    ) -> Result<ResolvedRenderEntryTextures> {/* 
+    ) -> Result<ResolvedRenderEntryTextures> {
+        /*
         if let Some(result) = self.model_cache.get_cached_resolved_entity(&entry)? {
             return Ok(result);
         }

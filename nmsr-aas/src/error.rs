@@ -28,6 +28,8 @@ pub enum ModelCacheError {
     MarkerMetadataError(super::model::request::entry::RenderRequestEntry),
     #[error("Invalid player request attempt: {0}")]
     InvalidRequestCacheAttempt(String),
+    #[error("Invalid cache entry marker request: {0}")]
+    InvalidCacheEntryMarkerRequest(String),
 }
 
 #[derive(Error, Debug)]

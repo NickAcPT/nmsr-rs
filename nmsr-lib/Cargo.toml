@@ -2,7 +2,9 @@
 name = "nmsr-lib"
 version = "0.2.2"
 edition = "2021"
-authors = ["NickAcPT"]
+
+authors.workspace = true
+homepage.workspace = true
 
 [dependencies]
 image = { version = "0.24.6", features = ["png"], default-features = false }

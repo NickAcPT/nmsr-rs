@@ -1,5 +1,11 @@
 [workspace]
 
+package.authors = [
+    "NickAcPT"
+]
+
+package.homepage = "https://github.com/NickAcPT/nmsr-rs"
+
 members = [
     "nmsr-lib",
     #"nmsr-jni",

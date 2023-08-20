@@ -2,7 +2,9 @@
 name = "nmsr-jni"
 version = "0.1.0"
 edition = "2021"
-authors = ["NickAcPT"]
+
+authors.workspace = true
+homepage.workspace = true
 
 [dependencies]
 nmsr-lib = { path = "../nmsr-lib" }

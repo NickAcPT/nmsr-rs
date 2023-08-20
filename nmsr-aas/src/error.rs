@@ -44,6 +44,10 @@ pub enum MojangRequestError {
     MissingTexturesProperty,
     #[error("Game profile has an invalid textures property: {0}")]
     InvalidTexturesProperty(serde_json::Error),
+    #[error("Url parse error: {0}")]
+    UrlParseError(#[from] url::ParseError),
+    #[error("Request error: {0}")]
+    RequestError(#[from] reqwest::Error),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;

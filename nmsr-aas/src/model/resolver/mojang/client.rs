@@ -1,35 +1,59 @@
+use reqwest::{Client, Method, Request, RequestBuilder, Response, Url};
 use std::time::Duration;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use hyper::{client::HttpConnector, Client};
-use hyper_tls::HttpsConnector;
-use tower::{
-    limit::{rate::Rate, RateLimit},
-    retry::{budget::Budget, Retry},
-};
+use tower::{buffer::Buffer, limit::RateLimit, retry::budget::Budget, Service, ServiceBuilder};
 
-use crate::error::Result;
+use crate::error::{MojangRequestError, MojangRequestResult};
+
+use super::model::GameProfile;
 
 pub struct MojangClient {
-    client: Retry<Budget, RateLimit<Client<HttpsConnector<HttpConnector>>>>,
+    client: RwLock<RateLimit<reqwest::Client>>,
+}
+
+#[test]
+fn owo() {
+    println!(env!("CARGO_PKG_AUTHORS"))
 }
 
 impl MojangClient {
-    pub fn new(rate_limit_per_second: u64) -> Self {
-        let rate = Rate::new(rate_limit_per_second, Duration::from_secs(1));
-        let budget = Budget::new(Duration::from_secs(2), 2, 5.0);
+    const USER_AGENT: &'static str = concat!(
+        "NMSR-as-a-Service/",
+        env!("CARGO_PKG_VERSION"),
+        " (Discord=@nickacpt; +https://nmsr.nickac.dev/)"
+    );
 
-        let https = HttpsConnector::new();
+    pub fn new(rate_limit_per_second: u64) -> MojangRequestResult<Self> {
+        let client = Client::builder().user_agent(Self::USER_AGENT).build()?;
 
-        let client = Client::builder().build::<_, hyper::Body>(https);
-        let client = RateLimit::new(client, rate);
+        let service = ServiceBuilder::new()
+            .rate_limit(rate_limit_per_second, Duration::from_secs(1))
+            .service(client);
 
-        let client = Retry::new(budget, client);
-
-        Self { client }
+        Ok(MojangClient {
+            client: RwLock::new(service),
+        })
     }
 
-    pub fn resolve_uuid_to_game_profile(id: Uuid) -> Result<()> {
-        unimplemented!()
+    async fn do_request(&self, url: &str, method: Method) -> MojangRequestResult<Response> {
+        let request = Request::new(method, Url::parse(url)?);
+
+        let response = {
+            let mut client = self.client.write().await;
+            client.call(request).await?
+        }
+        .error_for_status()?;
+
+        Ok(response)
+    }
+
+    pub async fn resolve_uuid_to_game_profile(&self, session_server: String, id: Uuid) -> MojangRequestResult<GameProfile> {
+        let url = format!("{session_server}/{id}");
+
+        let response = self.do_request(&url, Method::GET).await?;
+
+        Ok(response.json::<GameProfile>().await?)
     }
 }

@@ -9,7 +9,7 @@ use image::RgbaImage;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, Buffer, BufferDescriptor,
-    BufferUsages, Extent3d, Texture, TextureDescriptor, TextureDimension, TextureFormat,
+    BufferUsages, Texture, TextureDescriptor, TextureDimension, TextureFormat,
     TextureUsages, TextureView,
 };
 

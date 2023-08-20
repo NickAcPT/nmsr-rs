@@ -1,96 +1,87 @@
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    marker::PhantomData,
-    str::{self, FromStr},
-};
-
+use std::collections::HashMap;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use derive_more::{Debug, Deref};
 use serde::{Deserialize, Deserializer};
 use serde_json::{value::RawValue, Value};
 use uuid::Uuid;
-
 use crate::error::{MojangRequestError, MojangRequestResult};
 
 #[derive(Deserialize, Debug)]
-pub struct GameProfileTextureMetadata<'p> {
-    model: &'p str,
+pub struct GameProfileTextureMetadata {
+    model: String,
 }
 
-impl GameProfileTextureMetadata<'_> {
+impl GameProfileTextureMetadata {
     fn is_slim(&self) -> bool {
         self.model == "slim"
     }
 }
 
 #[derive(Deserialize, Debug)]
-pub struct GameProfileTexture<'p> {
-    url: &'p str,
-    metadata: Option<GameProfileTextureMetadata<'p>>,
+pub struct GameProfileTexture {
+    url: String,
+    metadata: Option<GameProfileTextureMetadata>,
 }
 
-impl GameProfileTexture<'_> {
+impl GameProfileTexture {
     pub fn is_slim(&self) -> bool {
         self.metadata.as_ref().map(|m| m.is_slim()).unwrap_or(false)
     }
 
     pub fn url(&self) -> &str {
-        self.url
+        &self.url
     }
 }
 
 #[derive(Deserialize, Debug)]
-pub struct GameProfileTextures<'p> {
-    #[serde(borrow)]
-    textures: HashMap<&'p str, GameProfileTexture<'p>>,
+pub struct GameProfileTextures {
+    textures: HashMap<String, GameProfileTexture>,
 }
 
-impl<'p> GameProfileTextures<'p> {
+impl GameProfileTextures {
     const SKIN_KEY: &'static str = "SKIN";
     const CAPE_KEY: &'static str = "CAPE";
 
-    pub fn skin(&self) -> Option<&GameProfileTexture<'p>> {
+    pub fn skin(&self) -> Option<&GameProfileTexture> {
         self.textures.get(Self::SKIN_KEY)
     }
 
-    pub fn cape(&self) -> Option<&GameProfileTexture<'p>> {
+    pub fn cape(&self) -> Option<&GameProfileTexture> {
         self.textures.get(Self::CAPE_KEY)
     }
 }
 
 #[derive(Deserialize)]
-struct GameProfileProperty<'p> {
-    name: &'p str,
-    value: &'p [u8],
+struct GameProfileProperty {
+    name: String,
+    value: Vec<u8>,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct GameProfile<'p> {
+pub struct GameProfile {
     id: Uuid,
-    name: &'p str,
-    #[serde(borrow, deserialize_with = "from_properties")]
-    properties: HashMap<&'p str, Box<RawValue>>,
+    name: String,
+    #[serde(deserialize_with = "from_properties")]
+    properties: HashMap<String, Value>,
 }
 
-impl<'p> GameProfile<'p> {
+impl GameProfile {
     const TEXTURES_KEY: &'static str = "textures";
 
-    fn textures(&'p self) -> MojangRequestResult<GameProfileTextures<'p>> {
+    fn textures(&self) -> MojangRequestResult<GameProfileTextures> {
         let textures = self
             .properties
             .get(Self::TEXTURES_KEY)
             .ok_or(MojangRequestError::MissingTexturesProperty)?;
 
-        serde_json::from_str(textures.get())
+        serde_json::from_value(textures.clone())
             .map_err(|e| MojangRequestError::InvalidTexturesProperty(e))
     }
 }
 
-fn from_properties<'de: 'p, 'p, D: Deserializer<'de>>(
+fn from_properties<'de, D: Deserializer<'de>>(
     deserializer: D,
-) -> Result<HashMap<&'p str, Box<RawValue>>, D::Error> {
-    let value: Vec<GameProfileProperty<'p>> = Deserialize::deserialize(deserializer)?;
+) -> Result<HashMap<String, Value>, D::Error> {
+    let value: Vec<GameProfileProperty> = Deserialize::deserialize(deserializer)?;
     let mut map = HashMap::new();
 
     for property in value {

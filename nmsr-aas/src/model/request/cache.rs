@@ -3,9 +3,8 @@ use std::{collections::HashMap, fs::Metadata, path::PathBuf, sync::Arc, time::Du
 use super::entry::RenderRequestEntry;
 use crate::error::{ExplainableExt, ModelCacheError, Result};
 use async_trait::async_trait;
-use derive_more::Deref;
 use serde::{Deserialize, Serialize};
-use std::{fs, time::SystemTime};
+use std::fs;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -58,6 +57,7 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
         config.is_expired(
             &RenderRequestEntry::TextureHash(entry.to_string()),
             marker_metadata,
+            &config.resolve_cache_duration
         )
     }
 
@@ -172,7 +172,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         _marker: &[u8; 1],
         marker_metadata: Metadata,
     ) -> Result<bool> {
-        config.is_expired(entry, marker_metadata)
+        config.is_expired(entry, marker_metadata, &config.resolve_cache_duration)
     }
 
     async fn write_cache(

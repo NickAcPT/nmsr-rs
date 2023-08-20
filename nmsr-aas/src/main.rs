@@ -3,19 +3,15 @@ mod routes;
 mod utils;
 
 use crate::utils::tracing::NmsrTracing;
-use crate::utils::tracing::NmsrTracingPropagatorLayer;
 
+use axum::extract::Path;
 pub use utils::caching;
 pub use utils::config;
 pub use utils::error;
 
-use std::{net::SocketAddr, time::Duration};
+use std::net::SocketAddr;
 
-use axum::{
-    http::Response,
-    routing::get,
-    Router, ServiceExt,
-};
+use axum::{routing::get, Router, ServiceExt};
 use opentelemetry::{
     global,
     sdk::{propagation::TraceContextPropagator, trace, Resource},
@@ -24,9 +20,8 @@ use opentelemetry::{
 use opentelemetry_otlp::{new_exporter, WithExportConfig};
 use tokio::{main, signal};
 use tower::ServiceBuilder;
-use tower_http::{request_id::MakeRequestUuid, trace::TraceLayer, ServiceBuilderExt};
-use tracing::{info, info_span, Span};
-use tracing_opentelemetry::OpenTelemetrySpanExt;
+use tower_http::{request_id::MakeRequestUuid, ServiceBuilderExt};
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[main]
@@ -34,7 +29,10 @@ async fn main() -> anyhow::Result<()> {
     setup_tracing()?;
 
     // build our application with a route
-    let router = Router::new().route("/", get(root));
+    let router = Router::new().route("/", get(root)).route(
+        "/:name",
+        get(|Path(name): Path<String>| async move { format!("Hello, {}!", name) }),
+    );
 
     let trace_layer = NmsrTracing::new_trace_layer();
 
@@ -42,7 +40,6 @@ async fn main() -> anyhow::Result<()> {
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
-        .layer(NmsrTracingPropagatorLayer)
         .service(router);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8621));
@@ -55,10 +52,6 @@ async fn main() -> anyhow::Result<()> {
         .await?;
 
     Ok(())
-}
-
-fn request_on_response<B>(response: &Response<B>, _latency: Duration, span: &Span) {
-    span.record("otel.status_code", &response.status().as_u16());
 }
 
 const DEFAULT_FILTER: &'static str = "info,h2=off";

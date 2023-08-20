@@ -1,19 +1,18 @@
 use axum::{
     extract::{ConnectInfo, MatchedPath},
-    http::{header::USER_AGENT, HeaderValue, Request, Response},
+    http::{header::USER_AGENT, HeaderValue},
     http::{HeaderMap, HeaderName},
 };
-use derive_more::Debug;
+use derive_more::{Debug, Deref};
 use opentelemetry::{
     global,
     propagation::{Extractor, Injector},
 };
-use tower::{Layer, Service};
-use std::{net::SocketAddr, future::Future, pin::Pin, task::{Context, Poll}};
+use std::net::SocketAddr;
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
     trace::{
-        DefaultOnBodyChunk, DefaultOnRequest, DefaultOnResponse, MakeSpan, OnFailure, OnRequest,
+        DefaultOnBodyChunk, MakeSpan, OnFailure, OnRequest,
         OnResponse, TraceLayer,
     },
 };
@@ -155,6 +154,34 @@ impl<B> OnResponse<B> for NmsrTracing<B> {
         _latency: std::time::Duration,
         span: &tracing::Span,
     ) {
+        {
+            type AnyMap = std::collections::HashMap<std::any::TypeId, Box<dyn std::any::Any + Send + Sync>>;
+            struct ExtensionsMine {
+                // If extensions are never used, no need to carry around an empty HashMap.
+                // That's 3 words. Instead, this is only 1 word.
+                map: Option<Box<AnyMap>>,
+            }
+            
+            let ext = response.extensions().clone();
+            let ext = unsafe {
+                std::mem::transmute::<&axum::http::Extensions, &ExtensionsMine>(&ext)
+            };
+            
+            if let Some(owomap) = ext.map.as_deref() {
+                for (type_id, any) in owomap.deref() {
+                    println!("type_id: {:?}", type_id);
+                    
+                    if let Some(any) = any.downcast_ref::<String>() {
+                        println!("any: {:?}", any);
+                    }
+                    
+                }
+            }
+            
+            println!("ext: {:?}", ext.map)
+            
+        }
+        
         span.record("otel.status_code", &response.status().as_u16());
     }
 }
@@ -170,58 +197,5 @@ impl<B, C: Debug> OnFailure<C> for NmsrTracing<B> {
             "exception.message",
             format!("{:?}", failure_classification).as_str(),
         );
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct NmsrTracingPropagatorLayer;
-
-impl<S> Layer<S> for NmsrTracingPropagatorLayer {
-    type Service = NmsrTracingPropagatorService<S>;
-
-    fn layer(&self, inner: S) -> Self::Service {
-        NmsrTracingPropagatorService { inner }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct NmsrTracingPropagatorService<S> {
-    inner: S,
-}
-
-impl<S, B, B2> Service<Request<B>> for NmsrTracingPropagatorService<S>
-where
-    S: Service<Request<B>, Response = Response<B2>> + Send + 'static,
-    S::Future: Send + 'static,
-{
-    type Response = S::Response;
-    type Error = S::Error;
-
-    type Future = Pin<Box<dyn Future<Output = Result<Response<B2>, Self::Error>> + Send>>;
-
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
-    }
-
-    #[allow(unused_mut)]
-    fn call(&mut self, mut request: Request<B>) -> Self::Future {
-        let future = self.inner.call(request);
-
-        let result = Box::pin(async move {
-            let mut response = future.await?;
-        
-            let mut headers = response.headers_mut();
-            
-            let context = Span::current().context();
-            
-            global::get_text_map_propagator(|propagator| {
-                propagator.inject_context(&context, &mut MutableHeaderMapCarrier(&mut headers));
-            });
-            
-            Ok(response)
-        });
-        
-        result
     }
 }

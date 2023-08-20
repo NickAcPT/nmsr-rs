@@ -25,7 +25,7 @@ pub enum RenderRequestError {
 #[derive(Error, Debug)]
 pub enum ModelCacheError {
     #[error("Unable to read marker for entry {0:?}")]
-    MarkerMetadataError(super::model::request::entry::RenderRequestEntry),
+    MarkerMetadataError(crate::model::request::entry::RenderRequestEntry),
     #[error("Invalid player request attempt: {0}")]
     InvalidRequestCacheAttempt(String),
     #[error("Invalid cache entry marker request: {0}")]

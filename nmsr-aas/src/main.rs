@@ -1,34 +1,33 @@
-mod caching;
-mod config;
-pub mod error;
-mod model;
+pub mod model;
 mod routes;
+mod utils;
+
+use crate::utils::tracing::NmsrTracing;
+use crate::utils::tracing::NmsrTracingPropagatorLayer;
+
+pub use utils::caching;
+pub use utils::config;
+pub use utils::error;
 
 use std::{net::SocketAddr, time::Duration};
 
 use axum::{
-    body::Body,
-    extract::{connect_info::ConnectInfo, MatchedPath},
-    http::{header::USER_AGENT, HeaderMap, HeaderName, Request, Response, HeaderValue},
-    routing::get, Router, ServiceExt,
+    http::Response,
+    routing::get,
+    Router, ServiceExt,
 };
 use opentelemetry::{
     global,
     sdk::{propagation::TraceContextPropagator, trace, Resource},
-    KeyValue, propagation::{Extractor, Injector},
+    KeyValue,
 };
 use opentelemetry_otlp::{new_exporter, WithExportConfig};
 use tokio::{main, signal};
 use tower::ServiceBuilder;
-use tower_http::{
-    trace::TraceLayer,
-    ServiceBuilderExt, request_id::MakeRequestUuid,
-};
-use tracing::{trace_span, Span, info_span, info};
+use tower_http::{request_id::MakeRequestUuid, trace::TraceLayer, ServiceBuilderExt};
+use tracing::{info, info_span, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-use tracing_subscriber::{
-    util::SubscriberInitExt, layer::SubscriberExt,
-};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[main]
 async fn main() -> anyhow::Result<()> {
@@ -37,15 +36,13 @@ async fn main() -> anyhow::Result<()> {
     // build our application with a route
     let router = Router::new().route("/", get(root));
 
-    let trace_layer = TraceLayer::new_for_http()
-        .make_span_with(request_make_span)
-        .on_response(request_on_response)
-        .on_eos(());
+    let trace_layer = NmsrTracing::new_trace_layer();
 
     let app = ServiceBuilder::new()
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
+        .layer(NmsrTracingPropagatorLayer)
         .service(router);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8621));
@@ -58,70 +55,6 @@ async fn main() -> anyhow::Result<()> {
         .await?;
 
     Ok(())
-}
-
-const X_FORWARDED_FOR_HEADER: HeaderName = HeaderName::from_static("x-forwarded-for");
-const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
-
-fn request_make_span(request: &Request<Body>) -> Span {
-    fn extract_header_as_str(headers: &HeaderMap, header: HeaderName) -> Option<String> {
-        headers
-            .get(header)
-            .and_then(|v| v.to_str().ok())
-            .map(|s| s.to_string())
-    }
-
-    let path = request
-        .extensions()
-        .get::<MatchedPath>()
-        .map(|p| p.as_str())
-        .unwrap_or(request.uri().path());
-
-    let headers = request.headers();
-    let request_id =
-        extract_header_as_str(headers, X_REQUEST_ID).unwrap_or("<unknown>".to_string());
-    let user_agent = extract_header_as_str(headers, USER_AGENT).unwrap_or("<unknown>".to_string());
-    let client_ip = extract_header_as_str(headers, X_FORWARDED_FOR_HEADER)
-        .or_else(|| {
-            request
-                .extensions()
-                .get::<ConnectInfo<SocketAddr>>()
-                .map(|ConnectInfo(c)| c.to_string())
-        })
-        .unwrap_or("<unknown>".to_string());
-
-    let span = info_span!("HTTP request",
-        http.method = ?request.method(),
-        http.path = path,
-        http.version = ?request.version(),
-        http.user_agent = user_agent,
-        http.client_ip = client_ip,
-        request_id = request_id,
-        otel.name = tracing::field::Empty,
-        otel.kind = ?opentelemetry::trace::SpanKind::Server,
-        otel.status_code = tracing::field::Empty,
-    );
-    
-    struct HeaderMapCarrier<'a>(&'a HeaderMap);
-    
-    impl Extractor for HeaderMapCarrier<'_> {
-        fn get(&self, key: &str) -> Option<&str> {
-            self.0.get(key).and_then(|v| v.to_str().ok())
-        }
-
-        fn keys(&self) -> Vec<&str> {
-            self.0.keys().map(|k| k.as_str()).collect()
-        }
-    }
-    
-    global::get_text_map_propagator(|propagator| {
-        let carrier = &HeaderMapCarrier(&request.headers());
-        
-        let context = propagator.extract(carrier);
-        span.set_parent(context);
-    });
-    
-    span
 }
 
 fn request_on_response<B>(response: &Response<B>, _latency: Duration, span: &Span) {
@@ -159,7 +92,7 @@ fn setup_tracing() -> anyhow::Result<()> {
         .with(fmt_layer)
         .with(otel_layer)
         .init();
-    
+
     Ok(())
 }
 
@@ -185,9 +118,9 @@ async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
-    
+
     info!("Received shutdown signal... Shutting down.");
-    
+
     global::shutdown_tracer_provider();
 }
 

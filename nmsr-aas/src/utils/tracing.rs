@@ -154,34 +154,6 @@ impl<B> OnResponse<B> for NmsrTracing<B> {
         _latency: std::time::Duration,
         span: &tracing::Span,
     ) {
-        {
-            type AnyMap = std::collections::HashMap<std::any::TypeId, Box<dyn std::any::Any + Send + Sync>>;
-            struct ExtensionsMine {
-                // If extensions are never used, no need to carry around an empty HashMap.
-                // That's 3 words. Instead, this is only 1 word.
-                map: Option<Box<AnyMap>>,
-            }
-            
-            let ext = response.extensions().clone();
-            let ext = unsafe {
-                std::mem::transmute::<&axum::http::Extensions, &ExtensionsMine>(&ext)
-            };
-            
-            if let Some(owomap) = ext.map.as_deref() {
-                for (type_id, any) in owomap.deref() {
-                    println!("type_id: {:?}", type_id);
-                    
-                    if let Some(any) = any.downcast_ref::<String>() {
-                        println!("any: {:?}", any);
-                    }
-                    
-                }
-            }
-            
-            println!("ext: {:?}", ext.map)
-            
-        }
-        
         span.record("otel.status_code", &response.status().as_u16());
     }
 }

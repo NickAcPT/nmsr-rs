@@ -109,7 +109,6 @@ impl<B> MakeSpan<B> for NmsrTracing<B> {
 
             exception.message = Empty,
 
-            trace_id = Empty,
             request_id = Empty,
         );
 

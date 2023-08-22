@@ -35,6 +35,19 @@ impl TryFrom<String> for RenderRequestEntry {
     }
 }
 
+impl TryFrom<RenderRequestEntry> for String {
+    type Error = RenderRequestError;
+
+    fn try_from(value: RenderRequestEntry) -> Result<Self, Self::Error> {
+        match value {
+            RenderRequestEntry::PlayerUuid(uuid) => Ok(uuid.to_string()),
+            RenderRequestEntry::TextureHash(hash) => Ok(hash),
+            RenderRequestEntry::PlayerSkin(_) => Err(RenderRequestError::InvalidPlayerRequest("Unable to convert PlayerSkin to String".to_string())),
+        }
+    }
+}
+    
+
 #[derive(Debug, Default, Clone, Copy, strum::FromRepr, strum::EnumCount)]
 pub enum RenderRequestEntryModel {
     #[default]

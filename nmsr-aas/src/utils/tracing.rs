@@ -3,7 +3,7 @@ use axum::{
     http::{header::USER_AGENT, HeaderValue},
     http::{HeaderMap, HeaderName},
 };
-use derive_more::{Debug, Deref};
+use derive_more::Debug;
 use opentelemetry::{
     global,
     propagation::{Extractor, Injector},
@@ -16,7 +16,7 @@ use tower_http::{
         OnResponse, TraceLayer,
     },
 };
-use tracing::{field::Empty, info_span, Span};
+use tracing::{field::Empty, info_span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 const X_FORWARDED_FOR_HEADER: HeaderName = HeaderName::from_static("x-forwarded-for");

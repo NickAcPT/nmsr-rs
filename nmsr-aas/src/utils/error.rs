@@ -30,6 +30,8 @@ pub enum ModelCacheError {
     InvalidRequestCacheAttempt(String),
     #[error("Invalid cache entry marker request: {0}")]
     InvalidCacheEntryMarkerRequest(String),
+    #[error("Invalid cache bias configuration: {0}")]
+    InvalidCacheBiasConfiguration(String),
 }
 
 #[derive(Error, Debug)]

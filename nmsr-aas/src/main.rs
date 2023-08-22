@@ -4,10 +4,16 @@ mod utils;
 
 use crate::utils::tracing::NmsrTracing;
 
+use anyhow::Context;
 use axum::extract::Path;
+use opentelemetry::StringValue;
+use twelf::Layer;
 pub use utils::caching;
 pub use utils::config;
+use utils::config::TracingConfiguration;
 pub use utils::error;
+
+use crate::utils::config::NmsrConfiguration;
 
 use std::net::SocketAddr;
 
@@ -26,7 +32,15 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[main]
 async fn main() -> anyhow::Result<()> {
-    setup_tracing()?;
+    let config = NmsrConfiguration::with_layers(&[
+        Layer::DefaultTrait,
+        Layer::Toml("config.toml".into()),
+        Layer::Env(Some("NMSR_".into())),
+    ]).context("Unable to load configuration")?;
+    
+    setup_tracing(config.tracing.as_ref())?;
+    
+    info!("Loaded configuration: {:#?}", config);
 
     // build our application with a route
     let router = Router::new().route("/", get(root)).route(
@@ -41,10 +55,10 @@ async fn main() -> anyhow::Result<()> {
         .layer(trace_layer)
         .propagate_x_request_id()
         .service(router);
+    
+    let addr = (config.server.address + ":" + &config.server.port.to_string()).parse()?;
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8621));
-
-    tracing::info!("listening on {}", addr);
+    tracing::info!("Listening on {}", &addr);
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
@@ -56,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
 
 const DEFAULT_FILTER: &'static str = "info,h2=off";
 
-fn setup_tracing() -> anyhow::Result<()> {
+fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
     let filter =
         tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or(DEFAULT_FILTER.into());
 
@@ -67,24 +81,26 @@ fn setup_tracing() -> anyhow::Result<()> {
 
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-    let tracer = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(new_exporter().tonic().with_endpoint("http://[::1]:4317"))
-        .with_trace_config(
-            trace::config().with_resource(Resource::new(vec![KeyValue::new(
-                "service.name",
-                "nmsr-aas",
-            )])),
-        )
-        .install_batch(opentelemetry::runtime::Tokio)?;
+    let registry = tracing_subscriber::registry().with(filter).with(fmt_layer);
 
-    let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+    if let Some(tracing) = tracing {
+        let tracer = opentelemetry_otlp::new_pipeline()
+            .tracing()
+            .with_exporter(new_exporter().tonic().with_endpoint(&tracing.endpoint))
+            .with_trace_config(
+                trace::config().with_resource(Resource::new(vec![KeyValue::new(
+                    "service.name",
+                    Into::<StringValue>::into(tracing.service_name.clone()),
+                )])),
+            )
+            .install_batch(opentelemetry::runtime::Tokio)?;
 
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(fmt_layer)
-        .with(otel_layer)
-        .init();
+        let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+
+        registry.with(otel_layer).init();
+    } else {
+        registry.init();
+    }
 
     Ok(())
 }

@@ -1,9 +1,11 @@
 use std::{collections::HashMap, fs::Metadata, path::PathBuf, sync::Arc, time::Duration};
 
 use super::entry::RenderRequestEntry;
-use crate::error::{ExplainableExt, ModelCacheError, Result};
+use crate::error::{ExplainableExt, ModelCacheError, ModelCacheResult, Result};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use serde_with::serde_as;
 use std::fs;
 use strum::IntoEnumIterator;
 
@@ -13,10 +15,40 @@ use crate::{
     model::resolver::{MojangTexture, ResolvedRenderEntryTextureType, ResolvedRenderEntryTextures},
 };
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Deserialize, Serialize)]
-pub(crate) enum CacheBias {
-    KeepCachedFor(Duration),
+#[serde_as]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Deserialize, Serialize, strum::IntoStaticStr)]
+pub enum CacheBias {
+    KeepCachedFor(#[serde(with = "humantime_serde")] Duration),
     CacheIndefinitely,
+}
+
+impl TryFrom<String> for CacheBias {
+    type Error = ModelCacheError;
+
+    fn try_from(value: String) -> ModelCacheResult<Self> {
+        if &value == Into::<&'static str>::into(CacheBias::CacheIndefinitely) {
+            return Ok(CacheBias::CacheIndefinitely);
+        }
+
+        let duration: Duration = humantime_serde::deserialize(Value::String(value.clone()))
+            .map_err(|_| ModelCacheError::InvalidCacheBiasConfiguration(value.clone()))?;
+
+        Ok(CacheBias::KeepCachedFor(duration))
+    }
+}
+
+impl TryFrom<CacheBias> for String {
+    type Error = ModelCacheError;
+    fn try_from(value: CacheBias) -> ModelCacheResult<Self> {
+        Ok(match value {
+            CacheBias::KeepCachedFor(duration) => {
+                humantime_serde::re::humantime::format_duration(duration).to_string()
+            }
+            CacheBias::CacheIndefinitely => {
+                Into::<&'static str>::into(CacheBias::CacheIndefinitely).to_string()
+            }
+        })
+    }
 }
 
 struct MojangTextureCacheHandler;
@@ -57,7 +89,7 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
         config.is_expired(
             &RenderRequestEntry::TextureHash(entry.to_string()),
             marker_metadata,
-            &config.resolve_cache_duration
+            &config.resolve_cache_duration,
         )
     }
 

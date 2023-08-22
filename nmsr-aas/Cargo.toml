@@ -23,6 +23,7 @@ async-trait = "0.1.73"
 twelf = { version = "0.12.0", default-features = false, features = [
     "env",
     "toml",
+    "default_trait"
 ] }
 
 # Serde - Serialization and Deserialization framework
@@ -75,6 +76,7 @@ rkyv = "0.7.42"
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
 symlink = "0.1.0"
 humantime-serde = "1.1.1"
+serde_with = "3.3.0"
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

@@ -1,36 +1,52 @@
+# Server configuration.
+[server]
 # The address to bind the server to.
 address = "0.0.0.0"
 # The port to bind the server to.
 port = 8080
 
-# The path to the root directory of the parts folder.
-parts = "parts"
 
-[tls]
-private_key = "127.0.0.1+1-key.pem"
-certificate_chain = "127.0.0.1+1.pem"
+# Tracing configuration.
+[tracing]
+# The OpenTelemetry endpoint to send traces to.
+endpoint = "http://127.0.0.1:4317"
+# The service name to use for traces. (Optional, defaults to "nmsr-aas")
+service_name = "nmsr-aas"
 
-[cache]
-# How long, in seconds, it takes to expire the skins and renders cache (defaults to 1 day [86400 seconds])
-# These images are cached based on the hash of the skin, so if the skin changes, the file will no longer be cached and will be re-rendered.
-image_cache_expiry = 86400
 
-# How long, in seconds, it takes to expire the cache of the uuid to skin hash (defaults to 15 minutes [900 seconds])
+[caching]
+# The interval of time to run the cleanup task.
+# This task will remove any files in the cache that are older than the image cache expiry.
+# This task will run on startup, and then every time the interval has passed.
+cleanup_interval = "1h"
+
+# How long it takes to expire the cache of the resolved models
 # This cache is used to prevent the same uuid from being resolved multiple times in a short period of time.
 # Setting this to a big value will reduce the amount of requests to the Mojang API, but will increase the time
 # it takes to update the skin for a player.
-# This value is also used for the Cache-Control header age for the render and skin requests.
-mojang_profile_request_expiry = 900
+# This value is also used for the Cache-Control header age for the skin requests.
+resolve_cache_duration = "15m"
 
-# How long, in seconds, to run the cleanup task (defaults to 1 hour [3600 seconds])
-# This task will remove any files in the cache that are older than the image cache expiry.
-# This task will run on startup, and then every time the interval has passed.
-cleanup_interval = 3600
+# How long it takes to expire the cache of the rendered models.
+# Setting this to a big value will reduce the amount of renders that need to be done, but will increase the time
+# it takes to update the skin for a player.
+# This value is also used for the Cache-Control header age for the render requests.
+render_cache_duration = "15m"
 
-# How many requests per second to allow to the Mojang API (defaults to 10 requests per second)
-mojang_profile_requests_per_second = 10
+# Cache biases for specific entries.
+# A cache bias is a duration of time to keep a specific entry in the cache.
+# This is useful for entries that are requested often, such as the models in the home page.
+# Examples:
+#
+# [cache_biases]
+# # Cache NickAc's skin for 2h:
+# ad4569f3-7576-4376-a7c7-8e8cfcd9b832 = "2h"
+#
+# # Cache one of Koide's skins indefinitely:
+# 7c7e2befcd4bb8af1c970ec80d585a76bfb23d62c4c82126cd86548beaa695f7 = "CacheIndefinitely"
+[caching.cache_biases]
 
-# This section is used to configure the Mojang API requests.
+
 [mojank]
 # The URL to the Mojang API's session server.
 # This can be useful if you want to use a caching proxy for the Mojang API.
@@ -40,13 +56,3 @@ mojang_profile_requests_per_second = 10
 session_server = "https://sessionserver.mojang.com"
 # The URL to the Mojang API's textures server.
 textures_server = "https://textures.minecraft.net"
-
-# Tracing configuration
-# This is used to send tracing data to an OpenTelemetry tracing backend, such as Jaeger.
-# Tracing is locked behind the `tracing` feature flag.
-[tracing]
-# This is the OpenTelemetry endpoint that the tracing data will be sent to.
-otel_endpoint = "http://[::1]:4317"
-
-# This is the name of the service that will be used in the tracing data.
-otel_service_name = "nmsr"

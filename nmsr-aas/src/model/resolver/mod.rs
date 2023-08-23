@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use derive_more::Debug;
 use strum::EnumCount;
@@ -6,14 +6,19 @@ use tracing::instrument;
 
 use crate::error::Result;
 
+use self::mojang::client::MojangClient;
+
 use super::request::{
     entry::{RenderRequestEntry, RenderRequestEntryModel},
-    RenderRequest, RequestRenderFeatures,
+    RenderRequest, RequestRenderFeatures, cache::ModelCache,
 };
 
 mod mojang;
 
-pub(crate) struct RenderRequestResolver {}
+pub struct RenderRequestResolver {
+    model_cache: ModelCache,
+    mojang_requests_client: Arc<MojangClient>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, strum::IntoStaticStr, strum::EnumIter)]
 pub enum ResolvedRenderEntryTextureType {
@@ -23,9 +28,9 @@ pub enum ResolvedRenderEntryTextureType {
     Ears,
 }
 
-pub(crate) struct MojangTexture {
-    pub(crate) hash: Option<String>,
-    pub(crate) data: Vec<u8>,
+pub struct MojangTexture {
+    hash: Option<String>,
+    data: Vec<u8>,
 }
 
 impl MojangTexture {
@@ -38,14 +43,22 @@ impl MojangTexture {
     pub(crate) fn new_unnamed(data: Vec<u8>) -> Self {
         Self { hash: None, data }
     }
+
+    pub fn hash(&self) -> Option<&String> {
+        self.hash.as_ref()
+    }
+
+    pub fn data(&self) -> &[u8] {
+        self.data.as_ref()
+    }
 }
 
-pub(crate) struct ResolvedRenderEntryTextures {
-    pub(crate) model: Option<RenderRequestEntryModel>,
-    pub(crate) textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
+pub struct ResolvedRenderEntryTextures {
+    pub model: Option<RenderRequestEntryModel>,
+    pub textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
 }
 
-pub(crate) struct ResolvedRenderEntryTexturesMarker {
+pub struct ResolvedRenderEntryTexturesMarker {
     pub model: u8,
 }
 
@@ -62,14 +75,14 @@ impl From<ResolvedRenderEntryTextures> for ResolvedRenderEntryTexturesMarker {
 }
 
 impl ResolvedRenderEntryTextures {
-    pub(crate) fn new(
+    pub fn new(
         textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
         model: Option<RenderRequestEntryModel>,
     ) -> Self {
         Self { textures, model }
     }
 
-    pub(crate) fn new_from_marker_slice(
+    pub fn new_from_marker_slice(
         textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
         marker: &[u8],
     ) -> Self {
@@ -78,7 +91,7 @@ impl ResolvedRenderEntryTextures {
         Self { textures, model }
     }
 
-    pub(crate) fn to_marker_slice(&self) -> [u8; 1] {
+    pub fn to_marker_slice(&self) -> [u8; 1] {
         let model = self
             .model
             .map(|m| m as u8)
@@ -89,27 +102,28 @@ impl ResolvedRenderEntryTextures {
 }
 
 impl RenderRequestResolver {
-    pub(crate) fn new() -> Self {
-        Self {}
+    pub fn new(model_cache: ModelCache, client: Arc<MojangClient>) -> Self {
+        Self {
+            model_cache,
+            mojang_requests_client: client,
+        }
     }
 
     async fn fetch_texture_from_mojang(&self, texture_id: &str) -> Result<MojangTexture> {
-        unimplemented!()
-        //if let Some(result) = self.model_cache.get_cached_texture(texture_id)? {
-        //    return Ok(result);
-        //}
+        if let Some(result) = self.model_cache.get_cached_texture(texture_id).await? {
+            return Ok(result);
+        }
 
-        //let bytes = requests::fetch_texture_from_mojang(
-        //    &texture_id,
-        //    &self.mojang_requests_client,
-        //    &self.mojank_config.textures_server,
-        //)
-        //.await
-        //.map(|r| r.to_vec())?;
+        let bytes = self.mojang_requests_client.fetch_texture_from_mojang(
+            &texture_id
+        )
+        .await?;
 
-        //let _ = self.model_cache.cache_texture(&bytes, texture_id)?;
+        let texture = MojangTexture::new_named(texture_id.to_owned(), bytes);
+        
+        self.model_cache.cache_texture(&texture).await?;
 
-        //Ok(MojangTexture::new_named(texture_id.to_owned(), bytes))
+        Ok(texture)
     }
 
     #[instrument(skip(self))]
@@ -182,7 +196,7 @@ impl RenderRequestResolver {
         unimplemented!()
     }
 
-    pub(crate) async fn resolve(&self, request: RenderRequest) -> Result<ResolvedRenderRequest> {
+    pub async fn resolve(&self, request: RenderRequest) -> Result<ResolvedRenderRequest> {
         // First, we need to resolve the skin and cape textures.
         let resolved_textures = self.resolve_entry_textures(request.entry).await?;
         let final_model = request
@@ -207,9 +221,9 @@ impl RenderRequestResolver {
 }
 
 #[derive(Debug)]
-pub(crate) struct ResolvedRenderRequest {
-    pub(crate) model: RenderRequestEntryModel,
+pub struct ResolvedRenderRequest {
+    pub model: RenderRequestEntryModel,
     #[debug(skip)]
-    pub(crate) textures: HashMap<ResolvedRenderEntryTextureType, Vec<u8>>,
-    pub(crate) features: enumset::EnumSet<RequestRenderFeatures>,
+    pub textures: HashMap<ResolvedRenderEntryTextureType, Vec<u8>>,
+    pub features: enumset::EnumSet<RequestRenderFeatures>,
 }

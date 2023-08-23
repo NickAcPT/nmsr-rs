@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Deserializer};
-use serde_json::{value::RawValue, Value};
+use serde_json::Value;
 use uuid::Uuid;
 use crate::error::{MojangRequestError, MojangRequestResult};
 

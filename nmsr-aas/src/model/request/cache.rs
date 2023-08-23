@@ -53,19 +53,19 @@ impl TryFrom<CacheBias> for String {
 
 struct MojangTextureCacheHandler;
 
-struct ResolvedModelTexturesCacheHandler<'a> {
+struct ResolvedModelTexturesCacheHandler {
     mojang_texture_cache: Arc<
-        CacheSystem<&'a str, MojangTexture, ModelCacheConfiguration, (), MojangTextureCacheHandler>,
+        CacheSystem<str, MojangTexture, ModelCacheConfiguration, (), MojangTextureCacheHandler>,
     >,
 }
 
 #[async_trait]
-impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
+impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
     for MojangTextureCacheHandler
 {
     async fn get_cache_key(
         &self,
-        entry: &'life1 &str,
+        entry: &str,
         _config: &ModelCacheConfiguration,
     ) -> Result<Option<String>> {
         Ok(Some(entry.to_string()))
@@ -73,7 +73,7 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
 
     async fn get_marker_path(
         &self,
-        entry: &'life1 &str,
+        entry: &str,
         config: &ModelCacheConfiguration,
     ) -> Result<String> {
         Ok("".into())
@@ -81,7 +81,7 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
 
     async fn is_expired(
         &self,
-        entry: &'life1 &str,
+        entry: &str,
         config: &ModelCacheConfiguration,
         _marker: &(),
         marker_metadata: Metadata,
@@ -95,12 +95,12 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
 
     async fn write_cache(
         &self,
-        entry: &'life1 &str,
+        entry: &str,
         value: &MojangTexture,
         _config: &ModelCacheConfiguration,
         file: &PathBuf,
     ) -> Result<()> {
-        fs::write(file, &value.data)
+        fs::write(file, value.data())
             .explain(format!("Unable to write texture {:?} to cache", entry))?;
 
         Ok(())
@@ -108,7 +108,7 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
 
     async fn read_cache(
         &self,
-        entry: &'life1 &str,
+        entry: &str,
         _config: &ModelCacheConfiguration,
         file: &PathBuf,
         _marker: &(),
@@ -125,7 +125,7 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
 
     async fn read_marker(
         &self,
-        _entry: &'life1 &str,
+        _entry: &str,
         _config: &ModelCacheConfiguration,
         _marker: &PathBuf,
     ) -> Result<()> {
@@ -134,7 +134,7 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
 
     async fn write_marker(
         &self,
-        _entry: &'life1 &str,
+        _entry: &str,
         _value: &MojangTexture,
         _config: &ModelCacheConfiguration,
         _marker: &PathBuf,
@@ -143,21 +143,21 @@ impl CacheHandler<&'_ str, MojangTexture, ModelCacheConfiguration, ()>
     }
 }
 
-pub(crate) struct ModelCache<'a> {
+pub struct ModelCache {
     mojang: Arc<
-        CacheSystem<&'a str, MojangTexture, ModelCacheConfiguration, (), MojangTextureCacheHandler>,
+        CacheSystem<str, MojangTexture, ModelCacheConfiguration, (), MojangTextureCacheHandler>,
     >,
     resolved_textures: CacheSystem<
         RenderRequestEntry,
         ResolvedRenderEntryTextures,
         ModelCacheConfiguration,
         [u8; 1],
-        ResolvedModelTexturesCacheHandler<'a>,
+        ResolvedModelTexturesCacheHandler,
     >,
 }
 
-impl ModelCache<'_> {
-    pub(crate) fn new(cache_path: PathBuf, cache_config: ModelCacheConfiguration) -> Result<Self> {
+impl ModelCache {
+    pub fn new(cache_path: PathBuf, cache_config: ModelCacheConfiguration) -> Result<Self> {
         let mojang = CacheSystem::new(
             cache_path.join("textures"),
             cache_config.clone(),
@@ -179,11 +179,23 @@ impl ModelCache<'_> {
             resolved_textures: resolved,
         });
     }
+    
+    pub async fn get_cached_texture(&self, texture_id: &str) -> Result<Option<MojangTexture>> {
+        self.mojang.get_cached_entry(&texture_id).await
+    }
+    
+    pub async fn cache_texture(&self, texture: &MojangTexture) -> Result<()> {
+        if let Some(hash) = texture.hash() {
+            self.mojang.set_cache_entry(hash, texture).await.map(|_| ())
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[async_trait]
 impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheConfiguration, [u8; 1]>
-    for ResolvedModelTexturesCacheHandler<'_>
+    for ResolvedModelTexturesCacheHandler
 {
     async fn get_cache_key(
         &self,
@@ -222,7 +234,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         for (texture_type, texture) in &value.textures {
             let texture_path = base.join(format!("{}{}", Into::<&str>::into(texture_type), ".png"));
 
-            if let Some(texture_hash) = &texture.hash {
+            if let Some(texture_hash) = texture.hash() {
                 let cache_path = self
                     .mojang_texture_cache
                     .set_cache_entry(&texture_hash.as_str(), &texture)

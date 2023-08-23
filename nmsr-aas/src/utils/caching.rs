@@ -11,17 +11,20 @@ use crate::error::{ExplainableExt, Result};
 
 pub struct CacheSystem<Key, ResultEntry, Config, Marker, Handler>
 where
-    Key: Debug,
+    Key: Debug + ?Sized,
     Handler: CacheHandler<Key, ResultEntry, Config, Marker> + Sync,
 {
     base_path: PathBuf,
     config: Config,
     handler: Handler,
-    _phantom: PhantomData<(Key, ResultEntry, Marker)>,
+    _phantom: PhantomData<(ResultEntry, Marker, Key)>,
 }
 
 #[async_trait]
-pub trait CacheHandler<Key, Value, Config, Marker> {
+pub trait CacheHandler<Key, Value, Config, Marker>
+where
+    Key: ?Sized,
+{
     /// Gets the cache key for the given entry.
     ///
     /// If the entry is not cached, this should return `None`.
@@ -88,7 +91,7 @@ pub trait CacheHandler<Key, Value, Config, Marker> {
 impl<Key, ResultEntry, Config, Marker, Handler>
     CacheSystem<Key, ResultEntry, Config, Marker, Handler>
 where
-    Key: Debug,
+    Key: Debug + ?Sized,
     Handler: CacheHandler<Key, ResultEntry, Config, Marker> + Sync,
 {
     pub fn new(base_path: PathBuf, config: Config, handler: Handler) -> Result<Self> {

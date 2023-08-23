@@ -1,16 +1,17 @@
-use reqwest::{Client, Method, Request, RequestBuilder, Response, Url};
-use std::time::Duration;
+use reqwest::{Client, Method, Request, Response, Url};
+use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use tower::{buffer::Buffer, limit::RateLimit, retry::budget::Budget, Service, ServiceBuilder};
+use tower::{limit::RateLimit, Service, ServiceBuilder};
 
-use crate::error::{MojangRequestError, MojangRequestResult};
+use crate::{config::MojankConfiguration, error::MojangRequestResult};
 
 use super::model::GameProfile;
 
 pub struct MojangClient {
     client: RwLock<RateLimit<reqwest::Client>>,
+    mojank_config: Arc<MojankConfiguration>,
 }
 
 #[test]
@@ -25,7 +26,10 @@ impl MojangClient {
         " (Discord=@nickacpt; +https://nmsr.nickac.dev/)"
     );
 
-    pub fn new(rate_limit_per_second: u64) -> MojangRequestResult<Self> {
+    pub fn new(
+        rate_limit_per_second: u64,
+        mojank: Arc<MojankConfiguration>,
+    ) -> MojangRequestResult<Self> {
         let client = Client::builder().user_agent(Self::USER_AGENT).build()?;
 
         let service = ServiceBuilder::new()
@@ -34,6 +38,7 @@ impl MojangClient {
 
         Ok(MojangClient {
             client: RwLock::new(service),
+            mojank_config: mojank,
         })
     }
 
@@ -49,11 +54,28 @@ impl MojangClient {
         Ok(response)
     }
 
-    pub async fn resolve_uuid_to_game_profile(&self, session_server: String, id: Uuid) -> MojangRequestResult<GameProfile> {
-        let url = format!("{session_server}/{id}");
+    pub async fn resolve_uuid_to_game_profile(&self, id: Uuid) -> MojangRequestResult<GameProfile> {
+        let url = format!(
+            "{session_server}/{id}",
+            session_server = self.mojank_config.session_server
+        );
 
         let response = self.do_request(&url, Method::GET).await?;
 
         Ok(response.json::<GameProfile>().await?)
+    }
+
+    pub async fn fetch_texture_from_mojang(
+        &self,
+        texture_id: &str,
+    ) -> MojangRequestResult<Vec<u8>> {
+        let url = format!(
+            "{textures_server}/textures/{texture_id}",
+            textures_server = self.mojank_config.textures_server
+        );
+
+        let response = self.do_request(&url, Method::GET).await?;
+
+        Ok(response.bytes().await?.to_vec())
     }
 }

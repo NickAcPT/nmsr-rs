@@ -1,6 +1,6 @@
 use axum::{
     extract::{ConnectInfo, MatchedPath},
-    http::{header::USER_AGENT, HeaderValue},
+    http::{header::USER_AGENT, HeaderValue, Request},
     http::{HeaderMap, HeaderName},
 };
 use derive_more::Debug;
@@ -93,7 +93,7 @@ impl<'a> Injector for MutableHeaderMapCarrier<'a> {
 }
 
 impl<B> MakeSpan<B> for NmsrTracing<B> {
-    fn make_span(&mut self, request: &axum::http::Request<B>) -> tracing::Span {
+    fn make_span(&mut self, request: &Request<B>) -> tracing::Span {
         let user_agent = Self::extract_header_as_str(request.headers(), USER_AGENT)
             .unwrap_or("<unknown>".to_string());
 
@@ -103,7 +103,6 @@ impl<B> MakeSpan<B> for NmsrTracing<B> {
             http.version = ?request.version(),
             http.user_agent = user_agent,
             http.client_ip = Empty,
-            otel.name = Empty,
             otel.kind = ?opentelemetry::trace::SpanKind::Server,
             otel.status_code = Empty,
 
@@ -121,7 +120,7 @@ impl<B> MakeSpan<B> for NmsrTracing<B> {
 }
 
 impl<B> OnRequest<B> for NmsrTracing<B> {
-    fn on_request(&mut self, request: &axum::http::Request<B>, span: &tracing::Span) {
+    fn on_request(&mut self, request: &Request<B>, span: &tracing::Span) {
         let path = request
             .extensions()
             .get::<MatchedPath>()

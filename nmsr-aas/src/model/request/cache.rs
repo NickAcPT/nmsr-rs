@@ -191,6 +191,24 @@ impl ModelCache {
             Ok(())
         }
     }
+    
+    pub async fn get_cached_resolved_texture(
+        &self,
+        entry: &RenderRequestEntry,
+    ) -> Result<Option<ResolvedRenderEntryTextures>> {
+        self.resolved_textures.get_cached_entry(entry).await
+    }
+    
+    pub async fn cache_resolved_texture(
+        &self,
+        entry: &RenderRequestEntry,
+        textures: &ResolvedRenderEntryTextures,
+    ) -> Result<()> {
+        self.resolved_textures
+            .set_cache_entry(entry, textures)
+            .await
+            .map(|_| ())
+    }
 }
 
 #[async_trait]

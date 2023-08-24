@@ -4,9 +4,9 @@ use derive_more::Debug;
 use strum::EnumCount;
 use tracing::instrument;
 
-use crate::error::Result;
+use crate::error::{Result, MojangRequestError};
 
-use self::mojang::client::MojangClient;
+use self::mojang::{client::MojangClient, model::GameProfileTexture};
 
 use super::request::{
     entry::{RenderRequestEntry, RenderRequestEntryModel},
@@ -108,6 +108,18 @@ impl RenderRequestResolver {
             mojang_requests_client: client,
         }
     }
+    
+    async fn fetch_game_profile_texture(&self, texture: Option<&GameProfileTexture>) -> Result<Option<MojangTexture>> {
+        if let Some(texture) = texture {
+            let texture_id = texture.hash()?;
+        
+            let texture = self.fetch_texture_from_mojang(texture_id).await?;
+        
+            Ok(Some(texture))
+        } else {
+            Ok(None)
+        }
+    }
 
     async fn fetch_texture_from_mojang(&self, texture_id: &str) -> Result<MojangTexture> {
         if let Some(result) = self.model_cache.get_cached_texture(texture_id).await? {
@@ -131,8 +143,7 @@ impl RenderRequestResolver {
         &self,
         entry: RenderRequestEntry,
     ) -> Result<ResolvedRenderEntryTextures> {
-        /*
-        if let Some(result) = self.model_cache.get_cached_resolved_entity(&entry)? {
+        if let Some(result) = self.model_cache.get_cached_resolved_texture(&entry).await? {
             return Ok(result);
         }
 
@@ -144,29 +155,20 @@ impl RenderRequestResolver {
 
         match &entry {
             RenderRequestEntry::PlayerUuid(id) => {
-                let result = requests::get_unwrapped_gameprofile(
-                    &self.mojang_requests_client,
-                    *id,
-                    &self.mojank_config.session_server,
-                )
-                .await?;
-
-                model = if result.slim_arms {
+                let result = self.mojang_requests_client.resolve_uuid_to_game_profile(id).await?;
+                let textures = result.textures()?;
+                
+                let skin = textures.skin().ok_or_else(|| MojangRequestError::MissingSkinProperty(id.clone()))?;
+                let cape = textures.cape();
+                
+                model = if skin.is_slim() {
                     Some(RenderRequestEntryModel::Alex)
                 } else {
                     Some(RenderRequestEntryModel::Steve)
                 };
 
-                skin_texture = Some(
-                    self.fetch_texture_from_mojang(&result.skin_texture_hash)
-                        .await?,
-                );
-
-                if let Some(cape_texture_hash) = result.cape_texture_hash {
-                    cape_texture = Some(self.fetch_texture_from_mojang(&cape_texture_hash).await?);
-                } else {
-                    cape_texture = None;
-                }
+                skin_texture = self.fetch_game_profile_texture(textures.skin()).await?;
+                cape_texture = self.fetch_game_profile_texture(cape).await?;
             }
             RenderRequestEntry::TextureHash(skin_hash) => {
                 // If the skin is not cached, we'll have to fetch it from Mojang.
@@ -192,8 +194,9 @@ impl RenderRequestResolver {
 
         let result = ResolvedRenderEntryTextures::new(textures, model);
 
-        self.model_cache.cache_resolved_entity(&entry, result).await */
-        unimplemented!()
+        self.model_cache.cache_resolved_texture(&entry, &result).await?;
+        
+        Ok(result)
     }
 
     pub async fn resolve(&self, request: RenderRequest) -> Result<ResolvedRenderRequest> {

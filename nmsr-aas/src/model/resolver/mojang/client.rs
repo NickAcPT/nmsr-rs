@@ -1,6 +1,7 @@
 use reqwest::{Client, Method, Request, Response, Url};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
+use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
 use tower::{limit::RateLimit, Service, ServiceBuilder};
@@ -32,6 +33,7 @@ impl MojangClient {
     ) -> MojangRequestResult<Self> {
         let client = Client::builder().user_agent(Self::USER_AGENT).build()?;
 
+        let tracing = TraceLayer::new_for_http();//.on_body_chunk(()).on_eos(());
         let service = ServiceBuilder::new()
             .rate_limit(rate_limit_per_second, Duration::from_secs(1))
             .service(client);
@@ -54,7 +56,10 @@ impl MojangClient {
         Ok(response)
     }
 
-    pub async fn resolve_uuid_to_game_profile(&self, id: Uuid) -> MojangRequestResult<GameProfile> {
+    pub async fn resolve_uuid_to_game_profile(
+        &self,
+        id: &Uuid,
+    ) -> MojangRequestResult<GameProfile> {
         let url = format!(
             "{session_server}/{id}",
             session_server = self.mojank_config.session_server

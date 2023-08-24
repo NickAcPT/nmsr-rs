@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use crate::error::{MojangRequestError, MojangRequestResult};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
+use std::collections::HashMap;
 use uuid::Uuid;
-use crate::error::{MojangRequestError, MojangRequestResult};
 
 #[derive(Deserialize, Debug)]
 pub struct GameProfileTextureMetadata {
@@ -29,6 +29,13 @@ impl GameProfileTexture {
 
     pub fn url(&self) -> &str {
         &self.url
+    }
+
+    pub fn hash(&self) -> MojangRequestResult<&str> {
+        self.url
+            .split('/')
+            .last()
+            .ok_or_else(|| MojangRequestError::InvalidTextureUrl(self.url.clone()))
     }
 }
 
@@ -58,8 +65,6 @@ struct GameProfileProperty {
 
 #[derive(Deserialize, Debug)]
 pub struct GameProfile {
-    id: Uuid,
-    name: String,
     #[serde(deserialize_with = "from_properties")]
     properties: HashMap<String, Value>,
 }
@@ -67,7 +72,7 @@ pub struct GameProfile {
 impl GameProfile {
     const TEXTURES_KEY: &'static str = "textures";
 
-    fn textures(&self) -> MojangRequestResult<GameProfileTextures> {
+    pub fn textures(&self) -> MojangRequestResult<GameProfileTextures> {
         let textures = self
             .properties
             .get(Self::TEXTURES_KEY)

@@ -1,4 +1,5 @@
 use thiserror::Error;
+use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum NMSRaaSError {
@@ -50,6 +51,10 @@ pub enum MojangRequestError {
     UrlParseError(#[from] url::ParseError),
     #[error("Request error: {0}")]
     RequestError(#[from] reqwest::Error),
+    #[error("Missing skin from game profile: {0}")]
+    MissingSkinProperty(Uuid),
+    #[error("Received invalid texture url: {0}")]
+    InvalidTextureUrl(String)
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;

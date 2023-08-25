@@ -13,7 +13,7 @@ use super::request::{
     RenderRequest, RequestRenderFeatures, cache::ModelCache,
 };
 
-mod mojang;
+pub mod mojang;
 
 pub struct RenderRequestResolver {
     model_cache: ModelCache,

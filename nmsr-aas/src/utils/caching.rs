@@ -21,6 +21,7 @@ where
 }
 
 #[async_trait]
+#[allow(unused_variables)]
 pub trait CacheHandler<Key, Value, Config, Marker>
 where
     Key: ?Sized,

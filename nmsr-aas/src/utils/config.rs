@@ -53,6 +53,9 @@ pub struct MojankConfiguration {
     /// The textures server to use for downloading player textures.
     #[serde(default = "default_textures_server")]
     pub textures_server: String,
+    
+    /// The rate limit to use for requests to the session server in a 1 second window.
+    pub session_server_rate_limit: u64,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]

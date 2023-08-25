@@ -1,3 +1,5 @@
+use axum::response::IntoResponse;
+use hyper::StatusCode;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -49,12 +51,16 @@ pub enum MojangRequestError {
     InvalidTexturesProperty(serde_json::Error),
     #[error("Url parse error: {0}")]
     UrlParseError(#[from] url::ParseError),
+    #[error("Http error: {0}")]
+    HttpRequestError(#[from] hyper::http::Error),
     #[error("Request error: {0}")]
-    RequestError(#[from] reqwest::Error),
+    RequestError(#[from] hyper::Error),
     #[error("Missing skin from game profile: {0}")]
     MissingSkinProperty(Uuid),
     #[error("Received invalid texture url: {0}")]
-    InvalidTextureUrl(String)
+    InvalidTextureUrl(String),
+    #[error("Received result while requesting mojang: {0}")]
+    MojangRequestError(String),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;
@@ -69,5 +75,14 @@ pub trait ExplainableExt<T> {
 impl<T> ExplainableExt<T> for std::result::Result<T, std::io::Error> {
     fn explain(self, message: String) -> Result<T> {
         self.map_err(|e| RenderRequestError::ExplainedIoError(e, message).into())
+    }
+}
+
+impl IntoResponse for NMSRaaSError {
+    fn into_response(self) -> axum::response::Response {
+        let mut res = axum::response::IntoResponse::into_response(self.to_string());
+        *res.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+        
+        res
     }
 }

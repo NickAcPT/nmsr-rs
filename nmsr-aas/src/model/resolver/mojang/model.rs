@@ -3,7 +3,6 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use std::collections::HashMap;
-use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
 pub struct GameProfileTextureMetadata {

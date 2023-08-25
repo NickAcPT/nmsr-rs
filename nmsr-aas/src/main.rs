@@ -2,10 +2,11 @@ pub mod model;
 mod routes;
 mod utils;
 
+use crate::routes::get_skin;
+use crate::routes::NMSRState;
 use crate::utils::tracing::NmsrTracing;
 
 use anyhow::Context;
-use axum::extract::Path;
 use opentelemetry::StringValue;
 use twelf::Layer;
 pub use utils::caching;
@@ -36,17 +37,20 @@ async fn main() -> anyhow::Result<()> {
         Layer::DefaultTrait,
         Layer::Toml("config.toml".into()),
         Layer::Env(Some("NMSR_".into())),
-    ]).context("Unable to load configuration")?;
-    
+    ])
+    .context("Unable to load configuration (this usually means config.toml is missing)")?;
+
     setup_tracing(config.tracing.as_ref())?;
-    
+
     info!("Loaded configuration: {:#?}", config);
 
+    let state = NMSRState::new(&config)?;
+
     // build our application with a route
-    let router = Router::new().route("/", get(root)).route(
-        "/:name",
-        get(|Path(name): Path<String>| async move { format!("Hello, {}!", name) }),
-    );
+    let router = Router::new()
+        .route("/", get(root))
+        .route("/skin/:texture", get(get_skin))
+        .with_state(state);
 
     let trace_layer = NmsrTracing::new_trace_layer();
 
@@ -55,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(trace_layer)
         .propagate_x_request_id()
         .service(router);
-    
+
     let addr = (config.server.address + ":" + &config.server.port.to_string()).parse()?;
 
     tracing::info!("Listening on {}", &addr);

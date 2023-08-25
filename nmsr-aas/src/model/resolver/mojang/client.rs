@@ -1,17 +1,42 @@
-use reqwest::{Client, Method, Request, Response, Url};
+use hyper::{client::HttpConnector, Body, Client, Method, Request, Response};
+use hyper_tls::HttpsConnector;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
-use tower_http::trace::TraceLayer;
+use tower_http::{
+    classify::{
+        NeverClassifyEos, ServerErrorsAsFailures, ServerErrorsFailureClass, SharedClassifier,
+    },
+    trace::{
+        DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, ResponseBody,
+        Trace, TraceLayer,
+    },
+};
 use uuid::Uuid;
 
 use tower::{limit::RateLimit, Service, ServiceBuilder};
 
-use crate::{config::MojankConfiguration, error::MojangRequestResult};
+use crate::{
+    config::MojankConfiguration,
+    error::{MojangRequestError, MojangRequestResult},
+};
 
 use super::model::GameProfile;
 
 pub struct MojangClient {
-    client: RwLock<RateLimit<reqwest::Client>>,
+    client: RwLock<
+        RateLimit<
+            Trace<
+                Client<HttpsConnector<HttpConnector>, Body>,
+                SharedClassifier<ServerErrorsAsFailures>,
+                DefaultMakeSpan,
+                DefaultOnRequest,
+                DefaultOnResponse,
+                (),
+                (),
+                DefaultOnFailure,
+            >,
+        >,
+    >,
     mojank_config: Arc<MojankConfiguration>,
 }
 
@@ -28,14 +53,16 @@ impl MojangClient {
     );
 
     pub fn new(
-        rate_limit_per_second: u64,
         mojank: Arc<MojankConfiguration>,
     ) -> MojangRequestResult<Self> {
-        let client = Client::builder().user_agent(Self::USER_AGENT).build()?;
+        let https = HttpsConnector::new();
 
-        let tracing = TraceLayer::new_for_http();//.on_body_chunk(()).on_eos(());
+        let client = Client::builder().build(https);
+
+        let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
         let service = ServiceBuilder::new()
-            .rate_limit(rate_limit_per_second, Duration::from_secs(1))
+            .rate_limit(mojank.session_server_rate_limit, Duration::from_secs(1))
+            .layer(tracing)
             .service(client);
 
         Ok(MojangClient {
@@ -44,14 +71,40 @@ impl MojangClient {
         })
     }
 
-    async fn do_request(&self, url: &str, method: Method) -> MojangRequestResult<Response> {
-        let request = Request::new(method, Url::parse(url)?);
+    async fn do_request(
+        &self,
+        url: &str,
+        method: Method,
+    ) -> MojangRequestResult<
+        Response<
+            ResponseBody<
+                Body,
+                NeverClassifyEos<ServerErrorsFailureClass>,
+                (),
+                (),
+                DefaultOnFailure,
+            >,
+        >,
+    > {
+        let request = Request::builder()
+            .header("user-agent", Self::USER_AGENT)
+            .method(method)
+            .uri(url)
+            .body(Body::empty())?;
 
         let response = {
             let mut client = self.client.write().await;
             client.call(request).await?
+        };
+
+        if response.status().is_client_error() || response.status().is_server_error() {
+            let status = &response.status();
+            let reason = status
+                .canonical_reason()
+                .unwrap_or(status.as_str())
+                .to_string();
+            return Err(MojangRequestError::MojangRequestError(reason));
         }
-        .error_for_status()?;
 
         Ok(response)
     }
@@ -66,8 +119,9 @@ impl MojangClient {
         );
 
         let response = self.do_request(&url, Method::GET).await?;
+        let bytes = hyper::body::to_bytes(response.into_body()).await?;
 
-        Ok(response.json::<GameProfile>().await?)
+        Ok(serde_json::from_slice(&bytes)?)
     }
 
     pub async fn fetch_texture_from_mojang(
@@ -80,7 +134,8 @@ impl MojangClient {
         );
 
         let response = self.do_request(&url, Method::GET).await?;
+        let bytes = hyper::body::to_bytes(response.into_body()).await?;
 
-        Ok(response.bytes().await?.to_vec())
+        Ok(bytes.to_vec())
     }
 }

@@ -60,6 +60,7 @@ struct ResolvedModelTexturesCacheHandler {
 }
 
 #[async_trait]
+#[allow(unused_variables)]
 impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
     for MojangTextureCacheHandler
 {

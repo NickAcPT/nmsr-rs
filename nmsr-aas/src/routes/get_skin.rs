@@ -1,13 +1,9 @@
-use axum::extract::{Path, State};
-use hyper::body::Bytes;
+use axum::extract::State;
 
-use crate::error::Result;
+use crate::{error::Result, model::request::RenderRequest};
 
 use super::NMSRState;
 
-pub async fn get_skin(
-    Path(texture): Path<String>,
-    State(state): State<NMSRState>,
-) -> Result<Bytes> {
-    Ok(Bytes::from(vec![]))
+pub async fn get_skin(request: RenderRequest, State(_state): State<NMSRState>) -> Result<String> {
+    Ok(format!("{:#?}", request))
 }

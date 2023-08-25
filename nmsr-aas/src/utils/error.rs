@@ -1,4 +1,4 @@
-use axum::response::IntoResponse;
+use axum::{response::IntoResponse, extract::rejection::PathRejection};
 use hyper::StatusCode;
 use thiserror::Error;
 use uuid::Uuid;
@@ -19,10 +19,12 @@ pub enum RenderRequestError {
     InvalidUUID(#[from] uuid::Error),
     #[error("The UUID you requested ({0}) has version {1} instead of version 4. Version 4 UUIDs are required for online player skins.")]
     InvalidPlayerUuidRequest(String, usize),
-    #[error("Invalid player request: {0}")]
+    #[error("{0}")]
     InvalidPlayerRequest(String),
     #[error("Io error: {0}")]
     ExplainedIoError(std::io::Error, String),
+    #[error("Path Rejection Error: {0}")]
+    PathRejection(#[from] PathRejection),
 }
 
 #[derive(Error, Debug)]

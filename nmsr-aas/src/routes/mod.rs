@@ -1,4 +1,5 @@
 mod get_skin;
+pub mod extractors;
 
 pub use get_skin::get_skin;
 

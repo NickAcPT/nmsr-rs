@@ -49,10 +49,10 @@ render_cache_duration = "15m"
 
 [mojank]
 # The URL to the Mojang API's session server.
-# This can be useful if you want to use a caching proxy for the Mojang API.
-
-# The URL to the Mojang API's textures server.
-# This is used to get the game profile for a player based on their uuid.
+# This can be useful if you want to use a caching proxy for the Mojang API and is used to
+# get the game profile for a player based on their uuid.
 session_server = "https://sessionserver.mojang.com"
 # The URL to the Mojang API's textures server.
 textures_server = "https://textures.minecraft.net"
+# The rate limit to use for requests to the session server in a 1 second window.
+session_server_rate_limit = 10

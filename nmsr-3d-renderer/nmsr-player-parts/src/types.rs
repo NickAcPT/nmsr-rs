@@ -58,6 +58,8 @@ impl PlayerPartTextureType {
         match self {
             Self::Skin => (64, 64),
             Self::Cape => (64, 32),
+            #[cfg(feature = "ears")]
+            Self::Ears => todo!(),
         }
     }
 }

@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-const DEFAULT_FILTER: &'static str = "trace,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
+const DEFAULT_FILTER: &'static str = "info,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
 
 fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
     let filter =

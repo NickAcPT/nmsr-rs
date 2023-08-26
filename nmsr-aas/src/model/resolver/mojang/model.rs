@@ -2,6 +2,7 @@ use crate::error::{MojangRequestError, MojangRequestResult};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
+use uuid::Uuid;
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
@@ -64,6 +65,8 @@ struct GameProfileProperty {
 
 #[derive(Deserialize, Debug)]
 pub struct GameProfile {
+    id: Uuid,
+    name: String,
     #[serde(deserialize_with = "from_properties")]
     properties: HashMap<String, Value>,
 }

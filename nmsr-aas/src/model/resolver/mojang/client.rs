@@ -1,6 +1,5 @@
 use hyper::{client::HttpConnector, Body, Client, Method, Request, Response};
 use hyper_tls::HttpsConnector;
-use tracing::{instrument, Span};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 use tower_http::{
@@ -12,6 +11,7 @@ use tower_http::{
         Trace, TraceLayer,
     },
 };
+use tracing::{instrument, Span};
 use uuid::Uuid;
 
 use tower::{limit::RateLimit, Service, ServiceBuilder};
@@ -53,9 +53,7 @@ impl MojangClient {
         " (Discord=@nickacpt; +https://nmsr.nickac.dev/)"
     );
 
-    pub fn new(
-        mojank: Arc<MojankConfiguration>,
-    ) -> MojangRequestResult<Self> {
+    pub fn new(mojank: Arc<MojankConfiguration>) -> MojangRequestResult<Self> {
         let https = HttpsConnector::new();
 
         let client = Client::builder().build(https);
@@ -77,7 +75,7 @@ impl MojangClient {
         &self,
         url: &str,
         method: Method,
-        parent_span: &Span
+        parent_span: &Span,
     ) -> MojangRequestResult<
         Response<
             ResponseBody<
@@ -117,7 +115,7 @@ impl MojangClient {
         id: &Uuid,
     ) -> MojangRequestResult<GameProfile> {
         let url = format!(
-            "{session_server}/{id}",
+            "{session_server}/session/minecraft/profile/{id}",
             session_server = self.mojank_config.session_server
         );
 
@@ -131,7 +129,7 @@ impl MojangClient {
     pub async fn fetch_texture_from_mojang(
         &self,
         texture_id: &str,
-        parent_span: &Span
+        parent_span: &Span,
     ) -> MojangRequestResult<Vec<u8>> {
         let url = format!(
             "{textures_server}/textures/{texture_id}",

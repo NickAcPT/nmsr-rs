@@ -6,7 +6,7 @@ use axum::{
 use derive_more::Debug;
 use opentelemetry::{
     global,
-    propagation::{Extractor, Injector},
+    propagation::{Extractor, Injector}, trace::TraceContextExt,
 };
 use std::net::SocketAddr;
 use tower_http::{
@@ -104,17 +104,23 @@ impl<B> MakeSpan<B> for NmsrTracing<B> {
             http.user_agent = user_agent,
             http.client_ip = Empty,
             otel.kind = ?opentelemetry::trace::SpanKind::Server,
+            http.status_code = Empty,
             otel.status_code = Empty,
+            trace_id = Empty,
 
             exception.message = Empty,
 
             request_id = Empty,
         );
-
-        global::get_text_map_propagator(|propagator| {
-            span.set_parent(propagator.extract(&HeaderMapCarrier(&request.headers())));
+        
+        let context = global::get_text_map_propagator(|propagator| {
+            propagator.extract(&HeaderMapCarrier(&request.headers()))
         });
-
+        
+        if context.has_active_span() {
+            span.set_parent(context);
+        }
+        
         span
     }
 }
@@ -152,7 +158,8 @@ impl<B> OnResponse<B> for NmsrTracing<B> {
         _latency: std::time::Duration,
         span: &tracing::Span,
     ) {
-        span.record("otel.status_code", &response.status().as_u16());
+        span.record("http.status_code", &response.status().as_u16());
+        span.record("otel.status_code", "OK");
     }
 }
 
@@ -167,5 +174,8 @@ impl<B, C: Debug> OnFailure<C> for NmsrTracing<B> {
             "exception.message",
             format!("{:?}", failure_classification).as_str(),
         );
+        
+        span.record("otel.status_code", "ERROR");
+        
     }
 }

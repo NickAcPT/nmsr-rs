@@ -55,8 +55,7 @@ tracing-opentelemetry = "0.20.0"
 
 # Strum - Enum helper library
 strum = { version = "0.25.0", features = ["derive"] }
-# Enumset - Enumset library
-enumset = "1.1.2"
+enumset = { version = "1.1.2", features = ["serde", "alloc", "std"] }
 
 # Uuid - Uuid library
 uuid = { version = "1.4.1", features = ["serde"] }
@@ -70,9 +69,6 @@ derive_more = { version = "1.0.0-beta.3", features = ["deref", "debug"] }
 # Tower - Service framework
 tower = { version = "0.4.13", features = ["limit", "retry"] }
 tower-http = { version = "0.4.3", features = ["full"] }
-
-# rkyv - Serialization library for model chaching markers
-rkyv = "0.7.42"
 
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
 symlink = "0.1.0"

@@ -1,4 +1,4 @@
-use axum::{response::IntoResponse, extract::rejection::PathRejection};
+use axum::response::IntoResponse;
 use hyper::StatusCode;
 use thiserror::Error;
 use uuid::Uuid;
@@ -24,7 +24,11 @@ pub enum RenderRequestError {
     #[error("Io error: {0}")]
     ExplainedIoError(std::io::Error, String),
     #[error("Path Rejection Error: {0}")]
-    PathRejection(#[from] PathRejection),
+    PathRejection(#[from] axum::extract::rejection::PathRejection),
+    #[error("Query Rejection Error: {0}")]
+    QueryRejection(#[from] axum::extract::rejection::QueryRejection),
+    #[error("Invalid render mode: {0}")]
+    InvalidRenderMode(String),
 }
 
 #[derive(Error, Debug)]

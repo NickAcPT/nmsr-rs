@@ -1,15 +1,93 @@
 use async_trait::async_trait;
 use axum::{
-    extract::{FromRequestParts, Path},
+    extract::{FromRequestParts, Path, Query},
     http::request::Parts,
     RequestPartsExt,
 };
 use enumset::EnumSet;
+use serde::Deserialize;
+use serde_with::{formats::CommaSeparator, serde_as, DisplayFromStr, StringWithSeparator};
 
 use crate::{
     error::{NMSRaaSError, RenderRequestError, Result},
-    model::request::{entry::RenderRequestEntry, RenderRequest},
+    model::request::{
+        entry::{RenderRequestEntry, RenderRequestEntryModel},
+        RenderRequest, RenderRequestFeatures, RenderRequestMode,
+    },
 };
+
+#[serde_as]
+#[derive(Debug, Clone, Deserialize)]
+///  The options are:
+///  - `?exclude=<features>` or `?no=<features>`: exclude a feature from the entry (comma-separated, or multiple query strings)
+///
+///  - `?noshading`: disable shading of the entry [compatibility with old URLs]
+///  - `?nolayers`: disable layers of the entry [compatibility with old URLs]
+///
+///  - `?y=<yaw>` or `?yaw=<yaw>`: set the yaw of the camera
+///  - `?p=<pitch>` or `?pitch=<pitch>`: set the pitch of the camera
+///  - `?r=<roll>` or `?roll=<roll>`: set the roll of the camera
+///
+///  - `?w=<width>` or `?width=<width>`: set the width of the image
+///  - `?h=<height>` or `?height=<height>`: set the height of the image
+///  - `?model=<steve|alex|wide|slim>`: set the model of the entry
+///  - `?alex`: set the model of the entry to alex [compatibility with old URLs]
+///  - `?steve`: set the model of the entry to steve [compatibility with old URLs]
+struct RenderRequestQueryParams {
+    #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, RenderRequestFeatures>>")]
+    #[serde(alias = "no")]
+    exclude: Option<EnumSet<RenderRequestFeatures>>,
+    noshading: Option<String>,
+    nolayers: Option<String>,
+
+    #[serde(alias = "y")]
+    yaw: Option<f32>,
+    #[serde(alias = "p")]
+    pitch: Option<f32>,
+    #[serde(alias = "r")]
+    roll: Option<f32>,
+
+    #[serde(alias = "w")]
+    width: Option<u32>,
+    #[serde(alias = "h")]
+    height: Option<u32>,
+
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    model: Option<RenderRequestEntryModel>,
+    alex: Option<String>,
+    steve: Option<String>,
+}
+
+impl RenderRequestQueryParams {
+    fn get_excluded_features(&self) -> EnumSet<RenderRequestFeatures> {
+        let mut excluded = self.exclude.unwrap_or(EnumSet::EMPTY);
+
+        if self.nolayers.is_some() {
+            excluded |= RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer;
+        }
+
+        if self.noshading.is_some() {
+            excluded |= RenderRequestFeatures::Shading;
+        }
+
+        excluded
+    }
+
+    fn get_model(&self) -> Option<RenderRequestEntryModel> {
+        let steve = self
+            .steve
+            .as_ref()
+            .and(Some(RenderRequestEntryModel::Steve));
+        let alex = self.alex.as_ref().and(Some(RenderRequestEntryModel::Alex));
+        let model = self.model;
+
+        // Extract the model in the following order:
+        // - First, check if the user specified that they wanted steve or alex (for compatibility with old URLs)
+        // - Then, check if the user specified a model
+        // Priority: Alex > Steve > Model
+        alex.or(steve).or(model)
+    }
+}
 
 #[async_trait]
 impl<S> FromRequestParts<S> for RenderRequest
@@ -18,18 +96,146 @@ where
 {
     type Rejection = NMSRaaSError;
 
+    /// Extract a [`RenderRequest`] from the request parts.
+    ///
+    /// A [`RenderRequest`] contains an entry and its respective options.
+    ///
+    /// URLs have the following format:
+    ///  - `/<something>/:entry?options`
+    ///
+    /// The entry is in the URL path, and the options are in the query string.
+    ///
+    /// The options are:
+    ///  - `?exclude=<features>` or `?no=<features>`: exclude a feature from the entry (comma-separated, or multiple query strings)
+    ///  - `?y=<yaw>`: set the yaw of the camera
+    ///  - `?p=<pitch>`: set the pitch of the camera
+    ///  - `?r=<roll>`: set the roll of the camera
+    ///  - `?w=<width>`: set the width of the image
+    ///  - `?h=<height>`: set the height of the image
+    ///  - `?model=<steve|alex|wide|slim>`: set the model of the entry
+    ///  - `?alex`: set the model of the entry to alex [compatibility with old URLs]
+    ///  - `?steve`: set the model of the entry to steve [compatibility with old URLs]
+    ///  - `?noshading`: disable shading of the entry [compatibility with old URLs]
+    ///  - `?nolayers`: disable layers of the entry [compatibility with old URLs]
+    ///
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self> {
-        let Path(entry_str): Path<String> = parts
-            .extract_with_state::<Path<String>, S>(state)
+        let Path((mode_str, entry_str)): Path<(String, String)> = parts
+            .extract_with_state::<Path<(String, String)>, S>(state)
             .await
             .map_err(RenderRequestError::from)?;
 
+        let mode = RenderRequestMode::try_from(mode_str.as_str())
+            .map_err(|_| RenderRequestError::InvalidRenderMode(mode_str))?;
+
         let entry = RenderRequestEntry::try_from(entry_str)?;
 
+        let Query(query) = parts
+            .extract_with_state::<Query<RenderRequestQueryParams>, S>(state)
+            .await
+            .map_err(RenderRequestError::from)?;
+
+        let excluded_features = query.get_excluded_features();
+
+        let model = query.get_model();
+
         Ok(RenderRequest::new_from_excluded_features(
+            mode,
             entry,
-            None,
-            EnumSet::EMPTY,
+            model,
+            excluded_features,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use axum::{extract::State, routing::get, Router};
+    use enumset::{enum_set, EnumSet};
+    use hyper::{Body, Request};
+    use tokio::sync::mpsc::Sender;
+    use tower::ServiceExt;
+    use uuid::uuid;
+
+    use crate::model::request::{
+        entry::{RenderRequestEntry, RenderRequestEntryModel},
+        RenderRequest, RenderRequestFeatures, RenderRequestMode,
+    };
+
+    async fn render_request_from_url(url: &str) -> RenderRequest {
+        let (tx, mut rx) = tokio::sync::mpsc::channel::<RenderRequest>(1);
+
+        let request = Request::builder()
+            .uri(url)
+            .body(Body::empty())
+            .expect("Failed to build request");
+
+        let app: Router = Router::new()
+            .route(
+                "/:mode/:entry",
+                get(
+                    |request: RenderRequest,
+                     State(state): State<Sender<RenderRequest>>| async move {
+                        state.send(request).await.unwrap();
+                        ()
+                    },
+                ),
+            )
+            .with_state(tx);
+
+        app.oneshot(request).await.expect("Failed to send request");
+
+        rx.recv().await.expect("Failed to receive request")
+    }
+
+    #[tokio::test]
+    async fn test_render_request_from_request_parts() {
+        let entry = RenderRequestEntry::PlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
+
+        let expected = HashMap::from([
+            (
+                "http://localhost:8621/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832",
+                RenderRequest {
+                    mode: RenderRequestMode::Skin,
+                    entry: entry.clone(),
+                    model: None,
+                    features: EnumSet::ALL,
+                },
+            ),
+            (
+                "http://localhost:8621/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?no=shadow",
+                RenderRequest {
+                    mode: RenderRequestMode::Skin,
+                    entry: entry.clone(),
+                    model: None,
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::Shadow)),
+                },
+            ),
+            (
+                "http://localhost:8621/skin/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?alex&noshading&nolayers",
+                RenderRequest {
+                    mode: RenderRequestMode::Skin,
+                    entry: entry.clone(),
+                    model: Some(RenderRequestEntryModel::Alex),
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::Shading | RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer)),
+                },
+            ),
+            (
+                "http://localhost:8621/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?nolayers&no=cape",
+                RenderRequest {
+                    mode: RenderRequestMode::FullBody,
+                    entry: entry.clone(),
+                    model: None,
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape)),
+                },
+            ),
+        ]);
+
+        for (url, element) in expected {
+            let result = render_request_from_url(url).await;
+
+            assert_eq!(element, result, "Failed to extract for url: {}", url);
+        }
     }
 }

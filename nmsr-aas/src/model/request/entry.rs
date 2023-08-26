@@ -1,5 +1,6 @@
 use derive_more::Debug;
 use serde::{Deserialize, Serialize};
+use strum::{Display, EnumCount, EnumString, FromRepr};
 use uuid::Uuid;
 
 use crate::error::{RenderRequestError, RenderRequestResult};
@@ -42,16 +43,19 @@ impl TryFrom<RenderRequestEntry> for String {
         match value {
             RenderRequestEntry::PlayerUuid(uuid) => Ok(uuid.to_string()),
             RenderRequestEntry::TextureHash(hash) => Ok(hash),
-            RenderRequestEntry::PlayerSkin(_) => Err(RenderRequestError::InvalidPlayerRequest("Unable to convert PlayerSkin to String".to_string())),
+            RenderRequestEntry::PlayerSkin(_) => Err(RenderRequestError::InvalidPlayerRequest(
+                "Unable to convert PlayerSkin to String".to_string(),
+            )),
         }
     }
 }
-    
 
-#[derive(Debug, Default, Clone, Copy, strum::FromRepr, strum::EnumCount)]
+#[derive(Debug, Default, Clone, Copy, FromRepr, Display, EnumString, EnumCount, PartialEq)]
 pub enum RenderRequestEntryModel {
     #[default]
+    #[strum(serialize = "steve", serialize = "wide")]
     Steve,
+    #[strum(serialize = "alex", serialize = "slim")]
     Alex,
 }
 

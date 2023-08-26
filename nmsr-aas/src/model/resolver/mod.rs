@@ -10,7 +10,7 @@ use self::mojang::{client::MojangClient, model::GameProfileTexture};
 
 use super::request::{
     entry::{RenderRequestEntry, RenderRequestEntryModel},
-    RenderRequest, RequestRenderFeatures, cache::ModelCache,
+    RenderRequest, RenderRequestFeatures, cache::ModelCache,
 };
 
 pub mod mojang;
@@ -228,5 +228,5 @@ pub struct ResolvedRenderRequest {
     pub model: RenderRequestEntryModel,
     #[debug(skip)]
     pub textures: HashMap<ResolvedRenderEntryTextureType, Vec<u8>>,
-    pub features: enumset::EnumSet<RequestRenderFeatures>,
+    pub features: enumset::EnumSet<RenderRequestFeatures>,
 }

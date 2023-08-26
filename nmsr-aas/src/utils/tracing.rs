@@ -4,20 +4,12 @@ use axum::{
     http::{HeaderMap, HeaderName},
 };
 use derive_more::Debug;
-use hyper::{
-    body::{Bytes, HttpBody},
-    Body,
-};
 use opentelemetry::{
     global,
     propagation::{Extractor, Injector},
     trace::TraceContextExt,
 };
-use std::{
-    any::{Any, TypeId},
-    net::SocketAddr,
-    pin,
-};
+use std::net::SocketAddr;
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
     trace::{DefaultOnBodyChunk, MakeSpan, OnFailure, OnRequest, OnResponse, TraceLayer},
@@ -34,7 +26,6 @@ const X_FORWARDED_FOR_HEADER: HeaderName = HeaderName::from_static("x-forwarded-
 const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
 
 pub struct NmsrTracing<B> {
-    classifier: ServerErrorsAsFailures,
     _phantom: std::marker::PhantomData<B>,
 }
 
@@ -49,17 +40,13 @@ impl<B> NmsrTracing<B> {
 
 impl<T> Clone for NmsrTracing<T> {
     fn clone(&self) -> Self {
-        Self {
-            classifier: ServerErrorsAsFailures::new(),
-            _phantom: std::marker::PhantomData,
-        }
+        Default::default()
     }
 }
 
 impl<B> Default for NmsrTracing<B> {
     fn default() -> Self {
         Self {
-            classifier: ServerErrorsAsFailures::new(),
             _phantom: std::marker::PhantomData,
         }
     }

@@ -258,8 +258,6 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
                     .mojang_texture_cache
                     .set_cache_entry(&texture_hash.as_str(), &texture)
                     .await?;
-                
-                println!("{:?}",cache_path);
 
                 if let Some(cache_path) = cache_path {
                     let cache_path = cache_path.canonicalize().explain(format!(

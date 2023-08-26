@@ -44,7 +44,12 @@ async fn main() -> anyhow::Result<()> {
 
     info!("Loaded configuration: {:#?}", config);
 
-    let state = NMSRState::new(&config)?;
+    let state = NMSRState::new(&config).await?;
+    
+    let adapter = &state.graphics_context.adapter;
+    let samples = &state.graphics_context.sample_count;
+    
+    info!("Initialized state with adapter {:?} and using {} MSAA samples", adapter, samples);
 
     // build our application with a route
     let router = Router::new()

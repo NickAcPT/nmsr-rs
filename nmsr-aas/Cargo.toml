@@ -9,7 +9,7 @@ homepage.workspace = true
 
 [dependencies]
 # NMSR Rendering - Library for rendering using a wgpu backed rendering engine
-nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering", optional = true }
+nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering" }
 
 anyhow = "1.0.75"
 

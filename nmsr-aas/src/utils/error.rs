@@ -11,6 +11,8 @@ pub enum NMSRaaSError {
     ModelCacheError(#[from] ModelCacheError),
     #[error("Mojang request error: {0}")]
     MojangRequestError(#[from] MojangRequestError),
+    #[error("Render error: {0}")]
+    RenderError(#[from] nmsr_rendering::errors::NMSRRenderingError),
 }
 
 #[derive(Error, Debug)]

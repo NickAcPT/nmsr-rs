@@ -57,21 +57,11 @@ struct RenderRequestQueryParams {
     model: Option<RenderRequestEntryModel>,
     alex: Option<String>,
     steve: Option<String>,
-    
+
     process: Option<String>,
 }
 
 impl RenderRequestQueryParams {
-    fn get_included_features(&self) -> EnumSet<RenderRequestFeatures> {
-        let mut included = EnumSet::EMPTY;
-        
-        if self.process.is_some() {
-            included |= RenderRequestFeatures::ProcessedSkin;
-        }
-        
-        included
-    }
-    
     fn get_excluded_features(&self) -> EnumSet<RenderRequestFeatures> {
         let mut excluded = self.exclude.unwrap_or(EnumSet::EMPTY);
 
@@ -81,6 +71,10 @@ impl RenderRequestQueryParams {
 
         if self.noshading.is_some() {
             excluded |= RenderRequestFeatures::Shading;
+        }
+
+        if self.process.is_some() {
+            excluded |= RenderRequestFeatures::UnProcessedSkin;
         }
 
         excluded
@@ -149,18 +143,16 @@ where
             .map_err(RenderRequestError::from)?;
 
         let excluded_features = query.get_excluded_features();
-        let included_features = query.get_included_features();
 
         let model = query.get_model();
 
         // TODO: Camera options
-        
-        Ok(RenderRequest::new(
+
+        Ok(RenderRequest::new_from_excluded_features(
             mode,
             entry,
             model,
             excluded_features,
-            included_features
         ))
     }
 }

@@ -1,6 +1,6 @@
 use derive_more::Debug;
 use enumset::{EnumSet, EnumSetType};
-use strum::{EnumString, Display};
+use strum::{Display, EnumString};
 
 use self::entry::{RenderRequestEntry, RenderRequestEntryModel};
 
@@ -23,9 +23,9 @@ pub enum RenderRequestFeatures {
     Shadow,
     Shading,
     Cape,
+    UnProcessedSkin,
     #[cfg(feature = "ears")]
     Ears,
-    ProcessedSkin,
 }
 
 #[derive(EnumString, Debug, PartialEq, Clone)]
@@ -73,20 +73,19 @@ impl RenderRequest {
     /// let mode = RenderRequestMode::FullBody;
     /// let entry = RenderRequestEntry::PlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
     /// let excluded_features = enum_set!(RenderRequestFeatures::Shadow);
-    /// let request = RenderRequest::new_from_excluded_features(mode, entry, None, excluded_features, EnumSet::EMPTY);
+    /// let request = RenderRequest::new_from_excluded_features(mode, entry, None, excluded_features);
     /// ```
-    pub fn new(
+    pub fn new_from_excluded_features(
         mode: RenderRequestMode,
         entry: RenderRequestEntry,
         model: Option<RenderRequestEntryModel>,
         excluded_features: EnumSet<RenderRequestFeatures>,
-        included_features: EnumSet<RenderRequestFeatures>,
     ) -> Self {
         RenderRequest {
             mode,
             entry,
             model,
-            features: EnumSet::all().difference(excluded_features).union(included_features),
+            features: EnumSet::all().difference(excluded_features),
         }
     }
 }

@@ -46,7 +46,7 @@ async fn main() -> anyhow::Result<()> {
 
     let state = NMSRState::new(&config).await?;
     
-    let adapter = &state.graphics_context.adapter;
+    let adapter = &state.graphics_context.adapter.get_info();
     let samples = &state.graphics_context.sample_count;
     
     info!("Initialized state with adapter {:?} and using {} MSAA samples", adapter, samples);
@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-const DEFAULT_FILTER: &'static str = "info,h2=off";
+const DEFAULT_FILTER: &'static str = "info,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
 
 fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
     let filter =

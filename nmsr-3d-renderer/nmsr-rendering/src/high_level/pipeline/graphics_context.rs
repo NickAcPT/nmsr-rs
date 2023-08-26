@@ -279,7 +279,8 @@ impl GraphicsContext {
             return count;
         }
 
-        let sample_flags = adapter.get_texture_format_features(*texture_format).flags;
+        let format = *texture_format;
+        let sample_flags = adapter.get_texture_format_features(format).flags;
 
         vec![16, 8, 4, 2, 1]
             .iter()

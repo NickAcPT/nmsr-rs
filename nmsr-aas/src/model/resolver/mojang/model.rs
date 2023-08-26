@@ -59,7 +59,7 @@ impl GameProfileTextures {
 #[derive(Deserialize)]
 struct GameProfileProperty {
     name: String,
-    value: Vec<u8>,
+    value: String,
 }
 
 #[derive(Deserialize, Debug)]

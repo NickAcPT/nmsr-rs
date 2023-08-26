@@ -2,7 +2,7 @@ pub mod model;
 mod routes;
 mod utils;
 
-use crate::routes::get_skin;
+use crate::routes::render_model;
 use crate::routes::NMSRState;
 use crate::utils::tracing::NmsrTracing;
 
@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
     // build our application with a route
     let router = Router::new()
         .route("/", get(root))
-        .route("/skin/:texture", get(get_skin))
+        .route("/:mode/:texture", get(render_model))
         .with_state(state);
 
     let trace_layer = NmsrTracing::new_trace_layer();

@@ -33,6 +33,7 @@ use crate::{
 ///  - `?model=<steve|alex|wide|slim>`: set the model of the entry
 ///  - `?alex`: set the model of the entry to alex [compatibility with old URLs]
 ///  - `?steve`: set the model of the entry to steve [compatibility with old URLs]
+///  - `?process`: process the skin (upgrade skin to 1.8 format, strip alpha from the body regions, apply erase regions if Ears feature is enabled)
 struct RenderRequestQueryParams {
     #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, RenderRequestFeatures>>")]
     #[serde(alias = "no")]
@@ -56,9 +57,21 @@ struct RenderRequestQueryParams {
     model: Option<RenderRequestEntryModel>,
     alex: Option<String>,
     steve: Option<String>,
+    
+    process: Option<String>,
 }
 
 impl RenderRequestQueryParams {
+    fn get_included_features(&self) -> EnumSet<RenderRequestFeatures> {
+        let mut included = EnumSet::EMPTY;
+        
+        if self.process.is_some() {
+            included |= RenderRequestFeatures::ProcessedSkin;
+        }
+        
+        included
+    }
+    
     fn get_excluded_features(&self) -> EnumSet<RenderRequestFeatures> {
         let mut excluded = self.exclude.unwrap_or(EnumSet::EMPTY);
 
@@ -101,7 +114,7 @@ where
     /// A [`RenderRequest`] contains an entry and its respective options.
     ///
     /// URLs have the following format:
-    ///  - `/<something>/:entry?options`
+    ///  - `/:model/:entry?options`
     ///
     /// The entry is in the URL path, and the options are in the query string.
     ///
@@ -117,6 +130,7 @@ where
     ///  - `?steve`: set the model of the entry to steve [compatibility with old URLs]
     ///  - `?noshading`: disable shading of the entry [compatibility with old URLs]
     ///  - `?nolayers`: disable layers of the entry [compatibility with old URLs]
+    ///  - `?process`: process the skin (upgrade skin to 1.8 format, strip alpha from the body regions, apply erase regions if Ears feature is enabled)
     ///
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self> {
         let Path((mode_str, entry_str)): Path<(String, String)> = parts
@@ -135,14 +149,18 @@ where
             .map_err(RenderRequestError::from)?;
 
         let excluded_features = query.get_excluded_features();
+        let included_features = query.get_included_features();
 
         let model = query.get_model();
 
-        Ok(RenderRequest::new_from_excluded_features(
+        // TODO: Camera options
+        
+        Ok(RenderRequest::new(
             mode,
             entry,
             model,
             excluded_features,
+            included_features
         ))
     }
 }

@@ -1,7 +1,7 @@
 mod get_skin;
 pub mod extractors;
 
-pub use get_skin::get_skin;
+pub use get_skin::render_model;
 
 use std::sync::Arc;
 

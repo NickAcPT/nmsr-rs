@@ -170,7 +170,7 @@ where
 
         if let Some(path) = &path {
             if path.exists() && !self.handler.always_overwrite() {
-                return Ok(None);
+                return Ok(Some(path.clone()));
             }
 
             let marker_path = self.handler.get_marker_path(entry, &self.config).await?;

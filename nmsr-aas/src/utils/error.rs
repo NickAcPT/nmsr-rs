@@ -56,9 +56,9 @@ pub enum MojangRequestError {
     #[error("Unable to decode game profile from json: {0}")]
     JsonError(#[from] serde_json::Error),
     #[error("Game profile is missing the textures property")]
-    MissingTexturesProperty,
+    MissingTexturesPropertyError,
     #[error("Game profile has an invalid textures property: {0}")]
-    InvalidTexturesProperty(serde_json::Error),
+    InvalidTexturesPropertyError(serde_json::Error),
     #[error("Url parse error: {0}")]
     UrlParseError(#[from] url::ParseError),
     #[error("Http error: {0}")]
@@ -66,11 +66,13 @@ pub enum MojangRequestError {
     #[error("Request error: {0}")]
     RequestError(#[from] hyper::Error),
     #[error("Missing skin from game profile: {0}")]
-    MissingSkinProperty(Uuid),
+    MissingSkinPropertyError(Uuid),
     #[error("Received invalid texture url: {0}")]
-    InvalidTextureUrl(String),
-    #[error("Received result while requesting mojang: {0}")]
-    MojangRequestError(String),
+    InvalidTextureUrlError(String),
+    #[error("Received result while fetching from mojang: {0}")]
+    MojangFetchRequestError(String),
+    #[error("Unable to resolve render request entity {1:?}: {0}")]
+    UnableToResolveRenderRequestEntity(Box<dyn std::error::Error + Send + Sync>, crate::model::request::entry::RenderRequestEntry),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;
@@ -92,10 +94,14 @@ impl<T> ExplainableExt<T> for std::result::Result<T, std::io::Error> {
     }
 }
 
+pub struct NmsrErrorExtension(pub NMSRaaSError);
+
 impl IntoResponse for NMSRaaSError {
     fn into_response(self) -> axum::response::Response {
         let mut res = axum::response::IntoResponse::into_response(self.to_string());
         *res.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+        
+        res.extensions_mut().insert(NmsrErrorExtension(self));
         
         res
     }

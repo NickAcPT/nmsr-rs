@@ -104,7 +104,7 @@ impl MojangClient {
                 .canonical_reason()
                 .unwrap_or(status.as_str())
                 .to_string();
-            return Err(MojangRequestError::MojangRequestError(reason));
+            return Err(MojangRequestError::MojangFetchRequestError(reason));
         }
 
         Ok(response)
@@ -132,7 +132,7 @@ impl MojangClient {
         parent_span: &Span,
     ) -> MojangRequestResult<Vec<u8>> {
         let url = format!(
-            "{textures_server}/textures/{texture_id}",
+            "{textures_server}/texture/{texture_id}",
             textures_server = self.mojank_config.textures_server
         );
 

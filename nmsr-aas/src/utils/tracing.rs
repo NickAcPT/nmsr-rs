@@ -4,25 +4,37 @@ use axum::{
     http::{HeaderMap, HeaderName},
 };
 use derive_more::Debug;
+use hyper::{
+    body::{Bytes, HttpBody},
+    Body,
+};
 use opentelemetry::{
     global,
-    propagation::{Extractor, Injector}, trace::TraceContextExt,
+    propagation::{Extractor, Injector},
+    trace::TraceContextExt,
 };
-use std::net::SocketAddr;
+use std::{
+    any::{Any, TypeId},
+    net::SocketAddr,
+    pin,
+};
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
-    trace::{
-        DefaultOnBodyChunk, MakeSpan, OnFailure, OnRequest,
-        OnResponse, TraceLayer,
-    },
+    trace::{DefaultOnBodyChunk, MakeSpan, OnFailure, OnRequest, OnResponse, TraceLayer},
 };
-use tracing::{field::Empty, info_span};
+use tracing::{
+    field::{self, Empty},
+    info_span,
+};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+
+use crate::error::NmsrErrorExtension;
 
 const X_FORWARDED_FOR_HEADER: HeaderName = HeaderName::from_static("x-forwarded-for");
 const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
 
 pub struct NmsrTracing<B> {
+    classifier: ServerErrorsAsFailures,
     _phantom: std::marker::PhantomData<B>,
 }
 
@@ -38,6 +50,7 @@ impl<B> NmsrTracing<B> {
 impl<T> Clone for NmsrTracing<T> {
     fn clone(&self) -> Self {
         Self {
+            classifier: ServerErrorsAsFailures::new(),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -46,6 +59,7 @@ impl<T> Clone for NmsrTracing<T> {
 impl<B> Default for NmsrTracing<B> {
     fn default() -> Self {
         Self {
+            classifier: ServerErrorsAsFailures::new(),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -112,15 +126,15 @@ impl<B> MakeSpan<B> for NmsrTracing<B> {
 
             request_id = Empty,
         );
-        
+
         let context = global::get_text_map_propagator(|propagator| {
             propagator.extract(&HeaderMapCarrier(&request.headers()))
         });
-        
+
         if context.has_active_span() {
             span.set_parent(context);
         }
-        
+
         span
     }
 }
@@ -158,6 +172,16 @@ impl<B> OnResponse<B> for NmsrTracing<B> {
         _latency: std::time::Duration,
         span: &tracing::Span,
     ) {
+        if response.status().is_client_error() || response.status().is_server_error() {
+            if let Some(NmsrErrorExtension(original_error)) =
+                response.extensions().get::<NmsrErrorExtension>()
+            {
+                span.record("exception.message", field::display(original_error.clone()));
+            } else {
+                span.record("exception.message", &"Unknown error");
+            }
+        }
+
         span.record("http.status_code", &response.status().as_u16());
         span.record("otel.status_code", "OK");
     }
@@ -166,16 +190,10 @@ impl<B> OnResponse<B> for NmsrTracing<B> {
 impl<B, C: Debug> OnFailure<C> for NmsrTracing<B> {
     fn on_failure(
         &mut self,
-        failure_classification: C,
+        _failure_classification: C,
         _latency: std::time::Duration,
         span: &tracing::Span,
     ) {
-        span.record(
-            "exception.message",
-            format!("{:?}", failure_classification).as_str(),
-        );
-        
         span.record("otel.status_code", "ERROR");
-        
     }
 }

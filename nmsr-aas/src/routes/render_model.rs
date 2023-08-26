@@ -14,7 +14,7 @@ use nmsr_rendering::{
     high_level::{
         parts::provider::PlayerPartProviderContext,
         pipeline::scene::{Scene, Size},
-        player_model::PlayerModel,
+        player_model::PlayerModel, types::PlayerPartTextureType,
     },
 };
 use tracing::trace_span;
@@ -108,7 +108,7 @@ async fn internal_render_model(
 
     let size = Size {
         width: 512,
-        height: 1024,
+        height: 896,
     };
 
     let mode = &request.mode;
@@ -143,10 +143,16 @@ async fn internal_render_model(
     );
 
     for (texture_type, texture_bytes) in resolved.textures {
+        let mut image_buffer = load_image(&texture_bytes)?;
+        
+        if texture_type == ResolvedRenderEntryTextureType::Skin {
+            image_buffer = state.process_skin(image_buffer, request.features)?;
+        }
+        
         scene.set_texture(
             &state.graphics_context,
             texture_type.into(),
-            &load_image(&texture_bytes)?,
+            &image_buffer,
         );
     }
 

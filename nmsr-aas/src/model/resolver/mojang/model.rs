@@ -34,7 +34,7 @@ impl GameProfileTexture {
         self.url
             .split('/')
             .last()
-            .ok_or_else(|| MojangRequestError::InvalidTextureUrl(self.url.clone()))
+            .ok_or_else(|| MojangRequestError::InvalidTextureUrlError(self.url.clone()))
     }
 }
 
@@ -75,10 +75,10 @@ impl GameProfile {
         let textures = self
             .properties
             .get(Self::TEXTURES_KEY)
-            .ok_or(MojangRequestError::MissingTexturesProperty)?;
+            .ok_or(MojangRequestError::MissingTexturesPropertyError)?;
 
         serde_json::from_value(textures.clone())
-            .map_err(|e| MojangRequestError::InvalidTexturesProperty(e))
+            .map_err(|e| MojangRequestError::InvalidTexturesPropertyError(e))
     }
 }
 

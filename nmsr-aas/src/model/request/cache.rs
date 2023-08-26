@@ -258,6 +258,8 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
                     .mojang_texture_cache
                     .set_cache_entry(&texture_hash.as_str(), &texture)
                     .await?;
+                
+                println!("{:?}",cache_path);
 
                 if let Some(cache_path) = cache_path {
                     let cache_path = cache_path.canonicalize().explain(format!(
@@ -281,7 +283,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         entry: &RenderRequestEntry,
         _config: &ModelCacheConfiguration,
         base: &PathBuf,
-        _marker: &[u8; 1],
+        marker: &[u8; 1],
     ) -> Result<Option<ResolvedRenderEntryTextures>> {
         let mut textures = HashMap::new();
 
@@ -298,10 +300,8 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             }
         }
 
-        let marker = [3];
-
         Ok(Some(ResolvedRenderEntryTextures::new_from_marker_slice(
-            textures, &marker,
+            textures, marker,
         )))
     }
 

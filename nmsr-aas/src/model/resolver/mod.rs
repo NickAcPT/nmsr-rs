@@ -5,13 +5,17 @@ use nmsr_rendering::high_level::types::PlayerPartTextureType;
 use strum::EnumCount;
 use tracing::{instrument, Span};
 
-use crate::error::{Result, MojangRequestError};
+use crate::{
+    config::NmsrConfiguration,
+    error::{MojangRequestError, NMSRaaSError, Result},
+};
 
 use self::mojang::{client::MojangClient, model::GameProfileTexture};
 
 use super::request::{
+    cache::ModelCache,
     entry::{RenderRequestEntry, RenderRequestEntryModel},
-    RenderRequest, cache::ModelCache,
+    RenderRequest,
 };
 
 pub mod mojang;
@@ -120,13 +124,16 @@ impl RenderRequestResolver {
             mojang_requests_client: client,
         }
     }
-    
-    async fn fetch_game_profile_texture(&self, texture: Option<&GameProfileTexture>) -> Result<Option<MojangTexture>> {
+
+    async fn fetch_game_profile_texture(
+        &self,
+        texture: Option<&GameProfileTexture>,
+    ) -> Result<Option<MojangTexture>> {
         if let Some(texture) = texture {
             let texture_id = texture.hash()?;
-        
+
             let texture = self.fetch_texture_from_mojang(texture_id).await?;
-        
+
             Ok(Some(texture))
         } else {
             Ok(None)
@@ -138,14 +145,13 @@ impl RenderRequestResolver {
             return Ok(result);
         }
 
-        let bytes = self.mojang_requests_client.fetch_texture_from_mojang(
-            &texture_id,
-            &Span::current()
-        )
-        .await?;
+        let bytes = self
+            .mojang_requests_client
+            .fetch_texture_from_mojang(&texture_id, &Span::current())
+            .await?;
 
         let texture = MojangTexture::new_named(texture_id.to_owned(), bytes);
-        
+
         self.model_cache.cache_texture(&texture).await?;
 
         Ok(texture)
@@ -164,16 +170,21 @@ impl RenderRequestResolver {
         let skin_texture: Option<MojangTexture>;
         let cape_texture: Option<MojangTexture>;
         #[cfg(feature = "ears")]
-        let mut ears_texture = todo!("Implement ears texture");
+        let mut ears_texture = compile_error!("Implement ears texture");
 
         match &entry {
             RenderRequestEntry::PlayerUuid(id) => {
-                let result = self.mojang_requests_client.resolve_uuid_to_game_profile(id).await?;
+                let result = self
+                    .mojang_requests_client
+                    .resolve_uuid_to_game_profile(id)
+                    .await?;
                 let textures = result.textures()?;
-                
-                let skin = textures.skin().ok_or_else(|| MojangRequestError::MissingSkinProperty(id.clone()))?;
+
+                let skin = textures
+                    .skin()
+                    .ok_or_else(|| MojangRequestError::MissingSkinPropertyError(id.clone()))?;
                 let cape = textures.cape();
-                
+
                 model = if skin.is_slim() {
                     Some(RenderRequestEntryModel::Alex)
                 } else {
@@ -207,14 +218,25 @@ impl RenderRequestResolver {
 
         let result = ResolvedRenderEntryTextures::new(textures, model);
 
-        self.model_cache.cache_resolved_texture(&entry, &result).await?;
-        
+        self.model_cache
+            .cache_resolved_texture(&entry, &result)
+            .await?;
+
         Ok(result)
     }
 
     pub async fn resolve(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {
         // First, we need to resolve the skin and cape textures.
-        let resolved_textures = self.resolve_entry_textures(&request.entry).await?;
+        let resolved_textures = self
+            .resolve_entry_textures(&request.entry)
+            .await
+            .map_err(|e| {
+                MojangRequestError::UnableToResolveRenderRequestEntity(
+                    Box::new(e),
+                    request.entry.clone(),
+                )
+            })?;
+
         let final_model = request
             .model
             .or(resolved_textures.model)
@@ -225,7 +247,6 @@ impl RenderRequestResolver {
         for (texture_type, texture) in resolved_textures.textures {
             textures.insert(texture_type, texture.data);
         }
-
 
         Ok(ResolvedRenderRequest {
             model: final_model,

@@ -11,10 +11,10 @@ homepage.workspace = true
 # NMSR Rendering - Library for rendering using a wgpu backed rendering engine
 nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering" }
 
-anyhow = "1.0.75"
+ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
 
-# Axum - Web server framework
-axum = "0.6.20"
+anyhow = "1.0.75"
+axum = { version = "0.6.20", features = ["macros"] }
 
 # async-trait - Async trait support because Rust is bad at async
 async-trait = "0.1.73"
@@ -74,6 +74,9 @@ tower-http = { version = "0.4.3", features = ["full"] }
 symlink = "0.1.0"
 humantime-serde = "1.1.1"
 serde_with = "3.3.0"
+deadpool = "0.9.5"
+image = { version = "0.24.7", default-features = false, features = ["png"] }
+mtpng = "0.3.5"
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

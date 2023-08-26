@@ -8,7 +8,7 @@ use egui_winit_platform::{Platform, PlatformDescriptor};
 use nmsr_player_parts::parts::part::Part;
 use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation};
 use nmsr_rendering::high_level::pipeline::{
-    GraphicsContext, GraphicsContextDescriptor, SceneContext,
+    GraphicsContext, GraphicsContextDescriptor, SceneContext, SceneContextWrapper,
 };
 use nmsr_rendering::low_level::Vec3;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
@@ -100,7 +100,7 @@ async fn main() -> anyhow::Result<()> {
         arm_rotation: 10.0,
     };
 
-    let mut scene: Scene = build_scene(&graphics, config, &ctx, camera, sun);
+    let mut scene = build_scene(&graphics, config, &ctx, camera, sun);
 
     println!("surface_view_format: {:?}", surface_view_format);
     println!("MSAA samples: {:?}", &graphics.sample_count);
@@ -314,10 +314,10 @@ fn build_scene(
     ctx: &PlayerPartProviderContext,
     camera: Camera,
     sun: SunInformation
-) -> Scene {
+) -> Scene<SceneContextWrapper> {
     let mut scene = Scene::new(
         graphics,
-        SceneContext::new(graphics),
+        SceneContext::new(graphics).into(),
         camera,
         sun,
         scene::Size {

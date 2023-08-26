@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::{
+    collections::HashMap,
+    fmt::Debug,
+    ops::{Deref, DerefMut},
+};
 
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Quat, Vec2, Vec3};
@@ -12,11 +16,12 @@ use nmsr_player_parts::{
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
-use tracing::{trace_span, instrument};
+use tracing::{instrument, trace_span};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, IndexFormat, LoadOp, Operations,
-    RenderPassColorAttachment, RenderPassDepthStencilAttachment, TextureView, SamplerDescriptor, AddressMode, FilterMode, Extent3d,
+    AddressMode, BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, Extent3d, FilterMode,
+    IndexFormat, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
+    SamplerDescriptor, TextureView,
 };
 
 use crate::high_level::pipeline::SceneContext;
@@ -26,7 +31,7 @@ use crate::{
 };
 use crate::{high_level::camera::Camera, low_level::primitives::mesh::PrimitiveDispatch};
 
-use super::{GraphicsContext, SceneTexture};
+use super::{GraphicsContext, SceneContextWrapper, SceneTexture};
 
 #[derive(Copy, Clone)]
 pub struct Size {
@@ -34,10 +39,13 @@ pub struct Size {
     pub height: u32,
 }
 
-pub struct Scene {
+pub struct Scene<T = SceneContextWrapper>
+where
+    T: Deref<Target = SceneContext> + Send + Sync,
+{
     camera: Camera,
     viewport_size: Size,
-    scene_context: SceneContext,
+    scene_context: T,
     textures: HashMap<PlayerPartTextureType, SceneTexture>,
     computed_body_parts: Vec<Part>,
     sun_information: SunInformation,
@@ -55,13 +63,19 @@ pub struct SunInformation {
 
 impl Default for SunInformation {
     fn default() -> Self {
-        Self { direction: Vec3::ONE, intensity: 1.0, ambient: Self::DEFAULT_AMBIENT_LIGHT, _padding_0: 0.0, _padding_1: 0.0 }
+        Self {
+            direction: Vec3::ONE,
+            intensity: 1.0,
+            ambient: Self::DEFAULT_AMBIENT_LIGHT,
+            _padding_0: 0.0,
+            _padding_1: 0.0,
+        }
     }
 }
 
 impl SunInformation {
     pub const DEFAULT_AMBIENT_LIGHT: f32 = 0.1;
-    
+
     pub fn new(direction: Vec3, intensity: f32, ambient: f32) -> Self {
         Self {
             direction,
@@ -72,20 +86,24 @@ impl SunInformation {
     }
 }
 
-type ExtraRenderFunc<'a> = Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera, &mut SunInformation) + 'a>;
+type ExtraRenderFunc<'a> =
+    Box<dyn FnOnce(&TextureView, &mut CommandEncoder, &mut Camera, &mut SunInformation) + 'a>;
 
-impl Scene {
-    pub fn new<T>(
+impl<T> Scene<T>
+where
+    T: DerefMut<Target = SceneContext> + Send + Sync,
+{
+    pub fn new<P>(
         graphics_context: &GraphicsContext,
-        mut scene_context: SceneContext,
+        mut scene_context: T,
         mut camera: Camera,
         sun: SunInformation,
         viewport_size: Size,
         part_context: &PlayerPartProviderContext,
-        body_parts: T,
+        body_parts: P,
     ) -> Self
     where
-        T: IntoIterator<Item = PlayerBodyPartType> + Debug,
+        P: IntoIterator<Item = PlayerBodyPartType> + Debug,
     {
         // Initialize our camera with the viewport size
         Self::update_scene_context(
@@ -109,10 +127,6 @@ impl Scene {
         }
     }
 
-    pub fn scene_context_mut(&mut self) -> &mut SceneContext {
-        &mut self.scene_context
-    }
-
     pub fn camera_mut(&mut self) -> &mut Camera {
         &mut self.camera
     }
@@ -124,7 +138,7 @@ impl Scene {
     pub fn parts(&self) -> &[Part] {
         &self.computed_body_parts
     }
-    
+
     pub fn set_texture(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -137,12 +151,12 @@ impl Scene {
     }
 
     #[instrument(skip(part_provider_context))]
-    fn collect_player_parts<T>(
+    fn collect_player_parts<P>(
         part_provider_context: &PlayerPartProviderContext,
-        body_parts: T,
+        body_parts: P,
     ) -> Vec<Part>
     where
-        T: IntoIterator<Item = PlayerBodyPartType> + Debug,
+        P: IntoIterator<Item = PlayerBodyPartType> + Debug,
     {
         let mut parts = body_parts
             .into_iter()
@@ -213,14 +227,15 @@ impl Scene {
             .iter()
             .group_by(|p| p.get_texture())
         {
-            let _pass_span = trace_span!("render_pass", texture = Into::<&str>::into(texture)).entered();
-            
+            let _pass_span =
+                trace_span!("render_pass", texture = Into::<&str>::into(texture)).entered();
+
             let texture_view = &self
                 .textures
                 .get(&texture)
                 .ok_or(NMSRRenderingError::SceneContextTextureNotSet(texture))?
                 .view;
-            
+
             let texture_sampler = device.create_sampler(&SamplerDescriptor {
                 label: Some(texture.into()),
                 address_mode_u: AddressMode::ClampToEdge,
@@ -238,14 +253,16 @@ impl Scene {
 
             let texture_sampler_bind_group = device.create_bind_group(&BindGroupDescriptor {
                 layout: &graphics_context.layouts.skin_sampler_bind_group_layout,
-                entries: &[BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-                BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&texture_sampler),
-                }],
+                entries: &[
+                    BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                    },
+                    BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&texture_sampler),
+                    },
+                ],
                 label: Some(texture.into()),
             });
 
@@ -257,7 +274,6 @@ impl Scene {
 
             let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
 
-            
             let vertex_buf = trace_span!("vertex_buffer_create").in_scope(|| {
                 device.create_buffer_init(&BufferInitDescriptor {
                     label: Some("Vertex Buffer"),
@@ -305,9 +321,9 @@ impl Scene {
             load_op = LoadOp::Load;
             depth_load_opt = LoadOp::Load;
         }
-        
+
         let u32_size = std::mem::size_of::<u32>() as u32;
-        
+
         encoder.copy_texture_to_buffer(
             wgpu::ImageCopyTexture {
                 aspect: wgpu::TextureAspect::All,
@@ -336,7 +352,12 @@ impl Scene {
             let mut extra_encoder =
                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-            extra_rendering(final_view, &mut extra_encoder, &mut self.camera, &mut self.sun_information);
+            extra_rendering(
+                final_view,
+                &mut extra_encoder,
+                &mut self.camera,
+                &mut self.sun_information,
+            );
 
             queue.submit(Some(extra_encoder.finish()));
         }
@@ -348,14 +369,9 @@ impl Scene {
         Ok(())
     }
 
-    pub async fn copy_output_texture(
-        &self,
-        graphics_context: &GraphicsContext,
-    ) -> Result<Vec<u8>> {
+    pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext) -> Result<Vec<u8>> {
         self.scene_context
-            .copy_output_texture(
-                graphics_context,
-            )
+            .copy_output_texture(graphics_context)
             .await
     }
 
@@ -386,13 +402,12 @@ impl Scene {
         body_parts: Vec<PlayerBodyPartType>,
     ) -> &[Part] {
         self.computed_body_parts = Self::collect_player_parts(part_context, body_parts);
-        
+
         self.parts()
     }
 }
 
-
-#[instrument]
+#[instrument(skip(part))]
 pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
     (match part {
         Part::Cube {
@@ -449,7 +464,7 @@ fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {
     let mut top_left = face_uvs.top_left.to_uv(texture_size);
     let mut bottom_right = face_uvs.bottom_right.to_uv(texture_size);
 
-    let small_offset = 0.001;//Vec2::ONE / texture_size / 32.0;//001;
+    let small_offset = 0.001; //Vec2::ONE / texture_size / 32.0;//001;
 
     top_left += small_offset;
     bottom_right -= small_offset;

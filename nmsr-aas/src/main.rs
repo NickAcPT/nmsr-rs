@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
     // build our application with a route
     let router = Router::new()
         .route("/", get(root))
-        .route("/:mode/:texture", get(render_model))
+        .route("/:mode/:texture",  get(render_model))
         .with_state(state);
 
     let trace_layer = NmsrTracing::new_trace_layer();
@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-const DEFAULT_FILTER: &'static str = "info,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
+const DEFAULT_FILTER: &'static str = "trace,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
 
 fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
     let filter =

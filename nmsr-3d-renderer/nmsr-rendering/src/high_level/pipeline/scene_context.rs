@@ -1,4 +1,5 @@
 use bytemuck::Pod;
+use derive_more::{Deref, DerefMut, From};
 use std::mem;
 use tokio::sync::oneshot::channel;
 use tracing::{instrument, trace_span, Span};
@@ -9,7 +10,7 @@ use image::RgbaImage;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, Buffer, BufferDescriptor,
-    BufferUsages, Texture, TextureDescriptor, TextureDimension, TextureFormat,
+    BufferSlice, BufferUsages, Texture, TextureDescriptor, TextureDimension, TextureFormat,
     TextureUsages, TextureView,
 };
 
@@ -24,7 +25,7 @@ pub(crate) struct SceneContextTextures {
     pub(crate) depth_texture: SceneTexture,
     pub(crate) output_texture: SceneTexture,
     pub(crate) multisampled_output_texture: Option<SceneTexture>,
-    pub(crate) texture_output_buffer: Buffer
+    pub(crate) texture_output_buffer: Buffer,
 }
 
 #[derive(Debug)]
@@ -35,6 +36,9 @@ pub struct SceneContext {
     pub sun_information_bind_group: BindGroup,
     pub(crate) textures: Option<SceneContextTextures>,
 }
+
+#[derive(Deref, DerefMut, From)]
+pub struct SceneContextWrapper(SceneContext);
 
 #[derive(Debug)]
 pub struct SceneTexture {
@@ -59,7 +63,7 @@ impl SceneContext {
             &context.layouts.sun_bind_group_layout,
             &[SunInformation::default()],
         );
-        
+
         Self {
             transform_bind_group,
             transform_matrix_buffer,
@@ -136,16 +140,17 @@ impl SceneContext {
             Some("Final Output Texture"),
             1,
         );
-        
+
         let u32_size = mem::size_of::<u32>() as u32;
-        let output_buffer_size = (u32_size * viewport_size.width * viewport_size.height) as wgpu::BufferAddress;
+        let output_buffer_size =
+            (u32_size * viewport_size.width * viewport_size.height) as wgpu::BufferAddress;
         let output_buffer_desc = BufferDescriptor {
             size: output_buffer_size,
             usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
             label: Some("Output Texture Buffer"),
             mapped_at_creation: false,
         };
-        
+
         let texture_output_buffer = graphics_context.device.create_buffer(&output_buffer_desc);
 
         // Save our textures
@@ -153,7 +158,7 @@ impl SceneContext {
             depth_texture,
             output_texture,
             multisampled_output_texture,
-            texture_output_buffer
+            texture_output_buffer,
         })
     }
 
@@ -165,7 +170,7 @@ impl SceneContext {
         let mut image: RgbaImage = image.convert();
 
         premultiply_alpha(&mut image);
-        
+
         let format = if context.texture_format.is_srgb() {
             TextureFormat::Rgba8UnormSrgb
         } else {
@@ -201,31 +206,15 @@ impl SceneContext {
             .ok_or(NMSRRenderingError::SceneContextTexturesNotInitialized)
     }
 
-    pub async fn copy_output_texture(
-        &self,
-        graphics_context: &GraphicsContext,
-        
-    ) -> Result<Vec<u8>> {
+    pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext) -> Result<Vec<u8>> {
         let textures = self.try_textures()?;
-        
+
         Self::read_buffer(&graphics_context.device, &textures.texture_output_buffer).await
     }
-    
-    #[instrument(skip(device, output_buffer))]
-    async fn read_buffer(
-        device: &wgpu::Device,
-        output_buffer: &wgpu::Buffer,
-    ) -> Result<Vec<u8>> {
-        let span_guard = trace_span!(parent: Span::current(), "buffer_slice_wait").entered();
-        let buffer_slice = output_buffer.slice(..);
 
-        let (tx, rx) = channel();
-        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
-            tx.send(result).unwrap();
-        });
-        device.poll(wgpu::Maintain::Wait);
-        rx.await??;
-        drop(span_guard);
+    #[instrument(skip(device, output_buffer))]
+    async fn read_buffer(device: &wgpu::Device, output_buffer: &wgpu::Buffer) -> Result<Vec<u8>> {
+        let buffer_slice = wait_for_buffer_slice(output_buffer, device).await?;
 
         let data = buffer_slice.get_mapped_range();
 
@@ -238,6 +227,21 @@ impl SceneContext {
             Ok(vec)
         })
     }
+}
+
+#[instrument(name = "buffer_slice_wait", skip(output_buffer, device))]
+async fn wait_for_buffer_slice<'a>(
+    output_buffer: &'a Buffer,
+    device: &'a wgpu::Device,
+) -> Result<BufferSlice<'a>> {
+    let buffer_slice = output_buffer.slice(..);
+    let (tx, rx) = channel();
+    buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
+        tx.send(result).unwrap();
+    });
+    device.poll(wgpu::Maintain::Wait);
+    rx.await??;
+    Ok(buffer_slice)
 }
 
 fn premultiply_alpha(image: &mut RgbaImage) {

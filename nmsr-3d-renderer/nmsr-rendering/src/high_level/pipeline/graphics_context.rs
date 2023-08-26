@@ -1,12 +1,13 @@
-use std::{borrow::Cow, env, mem};
+use std::{borrow::Cow, env, mem, sync::Arc};
 
+use deadpool::managed::{Object, Pool};
 use wgpu::{
     vertex_attr_array, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingType, BlendState, BufferAddress, BufferBindingType,
-    BufferSize, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState, FragmentState,
-    FrontFace, MultisampleState, PipelineLayoutDescriptor, PresentMode, PrimitiveState,
-    RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
-    ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
+    BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
+    ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
+    PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages,
+    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
@@ -17,7 +18,10 @@ use crate::{
     low_level::primitives::vertex::Vertex,
 };
 
-use super::scene::{Size, SunInformation};
+use super::{
+    pools::SceneContextPoolManager,
+    scene::{Size, SunInformation},
+};
 
 #[derive(Debug)]
 pub struct GraphicsContext {
@@ -40,6 +44,23 @@ pub struct GraphicsContextLayouts {
     pub skin_sampler_bind_group_layout: BindGroupLayout,
     pub pipeline_layout: wgpu::PipelineLayout,
     pub sun_bind_group_layout: BindGroupLayout,
+}
+
+#[derive(Debug)]
+pub struct GraphicsContextPools {
+    scene_context_pool: Pool<SceneContextPoolManager>,
+}
+
+impl GraphicsContextPools {
+    pub fn new(context: Arc<GraphicsContext>) -> Result<Self> {
+        let scene_context_pool = Pool::builder(SceneContextPoolManager::new(context)).build()?;
+
+        Ok(Self { scene_context_pool })
+    }
+
+    pub async fn create_scene_context(&self) -> Result<Object<SceneContextPoolManager>> {
+        Ok(self.scene_context_pool.get().await?)
+    }
 }
 
 impl GraphicsContext {

@@ -1,8 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
 use derive_more::Debug;
+use nmsr_rendering::high_level::types::PlayerPartTextureType;
 use strum::EnumCount;
-use tracing::instrument;
+use tracing::{instrument, Span};
 
 use crate::error::{Result, MojangRequestError};
 
@@ -10,7 +11,7 @@ use self::mojang::{client::MojangClient, model::GameProfileTexture};
 
 use super::request::{
     entry::{RenderRequestEntry, RenderRequestEntryModel},
-    RenderRequest, RenderRequestFeatures, cache::ModelCache,
+    RenderRequest, cache::ModelCache,
 };
 
 pub mod mojang;
@@ -26,6 +27,17 @@ pub enum ResolvedRenderEntryTextureType {
     Cape,
     #[cfg(feature = "ears")]
     Ears,
+}
+
+impl From<ResolvedRenderEntryTextureType> for PlayerPartTextureType {
+    fn from(value: ResolvedRenderEntryTextureType) -> Self {
+        match value {
+            ResolvedRenderEntryTextureType::Skin => PlayerPartTextureType::Skin,
+            ResolvedRenderEntryTextureType::Cape => PlayerPartTextureType::Cape,
+            #[cfg(feature = "ears")]
+            ResolvedRenderEntryTextureType::Ears => PlayerPartTextureType::Ears,
+        }
+    }
 }
 
 pub struct MojangTexture {
@@ -127,7 +139,8 @@ impl RenderRequestResolver {
         }
 
         let bytes = self.mojang_requests_client.fetch_texture_from_mojang(
-            &texture_id
+            &texture_id,
+            &Span::current()
         )
         .await?;
 
@@ -141,7 +154,7 @@ impl RenderRequestResolver {
     #[instrument(skip(self))]
     async fn resolve_entry_textures(
         &self,
-        entry: RenderRequestEntry,
+        entry: &RenderRequestEntry,
     ) -> Result<ResolvedRenderEntryTextures> {
         if let Some(result) = self.model_cache.get_cached_resolved_texture(&entry).await? {
             return Ok(result);
@@ -199,9 +212,9 @@ impl RenderRequestResolver {
         Ok(result)
     }
 
-    pub async fn resolve(&self, request: RenderRequest) -> Result<ResolvedRenderRequest> {
+    pub async fn resolve(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {
         // First, we need to resolve the skin and cape textures.
-        let resolved_textures = self.resolve_entry_textures(request.entry).await?;
+        let resolved_textures = self.resolve_entry_textures(&request.entry).await?;
         let final_model = request
             .model
             .or(resolved_textures.model)
@@ -213,12 +226,10 @@ impl RenderRequestResolver {
             textures.insert(texture_type, texture.data);
         }
 
-        let features = request.features;
 
         Ok(ResolvedRenderRequest {
             model: final_model,
             textures,
-            features,
         })
     }
 }
@@ -228,5 +239,4 @@ pub struct ResolvedRenderRequest {
     pub model: RenderRequestEntryModel,
     #[debug(skip)]
     pub textures: HashMap<ResolvedRenderEntryTextureType, Vec<u8>>,
-    pub features: enumset::EnumSet<RenderRequestFeatures>,
 }

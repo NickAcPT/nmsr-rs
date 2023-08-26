@@ -31,6 +31,8 @@ pub enum RenderRequestError {
     QueryRejection(#[from] axum::extract::rejection::QueryRejection),
     #[error("Invalid render mode: {0}")]
     InvalidRenderMode(String),
+    #[error("Unable to upgrade legacy skin to modern format")]
+    LegacySkinUpgradeError,
 }
 
 #[derive(Error, Debug)]
@@ -77,12 +79,16 @@ pub(crate) type ModelCacheResult<T> = std::result::Result<T, ModelCacheError>;
 pub(crate) type MojangRequestResult<T> = std::result::Result<T, MojangRequestError>;
 
 pub trait ExplainableExt<T> {
-    fn explain(self, message: String) -> Result<T>;
+    fn explain_closure<O: FnOnce() -> String>(self, message: O) -> Result<T>;
+    
+    fn explain(self, message: String) -> Result<T> where Self: Sized {
+        self.explain_closure(move || message)
+    }
 }
 
 impl<T> ExplainableExt<T> for std::result::Result<T, std::io::Error> {
-    fn explain(self, message: String) -> Result<T> {
-        self.map_err(|e| RenderRequestError::ExplainedIoError(e, message).into())
+    fn explain_closure<O: FnOnce() -> String>(self, message: O) -> Result<T> {
+        self.map_err(|e| RenderRequestError::ExplainedIoError(e, message()).into())
     }
 }
 

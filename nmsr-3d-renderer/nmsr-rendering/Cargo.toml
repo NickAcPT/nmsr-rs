@@ -15,6 +15,9 @@ image = { version = "0.24.6", default-features = false, features = ["png"] }
 tokio = { version = "1.29.1", features = ["sync"] }
 itertools = "0.11.0"
 tracing = "0.1.37"
+deadpool = "0.9.5"
+async-trait = "0.1.73"
+derive_more = { version = "0.99.17", features = ["deref", "deref_mut", "from"], default-features = false }
 
 [features]
 default = []

@@ -1,4 +1,5 @@
 use derive_more::Debug;
+use nmsr_rendering::high_level::player_model::PlayerModel;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumCount, EnumString, FromRepr};
 use uuid::Uuid;
@@ -59,7 +60,6 @@ pub enum RenderRequestEntryModel {
     Alex,
 }
 
-#[cfg(feature = "wgpu")]
 impl From<RenderRequestEntryModel> for PlayerModel {
     fn from(value: RenderRequestEntryModel) -> Self {
         match value {

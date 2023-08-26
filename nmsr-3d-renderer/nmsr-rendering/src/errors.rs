@@ -25,6 +25,10 @@ pub enum NMSRRenderingError {
     RecvError(#[from] RecvError),
     #[error("Unable to convert image from raw bytes")]
     ImageFromRawError,
+    #[error("Pool error: {0}")]
+    PoolError(#[from] deadpool::managed::PoolError<Box<Self>>),
+    #[error("Pool Build error: {0}")]
+    PoolBuildError(#[from] deadpool::managed::BuildError<Box<Self>>),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRRenderingError>;

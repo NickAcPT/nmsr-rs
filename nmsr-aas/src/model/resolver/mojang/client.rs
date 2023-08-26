@@ -1,5 +1,6 @@
 use hyper::{client::HttpConnector, Body, Client, Method, Request, Response};
 use hyper_tls::HttpsConnector;
+use tracing::{instrument, Span};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 use tower_http::{
@@ -71,10 +72,12 @@ impl MojangClient {
         })
     }
 
+    #[instrument(skip(self, parent_span), parent = parent_span)]
     async fn do_request(
         &self,
         url: &str,
         method: Method,
+        parent_span: &Span
     ) -> MojangRequestResult<
         Response<
             ResponseBody<
@@ -118,22 +121,24 @@ impl MojangClient {
             session_server = self.mojank_config.session_server
         );
 
-        let response = self.do_request(&url, Method::GET).await?;
+        let response = self.do_request(&url, Method::GET, &Span::current()).await?;
         let bytes = hyper::body::to_bytes(response.into_body()).await?;
 
         Ok(serde_json::from_slice(&bytes)?)
     }
 
+    #[instrument(skip(self, parent_span), parent = parent_span)]
     pub async fn fetch_texture_from_mojang(
         &self,
         texture_id: &str,
+        parent_span: &Span
     ) -> MojangRequestResult<Vec<u8>> {
         let url = format!(
             "{textures_server}/textures/{texture_id}",
             textures_server = self.mojank_config.textures_server
         );
 
-        let response = self.do_request(&url, Method::GET).await?;
+        let response = self.do_request(&url, Method::GET, &Span::current()).await?;
         let bytes = hyper::body::to_bytes(response.into_body()).await?;
 
         Ok(bytes.to_vec())

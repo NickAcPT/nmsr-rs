@@ -1,6 +1,8 @@
 use derive_more::Debug;
 use enumset::{EnumSet, EnumSetType};
-use strum::{Display, EnumString};
+use nmsr_rendering::high_level::{camera::{Camera, CameraRotation, ProjectionParameters}, pipeline::scene::SunInformation, types::PlayerBodyPartType};
+use strum::{Display, EnumString, IntoEnumIterator};
+use tracing::instrument;
 
 use self::entry::{RenderRequestEntry, RenderRequestEntryModel};
 
@@ -46,6 +48,76 @@ pub enum RenderRequestMode {
     FullBodyIso,
     #[strum(serialize = "head_iso", serialize = "headiso")]
     HeadIso,
+}
+
+impl RenderRequestMode {
+    pub(crate) fn get_camera(&self) -> Camera {
+        let look_at = [0.0, 16.5, 0.0].into();
+
+        match self {
+            Self::FullBody => Camera::new_orbital(
+                look_at,
+                45.0,
+                CameraRotation {
+                    yaw: 25.0,
+                    pitch: 11.5,
+                },
+                ProjectionParameters::Perspective { fov: 45.0 },
+                1.0,
+            ),
+            Self::FullBodyIso => Camera::new_orbital(
+                look_at,
+                45.0,
+                CameraRotation {
+                    yaw: 45.0,
+                    pitch: std::f32::consts::FRAC_1_SQRT_2.atan().to_degrees(),
+                },
+                ProjectionParameters::Orthographic { aspect: 17.0 },
+                1.0,
+            ),
+            _ => unimplemented!("wgpu rendering is not yet implemented"),
+        }
+    }
+
+    pub(crate) fn get_lighting(&self, no_shading: bool) -> SunInformation {
+        if no_shading {
+            return SunInformation::new([0.0; 3].into(), 0.0, 1.0);
+        } else {
+            match self {
+                Self::FullBody | Self::FullBodyIso => {
+                    SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.7)
+                }
+                _ => SunInformation::new([0.0; 3].into(), 0.0, 1.0),
+            }
+        }
+    }
+
+    pub(crate) fn get_arm_rotation(&self) -> f32 {
+        match self {
+            Self::FullBody => 10.0,
+            _ => 0.0,
+        }
+    }
+
+    #[instrument(level = "trace", skip(self))]
+    pub(crate) fn get_body_parts(&self) -> Vec<PlayerBodyPartType> {
+        match self {
+            Self::FullBody | Self::FrontFull | Self::FullBodyIso => {
+                PlayerBodyPartType::iter().collect()
+            }
+            Self::Head | Self::HeadIso | Self::Face => {
+                vec![PlayerBodyPartType::Head, PlayerBodyPartType::HeadLayer]
+            }
+            Self::BodyBust | Self::FrontBust => {
+                let excluded = vec![PlayerBodyPartType::LeftLeg, PlayerBodyPartType::RightLeg];
+
+                PlayerBodyPartType::iter()
+                    .filter(|m| excluded.contains(&m.get_non_layer_part()))
+                    .collect()
+            }
+            Self::Skin => unreachable!()
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -10,6 +10,7 @@ use crate::low_level::utils::{look_from_yaw_pitch, minecraft_rotation_matrix};
 pub struct CameraRotation {
     pub yaw: f32,
     pub pitch: f32,
+    pub roll: f32
 }
 
 #[derive(Copy, Clone)]
@@ -196,7 +197,7 @@ impl Camera {
         projection: ProjectionParameters
     );
 
-    camera_inner_getters_setters!(rotation, yaw, pitch);
+    camera_inner_getters_setters!(rotation, yaw, pitch, roll);
     camera_inner_getters_setters_opt!(projection, fov, aspect);
     camera_inner_getters_setters_opt!(position_parameters, position: Vec3, Vec3::ZERO);
     camera_inner_getters_setters_opt!(position_parameters, look_at: Vec3, Vec3::ZERO);
@@ -216,9 +217,11 @@ impl Camera {
     fn compute_view_projection_matrix(&self) -> Mat4 {
         let projection = self.projection.compute_projection_matrix(self.aspect_ratio);
 
+        let roll_matrix = Mat4::from_rotation_z(self.rotation.roll.to_radians());
+        
         let view_position = match self.position_parameters {
             CameraPositionParameters::Absolute(pos) => {
-                let view = minecraft_rotation_matrix(self.rotation.yaw, self.rotation.pitch);
+                let view = minecraft_rotation_matrix(self.rotation.yaw, self.rotation.pitch) * roll_matrix;
                 let position = Mat4::from_translation(-pos);
 
                 view * position
@@ -230,7 +233,7 @@ impl Camera {
                 // and move backwards along the look pos vector by the distance we want to be from the look at point
                 let pos = look_at + (-look_pos * distance);
 
-                Mat4::look_at_rh(pos, look_at, Vec3::Y)
+                Mat4::look_at_rh(pos, look_at, Vec3::Y) * roll_matrix
             }
         };
 

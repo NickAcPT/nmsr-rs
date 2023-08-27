@@ -1,4 +1,3 @@
-use axum::extract::State;
 use deadpool::managed::Object;
 use image::{ImageFormat, RgbaImage};
 use nmsr_rendering::{
@@ -7,7 +6,7 @@ use nmsr_rendering::{
         parts::provider::PlayerPartProviderContext,
         pipeline::{
             pools::SceneContextPoolManager,
-            scene::{Scene, Size},
+            scene::Scene,
         },
         player_model::PlayerModel,
     },
@@ -26,18 +25,15 @@ use super::{render::create_png_from_bytes, NMSRState};
 
 pub(crate) async fn internal_render_model(
     request: RenderRequest,
-    State(state): State<NMSRState>,
+    state: &NMSRState,
     resolved: ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
     let scene_context = state.create_scene_context().await?;
 
-    let size = Size {
-        width: 512,
-        height: 896,
-    };
+    let size = request.get_size();
 
     let mode = &request.mode;
-    let camera = mode.get_camera();
+    let camera = request.get_camera();
     let arm_rotation = mode.get_arm_rotation();
     let lighting = mode.get_lighting(!request.features.contains(RenderRequestFeatures::Shading));
     let parts = mode.get_body_parts();

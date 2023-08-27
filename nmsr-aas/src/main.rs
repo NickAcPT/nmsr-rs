@@ -8,18 +8,17 @@ use crate::utils::tracing::NmsrTracing;
 
 use anyhow::Context;
 use opentelemetry::StringValue;
+use tracing::info_span;
 use twelf::Layer;
-pub use utils::caching;
-pub use utils::config;
 use utils::config::TracingConfiguration;
-pub use utils::error;
+pub use utils::{caching, config, error};
 
 use crate::utils::config::NmsrConfiguration;
 
-use std::fs;
-use std::net::SocketAddr;
-use std::path::Path;
-use std::path::PathBuf;
+use std::{
+    net::SocketAddr,
+    path::PathBuf,
+};
 
 use axum::{routing::get, Router, ServiceExt};
 use opentelemetry::{
@@ -36,6 +35,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[main]
 async fn main() -> anyhow::Result<()> {
+    let init_guard = info_span!("NMSRaaS init").entered();    
     let toml_path: PathBuf = "config.toml".into();
     let toml_layer = Some(Layer::Toml(toml_path.clone())).filter(|_| toml_path.exists());
 
@@ -48,14 +48,16 @@ async fn main() -> anyhow::Result<()> {
     .flatten()
     .collect();
 
-    let config = NmsrConfiguration::with_layers(&layers)
-        .context("Unable to load configuration")?;
+    let config = NmsrConfiguration::with_layers(&layers).context("Unable to load configuration")?;
 
     setup_tracing(config.tracing.as_ref())?;
 
     info!("Loaded configuration: {:#?}", config);
 
     let state = NMSRState::new(&config).await?;
+
+    info!("Pre-warming model renderer.");
+    state.prewarm_renderer().await?;
 
     let adapter = &state.graphics_context.adapter.get_info();
     let samples = &state.graphics_context.multisampling_strategy;
@@ -82,6 +84,8 @@ async fn main() -> anyhow::Result<()> {
     let addr = (config.server.address + ":" + &config.server.port.to_string()).parse()?;
 
     tracing::info!("Listening on {}", &addr);
+    
+    drop(init_guard);
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())

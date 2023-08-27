@@ -1,4 +1,3 @@
-use axum::extract::State;
 use nmsr_rendering::errors::NMSRRenderingError;
 
 use crate::{
@@ -13,7 +12,7 @@ use super::{render::create_png_from_bytes, NMSRState};
 
 pub(crate) async fn internal_render_skin(
     request: RenderRequest,
-    State(state): State<NMSRState>,
+    state: &NMSRState,
     mut resolved: ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
     let skin = resolved

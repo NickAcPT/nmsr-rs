@@ -88,6 +88,7 @@ async fn main() -> anyhow::Result<()> {
         CameraRotation {
             yaw: 0.0,
             pitch: 0.0,
+            roll: 0.0,
         },
         ProjectionParameters::Perspective { fov: 110f32 },
         aspect_ratio,
@@ -406,6 +407,7 @@ fn debug_ui(
                 camera.set_rotation(CameraRotation {
                     yaw: 24.28,
                     pitch: 11.83,
+                    roll: 0.0,
                 });
 
                 camera.set_projection(ProjectionParameters::Perspective { fov: 37.6772850524784 });
@@ -421,6 +423,7 @@ fn debug_ui(
                 camera.set_rotation(CameraRotation {
                     yaw: 25.26,
                     pitch: 14.95,
+                    roll: 0.0,
                 });
                 
                 camera.set_projection(ProjectionParameters::Perspective { fov: 27.1 });
@@ -440,6 +443,7 @@ fn debug_ui(
                 camera.set_rotation(CameraRotation {
                     yaw: 24.28,
                     pitch: 11.83,
+                    roll: 0.0,
                 });
 
                 camera.set_projection(ProjectionParameters::Perspective { fov: 37.5 });
@@ -455,6 +459,7 @@ fn debug_ui(
                 camera.set_rotation(CameraRotation {
                     yaw: 25.264535906746477,
                     pitch: 14.953989778518544,
+                    roll: 0.0,
                 });
                 
                 camera.set_projection(ProjectionParameters::Perspective { fov: 23.444515728494967 });
@@ -630,6 +635,7 @@ fn debug_ui(
             camera.set_rotation(CameraRotation {
                 yaw: 45.0,
                 pitch: 30.0f32.to_radians().asin().to_degrees(),
+                roll: 0.0,
             });
             
             let diameter = (max - min).length();
@@ -761,6 +767,7 @@ fn visage_orbital(
     camera.set_rotation(CameraRotation {
         yaw: 20.0,
         pitch: 10.0,
+        roll: 0.0,
     })
 }
 
@@ -779,6 +786,7 @@ fn visage(
     camera.set_rotation(CameraRotation {
         yaw: 20.0,
         pitch: 10.0,
+        roll: 0.0,
     })
 }
 

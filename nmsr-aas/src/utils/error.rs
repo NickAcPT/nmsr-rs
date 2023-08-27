@@ -33,6 +33,8 @@ pub enum RenderRequestError {
     InvalidRenderMode(String),
     #[error("Unable to upgrade legacy skin to modern format")]
     LegacySkinUpgradeError,
+    #[error("The render setting you've specified ({0}) is invalid. Valid values should be {1}.")]
+    InvalidRenderSetting(&'static str, String),
 }
 
 #[derive(Error, Debug)]

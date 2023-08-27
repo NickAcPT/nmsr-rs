@@ -1,6 +1,6 @@
 pub mod extractors;
-mod render_model;
 mod render;
+mod render_model;
 mod render_skin;
 
 use deadpool::managed::Object;
@@ -11,14 +11,18 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::render;
+use tracing::instrument;
 
-use std::sync::Arc;
+use std::{hint::black_box, sync::Arc};
 
 use crate::{
     config::NmsrConfiguration,
     error::{RenderRequestError, Result},
     model::{
-        request::{cache::ModelCache, RenderRequestFeatures},
+        request::{
+            cache::ModelCache, entry::RenderRequestEntry, RenderRequest, RenderRequestFeatures,
+            RenderRequestMode,
+        },
         resolver::{mojang::client::MojangClient, RenderRequestResolver},
     },
 };
@@ -79,5 +83,30 @@ impl NMSRState {
         ears_rs::utils::alpha::strip_alpha(&mut skin_image);
 
         Ok(skin_image)
+    }
+
+    // Prewarm our renderer by actually rendering a single request.
+    // This will ensure that the renderer is initialized and ready to go when we start serving requests.
+    #[instrument(skip(self))]
+    pub(crate) async fn prewarm_renderer(&self) -> Result<()> {
+        // `86ed67a77cf4e00350b6e3a966f312d4f5a0170a028c0699e6043a2374f99ff5` is one of the hashes of NickAc's skin.
+        let entry = RenderRequestEntry::TextureHash(
+            "86ed67a77cf4e00350b6e3a966f312d4f5a0170a028c0699e6043a2374f99ff5".to_owned(),
+        );
+        let request = RenderRequest::new_from_excluded_features(
+            RenderRequestMode::FullBody,
+            entry,
+            None,
+            EnumSet::EMPTY,
+            None            
+        );
+
+        let resolved = self.resolver.resolve(&request).await?;
+
+        let result = black_box(render_model::internal_render_model(request, self, resolved).await)?;
+
+        drop(result);
+
+        Ok(())
     }
 }

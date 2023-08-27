@@ -12,7 +12,7 @@ use crate::{
     error::{NMSRaaSError, RenderRequestError, Result},
     model::request::{
         entry::{RenderRequestEntry, RenderRequestEntryModel},
-        RenderRequest, RenderRequestFeatures, RenderRequestMode,
+        RenderRequest, RenderRequestCameraSettings, RenderRequestFeatures, RenderRequestMode,
     },
 };
 
@@ -94,6 +94,29 @@ impl RenderRequestQueryParams {
         // Priority: Alex > Steve > Model
         alex.or(steve).or(model)
     }
+
+    fn validate(&self, mode: &RenderRequestMode) -> Result<()> {
+        let [min_w, min_h, max_w, max_h] = mode.size_constraints();
+
+        let width_check = RenderRequestMode::validate_unit("width", self.width, min_w, max_w);
+        let height_check = RenderRequestMode::validate_unit("height", self.height, min_h, max_h);
+
+        let yaw_check = RenderRequestMode::validate_unit("yaw", self.yaw, -360.0, 360.0);
+        let pitch_check = RenderRequestMode::validate_unit("pitch", self.pitch, -90.0, 90.0);
+        let roll_check = RenderRequestMode::validate_unit("roll", self.roll, -360.0, 360.0);
+
+        let error = width_check
+            .or(height_check)
+            .or(yaw_check)
+            .or(pitch_check)
+            .or(roll_check);
+
+        if let Some((unit, bounds)) = error {
+            return Err(RenderRequestError::InvalidRenderSetting(unit, bounds).into());
+        }
+
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -142,17 +165,26 @@ where
             .await
             .map_err(RenderRequestError::from)?;
 
+        query.validate(&mode)?;
+
         let excluded_features = query.get_excluded_features();
 
         let model = query.get_model();
 
-        // TODO: Camera options
+        let camera_settings = Some(RenderRequestCameraSettings {
+            width: query.width,
+            height: query.height,
+            yaw: query.yaw,
+            pitch: query.pitch,
+            roll: query.roll,
+        });
 
         Ok(RenderRequest::new_from_excluded_features(
             mode,
             entry,
             model,
             excluded_features,
+            camera_settings,
         ))
     }
 }
@@ -211,6 +243,7 @@ mod tests {
                     entry: entry.clone(),
                     model: None,
                     features: EnumSet::ALL,
+                    camera_settings: Some(Default::default())
                 },
             ),
             (
@@ -220,6 +253,7 @@ mod tests {
                     entry: entry.clone(),
                     model: None,
                     features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::Shadow)),
+                    camera_settings: Some(Default::default())
                 },
             ),
             (
@@ -229,6 +263,7 @@ mod tests {
                     entry: entry.clone(),
                     model: Some(RenderRequestEntryModel::Alex),
                     features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::Shading | RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer)),
+                    camera_settings: Some(Default::default())
                 },
             ),
             (
@@ -238,6 +273,7 @@ mod tests {
                     entry: entry.clone(),
                     model: None,
                     features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape)),
+                    camera_settings: Some(Default::default())
                 },
             ),
         ]);

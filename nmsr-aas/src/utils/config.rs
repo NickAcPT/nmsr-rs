@@ -55,7 +55,13 @@ pub struct MojankConfiguration {
     pub textures_server: String,
     
     /// The rate limit to use for requests to the session server in a 1 second window.
+    #[serde(default = "default_session_server_rate_limit")]
     pub session_server_rate_limit: u64,
+}
+
+#[inline]
+fn default_session_server_rate_limit() -> u64 {
+    100
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]

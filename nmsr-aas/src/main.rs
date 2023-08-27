@@ -16,7 +16,10 @@ pub use utils::error;
 
 use crate::utils::config::NmsrConfiguration;
 
+use std::fs;
 use std::net::SocketAddr;
+use std::path::Path;
+use std::path::PathBuf;
 
 use axum::{routing::get, Router, ServiceExt};
 use opentelemetry::{
@@ -33,28 +36,39 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[main]
 async fn main() -> anyhow::Result<()> {
-    let config = NmsrConfiguration::with_layers(&[
-        Layer::DefaultTrait,
-        Layer::Toml("config.toml".into()),
-        Layer::Env(Some("NMSR_".into())),
-    ])
-    .context("Unable to load configuration (this usually means config.toml is missing)")?;
+    let toml_path: PathBuf = "config.toml".into();
+    let toml_layer = Some(Layer::Toml(toml_path.clone())).filter(|_| toml_path.exists());
+
+    let layers: Vec<_> = vec![
+        Some(Layer::DefaultTrait),
+        toml_layer,
+        Some(Layer::Env(Some("NMSR_".into()))),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+
+    let config = NmsrConfiguration::with_layers(&layers)
+        .context("Unable to load configuration")?;
 
     setup_tracing(config.tracing.as_ref())?;
 
     info!("Loaded configuration: {:#?}", config);
 
     let state = NMSRState::new(&config).await?;
-    
+
     let adapter = &state.graphics_context.adapter.get_info();
     let samples = &state.graphics_context.multisampling_strategy;
-    
-    info!("Initialized state with adapter {:?} and using {:?} multisampling strategy", adapter, samples);
+
+    info!(
+        "Initialized state with adapter {:?} and using {:?} multisampling strategy",
+        adapter, samples
+    );
 
     // build our application with a route
     let router = Router::new()
         .route("/", get(root))
-        .route("/:mode/:texture",  get(render_model))
+        .route("/:mode/:texture", get(render_model))
         .with_state(state);
 
     let trace_layer = NmsrTracing::new_trace_layer();

@@ -1,9 +1,14 @@
+use std::fmt::format;
+
 use axum::{
     extract::State,
     http::HeaderValue,
     response::{IntoResponse, Response},
 };
-use hyper::{header::CONTENT_TYPE, Method};
+use hyper::{
+    header::{CACHE_CONTROL, CONTENT_TYPE},
+    Method,
+};
 use mtpng::{
     encoder::{Encoder, Options},
     ColorType, Header,
@@ -34,11 +39,18 @@ pub async fn render(
     }
 
     let result = match request.mode {
-        RenderRequestMode::Skin => internal_render_skin(request, &state, resolved).await,
-        _ => internal_render_model(request, &state, resolved).await,
+        RenderRequestMode::Skin => internal_render_skin(request.clone(), &state, resolved).await,
+        _ => internal_render_model(request.clone(), &state, resolved).await,
     }?;
 
-    create_image_response(result)
+    let mut res = create_image_response(result)?;
+
+    res.headers_mut().insert(
+        "Etag",
+        HeaderValue::from_str(format!("{:?}", request).as_str()).expect("msg"),
+    );
+
+    Ok(res)
 }
 
 fn create_image_response<T>(skin: T) -> Result<Response>
@@ -50,6 +62,11 @@ where
     response
         .headers_mut()
         .insert(CONTENT_TYPE, HeaderValue::from_static(IMAGE_PNG_MIME));
+
+    response.headers_mut().insert(
+        CACHE_CONTROL,
+        HeaderValue::from_static("public, max-age 3600, only-if-cached"),
+    );
 
     Ok(response)
 }

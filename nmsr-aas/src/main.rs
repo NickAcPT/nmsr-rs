@@ -8,6 +8,9 @@ use crate::utils::tracing::NmsrTracing;
 
 use anyhow::Context;
 use opentelemetry::StringValue;
+use tower_http::cors::AllowMethods;
+use tower_http::cors::Any;
+use tower_http::cors::CorsLayer;
 use tracing::info_span;
 use twelf::Layer;
 use utils::config::TracingConfiguration;
@@ -79,6 +82,7 @@ async fn main() -> anyhow::Result<()> {
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
+        .layer(CorsLayer::new().allow_origin(Any).allow_methods(AllowMethods::any()))
         .service(router);
 
     let addr = (config.server.address + ":" + &config.server.port.to_string()).parse()?;

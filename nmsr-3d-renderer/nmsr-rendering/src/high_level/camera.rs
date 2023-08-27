@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec3};
+use glam::{Mat4, Vec3, Quat};
 use std::mem;
 
 use crate::high_level::utils::{
@@ -10,8 +10,47 @@ use crate::low_level::utils::{look_from_yaw_pitch, minecraft_rotation_matrix};
 pub struct CameraRotation {
     pub yaw: f32,
     pub pitch: f32,
-    pub roll: f32
+    pub roll: f32,
 }
+
+impl CameraRotation {
+    pub fn create_rotation_matrix(&self) -> Mat4 {
+        minecraft_rotation_matrix(self.yaw, self.pitch, self.roll)
+    }
+}
+
+impl core::ops::Neg for CameraRotation {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        CameraRotation {
+            yaw: -self.yaw,
+            pitch: -self.pitch,
+            roll: -self.roll,
+        }
+    }
+}
+
+impl core::ops::Add for CameraRotation {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        CameraRotation {
+            yaw: self.yaw + rhs.yaw,
+            pitch: self.pitch + rhs.pitch,
+            roll: self.roll + rhs.roll,
+        }
+    }
+}
+
+impl core::ops::AddAssign for CameraRotation {
+    fn add_assign(&mut self, rhs: Self) {
+        self.yaw += rhs.yaw;
+        self.pitch += rhs.pitch;
+        self.roll += rhs.roll;
+    }
+}
+
 
 #[derive(Copy, Clone)]
 pub enum ProjectionParameters {
@@ -217,11 +256,10 @@ impl Camera {
     fn compute_view_projection_matrix(&self) -> Mat4 {
         let projection = self.projection.compute_projection_matrix(self.aspect_ratio);
 
-        let roll_matrix = Mat4::from_rotation_z(self.rotation.roll.to_radians());
-        
+
         let view_position = match self.position_parameters {
             CameraPositionParameters::Absolute(pos) => {
-                let view = minecraft_rotation_matrix(self.rotation.yaw, self.rotation.pitch) * roll_matrix;
+                let view = minecraft_rotation_matrix(self.rotation.yaw, self.rotation.pitch, self.rotation.roll);
                 let position = Mat4::from_translation(-pos);
 
                 view * position
@@ -233,7 +271,10 @@ impl Camera {
                 // and move backwards along the look pos vector by the distance we want to be from the look at point
                 let pos = look_at + (-look_pos * distance);
 
-                Mat4::look_at_rh(pos, look_at, Vec3::Y) * roll_matrix
+                // Compute roll matrix
+                let roll_matrix = Mat4::from_rotation_z(self.rotation.roll.to_radians());
+
+                roll_matrix * Mat4::look_at_rh(pos, look_at, Vec3::Y)
             }
         };
 

@@ -51,7 +51,7 @@ where
     sun_information: SunInformation,
 }
 
-#[derive(Copy, Clone, Pod, Zeroable)]
+#[derive(Copy, Clone, Pod, Zeroable, Debug)]
 #[repr(C)]
 pub struct SunInformation {
     pub direction: Vec3,

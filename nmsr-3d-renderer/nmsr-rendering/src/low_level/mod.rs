@@ -1,8 +1,7 @@
 #![allow(dead_code)]
 
-// Re-export the Vec types from the glam crate
-pub use glam::Vec2;
-pub use glam::Vec3;
+// Re-export some types from the glam crate
+pub use glam::{Vec2, Vec3, Mat4, Quat, EulerRot};
 
 pub mod primitives;
 

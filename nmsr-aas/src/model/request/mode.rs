@@ -155,7 +155,7 @@ impl RenderRequestMode {
         if no_shading {
             return SunInformation::new([0.0; 3].into(), 0.0, 1.0);
         } else {
-            return SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.7);
+            return SunInformation::new([0.0, -1.0, 15.0].into(), 1.0, 0.7);
         }
     }
 

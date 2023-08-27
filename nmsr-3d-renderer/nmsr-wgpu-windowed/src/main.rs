@@ -494,30 +494,33 @@ fn debug_ui(
         }
 
         if let CameraPositionParameters::Absolute(_) = camera.get_position_parameters() {
-            ui.label("X");
-            ui.add(drag_value(
-                camera,
-                Camera::get_position_x,
-                Camera::set_position_x,
-                None,
-                None,
-            ));
-            ui.label("Y");
-            ui.add(drag_value(
-                camera,
-                Camera::get_position_y,
-                Camera::set_position_y,
-                None,
-                None,
-            ));
-            ui.label("Z");
-            ui.add(drag_value(
-                camera,
-                Camera::get_position_z,
-                Camera::set_position_z,
-                None,
-                None,
-            ));
+            ui.horizontal(|ui| {
+                    
+                ui.label("X");
+                ui.add(drag_value(
+                    camera,
+                    Camera::get_position_x,
+                    Camera::set_position_x,
+                    None,
+                    None,
+                ));
+                ui.label("Y");
+                ui.add(drag_value(
+                    camera,
+                    Camera::get_position_y,
+                    Camera::set_position_y,
+                    None,
+                    None,
+                ));
+                ui.label("Z");
+                ui.add(drag_value(
+                    camera,
+                    Camera::get_position_z,
+                    Camera::set_position_z,
+                    None,
+                    None,
+                ));
+            });
         }
         if let CameraPositionParameters::Orbital { .. } = camera.get_position_parameters() {
             ui.label("Look At: X");
@@ -555,22 +558,33 @@ fn debug_ui(
             ));
         }
 
-        ui.label("Yaw");
-        ui.add(drag_value(
-            camera,
-            Camera::get_yaw,
-            Camera::set_yaw,
-            Some(-180.0f32),
-            Some(180.0f32),
-        ));
-        ui.label("Pitch");
-        ui.add(drag_value(
-            camera,
-            Camera::get_pitch,
-            Camera::set_pitch,
-            Some(-90.0f32),
-            Some(90.0f32),
-        ));
+        ui.horizontal(|ui| {
+            ui.label("Yaw");
+            ui.add(drag_value(
+                camera,
+                Camera::get_yaw,
+                Camera::set_yaw,
+                Some(-180.0f32),
+                Some(180.0f32),
+            ));
+            ui.label("Pitch");
+            ui.add(drag_value(
+                camera,
+                Camera::get_pitch,
+                Camera::set_pitch,
+                Some(-90.0f32),
+                Some(90.0f32),
+            ));
+            ui.label("Roll");
+            ui.add(drag_value(
+                camera,
+                Camera::get_roll,
+                Camera::set_roll,
+                Some(-180.0f32),
+                Some(180.0f32),
+            ));
+            
+        });
 
         ui.separator();
 

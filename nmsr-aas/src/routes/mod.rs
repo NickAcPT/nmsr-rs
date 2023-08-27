@@ -1,5 +1,7 @@
 pub mod extractors;
 mod render_model;
+mod render;
+mod render_skin;
 
 use deadpool::managed::Object;
 use enumset::EnumSet;
@@ -8,7 +10,7 @@ use nmsr_rendering::high_level::pipeline::{
     pools::SceneContextPoolManager, Backends, GraphicsContext, GraphicsContextDescriptor,
     GraphicsContextPools,
 };
-pub use render_model::render_model;
+pub use render::render;
 
 use std::sync::Arc;
 

@@ -1,8 +1,9 @@
 use bytemuck::Pod;
-use derive_more::{Deref, DerefMut, From};
+use derive_more::{Debug, Deref, DerefMut, From};
+use smaa::SmaaTarget;
 use std::mem;
 use tokio::sync::oneshot::channel;
-use tracing::{instrument, trace_span, Span};
+use tracing::{instrument, trace_span};
 
 use glam::Mat4;
 use image::buffer::ConvertBuffer;
@@ -35,6 +36,8 @@ pub struct SceneContext {
     pub sun_information_buffer: Buffer,
     pub sun_information_bind_group: BindGroup,
     pub(crate) textures: Option<SceneContextTextures>,
+    #[debug(skip)]
+    pub(crate) smaa_target: Option<SmaaTarget>,
 }
 
 #[derive(Deref, DerefMut, From)]
@@ -70,6 +73,7 @@ impl SceneContext {
             sun_information_buffer,
             sun_information_bind_group,
             textures: None,
+            smaa_target: None,
         }
     }
 
@@ -104,6 +108,10 @@ impl SceneContext {
         // Setup sun information
         self.set_sun_information(graphics_context, sun);
 
+        let msaa_sample_count = graphics_context
+            .multisampling_strategy
+            .get_msaa_sample_count();
+
         // Setup our depth texture
         let depth_texture = create_texture(
             graphics_context,
@@ -112,11 +120,11 @@ impl SceneContext {
             GraphicsContext::DEPTH_TEXTURE_FORMAT,
             TextureUsages::RENDER_ATTACHMENT,
             Some("Depth Texture"),
-            graphics_context.sample_count,
+            msaa_sample_count,
         );
 
         // Setup our output texture for multisampling if we need to use it
-        let multisampled_output_texture = if graphics_context.sample_count > 1 {
+        let multisampled_output_texture = if msaa_sample_count > 1 {
             Some(create_texture(
                 graphics_context,
                 viewport_size.width,
@@ -124,7 +132,7 @@ impl SceneContext {
                 graphics_context.texture_format,
                 TextureUsages::RENDER_ATTACHMENT,
                 Some("MultiSampled Output Texture"),
-                graphics_context.sample_count,
+                msaa_sample_count,
             ))
         } else {
             None
@@ -140,6 +148,25 @@ impl SceneContext {
             Some("Final Output Texture"),
             1,
         );
+
+        if let Some(target) = self.smaa_target.as_mut() {
+            target.resize(
+                &graphics_context.device,
+                viewport_size.width,
+                viewport_size.height,
+            );
+        } else {
+            let smaa_target = SmaaTarget::new(
+                &graphics_context.device,
+                &graphics_context.queue,
+                viewport_size.width,
+                viewport_size.height,
+                graphics_context.texture_format,
+                graphics_context.multisampling_strategy.get_smaa_mode(),
+            );
+
+            self.smaa_target.replace(smaa_target);
+        }
 
         let u32_size = mem::size_of::<u32>() as u32;
         let output_buffer_size =
@@ -159,7 +186,7 @@ impl SceneContext {
             output_texture,
             multisampled_output_texture,
             texture_output_buffer,
-        })
+        });
     }
 
     pub(crate) fn upload_texture(
@@ -219,10 +246,12 @@ impl SceneContext {
         let data = buffer_slice.get_mapped_range();
 
         trace_span!("image_from_raw").in_scope(|| {
-            let vec = data.to_vec();
+            let mut vec = data.to_vec();
 
             drop(data);
             output_buffer.unmap();
+            
+            unmultiply_alpha(&mut vec);
 
             Ok(vec)
         })
@@ -253,9 +282,8 @@ fn premultiply_alpha(image: &mut RgbaImage) {
     }
 }
 
-#[instrument(skip(image))]
-fn unmultiply_alpha(image: &mut RgbaImage) {
-    for pixel in image.pixels_mut() {
+fn unmultiply_alpha(image: &mut [u8]) {
+    for pixel in image.chunks_exact_mut(4) {
         let alpha = pixel[3] as f32 / 255.0;
         if alpha > 0.0 {
             pixel[0] = (pixel[0] as f32 / alpha) as u8;

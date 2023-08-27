@@ -3,7 +3,8 @@ use axum::{
     http::HeaderValue,
     response::{IntoResponse, Response},
 };
-use hyper::{body::Bytes, header::CONTENT_TYPE, Method};
+use deadpool::managed::Object;
+use hyper::{header::CONTENT_TYPE, Method};
 use image::{ImageFormat, RgbaImage};
 use mtpng::{
     encoder::{Encoder, Options},
@@ -13,45 +14,46 @@ use nmsr_rendering::{
     errors::NMSRRenderingError,
     high_level::{
         parts::provider::PlayerPartProviderContext,
-        pipeline::scene::{Scene, Size},
-        player_model::PlayerModel, types::PlayerPartTextureType,
+        pipeline::{scene::{Scene, Size}, pools::SceneContextPoolManager},
+        player_model::PlayerModel,
     },
 };
-use tracing::trace_span;
+use tracing::{trace_span, instrument};
 
 use crate::{
     error::{ExplainableExt, RenderRequestError, Result},
     model::{
         request::{RenderRequest, RenderRequestFeatures, RenderRequestMode},
-        resolver::ResolvedRenderEntryTextureType,
+        resolver::{ResolvedRenderEntryTextureType, ResolvedRenderRequest},
     },
 };
 
 use super::NMSRState;
 
 #[axum::debug_handler]
+#[instrument(skip(state, method))]
 pub async fn render_model(
     request: RenderRequest,
     state: State<NMSRState>,
     method: Method,
 ) -> Result<Response> {
+    let resolved = state.resolver.resolve(&request).await?;
+
+    if method == Method::HEAD {
+        return Ok(([(CONTENT_TYPE, HeaderValue::from_static(IMAGE_PNG_MIME))]).into_response());
+    }
+    
     match request.mode {
-        RenderRequestMode::Skin => internal_render_skin(request, state, method).await,
-        _ => internal_render_model(request, state, method).await,
+        RenderRequestMode::Skin => internal_render_skin(request, state, resolved).await,
+        _ => internal_render_model(request, state, resolved).await,
     }
 }
 
 async fn internal_render_skin(
     request: RenderRequest,
     State(state): State<NMSRState>,
-    method: Method,
+    mut resolved: ResolvedRenderRequest
 ) -> Result<Response> {
-    let mut resolved = state.resolver.resolve(&request).await?;
-
-    if method == Method::HEAD {
-        return Ok(([(CONTENT_TYPE, HeaderValue::from_static(IMAGE_PNG_MIME))]).into_response());
-    }
-
     let skin = resolved
         .textures
         .remove(&ResolvedRenderEntryTextureType::Skin)
@@ -96,14 +98,8 @@ const IMAGE_PNG_MIME: &'static str = "image/png";
 async fn internal_render_model(
     request: RenderRequest,
     State(state): State<NMSRState>,
-    method: Method,
+    resolved: ResolvedRenderRequest
 ) -> Result<Response> {
-    let resolved = state.resolver.resolve(&request).await?;
-
-    if method == Method::HEAD {
-        return Ok(([(CONTENT_TYPE, HeaderValue::from_static(IMAGE_PNG_MIME))]).into_response());
-    }
-
     let scene_context = state.create_scene_context().await?;
 
     let size = Size {
@@ -131,7 +127,7 @@ async fn internal_render_model(
         has_cape,
         arm_rotation,
     };
-
+    
     let mut scene = Scene::new(
         &state.graphics_context,
         scene_context,
@@ -141,20 +137,8 @@ async fn internal_render_model(
         &part_context,
         parts,
     );
-
-    for (texture_type, texture_bytes) in resolved.textures {
-        let mut image_buffer = load_image(&texture_bytes)?;
-        
-        if texture_type == ResolvedRenderEntryTextureType::Skin {
-            image_buffer = state.process_skin(image_buffer, request.features)?;
-        }
-        
-        scene.set_texture(
-            &state.graphics_context,
-            texture_type.into(),
-            &image_buffer,
-        );
-    }
+    
+    load_textures(resolved, &state, &request, &mut scene)?;
 
     scene.render(&state.graphics_context)?;
 
@@ -163,6 +147,25 @@ async fn internal_render_model(
     let render_bytes = create_png_from_bytes((size.width, size.height), &render)?;
 
     create_image_response(render_bytes)
+}
+
+#[instrument(skip_all)]
+fn load_textures(resolved: ResolvedRenderRequest, state: &NMSRState, request: &RenderRequest, scene: &mut Scene<Object<SceneContextPoolManager>>) -> Result<()> {
+    for (texture_type, texture_bytes) in resolved.textures {
+        let mut image_buffer = load_image(&texture_bytes)?;
+    
+        if texture_type == ResolvedRenderEntryTextureType::Skin {
+            image_buffer = state.process_skin(image_buffer, request.features)?;
+        }
+    
+        scene.set_texture(
+            &state.graphics_context,
+            texture_type.into(),
+            &image_buffer,
+        );
+    }
+    
+    Ok(())
 }
 
 fn create_png_from_bytes(size: (u32, u32), bytes: &[u8]) -> Result<Vec<u8>> {

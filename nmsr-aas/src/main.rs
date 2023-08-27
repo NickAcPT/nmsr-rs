@@ -47,9 +47,9 @@ async fn main() -> anyhow::Result<()> {
     let state = NMSRState::new(&config).await?;
     
     let adapter = &state.graphics_context.adapter.get_info();
-    let samples = &state.graphics_context.sample_count;
+    let samples = &state.graphics_context.multisampling_strategy;
     
-    info!("Initialized state with adapter {:?} and using {} MSAA samples", adapter, samples);
+    info!("Initialized state with adapter {:?} and using {:?} multisampling strategy", adapter, samples);
 
     // build our application with a route
     let router = Router::new()

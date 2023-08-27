@@ -5,10 +5,7 @@ use nmsr_rendering::high_level::types::PlayerPartTextureType;
 use strum::EnumCount;
 use tracing::{instrument, Span};
 
-use crate::{
-    config::NmsrConfiguration,
-    error::{MojangRequestError, NMSRaaSError, Result},
-};
+use crate::error::{MojangRequestError, Result};
 
 use self::mojang::{client::MojangClient, model::GameProfileTexture};
 
@@ -27,8 +24,8 @@ pub struct RenderRequestResolver {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, strum::IntoStaticStr, strum::EnumIter)]
 pub enum ResolvedRenderEntryTextureType {
-    Skin,
     Cape,
+    Skin,
     #[cfg(feature = "ears")]
     Ears,
 }

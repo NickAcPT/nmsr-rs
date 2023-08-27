@@ -33,7 +33,7 @@ use crate::{high_level::camera::Camera, low_level::primitives::mesh::PrimitiveDi
 
 use super::{GraphicsContext, SceneContextWrapper, SceneTexture};
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Size {
     pub width: u32,
     pub height: u32,
@@ -173,6 +173,7 @@ where
         self.render_with_extra(graphics_context, None)
     }
 
+    #[instrument(skip(self, graphics_context, extra_rendering))]
     pub fn render_with_extra(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -181,6 +182,13 @@ where
         let pipeline = &graphics_context.pipeline;
         let device = &graphics_context.device;
         let queue = &graphics_context.queue;
+        let smaa_target = self.scene_context.smaa_target.take();
+
+        let mut smaa_target = match smaa_target {
+            Some(target) => target,
+            _ => unreachable!("SMAA target is always initialized"),
+        };
+
         let transform_bind_group = &self.scene_context.transform_bind_group;
         let sun_bind_group = &self.scene_context.sun_information_bind_group;
 
@@ -206,18 +214,18 @@ where
             .as_ref()
             .unwrap_or(&textures.output_texture.view);
 
-        let (attachment, resolve_target) = if graphics_context.sample_count > 1 {
-            if let Some(multisampled_view) = &textures.multisampled_output_texture {
-                (&multisampled_view.view, Some(final_view))
-            } else {
-                (final_view, None)
-            }
-        } else {
-            (final_view, None)
-        };
+        let smaa_frame = smaa_target.start_frame(device, queue, final_view);
 
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        let (attachment, resolve_target) =
+            if let Some(multisampled_view) = &textures.multisampled_output_texture {
+                (&multisampled_view.view, Some(&*smaa_frame))
+            } else {
+                (&*smaa_frame, None)
+            };
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Scene rendering (NMSR)"),
+        });
 
         let (mut load_op, mut depth_load_opt) =
             (LoadOp::Clear(Color::TRANSPARENT), LoadOp::Clear(1.0));
@@ -268,7 +276,8 @@ where
 
             let parts = parts.collect::<Vec<&Part>>();
 
-            let to_render: Vec<_> = parts.iter().map(|&p| primitive_convert(p)).collect();
+            let to_render: Vec<_> = trace_span!("part_convert")
+                .in_scope(|| parts.iter().map(|&p| primitive_convert(p)).collect());
 
             let to_render = Mesh::new(to_render);
 
@@ -293,7 +302,7 @@ where
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(format!("Render pass for {}", texture).as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: attachment,
+                    view: &*attachment,
                     resolve_target,
                     ops: Operations {
                         load: load_op,
@@ -322,7 +331,15 @@ where
             depth_load_opt = LoadOp::Load;
         }
 
+        queue.submit(Some(encoder.finish()));
+
+        // Explicitly drop the smaa frame so that it is resolved before we copy it to the output buffer.
+        drop(smaa_frame);
+
         let u32_size = std::mem::size_of::<u32>() as u32;
+
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         encoder.copy_texture_to_buffer(
             wgpu::ImageCopyTexture {
@@ -366,6 +383,8 @@ where
             surface_texture.present();
         }
 
+        self.scene_context.smaa_target = Some(smaa_target);
+
         Ok(())
     }
 
@@ -407,7 +426,6 @@ where
     }
 }
 
-#[instrument(skip(part))]
 pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
     (match part {
         Part::Cube {

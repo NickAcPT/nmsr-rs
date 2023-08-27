@@ -20,3 +20,6 @@ members = [
 
 [profile.dev.package.image]
 opt-level = 3
+
+[patch.crates-io]
+smaa = { git = "https://github.com/NickAcPT/smaa-rs", branch = "nmsr" }

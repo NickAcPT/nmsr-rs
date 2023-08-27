@@ -81,7 +81,7 @@ async fn main() -> anyhow::Result<()> {
 
     let aspect_ratio = config.width as f32 / config.height as f32;
 
-    let sun = SunInformation::default();
+    let sun = SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.35);
     
     let camera = Camera::new_absolute(
         Vec3::new(0.0, 30.0, -20.0),
@@ -103,7 +103,7 @@ async fn main() -> anyhow::Result<()> {
     let mut scene = build_scene(&graphics, config, &ctx, camera, sun);
 
     println!("surface_view_format: {:?}", surface_view_format);
-    println!("MSAA samples: {:?}", &graphics.sample_count);
+    println!("MSAA samples: {:?}", &graphics.multisampling_strategy);
 
     println!("Entering render loop...");
     let start_time = Instant::now();

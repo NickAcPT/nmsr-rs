@@ -1,6 +1,10 @@
-use wgpu::{Buffer, Texture, TextureView};
+use super::{scene::Size, GraphicsContext};
 
-use super::scene::Size;
+use image::RgbaImage;
+use tracing::instrument;
+use wgpu::{
+    Buffer, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+};
 
 #[derive(Debug)]
 pub struct SceneTexture {
@@ -8,7 +12,7 @@ pub struct SceneTexture {
     pub(crate) view: TextureView,
 }
 #[derive(Debug, Clone)]
-pub(crate) struct BufferDimensions {
+pub struct BufferDimensions {
     pub height: usize,
     pub unpadded_bytes_per_row: usize,
     pub padded_bytes_per_row: u32,
@@ -43,4 +47,53 @@ pub(crate) struct SceneContextTextures {
     pub(crate) texture_output_buffer: Buffer,
     pub(crate) texture_output_buffer_dimensions: BufferDimensions,
     pub(crate) size: Size,
+}
+
+pub fn premultiply_alpha(image: &mut RgbaImage) {
+    for pixel in image.pixels_mut() {
+        let alpha = pixel[3] as f32 / 255.0;
+        pixel[0] = (pixel[0] as f32 * alpha) as u8;
+        pixel[1] = (pixel[1] as f32 * alpha) as u8;
+        pixel[2] = (pixel[2] as f32 * alpha) as u8;
+    }
+}
+
+pub fn unmultiply_alpha(image: &mut [u8]) {
+    for pixel in image.chunks_exact_mut(4) {
+        let alpha = pixel[3] as f32 / 255.0;
+        if alpha > 0.0 {
+            pixel[0] = (pixel[0] as f32 / alpha) as u8;
+            pixel[1] = (pixel[1] as f32 / alpha) as u8;
+            pixel[2] = (pixel[2] as f32 / alpha) as u8;
+        }
+    }
+}
+
+#[instrument(skip(context, usage))]
+pub fn create_texture(
+    context: &GraphicsContext,
+    width: u32,
+    height: u32,
+    format: TextureFormat,
+    usage: TextureUsages,
+    label: Option<&str>,
+    sample_count: u32,
+) -> SceneTexture {
+    let texture = context.device.create_texture(&TextureDescriptor {
+        size: wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count,
+        dimension: TextureDimension::D2,
+        format,
+        usage,
+        label,
+        view_formats: &[],
+    });
+    let view = texture.create_view(&Default::default());
+
+    SceneTexture { texture, view }
 }

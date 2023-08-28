@@ -1,24 +1,27 @@
+use super::{
+    scene::{Size, SunInformation},
+    textures::{
+        create_texture, premultiply_alpha, BufferDimensions, SceneContextTextures, SceneTexture,
+    },
+};
+use crate::{
+    errors::{NMSRRenderingError, Result},
+    high_level::{
+        camera::Camera,
+        pipeline::graphics_context::GraphicsContext,
+        utils::buffer::{create_buffer_and_bind_group, read_buffer},
+    },
+};
 
 use derive_more::{Debug, Deref, DerefMut, From};
 use glam::Mat4;
-use image::buffer::ConvertBuffer;
-use image::RgbaImage;
+use image::{buffer::ConvertBuffer, RgbaImage};
 use smaa::SmaaTarget;
-use tokio::sync::oneshot::channel;
 use tracing::{instrument, trace_span};
-use wgpu::util::DeviceExt;
 use wgpu::{
-    BindGroup, Buffer, BufferDescriptor,
-    BufferSlice, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages,
+    util::DeviceExt, BindGroup, Buffer, BufferDescriptor, BufferUsages, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsages,
 };
-
-use crate::errors::{NMSRRenderingError, Result};
-use crate::high_level::camera::Camera;
-use crate::high_level::pipeline::graphics_context::GraphicsContext;
-
-use super::scene::{Size, SunInformation};
-use super::textures::{BufferDimensions, SceneContextTextures, SceneTexture};
 
 #[derive(Debug)]
 pub struct SceneContext {
@@ -235,104 +238,11 @@ impl SceneContext {
     pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext) -> Result<Vec<u8>> {
         let textures = self.try_textures()?;
 
-        Self::read_buffer(
+        read_buffer(
             &graphics_context.device,
             &textures.texture_output_buffer,
             &textures.texture_output_buffer_dimensions,
         )
         .await
     }
-
-    #[instrument(skip_all)]
-    async fn read_buffer(
-        device: &wgpu::Device,
-        output_buffer: &wgpu::Buffer,
-        dimensions: &BufferDimensions,
-    ) -> Result<Vec<u8>> {
-        let buffer_slice = wait_for_buffer_slice(output_buffer, device).await?;
-
-        let data = buffer_slice.get_mapped_range();
-
-        trace_span!("image_from_raw").in_scope(|| {
-            let mut bytes =
-                Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
-
-            for chunk in data.chunks(dimensions.padded_bytes_per_row as usize) {
-                bytes.extend_from_slice(&chunk[..dimensions.unpadded_bytes_per_row]);
-            }
-
-            drop(data);
-            output_buffer.unmap();
-
-            unmultiply_alpha(&mut bytes);
-
-            Ok(bytes)
-        })
-    }
 }
-
-#[instrument(name = "buffer_slice_wait", skip(output_buffer, device))]
-async fn wait_for_buffer_slice<'a>(
-    output_buffer: &'a Buffer,
-    device: &'a wgpu::Device,
-) -> Result<BufferSlice<'a>> {
-    let buffer_slice = output_buffer.slice(..);
-    let (tx, rx) = channel();
-    buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
-        tx.send(result).unwrap();
-    });
-    device.poll(wgpu::Maintain::Wait);
-    rx.await??;
-    Ok(buffer_slice)
-}
-
-fn premultiply_alpha(image: &mut RgbaImage) {
-    for pixel in image.pixels_mut() {
-        let alpha = pixel[3] as f32 / 255.0;
-        pixel[0] = (pixel[0] as f32 * alpha) as u8;
-        pixel[1] = (pixel[1] as f32 * alpha) as u8;
-        pixel[2] = (pixel[2] as f32 * alpha) as u8;
-    }
-}
-
-fn unmultiply_alpha(image: &mut [u8]) {
-    for pixel in image.chunks_exact_mut(4) {
-        let alpha = pixel[3] as f32 / 255.0;
-        if alpha > 0.0 {
-            pixel[0] = (pixel[0] as f32 / alpha) as u8;
-            pixel[1] = (pixel[1] as f32 / alpha) as u8;
-            pixel[2] = (pixel[2] as f32 / alpha) as u8;
-        }
-    }
-}
-
-#[instrument(skip(context, usage))]
-fn create_texture(
-    context: &GraphicsContext,
-    width: u32,
-    height: u32,
-    format: TextureFormat,
-    usage: TextureUsages,
-    label: Option<&str>,
-    sample_count: u32,
-) -> SceneTexture {
-    let texture = context.device.create_texture(&TextureDescriptor {
-        size: wgpu::Extent3d {
-            width,
-            height,
-            depth_or_array_layers: 1,
-        },
-        mip_level_count: 1,
-        sample_count,
-        dimension: TextureDimension::D2,
-        format,
-        usage,
-        label,
-        view_formats: &[],
-    });
-    let view = texture.create_view(&Default::default());
-
-    SceneTexture { texture, view }
-}
-
-use crate::high_level::utils::buffer::create_buffer_and_bind_group;

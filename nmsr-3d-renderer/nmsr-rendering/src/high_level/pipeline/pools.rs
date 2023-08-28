@@ -30,10 +30,7 @@ impl Manager for SceneContextPoolManager {
         Ok(SceneContext::new(&self.graphics_context))
     }
 
-    async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error> {
-        // Free these textures.
-        obj.textures.take();
-        
+    async fn recycle(&self, _: &mut Self::Type) -> RecycleResult<Self::Error> {
         Ok(())
     }
 }

@@ -21,9 +21,9 @@ use crate::{
 use super::{render::create_png_from_bytes, NMSRState};
 
 pub(crate) async fn internal_render_model(
-    request: RenderRequest,
+    request: &RenderRequest,
     state: &NMSRState,
-    resolved: ResolvedRenderRequest,
+    resolved: &ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
     let scene_context = state.create_scene_context().await?;
 
@@ -74,12 +74,12 @@ pub(crate) async fn internal_render_model(
 
 #[instrument(skip_all)]
 fn load_textures(
-    resolved: ResolvedRenderRequest,
+    resolved: &ResolvedRenderRequest,
     state: &NMSRState,
     request: &RenderRequest,
     scene: &mut Scene<Object<SceneContextPoolManager>>,
 ) -> Result<()> {
-    for (texture_type, texture_bytes) in resolved.textures {
+    for (&texture_type, texture_bytes) in &resolved.textures {
         let mut image_buffer = load_image(&texture_bytes)?;
 
         if texture_type == ResolvedRenderEntryTextureType::Skin {

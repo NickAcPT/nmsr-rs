@@ -1,9 +1,13 @@
-use std::{
-    collections::HashMap,
-    fmt::Debug,
-    ops::{Deref, DerefMut},
+use super::{GraphicsContext, SceneContextWrapper, SceneTexture};
+use crate::{
+    errors::{NMSRRenderingError, Result},
+    high_level::{camera::Camera, pipeline::SceneContext},
+    low_level::primitives::{
+        cube::Cube,
+        mesh::{Mesh, PrimitiveDispatch},
+        part_primitive::PartPrimitive,
+    },
 };
-
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Quat, Vec2, Vec3};
 use image::RgbaImage;
@@ -16,6 +20,11 @@ use nmsr_player_parts::{
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
+use std::{
+    collections::HashMap,
+    fmt::Debug,
+    ops::{Deref, DerefMut},
+};
 use tracing::{instrument, trace_span};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
@@ -24,16 +33,7 @@ use wgpu::{
     SamplerDescriptor, TextureView,
 };
 
-use crate::high_level::pipeline::SceneContext;
-use crate::{
-    errors::{NMSRRenderingError, Result},
-    low_level::primitives::{cube::Cube, mesh::Mesh, part_primitive::PartPrimitive},
-};
-use crate::{high_level::camera::Camera, low_level::primitives::mesh::PrimitiveDispatch};
-
-use super::{GraphicsContext, SceneContextWrapper, SceneTexture};
-
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Size {
     pub width: u32,
     pub height: u32,

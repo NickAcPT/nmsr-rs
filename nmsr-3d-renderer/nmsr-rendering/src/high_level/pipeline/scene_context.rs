@@ -19,7 +19,7 @@ use crate::errors::{NMSRRenderingError, Result};
 use crate::high_level::camera::Camera;
 use crate::high_level::pipeline::graphics_context::GraphicsContext;
 
-use super::scene::SunInformation;
+use super::scene::{Size, SunInformation};
 
 #[derive(Debug)]
 pub(crate) struct SceneContextTextures {
@@ -27,6 +27,7 @@ pub(crate) struct SceneContextTextures {
     pub(crate) output_texture: SceneTexture,
     pub(crate) multisampled_output_texture: Option<SceneTexture>,
     pub(crate) texture_output_buffer: Buffer,
+    pub(crate) size: Size,
 }
 
 #[derive(Debug)]
@@ -100,7 +101,7 @@ impl SceneContext {
         graphics_context: &GraphicsContext,
         camera: &mut Camera,
         sun: &SunInformation,
-        viewport_size: super::scene::Size,
+        viewport_size: Size,
     ) {
         // Setup camera matrix
         self.set_camera_parameters(graphics_context, camera);
@@ -112,85 +113,95 @@ impl SceneContext {
             .multisampling_strategy
             .get_msaa_sample_count();
 
-        // Setup our depth texture
-        let depth_texture = create_texture(
-            graphics_context,
-            viewport_size.width,
-            viewport_size.height,
-            GraphicsContext::DEPTH_TEXTURE_FORMAT,
-            TextureUsages::RENDER_ATTACHMENT,
-            Some("Depth Texture"),
-            msaa_sample_count,
-        );
+        let u32_size = mem::size_of::<u32>() as u32;
+        let output_buffer_size =
+            (u32_size * viewport_size.width * viewport_size.height) as wgpu::BufferAddress;
 
-        // Setup our output texture for multisampling if we need to use it
-        let multisampled_output_texture = if msaa_sample_count > 1 {
-            Some(create_texture(
+        let needs_texture_resize = self
+            .textures
+            .as_ref()
+            .map_or(true, |textures| textures.size != viewport_size);
+
+        if needs_texture_resize {
+            drop(self.textures.take());
+
+            // Setup our depth texture
+            let depth_texture = create_texture(
+                graphics_context,
+                viewport_size.width,
+                viewport_size.height,
+                GraphicsContext::DEPTH_TEXTURE_FORMAT,
+                TextureUsages::RENDER_ATTACHMENT,
+                Some("Depth Texture"),
+                msaa_sample_count,
+            );
+
+            // Setup our output texture for multisampling if we need to use it
+            let multisampled_output_texture = if msaa_sample_count > 1 {
+                Some(create_texture(
+                    graphics_context,
+                    viewport_size.width,
+                    viewport_size.height,
+                    graphics_context.texture_format,
+                    TextureUsages::RENDER_ATTACHMENT,
+                    Some("MultiSampled Output Texture"),
+                    msaa_sample_count,
+                ))
+            } else {
+                None
+            };
+
+            // Setup our output texture
+            let output_texture = create_texture(
                 graphics_context,
                 viewport_size.width,
                 viewport_size.height,
                 graphics_context.texture_format,
-                TextureUsages::RENDER_ATTACHMENT,
-                Some("MultiSampled Output Texture"),
-                msaa_sample_count,
-            ))
-        } else {
-            None
-        };
-
-        // Setup our output texture
-        let output_texture = create_texture(
-            graphics_context,
-            viewport_size.width,
-            viewport_size.height,
-            graphics_context.texture_format,
-            TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
-            Some("Final Output Texture"),
-            1,
-        );
-
-        if let Some(target) = self.smaa_target.as_mut() {
-            let _guard = trace_span!("resize_smaa_target").entered();
-            target.resize(
-                &graphics_context.device,
-                viewport_size.width,
-                viewport_size.height,
-            );
-        } else {
-            let _guard = trace_span!("create_smaa_target").entered();
-            let smaa_target = SmaaTarget::new(
-                &graphics_context.device,
-                &graphics_context.queue,
-                viewport_size.width,
-                viewport_size.height,
-                graphics_context.texture_format,
-                graphics_context.multisampling_strategy.get_smaa_mode(),
+                TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
+                Some("Final Output Texture"),
+                1,
             );
 
-            self.smaa_target.replace(smaa_target);
+            if let Some(target) = self.smaa_target.as_mut() {
+                let _guard = trace_span!("resize_smaa_target").entered();
+                target.resize(
+                    &graphics_context.device,
+                    viewport_size.width,
+                    viewport_size.height,
+                );
+            } else {
+                let _guard = trace_span!("create_smaa_target").entered();
+                let smaa_target = SmaaTarget::new(
+                    &graphics_context.device,
+                    &graphics_context.queue,
+                    viewport_size.width,
+                    viewport_size.height,
+                    graphics_context.texture_format,
+                    graphics_context.multisampling_strategy.get_smaa_mode(),
+                );
+
+                self.smaa_target.replace(smaa_target);
+            }
+
+            let output_buffer_desc = BufferDescriptor {
+                size: output_buffer_size,
+                usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
+                label: Some("Output Texture Buffer"),
+                mapped_at_creation: false,
+            };
+
+            let texture_output_buffer = trace_span!("create_output_buffer")
+                .in_scope(|| graphics_context.device.create_buffer(&output_buffer_desc));
+
+            // Save our textures
+            self.textures = Some(SceneContextTextures {
+                depth_texture,
+                output_texture,
+                multisampled_output_texture,
+                texture_output_buffer,
+                size: viewport_size,
+            });
         }
-
-        let u32_size = mem::size_of::<u32>() as u32;
-        let output_buffer_size =
-            (u32_size * viewport_size.width * viewport_size.height) as wgpu::BufferAddress;
-        let output_buffer_desc = BufferDescriptor {
-            size: output_buffer_size,
-            usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
-            label: Some("Output Texture Buffer"),
-            mapped_at_creation: false,
-        };
-
-        let texture_output_buffer = trace_span!("create_output_buffer").in_scope(|| {
-            graphics_context.device.create_buffer(&output_buffer_desc)
-        });
-
-        // Save our textures
-        self.textures = Some(SceneContextTextures {
-            depth_texture,
-            output_texture,
-            multisampled_output_texture,
-            texture_output_buffer,
-        });
     }
 
     pub(crate) fn upload_texture(
@@ -254,7 +265,7 @@ impl SceneContext {
 
             drop(data);
             output_buffer.unmap();
-            
+
             unmultiply_alpha(&mut vec);
 
             Ok(vec)

@@ -11,7 +11,7 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::render;
-use tracing::instrument;
+use tracing::{info_span, instrument, Span};
 
 use std::{hint::black_box, sync::Arc};
 
@@ -85,7 +85,7 @@ impl NMSRState {
         Ok(skin_image)
     }
 
-    // Prewarm our renderer by actually rendering a single request.
+    // Prewarm our renderer by actually rendering a few requests.
     // This will ensure that the renderer is initialized and ready to go when we start serving requests.
     #[instrument(skip(self))]
     pub(crate) async fn prewarm_renderer(&self) -> Result<()> {
@@ -98,14 +98,19 @@ impl NMSRState {
             entry,
             None,
             EnumSet::EMPTY,
-            None            
+            None,
         );
 
         let resolved = self.resolver.resolve(&request).await?;
 
-        let result = black_box(render_model::internal_render_model(request, self, resolved).await)?;
-
-        drop(result);
+        for index in 0..50 {
+            let result = info_span!("prewarm_render", index = index).in_scope(|| {
+                black_box(
+                    render_skin::internal_render_skin(request.clone(), self, resolved.clone()),
+                )
+            }).await;
+            drop(result);
+        }
 
         Ok(())
     }

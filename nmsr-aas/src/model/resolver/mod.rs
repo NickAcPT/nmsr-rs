@@ -22,7 +22,7 @@ pub struct RenderRequestResolver {
     mojang_requests_client: Arc<MojangClient>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, strum::IntoStaticStr, strum::EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::IntoStaticStr, strum::EnumIter)]
 pub enum ResolvedRenderEntryTextureType {
     Cape,
     Skin,
@@ -252,7 +252,7 @@ impl RenderRequestResolver {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResolvedRenderRequest {
     pub model: RenderRequestEntryModel,
     #[debug(skip)]

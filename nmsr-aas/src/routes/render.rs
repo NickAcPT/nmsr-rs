@@ -38,7 +38,7 @@ pub async fn render(
 
     let result = match request.mode {
         RenderRequestMode::Skin => internal_render_skin(request.clone(), &state, resolved).await,
-        _ => internal_render_model(request.clone(), &state, resolved).await,
+        _ => internal_render_model(&request, &state, &resolved).await,
     }?;
 
     let mut res = create_image_response(result)?;

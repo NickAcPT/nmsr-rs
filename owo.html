@@ -53,13 +53,17 @@
         function updateYaw() {
             const yaw = yawSlider.value;
             yawValue.textContent = yaw;
-            downloadImage();
+            updateImage();
         }
 
         function updatePitch() {
             const pitch = pitchSlider.value;
             pitchValue.textContent = pitch;
-            downloadImage();
+            updateImage();
+        }
+        
+        async function updateImage() {
+            imageView.src = await downloadImage(yawSlider.value, pitchSlider.value);
         }
 
         async function downloadImage(yaw, pitch) {

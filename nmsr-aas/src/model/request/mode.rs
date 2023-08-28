@@ -151,14 +151,6 @@ impl RenderRequestMode {
         }
     }
 
-    pub(crate) fn get_lighting(&self, no_shading: bool) -> SunInformation {
-        if no_shading {
-            return SunInformation::new([0.0; 3].into(), 0.0, 1.0);
-        } else {
-            return SunInformation::new([0.0, -1.0, 15.0].into(), 1.0, 0.7);
-        }
-    }
-
     pub(crate) fn get_arm_rotation(&self) -> f32 {
         match self {
             Self::FullBody => 10.0,

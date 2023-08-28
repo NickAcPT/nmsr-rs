@@ -1,9 +1,11 @@
+use std::f32::consts;
+
 use derive_more::Debug;
 use enumset::{EnumSet, EnumSetType};
-use nmsr_rendering::high_level::{
+use nmsr_rendering::{high_level::{
     camera::Camera,
-    pipeline::scene::Size,
-};
+    pipeline::scene::{Size, SunInformation},
+}, low_level::{Quat, EulerRot, Vec3}};
 use strum::{Display, EnumString};
 
 use self::entry::{RenderRequestEntry, RenderRequestEntryModel};
@@ -123,5 +125,24 @@ impl RenderRequest {
         }
         
         size
+    }
+
+    pub(crate) fn get_lighting(&self) -> SunInformation {
+        if !self.features.contains(RenderRequestFeatures::Shading) {
+            return SunInformation::new([0.0; 3].into(), 0.0, 1.0);
+        }
+        
+        let camera = self.get_camera();
+        
+        let rot_quat: Quat = Quat::from_euler(
+            EulerRot::ZXY,
+            camera.get_roll().to_radians(),
+            -camera.get_pitch().to_radians(),
+            camera.get_yaw().to_radians() - std::f32::consts::PI,
+        ).into();
+        
+        let front_lighting = rot_quat.mul_vec3(Vec3::Z) * Vec3::new(1.0, 1.0, -1.0);
+    
+        return SunInformation::new(front_lighting, 1.0, 0.5);
     }
 }

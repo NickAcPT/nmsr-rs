@@ -46,39 +46,10 @@ pub(crate) async fn internal_render_model(
     let mode = &request.mode;
     let camera = request.get_camera();
     let arm_rotation = mode.get_arm_rotation();
-    let mut lighting =
-        mode.get_lighting(!request.features.contains(RenderRequestFeatures::Shading));
+    let lighting =
+        request.get_lighting();
+        
     let parts = mode.get_body_parts();
-
-    let rot_quat: Quat = Quat::from_euler(
-        ZXY,
-        camera.get_roll().to_radians(),
-        -camera.get_pitch().to_radians(),
-        camera.get_yaw().to_radians() - std::f32::consts::PI,
-    ).into();
-    
-    let rot_quat2 = rot_quat.mul_vec3(Vec3::Z) * Vec3::new(1.0, 1.0, -1.0);
-
-    fn look_from_yaw_pitch(yaw: f32, pitch: f32) -> Vec3 {
-        let (y_sin, y_cos) = f32::sin_cos((-yaw).to_radians() - consts::PI);
-        let (p_sin, p_cos) = f32::sin_cos((-pitch).to_radians());
-
-        let x = y_sin * p_cos;
-        let y = p_sin;
-        let z = y_cos * p_cos;
-
-        Vec3::new(x, y, z) * Vec3::new(-1.0, 1.0, -1.0)
-    }
-
-    lighting.ambient = 0.0;
-    lighting.direction = look_from_yaw_pitch(
-        camera.get_yaw(),
-        camera.get_pitch(),
-    );
-
-    println!("ld={:?}, q={:?}, rq={:?}", &lighting.direction, &rot_quat, rot_quat2);
-
-    lighting.direction = rot_quat2;
 
     let final_model = request.model.unwrap_or(resolved.model);
 

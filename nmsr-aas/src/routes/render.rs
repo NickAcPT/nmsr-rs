@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use axum::{
     extract::State,
     http::HeaderValue,

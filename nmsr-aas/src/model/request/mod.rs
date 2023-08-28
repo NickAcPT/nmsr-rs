@@ -48,6 +48,7 @@ pub struct RenderRequestExtraSettings {
     pub height: Option<u32>,
     
     pub arm_rotation: Option<f32>,
+    pub distance: Option<f32>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -109,6 +110,10 @@ impl RenderRequest {
             if let Some(roll) = settings.roll {
                 camera.set_roll(roll)
             }
+            
+            if let Some(distance) = settings.distance {
+                camera.set_distance(camera.get_distance() + distance)
+            }
         }
         
         camera
@@ -144,7 +149,9 @@ impl RenderRequest {
             camera.get_yaw().to_radians() - consts::PI,
         ).into();
         
-        let front_lighting = rot_quat.mul_vec3(Vec3::Z) * Vec3::new(1.0, 1.0, -1.0);
+        let light = Vec3::new(0.0, 1.0, 5.0);
+        
+        let front_lighting = rot_quat.mul_vec3(light) * Vec3::new(1.0, 1.0, -1.0);
     
         return SunInformation::new(front_lighting, 1.0, 0.5);
     }

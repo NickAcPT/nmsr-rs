@@ -3,7 +3,7 @@ use std::f32::consts::FRAC_1_SQRT_2;
 
 use nmsr_rendering::high_level::{
     camera::{Camera, CameraRotation, ProjectionParameters},
-    pipeline::scene::{Size, SunInformation},
+    pipeline::scene::Size,
     types::PlayerBodyPartType,
 };
 use strum::{EnumString, IntoEnumIterator};

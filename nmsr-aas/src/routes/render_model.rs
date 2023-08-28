@@ -1,5 +1,3 @@
-use std::f32::consts::{self, PI, FRAC_PI_2};
-
 use deadpool::managed::Object;
 use image::{ImageFormat, RgbaImage};
 use nmsr_rendering::{
@@ -9,7 +7,6 @@ use nmsr_rendering::{
         pipeline::{pools::SceneContextPoolManager, scene::Scene},
         player_model::PlayerModel,
     },
-    low_level::{Mat4, Vec3, Quat, EulerRot::*},
 };
 use tracing::instrument;
 
@@ -22,17 +19,6 @@ use crate::{
 };
 
 use super::{render::create_png_from_bytes, NMSRState};
-
-#[inline]
-fn normalize(number: f32, side: f32) -> f32 {
-    let result = ((number + side) % (side * 2.0)) - side;
-    
-    if result.is_sign_positive() {
-        1.0
-    } else {
-        -1.0
-    }
-}
 
 pub(crate) async fn internal_render_model(
     request: RenderRequest,

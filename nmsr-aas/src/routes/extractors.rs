@@ -36,6 +36,7 @@ use crate::{
 ///  - `?process`: process the skin (upgrade skin to 1.8 format, strip alpha from the body regions, apply erase regions if Ears feature is enabled)
 ///  
 ///  - `arms=<rotation>` or `arm=<rotation>`: set the rotation of the arms
+///  - `dist=<distance>` or `distance=<distance>`: set the distance of the camera
 struct RenderRequestQueryParams {
     #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, RenderRequestFeatures>>")]
     #[serde(alias = "no")]
@@ -64,6 +65,9 @@ struct RenderRequestQueryParams {
 
     #[serde(alias = "arm")]
     arms: Option<f32>,
+    
+    #[serde(alias = "dist")]
+    distance: Option<f32>,
 }
 
 impl RenderRequestQueryParams {
@@ -111,6 +115,8 @@ impl RenderRequestQueryParams {
         RenderRequestMode::validate_unit("roll", self.roll, -360.0, 360.0)?;
 
         RenderRequestMode::validate_unit("arm", self.arms, 0.0, 180.0)?;
+        
+        RenderRequestMode::validate_unit("distance", self.distance, -5.0, 30.0)?;
 
         Ok(())
     }
@@ -161,6 +167,7 @@ where
             pitch: query.pitch,
             roll: query.roll,
             arm_rotation: query.arms,
+            distance: query.distance,
         });
 
         Ok(RenderRequest::new_from_excluded_features(

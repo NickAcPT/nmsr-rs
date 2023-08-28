@@ -101,8 +101,8 @@ impl RenderRequestMode {
     pub const MAX_RENDER_WIDTH: u32 = Self::DEFAULT_RENDER_WIDTH * 2;
     pub const MAX_RENDER_HEIGHT: u32 = Self::DEFAULT_RENDER_HEIGHT * 2;
 
-    pub const MIN_RENDER_WIDTH: u32 = Self::DEFAULT_RENDER_WIDTH / 32;
-    pub const MIN_RENDER_HEIGHT: u32 = Self::DEFAULT_RENDER_HEIGHT / 32;
+    pub const MIN_RENDER_WIDTH: u32 = Self::DEFAULT_RENDER_WIDTH / 8;
+    pub const MIN_RENDER_HEIGHT: u32 = Self::DEFAULT_RENDER_HEIGHT / 8;
 
     pub(crate) fn get_size(&self) -> Size {
         if self.is_square() {

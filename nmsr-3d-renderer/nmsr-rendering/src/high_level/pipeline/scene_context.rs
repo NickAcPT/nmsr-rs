@@ -150,12 +150,14 @@ impl SceneContext {
         );
 
         if let Some(target) = self.smaa_target.as_mut() {
+            let _guard = trace_span!("resize_smaa_target").entered();
             target.resize(
                 &graphics_context.device,
                 viewport_size.width,
                 viewport_size.height,
             );
         } else {
+            let _guard = trace_span!("create_smaa_target").entered();
             let smaa_target = SmaaTarget::new(
                 &graphics_context.device,
                 &graphics_context.queue,
@@ -178,7 +180,9 @@ impl SceneContext {
             mapped_at_creation: false,
         };
 
-        let texture_output_buffer = graphics_context.device.create_buffer(&output_buffer_desc);
+        let texture_output_buffer = trace_span!("create_output_buffer").in_scope(|| {
+            graphics_context.device.create_buffer(&output_buffer_desc)
+        });
 
         // Save our textures
         self.textures = Some(SceneContextTextures {

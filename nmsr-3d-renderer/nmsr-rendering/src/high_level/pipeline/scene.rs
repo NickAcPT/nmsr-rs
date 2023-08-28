@@ -336,8 +336,6 @@ where
         // Explicitly drop the smaa frame so that it is resolved before we copy it to the output buffer.
         drop(smaa_frame);
 
-        let u32_size = std::mem::size_of::<u32>() as u32;
-
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
@@ -352,8 +350,8 @@ where
                 buffer: &textures.texture_output_buffer,
                 layout: wgpu::ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: Some(u32_size * self.viewport_size.width),
-                    rows_per_image: Some(self.viewport_size.height),
+                    bytes_per_row: Some(textures.texture_output_buffer_dimensions.padded_bytes_per_row),
+                    rows_per_image: None,
                 },
             },
             Extent3d {

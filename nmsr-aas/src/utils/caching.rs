@@ -6,6 +6,7 @@ use std::{
 
 use async_trait::async_trait;
 use derive_more::Debug;
+use tracing::{instrument, trace};
 
 use crate::error::{ExplainableExt, Result};
 
@@ -113,14 +114,16 @@ where
         Ok(key.map(|k| self.base_path.join(k)))
     }
 
+    #[instrument(skip(self))]
     pub async fn get_cached_entry(&self, entry: &Key) -> Result<Option<ResultEntry>> {
         let path = self.get_cache_entry_path(entry).await?;
 
         if let Some(path) = path {
             if !path.exists() {
+                trace!("Cache entry path doesn't exist.");
                 return Ok(None);
             }
-
+            
             let marker_path = self.handler.get_marker_path(entry, &self.config).await?;
             let marker_path = path.join(marker_path);
 
@@ -139,6 +142,7 @@ where
                 .await?;
 
             if is_expired {
+                trace!("Entry is expired, discarding.");
                 if path.is_dir() {
                     fs::remove_dir_all(path)
                         .explain(format!("Unable to remove expired cache entry {:?}", entry))?;
@@ -155,6 +159,8 @@ where
                 .read_cache(entry, &self.config, &path, &marker)
                 .await?;
 
+            trace!("Cache entry found.");
+            
             Ok(result)
         } else {
             Ok(None)

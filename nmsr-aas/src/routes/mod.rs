@@ -11,12 +11,12 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::render;
-use tracing::{info_span, instrument, Span};
+use tracing::{debug_span, info, info_span, instrument};
 
 use std::{hint::black_box, sync::Arc};
 
 use crate::{
-    config::NmsrConfiguration,
+    config::{ModelCacheConfiguration, NmsrConfiguration},
     error::{RenderRequestError, Result},
     model::{
         request::{
@@ -32,12 +32,14 @@ pub struct NMSRState {
     pub resolver: Arc<RenderRequestResolver>,
     pub graphics_context: Arc<GraphicsContext>,
     pools: Arc<GraphicsContextPools>,
+    cache_config: ModelCacheConfiguration,
 }
 
 impl NMSRState {
     pub async fn new(config: &NmsrConfiguration) -> Result<Self> {
         let mojang_client = MojangClient::new(Arc::new(config.mojank.clone()))?;
-        let model_cache = ModelCache::new("cache".into(), config.caching.clone())?;
+        let cache_config = config.caching.clone();
+        let model_cache = ModelCache::new("cache".into(), cache_config)?;
 
         let resolver = RenderRequestResolver::new(model_cache, Arc::new(mojang_client));
 
@@ -57,6 +59,7 @@ impl NMSRState {
             resolver: Arc::new(resolver),
             graphics_context,
             pools: Arc::new(pools),
+            cache_config: config.caching.clone(),
         })
     }
 
@@ -85,10 +88,43 @@ impl NMSRState {
         Ok(skin_image)
     }
 
-    // Prewarm our renderer by actually rendering a few requests.
-    // This will ensure that the renderer is initialized and ready to go when we start serving requests.
     #[instrument(skip(self))]
-    pub(crate) async fn prewarm_renderer(&self) -> Result<()> {
+    pub(crate) async fn init(&self) -> Result<()> {
+        info!("Pre-loading our cache biases.");
+        self.preload_cache_biases().await?;
+
+        #[cfg(not(debug_assertions))]
+        {
+            info!("Pre-warming model renderer.");
+            self.prewarm_renderer().await?;
+        }
+
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    async fn preload_cache_biases(&self) -> Result<()> {
+        for (entry, _) in &self.cache_config.cache_biases {
+            let _guard = debug_span!("preload_cache_biases", entry = ?entry).entered();
+
+            let request = RenderRequest::new_from_excluded_features(
+                RenderRequestMode::Skin,
+                entry.clone(),
+                None,
+                EnumSet::EMPTY,
+                None,
+            );
+
+            self.resolver.resolve(&request).await?;
+        }
+
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    async fn prewarm_renderer(&self) -> Result<()> {
+        // Prewarm our renderer by actually rendering a few requests.
+        // This will ensure that the renderer is initialized and ready to go when we start serving requests.
         // `86ed67a77cf4e00350b6e3a966f312d4f5a0170a028c0699e6043a2374f99ff5` is one of the hashes of NickAc's skin.
         let entry = RenderRequestEntry::TextureHash(
             "86ed67a77cf4e00350b6e3a966f312d4f5a0170a028c0699e6043a2374f99ff5".to_owned(),
@@ -103,12 +139,16 @@ impl NMSRState {
 
         let resolved = self.resolver.resolve(&request).await?;
 
-        for index in 0..50 {
-            let result = info_span!("prewarm_render", index = index).in_scope(|| {
-                black_box(
-                    render_skin::internal_render_skin(request.clone(), self, resolved.clone()),
-                )
-            }).await;
+        for index in 0..10 {
+            let result = info_span!("prewarm_render", index = index)
+                .in_scope(|| {
+                    black_box(render_skin::internal_render_skin(
+                        request.clone(),
+                        self,
+                        resolved.clone(),
+                    ))
+                })
+                .await;
             drop(result);
         }
 

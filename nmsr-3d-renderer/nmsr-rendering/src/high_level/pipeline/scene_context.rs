@@ -1,7 +1,6 @@
 use bytemuck::Pod;
 use derive_more::{Debug, Deref, DerefMut, From};
 use smaa::SmaaTarget;
-use std::mem;
 use tokio::sync::oneshot::channel;
 use tracing::{instrument, trace_span};
 
@@ -21,12 +20,41 @@ use crate::high_level::pipeline::graphics_context::GraphicsContext;
 
 use super::scene::{Size, SunInformation};
 
+#[derive(Debug, Clone)]
+pub(crate) struct BufferDimensions {
+    pub height: usize,
+    pub unpadded_bytes_per_row: usize,
+    pub padded_bytes_per_row: u32,
+}
+
+impl BufferDimensions {
+    #[allow(dead_code)]
+    pub fn new(width: usize, height: usize) -> Self {
+        let bytes_per_pixel = std::mem::size_of::<u32>();
+        let unpadded_bytes_per_row = width * bytes_per_pixel;
+        let align: usize = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
+        let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
+        let padded_bytes_per_row = (unpadded_bytes_per_row + padded_bytes_per_row_padding) as u32;
+
+        Self {
+            height,
+            unpadded_bytes_per_row,
+            padded_bytes_per_row,
+        }
+    }
+
+    pub fn size(&self) -> u64 {
+        self.padded_bytes_per_row as u64 * self.height as u64
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct SceneContextTextures {
     pub(crate) depth_texture: SceneTexture,
     pub(crate) output_texture: SceneTexture,
     pub(crate) multisampled_output_texture: Option<SceneTexture>,
     pub(crate) texture_output_buffer: Buffer,
+    pub(crate) texture_output_buffer_dimensions: BufferDimensions,
     pub(crate) size: Size,
 }
 
@@ -113,10 +141,6 @@ impl SceneContext {
             .multisampling_strategy
             .get_msaa_sample_count();
 
-        let u32_size = mem::size_of::<u32>() as u32;
-        let output_buffer_size =
-            (u32_size * viewport_size.width * viewport_size.height) as wgpu::BufferAddress;
-
         let needs_texture_resize = self
             .textures
             .as_ref()
@@ -183,8 +207,11 @@ impl SceneContext {
                 self.smaa_target.replace(smaa_target);
             }
 
+            let output_buffer_dimensions =
+                BufferDimensions::new(viewport_size.width as usize, viewport_size.height as usize);
+
             let output_buffer_desc = BufferDescriptor {
-                size: output_buffer_size,
+                size: output_buffer_dimensions.size(),
                 usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
                 label: Some("Output Texture Buffer"),
                 mapped_at_creation: false,
@@ -200,6 +227,7 @@ impl SceneContext {
                 multisampled_output_texture,
                 texture_output_buffer,
                 size: viewport_size,
+                texture_output_buffer_dimensions: output_buffer_dimensions
             });
         }
     }
@@ -251,24 +279,28 @@ impl SceneContext {
     pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext) -> Result<Vec<u8>> {
         let textures = self.try_textures()?;
 
-        Self::read_buffer(&graphics_context.device, &textures.texture_output_buffer).await
+        Self::read_buffer(&graphics_context.device, &textures.texture_output_buffer, &textures.texture_output_buffer_dimensions).await
     }
 
-    #[instrument(skip(device, output_buffer))]
-    async fn read_buffer(device: &wgpu::Device, output_buffer: &wgpu::Buffer) -> Result<Vec<u8>> {
+    #[instrument(skip_all)]
+    async fn read_buffer(device: &wgpu::Device, output_buffer: &wgpu::Buffer, dimensions: &BufferDimensions) -> Result<Vec<u8>> {
         let buffer_slice = wait_for_buffer_slice(output_buffer, device).await?;
 
         let data = buffer_slice.get_mapped_range();
 
         trace_span!("image_from_raw").in_scope(|| {
-            let mut vec = data.to_vec();
+            let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
+
+            for chunk in data.chunks(dimensions.padded_bytes_per_row as usize) {
+                bytes.extend_from_slice(&chunk[..dimensions.unpadded_bytes_per_row]);
+            }
 
             drop(data);
             output_buffer.unmap();
 
-            unmultiply_alpha(&mut vec);
+            unmultiply_alpha(&mut bytes);
 
-            Ok(vec)
+            Ok(bytes)
         })
     }
 }

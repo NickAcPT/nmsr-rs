@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Image Viewer</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 80vh;
+        }
+
+        .slider-container {
+            width: 80%;
+            margin-top: 20px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <img id="image" alt="Image">
+    <div class="slider-container">
+        <label for="widthSlider">Width: <span id="widthValue">0</span></label>
+        <input type="range" id="widthSlider" min="64" max="1024" value="512">
+    </div>
+    <div class="slider-container">
+        <label for="heightSlider">Height: <span id="heightValue">0</span></label>
+        <input type="range" id="heightSlider" min="108" max="1738" value="512">
+    </div>
+
+    <script>
+        const widthSlider = document.getElementById('widthSlider');
+        const heightSlider = document.getElementById('heightSlider');
+        const widthValue = document.getElementById('widthValue');
+        const heightValue = document.getElementById('heightValue');
+        const imageView = document.getElementById('image');
+
+        widthSlider.addEventListener('input', updateWidth);
+        heightSlider.addEventListener('input', updateHeight);
+
+        function updateWidth() {
+            const width = widthSlider.value;
+            widthValue.textContent = width;
+            updateImage();
+        }
+
+        function updateHeight() {
+            const height = heightSlider.value;
+            heightValue.textContent = height;
+            updateImage();
+        }
+        
+        async function updateImage() {
+            imageView.src = await downloadImage(widthSlider.value, heightSlider.value);
+        }
+
+        async function downloadImage(width, height) {
+            const imageUrl = `http://localhost:8621/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?width=${width}&height=${height}`;
+
+            try {
+                const response = await fetch(imageUrl);
+                if (!response.ok) {
+                    throw new Error('Image request failed');
+                }
+                const imageBlob = await response.blob();
+                return URL.createObjectURL(imageBlob);
+            } catch (error) {
+                console.error('Error loading image:', error);
+            }
+        }
+
+        spin_interval = undefined;
+        // Spin player smoothly
+        let widthIndex = 0;
+        let rotations = [];
+
+        function doSpin(time) {
+            if (spin_interval) {
+                clearInterval(spin_interval);
+                spin_interval = undefined;
+            }
+            spin_interval = setInterval(() => {
+                imageView.src = (rotations[widthIndex]);
+                widthIndex = (widthIndex + 1) % rotations.length;
+            }, time);
+        }
+
+        updateImage();
+
+        /* setTimeout(async () => {
+            let batch = 0;
+            // Download all width rotations (height = 0; width = -180 to 180)
+            for (let width = -180; width <= 180; width += 1) {
+                setTimeout(async () => {
+                    rotations[width + 180] = await downloadImage(width, 0);
+                });
+                batch++;
+
+                if (batch >= 50) {
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    batch = 0;
+                }
+            }
+        }, 1); */
+
+    </script>
+</body>
+
+</html>

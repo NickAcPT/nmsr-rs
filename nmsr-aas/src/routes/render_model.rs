@@ -33,7 +33,7 @@ pub(crate) async fn internal_render_model(
     let camera = request.get_camera();
     let arm_rotation = request.get_arm_rotation();
     let lighting = request.get_lighting();
-        
+
     let parts = mode.get_body_parts();
 
     let final_model = request.model.unwrap_or(resolved.model);
@@ -66,7 +66,6 @@ pub(crate) async fn internal_render_model(
     scene.render(&state.graphics_context)?;
 
     let render = scene.copy_output_texture(&state.graphics_context).await?;
-
     let render_bytes = create_png_from_bytes((size.width, size.height), &render)?;
 
     Ok(render_bytes)

@@ -12,16 +12,14 @@ use tower_http::cors::AllowMethods;
 use tower_http::cors::Any;
 use tower_http::cors::CorsLayer;
 use tracing::info_span;
+use tracing_subscriber::EnvFilter;
 use twelf::Layer;
 use utils::config::TracingConfiguration;
 pub use utils::{caching, config, error};
 
 use crate::utils::config::NmsrConfiguration;
 
-use std::{
-    net::SocketAddr,
-    path::PathBuf,
-};
+use std::{net::SocketAddr, path::PathBuf};
 
 use axum::{routing::get, Router, ServiceExt};
 use opentelemetry::{
@@ -38,7 +36,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[main]
 async fn main() -> anyhow::Result<()> {
-    let init_guard = info_span!("NMSRaaS init").entered();    
+    let init_guard = info_span!("NMSRaaS init").entered();
     let toml_path: PathBuf = "config.toml".into();
     let toml_layer = Some(Layer::Toml(toml_path.clone())).filter(|_| toml_path.exists());
 
@@ -59,8 +57,7 @@ async fn main() -> anyhow::Result<()> {
 
     let state = NMSRState::new(&config).await?;
 
-    info!("Pre-warming model renderer.");
-    state.prewarm_renderer().await?;
+    state.init().await?;
 
     let adapter = &state.graphics_context.adapter.get_info();
     let samples = &state.graphics_context.multisampling_strategy;
@@ -82,13 +79,17 @@ async fn main() -> anyhow::Result<()> {
         .set_x_request_id(MakeRequestUuid)
         .layer(trace_layer)
         .propagate_x_request_id()
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(AllowMethods::any()))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(AllowMethods::any()),
+        )
         .service(router);
 
     let addr = (config.server.address + ":" + &config.server.port.to_string()).parse()?;
 
     tracing::info!("Listening on {}", &addr);
-    
+
     drop(init_guard);
 
     axum::Server::bind(&addr)
@@ -99,20 +100,24 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-const DEFAULT_FILTER: &'static str = "info,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn,nmsr_aas=trace,nmsr_rendering=trace";
-
 fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
-    let filter =
-        tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or(DEFAULT_FILTER.into());
+    let base_filter = "info,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
+    let otel_filter = format!("{},nmsr_aas=trace,nmsr_rendering=trace", base_filter);
 
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .compact()
-        .with_line_number(false)
-        .with_file(false);
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or(base_filter.into());
+    let otel_env_filter = EnvFilter::try_from_default_env().unwrap_or(otel_filter.into());
+
+    let fmt_layer = tracing_subscriber::Layer::with_filter(
+        tracing_subscriber::fmt::layer()
+            .compact()
+            .with_line_number(false)
+            .with_file(false),
+        env_filter,
+    );
 
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-    let registry = tracing_subscriber::registry().with(filter).with(fmt_layer);
+    let registry = tracing_subscriber::registry().with(fmt_layer);
 
     if let Some(tracing) = tracing {
         let tracer = opentelemetry_otlp::new_pipeline()
@@ -126,7 +131,10 @@ fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
             )
             .install_batch(opentelemetry::runtime::Tokio)?;
 
-        let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+        let otel_layer = tracing_subscriber::Layer::with_filter(
+            tracing_opentelemetry::layer().with_tracer(tracer),
+            otel_env_filter,
+        );
 
         registry.with(otel_layer).init();
     } else {

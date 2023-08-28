@@ -1,8 +1,10 @@
 use std::{collections::HashMap, time::{Duration, SystemTime}, fs::Metadata};
 
+use chrono::{DateTime, Local};
 use derive_more::Debug;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TryFromInto};
+use tracing::{instrument, trace};
 use twelf::config;
 
 use crate::{model::request::{cache::CacheBias, entry::RenderRequestEntry}, error::ExplainableExt};
@@ -82,10 +84,13 @@ pub struct TracingConfiguration {
 }
 
 impl ModelCacheConfiguration {
+    #[instrument(skip_all)]
     pub fn is_expired(&self, entry: &RenderRequestEntry, marker_metadata: Metadata, default_duration: &Duration) -> crate::error::Result<bool> {
         let bias = self.cache_biases.get(entry);
 
         let duration = if let Some(bias) = bias {
+            trace!("Found cache bias for entry: {:?}", bias);
+            
             match bias {
                 CacheBias::KeepCachedFor(duration) => duration,
                 CacheBias::CacheIndefinitely => &Duration::MAX,
@@ -103,7 +108,9 @@ impl ModelCacheConfiguration {
             "Unable to get marker modified date for entry {:?}",
             &entry
         ))? + *duration;
-
+        
+        trace!("Entry expires on {}", Into::<DateTime<Local>>::into(expiry));
+        
         return Ok(expiry < SystemTime::now());
     }
 }

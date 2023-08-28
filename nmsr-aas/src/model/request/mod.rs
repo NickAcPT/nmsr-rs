@@ -1,3 +1,4 @@
+
 use std::f32::consts;
 
 use derive_more::Debug;
@@ -38,13 +39,15 @@ pub enum RenderRequestFeatures {
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct RenderRequestCameraSettings {
+pub struct RenderRequestExtraSettings {
     pub yaw: Option<f32>,
     pub pitch: Option<f32>,
     pub roll: Option<f32>,
 
     pub width: Option<u32>,
     pub height: Option<u32>,
+    
+    pub arm_rotation: Option<f32>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -53,7 +56,7 @@ pub struct RenderRequest {
     pub entry: RenderRequestEntry,
     pub model: Option<RenderRequestEntryModel>,
     pub features: EnumSet<RenderRequestFeatures>,
-    pub camera_settings: Option<RenderRequestCameraSettings>,
+    pub extra_settings: Option<RenderRequestExtraSettings>,
 }
 
 impl RenderRequest {
@@ -80,21 +83,21 @@ impl RenderRequest {
         entry: RenderRequestEntry,
         model: Option<RenderRequestEntryModel>,
         excluded_features: EnumSet<RenderRequestFeatures>,
-        camera_settings: Option<RenderRequestCameraSettings>,
+        extra_settings: Option<RenderRequestExtraSettings>,
     ) -> Self {
         RenderRequest {
             mode,
             entry,
             model,
             features: EnumSet::all().difference(excluded_features),
-            camera_settings,
+            extra_settings,
         }
     }
     
     pub(crate) fn get_camera(&self) -> Camera {
         let mut camera = self.mode.get_camera();
         
-        if let Some(settings) = &self.camera_settings {
+        if let Some(settings) = &self.extra_settings {
             if let Some(yaw) = settings.yaw {
                 camera.set_yaw(yaw)
             }
@@ -114,7 +117,7 @@ impl RenderRequest {
     pub(crate) fn get_size(&self) -> Size {
         let mut size = self.mode.get_size();
         
-        if let Some(settings) = &self.camera_settings {
+        if let Some(settings) = &self.extra_settings {
             if let Some(width) = settings.width {
                 size.width = width;
             }
@@ -138,11 +141,21 @@ impl RenderRequest {
             EulerRot::ZXY,
             camera.get_roll().to_radians(),
             -camera.get_pitch().to_radians(),
-            camera.get_yaw().to_radians() - std::f32::consts::PI,
+            camera.get_yaw().to_radians() - consts::PI,
         ).into();
         
         let front_lighting = rot_quat.mul_vec3(Vec3::Z) * Vec3::new(1.0, 1.0, -1.0);
     
         return SunInformation::new(front_lighting, 1.0, 0.5);
+    }
+    
+    pub(crate) fn get_arm_rotation(&self) -> f32 {
+        if let Some(settings) = &self.extra_settings {
+            if let Some(rotation) = settings.arm_rotation {
+                return rotation;
+            }
+        }
+        
+        self.mode.get_arm_rotation()
     }
 }

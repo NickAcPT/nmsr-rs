@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec3, Quat};
+use glam::{Mat4, Vec3};
 use std::mem;
 
 use crate::high_level::utils::{

@@ -45,9 +45,8 @@ pub(crate) async fn internal_render_model(
 
     let mode = &request.mode;
     let camera = request.get_camera();
-    let arm_rotation = mode.get_arm_rotation();
-    let lighting =
-        request.get_lighting();
+    let arm_rotation = request.get_arm_rotation();
+    let lighting = request.get_lighting();
         
     let parts = mode.get_body_parts();
 

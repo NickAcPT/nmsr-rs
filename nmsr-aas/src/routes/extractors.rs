@@ -12,7 +12,7 @@ use crate::{
     error::{NMSRaaSError, RenderRequestError, Result},
     model::request::{
         entry::{RenderRequestEntry, RenderRequestEntryModel},
-        RenderRequest, RenderRequestCameraSettings, RenderRequestFeatures, RenderRequestMode,
+        RenderRequest, RenderRequestExtraSettings, RenderRequestFeatures, RenderRequestMode,
     },
 };
 
@@ -34,6 +34,8 @@ use crate::{
 ///  - `?alex`: set the model of the entry to alex [compatibility with old URLs]
 ///  - `?steve`: set the model of the entry to steve [compatibility with old URLs]
 ///  - `?process`: process the skin (upgrade skin to 1.8 format, strip alpha from the body regions, apply erase regions if Ears feature is enabled)
+///  
+///  - `arms=<rotation>` or `arm=<rotation>`: set the rotation of the arms
 struct RenderRequestQueryParams {
     #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, RenderRequestFeatures>>")]
     #[serde(alias = "no")]
@@ -59,6 +61,9 @@ struct RenderRequestQueryParams {
     steve: Option<String>,
 
     process: Option<String>,
+
+    #[serde(alias = "arm")]
+    arms: Option<f32>,
 }
 
 impl RenderRequestQueryParams {
@@ -98,22 +103,14 @@ impl RenderRequestQueryParams {
     fn validate(&self, mode: &RenderRequestMode) -> Result<()> {
         let [min_w, min_h, max_w, max_h] = mode.size_constraints();
 
-        let width_check = RenderRequestMode::validate_unit("width", self.width, min_w, max_w);
-        let height_check = RenderRequestMode::validate_unit("height", self.height, min_h, max_h);
+        RenderRequestMode::validate_unit("width", self.width, min_w, max_w)?;
+        RenderRequestMode::validate_unit("height", self.height, min_h, max_h)?;
 
-        let yaw_check = RenderRequestMode::validate_unit("yaw", self.yaw, -360.0, 360.0);
-        let pitch_check = RenderRequestMode::validate_unit("pitch", self.pitch, -90.0, 90.0);
-        let roll_check = RenderRequestMode::validate_unit("roll", self.roll, -360.0, 360.0);
+        RenderRequestMode::validate_unit("yaw", self.yaw, -360.0, 360.0)?;
+        RenderRequestMode::validate_unit("pitch", self.pitch, -90.0, 90.0)?;
+        RenderRequestMode::validate_unit("roll", self.roll, -360.0, 360.0)?;
 
-        let error = width_check
-            .or(height_check)
-            .or(yaw_check)
-            .or(pitch_check)
-            .or(roll_check);
-
-        if let Some((unit, bounds)) = error {
-            return Err(RenderRequestError::InvalidRenderSetting(unit, bounds).into());
-        }
+        RenderRequestMode::validate_unit("arm", self.arms, 0.0, 180.0)?;
 
         Ok(())
     }
@@ -134,20 +131,6 @@ where
     ///  - `/:model/:entry?options`
     ///
     /// The entry is in the URL path, and the options are in the query string.
-    ///
-    /// The options are:
-    ///  - `?exclude=<features>` or `?no=<features>`: exclude a feature from the entry (comma-separated, or multiple query strings)
-    ///  - `?y=<yaw>`: set the yaw of the camera
-    ///  - `?p=<pitch>`: set the pitch of the camera
-    ///  - `?r=<roll>`: set the roll of the camera
-    ///  - `?w=<width>`: set the width of the image
-    ///  - `?h=<height>`: set the height of the image
-    ///  - `?model=<steve|alex|wide|slim>`: set the model of the entry
-    ///  - `?alex`: set the model of the entry to alex [compatibility with old URLs]
-    ///  - `?steve`: set the model of the entry to steve [compatibility with old URLs]
-    ///  - `?noshading`: disable shading of the entry [compatibility with old URLs]
-    ///  - `?nolayers`: disable layers of the entry [compatibility with old URLs]
-    ///  - `?process`: process the skin (upgrade skin to 1.8 format, strip alpha from the body regions, apply erase regions if Ears feature is enabled)
     ///
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self> {
         let Path((mode_str, entry_str)): Path<(String, String)> = parts
@@ -171,12 +154,13 @@ where
 
         let model = query.get_model();
 
-        let camera_settings = Some(RenderRequestCameraSettings {
+        let extra_settings = Some(RenderRequestExtraSettings {
             width: query.width,
             height: query.height,
             yaw: query.yaw,
             pitch: query.pitch,
             roll: query.roll,
+            arm_rotation: query.arms,
         });
 
         Ok(RenderRequest::new_from_excluded_features(
@@ -184,7 +168,7 @@ where
             entry,
             model,
             excluded_features,
-            camera_settings,
+            extra_settings,
         ))
     }
 }
@@ -243,7 +227,7 @@ mod tests {
                     entry: entry.clone(),
                     model: None,
                     features: EnumSet::ALL,
-                    camera_settings: Some(Default::default())
+                    extra_settings: Some(Default::default())
                 },
             ),
             (
@@ -253,7 +237,7 @@ mod tests {
                     entry: entry.clone(),
                     model: None,
                     features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::Shadow)),
-                    camera_settings: Some(Default::default())
+                    extra_settings: Some(Default::default())
                 },
             ),
             (
@@ -263,7 +247,7 @@ mod tests {
                     entry: entry.clone(),
                     model: Some(RenderRequestEntryModel::Alex),
                     features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::Shading | RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer)),
-                    camera_settings: Some(Default::default())
+                    extra_settings: Some(Default::default())
                 },
             ),
             (
@@ -273,7 +257,7 @@ mod tests {
                     entry: entry.clone(),
                     model: None,
                     features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape)),
-                    camera_settings: Some(Default::default())
+                    extra_settings: Some(Default::default())
                 },
             ),
         ]);

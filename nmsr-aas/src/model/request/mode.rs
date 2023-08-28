@@ -9,6 +9,8 @@ use nmsr_rendering::high_level::{
 use strum::{EnumString, IntoEnumIterator};
 use tracing::instrument;
 
+use crate::error::{RenderRequestError, Result};
+
 #[derive(EnumString, Debug, PartialEq, Clone)]
 #[strum(serialize_all = "snake_case")]
 pub enum RenderRequestMode {
@@ -79,10 +81,16 @@ impl RenderRequestMode {
         value: Option<T>,
         min: T,
         max: T,
-    ) -> Option<(&str, String)> {
-        value
+    ) -> Result<()> {
+        let check = value
             .filter(|value| *value < min || *value > max)
-            .map(|_| (unit, format!("between {:?} and {:?}", min, max)))
+            .map(|_| (unit, format!("between {:?} and {:?}", min, max)));
+        
+        if let Some((unit, bounds)) = check {
+            return Err(RenderRequestError::InvalidRenderSetting(unit, bounds).into());
+        }
+        
+        return Ok(());
     }
 }
 

@@ -1,17 +1,16 @@
-use bytemuck::Pod;
-use derive_more::{Debug, Deref, DerefMut, From};
-use smaa::SmaaTarget;
-use tokio::sync::oneshot::channel;
-use tracing::{instrument, trace_span};
 
+use derive_more::{Debug, Deref, DerefMut, From};
 use glam::Mat4;
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use smaa::SmaaTarget;
+use tokio::sync::oneshot::channel;
+use tracing::{instrument, trace_span};
+use wgpu::util::DeviceExt;
 use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, Buffer, BufferDescriptor,
-    BufferSlice, BufferUsages, Texture, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages, TextureView,
+    BindGroup, Buffer, BufferDescriptor,
+    BufferSlice, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsages,
 };
 
 use crate::errors::{NMSRRenderingError, Result};
@@ -19,44 +18,7 @@ use crate::high_level::camera::Camera;
 use crate::high_level::pipeline::graphics_context::GraphicsContext;
 
 use super::scene::{Size, SunInformation};
-
-#[derive(Debug, Clone)]
-pub(crate) struct BufferDimensions {
-    pub height: usize,
-    pub unpadded_bytes_per_row: usize,
-    pub padded_bytes_per_row: u32,
-}
-
-impl BufferDimensions {
-    #[allow(dead_code)]
-    pub fn new(width: usize, height: usize) -> Self {
-        let bytes_per_pixel = std::mem::size_of::<u32>();
-        let unpadded_bytes_per_row = width * bytes_per_pixel;
-        let align: usize = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
-        let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
-        let padded_bytes_per_row = (unpadded_bytes_per_row + padded_bytes_per_row_padding) as u32;
-
-        Self {
-            height,
-            unpadded_bytes_per_row,
-            padded_bytes_per_row,
-        }
-    }
-
-    pub fn size(&self) -> u64 {
-        self.padded_bytes_per_row as u64 * self.height as u64
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct SceneContextTextures {
-    pub(crate) depth_texture: SceneTexture,
-    pub(crate) output_texture: SceneTexture,
-    pub(crate) multisampled_output_texture: Option<SceneTexture>,
-    pub(crate) texture_output_buffer: Buffer,
-    pub(crate) texture_output_buffer_dimensions: BufferDimensions,
-    pub(crate) size: Size,
-}
+use super::textures::{BufferDimensions, SceneContextTextures, SceneTexture};
 
 #[derive(Debug)]
 pub struct SceneContext {
@@ -71,12 +33,6 @@ pub struct SceneContext {
 
 #[derive(Deref, DerefMut, From)]
 pub struct SceneContextWrapper(SceneContext);
-
-#[derive(Debug)]
-pub struct SceneTexture {
-    pub(crate) texture: Texture,
-    pub(crate) view: TextureView,
-}
 
 impl SceneContext {
     pub fn new(context: &GraphicsContext) -> Self {
@@ -227,7 +183,7 @@ impl SceneContext {
                 multisampled_output_texture,
                 texture_output_buffer,
                 size: viewport_size,
-                texture_output_buffer_dimensions: output_buffer_dimensions
+                texture_output_buffer_dimensions: output_buffer_dimensions,
             });
         }
     }
@@ -279,17 +235,27 @@ impl SceneContext {
     pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext) -> Result<Vec<u8>> {
         let textures = self.try_textures()?;
 
-        Self::read_buffer(&graphics_context.device, &textures.texture_output_buffer, &textures.texture_output_buffer_dimensions).await
+        Self::read_buffer(
+            &graphics_context.device,
+            &textures.texture_output_buffer,
+            &textures.texture_output_buffer_dimensions,
+        )
+        .await
     }
 
     #[instrument(skip_all)]
-    async fn read_buffer(device: &wgpu::Device, output_buffer: &wgpu::Buffer, dimensions: &BufferDimensions) -> Result<Vec<u8>> {
+    async fn read_buffer(
+        device: &wgpu::Device,
+        output_buffer: &wgpu::Buffer,
+        dimensions: &BufferDimensions,
+    ) -> Result<Vec<u8>> {
         let buffer_slice = wait_for_buffer_slice(output_buffer, device).await?;
 
         let data = buffer_slice.get_mapped_range();
 
         trace_span!("image_from_raw").in_scope(|| {
-            let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
+            let mut bytes =
+                Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
 
             for chunk in data.chunks(dimensions.padded_bytes_per_row as usize) {
                 bytes.extend_from_slice(&chunk[..dimensions.unpadded_bytes_per_row]);
@@ -369,26 +335,4 @@ fn create_texture(
     SceneTexture { texture, view }
 }
 
-#[instrument(skip(device, layout, value))]
-fn create_buffer_and_bind_group<T: Pod>(
-    device: &wgpu::Device,
-    label: &str,
-    layout: &BindGroupLayout,
-    value: &[T],
-) -> (Buffer, BindGroup) {
-    let buffer = device.create_buffer_init(&BufferInitDescriptor {
-        label: Some((label.to_owned() + " Buffer").as_str()),
-        contents: bytemuck::cast_slice(value),
-        usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-    });
-
-    let transform_bind_group = device.create_bind_group(&BindGroupDescriptor {
-        label: Some((label.to_owned() + " Bind group").as_str()),
-        layout: layout,
-        entries: &[BindGroupEntry {
-            binding: 0,
-            resource: buffer.as_entire_binding(),
-        }],
-    });
-    (buffer, transform_bind_group)
-}
+use crate::high_level::utils::buffer::create_buffer_and_bind_group;

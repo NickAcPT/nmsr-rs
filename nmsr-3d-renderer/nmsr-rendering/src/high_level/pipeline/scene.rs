@@ -1,4 +1,4 @@
-use super::{GraphicsContext, SceneContextWrapper, SceneTexture};
+use super::{GraphicsContext, SceneContextWrapper, textures::SceneTexture};
 use crate::{
     errors::{NMSRRenderingError, Result},
     high_level::{camera::Camera, pipeline::SceneContext},

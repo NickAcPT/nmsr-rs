@@ -33,11 +33,11 @@
     <img id="image" alt="Image">
     <div class="slider-container">
         <label for="widthSlider">Width: <span id="widthValue">0</span></label>
-        <input type="range" id="widthSlider" min="64" max="1024" value="512">
+        <input type="range" id="widthSlider" min="16" max="1024" value="512">
     </div>
     <div class="slider-container">
         <label for="heightSlider">Height: <span id="heightValue">0</span></label>
-        <input type="range" id="heightSlider" min="108" max="1738" value="512">
+        <input type="range" id="heightSlider" min="27" max="1738" value="512">
     </div>
 
     <script>
@@ -61,7 +61,7 @@
             heightValue.textContent = height;
             updateImage();
         }
-        
+
         async function updateImage() {
             imageView.src = await downloadImage(widthSlider.value, heightSlider.value);
         }
@@ -81,39 +81,7 @@
             }
         }
 
-        spin_interval = undefined;
-        // Spin player smoothly
-        let widthIndex = 0;
-        let rotations = [];
-
-        function doSpin(time) {
-            if (spin_interval) {
-                clearInterval(spin_interval);
-                spin_interval = undefined;
-            }
-            spin_interval = setInterval(() => {
-                imageView.src = (rotations[widthIndex]);
-                widthIndex = (widthIndex + 1) % rotations.length;
-            }, time);
-        }
-
         updateImage();
-
-        /* setTimeout(async () => {
-            let batch = 0;
-            // Download all width rotations (height = 0; width = -180 to 180)
-            for (let width = -180; width <= 180; width += 1) {
-                setTimeout(async () => {
-                    rotations[width + 180] = await downloadImage(width, 0);
-                });
-                batch++;
-
-                if (batch >= 50) {
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
-                    batch = 0;
-                }
-            }
-        }, 1); */
 
     </script>
 </body>

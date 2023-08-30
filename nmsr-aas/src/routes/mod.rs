@@ -126,9 +126,7 @@ impl NMSRState {
     async fn prewarm_renderer(&self) -> Result<()> {
         // Prewarm our renderer by actually rendering a few requests.
         // This will ensure that the renderer is initialized and ready to go when we start serving requests.
-        let entry = RenderRequestEntry::PlayerUuid(
-            uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"),
-        );
+        let entry = RenderRequestEntry::PlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
         let request = RenderRequest::new_from_excluded_features(
             RenderRequestMode::FullBody,
             entry,
@@ -140,17 +138,17 @@ impl NMSRState {
         let resolved = self.resolver.resolve(&request).await?;
 
         for index in 0..10 {
-            let result = black_box(info_span!("prewarm_render", index = index)
-                .in_scope(|| {
-                    black_box(render_skin::internal_render_skin(
-                        request.clone(),
-                        self,
-                        resolved.clone(),
-                    ))
-                })
-                .await?);
-            
-            info!("Prewarm result: {:?}", result.len());
+            let result = black_box(
+                info_span!("prewarm_render", index = index)
+                    .in_scope(|| {
+                        black_box(render_model::internal_render_model(
+                            &request, self, &resolved,
+                        ))
+                    })
+                    .await?,
+            );
+
+            info!("Prewarm result: {:?} bytes", result.len());
         }
 
         Ok(())

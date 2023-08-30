@@ -23,7 +23,7 @@ pub enum RenderRequestError {
     InvalidPlayerUuidRequest(String, usize),
     #[error("{0}")]
     InvalidPlayerRequest(String),
-    #[error("Io error: {0}")]
+    #[error("Io error: {0} ({1})")]
     ExplainedIoError(std::io::Error, String),
     #[error("Path Rejection Error: {0}")]
     PathRejection(#[from] axum::extract::rejection::PathRejection),

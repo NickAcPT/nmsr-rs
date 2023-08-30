@@ -110,9 +110,9 @@ impl RenderRequestQueryParams {
         RenderRequestMode::validate_unit("width", self.width, min_w, max_w)?;
         RenderRequestMode::validate_unit("height", self.height, min_h, max_h)?;
 
-        RenderRequestMode::validate_unit("yaw", self.yaw, -360.0, 360.0)?;
+        RenderRequestMode::validate_unit("yaw", self.yaw, -180.0, 180.0)?;
         RenderRequestMode::validate_unit("pitch", self.pitch, -90.0, 90.0)?;
-        RenderRequestMode::validate_unit("roll", self.roll, -360.0, 360.0)?;
+        RenderRequestMode::validate_unit("roll", self.roll, -180.0, 360.0)?;
 
         RenderRequestMode::validate_unit("arm", self.arms, 0.0, 180.0)?;
         
@@ -163,7 +163,7 @@ where
         let extra_settings = Some(RenderRequestExtraSettings {
             width: query.width,
             height: query.height,
-            yaw: query.yaw,
+            yaw: query.yaw, //TODO: Clamp
             pitch: query.pitch,
             roll: query.roll,
             arm_rotation: query.arms,

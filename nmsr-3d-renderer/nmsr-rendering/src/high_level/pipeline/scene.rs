@@ -1,4 +1,4 @@
-use super::{GraphicsContext, SceneContextWrapper, textures::SceneTexture};
+use super::{textures::SceneTexture, GraphicsContext, SceneContextWrapper};
 use crate::{
     errors::{NMSRRenderingError, Result},
     high_level::{camera::Camera, pipeline::SceneContext},
@@ -33,7 +33,7 @@ use wgpu::{
     SamplerDescriptor, TextureView,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Size {
     pub width: u32,
     pub height: u32,
@@ -350,13 +350,17 @@ where
                 buffer: &textures.texture_output_buffer,
                 layout: wgpu::ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: Some(textures.texture_output_buffer_dimensions.padded_bytes_per_row),
+                    bytes_per_row: Some(
+                        textures
+                            .texture_output_buffer_dimensions
+                            .padded_bytes_per_row,
+                    ),
                     rows_per_image: None,
                 },
             },
             Extent3d {
-                width: self.viewport_size.width,
-                height: self.viewport_size.height,
+                width: textures.viewport_size.width,
+                height: textures.viewport_size.height,
                 depth_or_array_layers: 1,
             },
         );
@@ -399,7 +403,10 @@ where
         scene_context: &mut SceneContext,
         graphics_context: &GraphicsContext,
     ) {
-        camera.set_aspect_ratio(viewport_size.width as f32 / viewport_size.height as f32);
+        if camera.get_size().is_none() {
+            camera.set_size(Some(viewport_size));
+        }
+
         scene_context.init(graphics_context, camera, sun, viewport_size);
     }
 

@@ -1,12 +1,12 @@
-
-use std::f32::consts;
-
 use derive_more::Debug;
 use enumset::{EnumSet, EnumSetType};
-use nmsr_rendering::{high_level::{
-    camera::Camera,
-    pipeline::scene::{Size, SunInformation},
-}, low_level::{Quat, EulerRot, Vec3}};
+use nmsr_rendering::{
+    high_level::{
+        camera::Camera,
+        pipeline::scene::{Size, SunInformation},
+    },
+    low_level::{EulerRot, Quat, Vec3},
+};
 use strum::{Display, EnumString};
 
 use self::entry::{RenderRequestEntry, RenderRequestEntryModel};
@@ -46,7 +46,7 @@ pub struct RenderRequestExtraSettings {
 
     pub width: Option<u32>,
     pub height: Option<u32>,
-    
+
     pub arm_rotation: Option<f32>,
     pub distance: Option<f32>,
 }
@@ -94,44 +94,44 @@ impl RenderRequest {
             extra_settings,
         }
     }
-    
+
     pub(crate) fn get_camera(&self) -> Camera {
         let mut camera = self.mode.get_camera();
-        
+
         if let Some(settings) = &self.extra_settings {
             if let Some(yaw) = settings.yaw {
                 camera.set_yaw(yaw)
             }
-            
+
             if let Some(pitch) = settings.pitch {
                 camera.set_pitch(pitch)
             }
-            
+
             if let Some(roll) = settings.roll {
                 camera.set_roll(roll)
             }
-            
+
             if let Some(distance) = settings.distance {
                 camera.set_distance(camera.get_distance() + distance)
             }
         }
-        
+
         camera
     }
-    
+
     pub(crate) fn get_size(&self) -> Size {
-        let mut size = self.mode.get_size();
-        
+        let mut size = self.mode.get_viewport_size();
+
         if let Some(settings) = &self.extra_settings {
             if let Some(width) = settings.width {
                 size.width = width;
             }
-            
+
             if let Some(height) = settings.height {
                 size.height = height;
-            }   
+            }
         }
-        
+
         size
     }
 
@@ -139,30 +139,31 @@ impl RenderRequest {
         if !self.features.contains(RenderRequestFeatures::Shading) {
             return SunInformation::new([0.0; 3].into(), 0.0, 1.0);
         }
-        
+
         let camera = self.get_camera();
-        
+
+        let aligned_yaw = ((camera.get_yaw() + 180.0) / 90.0).floor() * 90.0;
+
         let rot_quat: Quat = Quat::from_euler(
             EulerRot::ZXY,
             camera.get_roll().to_radians(),
-            -camera.get_pitch().to_radians(),
-            camera.get_yaw().to_radians() - consts::PI,
-        ).into();
-        
-        let light = Vec3::new(0.0, 1.0, 5.0);
-        
+            0.0,
+            aligned_yaw.to_radians(),
+        )
+        .into();
+
+        let light = Vec3::new(0.0, 1.0, 6.21);
         let front_lighting = rot_quat.mul_vec3(light) * Vec3::new(1.0, 1.0, -1.0);
-    
+
         return SunInformation::new(front_lighting, 1.0, 0.5);
     }
-    
+
     pub(crate) fn get_arm_rotation(&self) -> f32 {
         if let Some(settings) = &self.extra_settings {
             if let Some(rotation) = settings.arm_rotation {
                 return rotation;
             }
         }
-        
         self.mode.get_arm_rotation()
     }
 }

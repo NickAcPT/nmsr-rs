@@ -2,7 +2,7 @@ use core::fmt::Debug;
 use std::f32::consts::FRAC_1_SQRT_2;
 
 use nmsr_rendering::high_level::{
-    camera::{Camera, CameraRotation, ProjectionParameters},
+    camera::{Camera, CameraPositionParameters, CameraRotation, ProjectionParameters},
     pipeline::scene::Size,
     types::PlayerBodyPartType,
 };
@@ -32,33 +32,40 @@ pub enum RenderRequestMode {
 }
 
 impl RenderRequestMode {
-    pub(crate) const fn is_isometric(&self) -> bool {
+    pub(crate) fn is_isometric(&self) -> bool {
         matches!(
             self,
             RenderRequestMode::FullBodyIso | RenderRequestMode::HeadIso
         )
     }
 
-    pub(crate) const fn is_bust(&self) -> bool {
+    pub(crate) fn is_bust(&self) -> bool {
         matches!(
             self,
             RenderRequestMode::BodyBust | RenderRequestMode::FrontBust
         )
     }
 
-    pub(crate) const fn is_head(&self) -> bool {
+    pub(crate) fn is_arms_open(&self) -> bool {
+        matches!(
+            self,
+            RenderRequestMode::FullBody | RenderRequestMode::BodyBust
+        )
+    }
+
+    pub(crate) fn is_head(&self) -> bool {
         matches!(
             self,
             RenderRequestMode::Head | RenderRequestMode::Face | RenderRequestMode::HeadIso
         )
     }
 
-    pub(crate) const fn is_square(&self) -> bool {
+    pub(crate) fn is_square(&self) -> bool {
         self.is_bust() || self.is_head()
     }
 
     // [min_w, min_h, max_w, max_h]
-    pub const fn size_constraints(&self) -> [u32; 4] {
+    pub fn size_constraints(&self) -> [u32; 4] {
         if self.is_square() {
             [
                 Self::MIN_RENDER_WIDTH,
@@ -76,6 +83,7 @@ impl RenderRequestMode {
         }
     }
 
+    #[allow(unused_variables)]
     pub fn validate_unit<T: PartialOrd + Debug>(
         unit: &'static str,
         value: Option<T>,
@@ -101,69 +109,74 @@ impl RenderRequestMode {
     pub const MAX_RENDER_WIDTH: u32 = Self::DEFAULT_RENDER_WIDTH * 2;
     pub const MAX_RENDER_HEIGHT: u32 = Self::DEFAULT_RENDER_HEIGHT * 2;
 
+    pub const RENDER_ASPECT_RATIO: f32 =
+        Self::DEFAULT_RENDER_WIDTH as f32 / Self::DEFAULT_RENDER_HEIGHT as f32;
+
     pub const MIN_RENDER_WIDTH: u32 = Self::DEFAULT_RENDER_WIDTH / 32;
     pub const MIN_RENDER_HEIGHT: u32 = Self::DEFAULT_RENDER_HEIGHT / 32;
 
-    pub(crate) fn get_size(&self) -> Size {
+    pub(crate) fn get_viewport_size(&self) -> Size {
         if self.is_square() {
             return Size {
                 width: Self::DEFAULT_RENDER_WIDTH,
                 height: Self::DEFAULT_RENDER_WIDTH,
             };
         } else {
-            return Size {
-                width: Self::DEFAULT_RENDER_WIDTH,
-                height: Self::DEFAULT_RENDER_HEIGHT,
-            };
+            return self.get_size();
         }
+    }
+    
+    pub(crate) fn get_size(&self) -> Size {
+        return Size {
+            width: Self::DEFAULT_RENDER_WIDTH,
+            height: Self::DEFAULT_RENDER_HEIGHT,
+        };
     }
 
     pub(crate) fn get_camera(&self) -> Camera {
-        let look_at = [0.0, 16.5, 0.0].into();
+        let look_at_y = if self.is_head() {
+            28.5
+        } else {
+            16.5
+        };
 
-        match self {
-            Self::FullBody => Camera::new_orbital(
-                look_at,
-                45.0,
-                CameraRotation {
-                    yaw: 20.0,
-                    pitch: 10.0,
-                    roll: 0.0,
-                },
-                ProjectionParameters::Perspective { fov: 45.0 },
-                1.0,
-            ),
-            Self::FullBodyIso => Camera::new_orbital(
-                look_at,
-                45.0,
-                CameraRotation {
-                    yaw: 45.0,
-                    pitch: FRAC_1_SQRT_2.atan().to_degrees(),
-                    roll: 0.0,
-                },
-                ProjectionParameters::Orthographic { aspect: 17.0 },
-                1.0,
-            ),
-            Self::HeadIso => Camera::new_orbital(
-                look_at,
-                45.0,
-                CameraRotation {
-                    yaw: 45.0,
-                    pitch: FRAC_1_SQRT_2.atan().to_degrees(),
-                    roll: 0.0,
-                },
-                ProjectionParameters::Orthographic { aspect: 17.0 },
-                1.0,
-            ),
-            _ => unimplemented!("wgpu rendering is not yet implemented"),
-        }
+        let look_at = [0.0, look_at_y, 0.0].into();
+        let distance = if self.is_head() {
+            25.0
+        } else {
+            45.0
+        };
+
+        let projection = if self.is_isometric() {
+            let aspect = if self.is_head() { 7.5 } else { 17.0 };
+
+            ProjectionParameters::Orthographic { aspect }
+        } else {
+            ProjectionParameters::Perspective { fov: 45.0 }
+        };
+
+        let rotation = if self.is_isometric() {
+            CameraRotation {
+                yaw: 45.0,
+                pitch: FRAC_1_SQRT_2.atan().to_degrees(),
+                roll: 0.0,
+            }
+        } else {
+            CameraRotation {
+                yaw: 20.0,
+                pitch: 10.0,
+                roll: 0.0,
+            }
+        };
+
+        Camera::new_orbital(look_at, distance, rotation, projection, Some(RenderRequestMode::FullBody.get_size()))
     }
 
     pub(crate) fn get_arm_rotation(&self) -> f32 {
-        match self {
-            Self::FullBody => 10.0,
-            _ => 0.0,
+        if self.is_arms_open() {
+            return 10.0;
         }
+        return 0.0;
     }
 
     #[instrument(level = "trace", skip(self))]
@@ -179,7 +192,7 @@ impl RenderRequestMode {
                 let excluded = vec![PlayerBodyPartType::LeftLeg, PlayerBodyPartType::RightLeg];
 
                 PlayerBodyPartType::iter()
-                    .filter(|m| excluded.contains(&m.get_non_layer_part()))
+                    .filter(|m| !excluded.contains(&m.get_non_layer_part()))
                     .collect()
             }
             Self::Skin => unreachable!(),

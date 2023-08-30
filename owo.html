@@ -67,7 +67,7 @@
         }
 
         async function downloadImage(yaw, pitch) {
-            const imageUrl = `http://localhost:8621/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?yaw=${yaw}&pitch=${pitch}`;
+            const imageUrl = `http://localhost:8621/fullbodyiso/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?yaw=${yaw}`;
 
             try {
                 const response = await fetch(imageUrl);
@@ -97,8 +97,12 @@
             }, time);
         }
 
+        updateImage();
+        
 
         setTimeout(async () => {
+            return;
+            
             let batch = 0;
             // Download all yaw rotations (pitch = 0; yaw = -180 to 180)
             for (let yaw = -180; yaw <= 180; yaw += 1) {

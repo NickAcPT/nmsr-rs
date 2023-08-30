@@ -96,6 +96,8 @@ impl SceneContext {
         // Setup sun information
         self.set_sun_information(graphics_context, sun);
 
+        let camera_size = camera.get_size().unwrap_or_default();
+
         let msaa_sample_count = graphics_context
             .multisampling_strategy
             .get_msaa_sample_count();
@@ -103,69 +105,14 @@ impl SceneContext {
         let needs_texture_resize = self
             .textures
             .as_ref()
-            .map_or(true, |textures| textures.size != viewport_size);
+            .map_or(true, |textures| textures.camera_size != camera_size);
 
-        if needs_texture_resize {
-            drop(self.textures.take());
+        let needs_output_buffer_resize = self
+            .textures
+            .as_ref()
+            .map_or(true, |textures| textures.viewport_size != viewport_size);
 
-            // Setup our depth texture
-            let depth_texture = create_texture(
-                graphics_context,
-                viewport_size.width,
-                viewport_size.height,
-                GraphicsContext::DEPTH_TEXTURE_FORMAT,
-                TextureUsages::RENDER_ATTACHMENT,
-                Some("Depth Texture"),
-                msaa_sample_count,
-            );
-
-            // Setup our output texture for multisampling if we need to use it
-            let multisampled_output_texture = if msaa_sample_count > 1 {
-                Some(create_texture(
-                    graphics_context,
-                    viewport_size.width,
-                    viewport_size.height,
-                    graphics_context.texture_format,
-                    TextureUsages::RENDER_ATTACHMENT,
-                    Some("MultiSampled Output Texture"),
-                    msaa_sample_count,
-                ))
-            } else {
-                None
-            };
-
-            // Setup our output texture
-            let output_texture = create_texture(
-                graphics_context,
-                viewport_size.width,
-                viewport_size.height,
-                graphics_context.texture_format,
-                TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
-                Some("Final Output Texture"),
-                1,
-            );
-
-            if let Some(target) = self.smaa_target.as_mut() {
-                let _guard = trace_span!("resize_smaa_target").entered();
-                target.resize(
-                    &graphics_context.device,
-                    viewport_size.width,
-                    viewport_size.height,
-                );
-            } else {
-                let _guard = trace_span!("create_smaa_target").entered();
-                let smaa_target = SmaaTarget::new(
-                    &graphics_context.device,
-                    &graphics_context.queue,
-                    viewport_size.width,
-                    viewport_size.height,
-                    graphics_context.texture_format,
-                    graphics_context.multisampling_strategy.get_smaa_mode(),
-                );
-
-                self.smaa_target.replace(smaa_target);
-            }
-
+        let output = if needs_output_buffer_resize {
             let output_buffer_dimensions =
                 BufferDimensions::new(viewport_size.width as usize, viewport_size.height as usize);
 
@@ -179,15 +126,96 @@ impl SceneContext {
             let texture_output_buffer = trace_span!("create_output_buffer")
                 .in_scope(|| graphics_context.device.create_buffer(&output_buffer_desc));
 
-            // Save our textures
-            self.textures = Some(SceneContextTextures {
-                depth_texture,
-                output_texture,
-                multisampled_output_texture,
-                texture_output_buffer,
-                size: viewport_size,
-                texture_output_buffer_dimensions: output_buffer_dimensions,
-            });
+            Some((output_buffer_dimensions, texture_output_buffer))
+        } else {
+            None
+        };
+
+        if needs_texture_resize {
+            let old_textures = self.textures.take();
+
+            let old_output =
+                old_textures.map(|t| (t.texture_output_buffer_dimensions, t.texture_output_buffer));
+
+            // Setup our depth texture
+            let depth_texture = create_texture(
+                graphics_context,
+                camera_size.width,
+                camera_size.height,
+                GraphicsContext::DEPTH_TEXTURE_FORMAT,
+                TextureUsages::RENDER_ATTACHMENT,
+                Some("Depth Texture"),
+                msaa_sample_count,
+            );
+
+            // Setup our output texture for multisampling if we need to use it
+            let multisampled_output_texture = if msaa_sample_count > 1 {
+                Some(create_texture(
+                    graphics_context,
+                    camera_size.width,
+                    camera_size.height,
+                    graphics_context.texture_format,
+                    TextureUsages::RENDER_ATTACHMENT,
+                    Some("MultiSampled Output Texture"),
+                    msaa_sample_count,
+                ))
+            } else {
+                None
+            };
+
+            // Setup our output texture
+            let output_texture = create_texture(
+                graphics_context,
+                camera_size.width,
+                camera_size.height,
+                graphics_context.texture_format,
+                TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
+                Some("Final Output Texture"),
+                1,
+            );
+
+            if let Some(target) = self.smaa_target.as_mut() {
+                let _guard = trace_span!("resize_smaa_target").entered();
+                target.resize(
+                    &graphics_context.device,
+                    camera_size.width,
+                    camera_size.height,
+                );
+            } else {
+                let _guard = trace_span!("create_smaa_target").entered();
+                let smaa_target = SmaaTarget::new(
+                    &graphics_context.device,
+                    &graphics_context.queue,
+                    camera_size.width,
+                    camera_size.height,
+                    graphics_context.texture_format,
+                    graphics_context.multisampling_strategy.get_smaa_mode(),
+                );
+
+                self.smaa_target.replace(smaa_target);
+            }
+
+            let final_output = output.or(old_output);
+
+            if let Some((texture_output_buffer_dimensions, texture_output_buffer)) = final_output {
+                // Save our textures
+                self.textures = Some(SceneContextTextures {
+                    depth_texture,
+                    output_texture,
+                    multisampled_output_texture,
+                    texture_output_buffer,
+                    camera_size,
+                    viewport_size,
+                    texture_output_buffer_dimensions,
+                });
+            }
+        } else {
+            if let Some((texture_output_buffer_dimensions, texture_output_buffer)) = output {
+                if let Some(textures) = &mut self.textures {
+                    textures.texture_output_buffer = texture_output_buffer;
+                    textures.texture_output_buffer_dimensions = texture_output_buffer_dimensions;
+                }
+            }
         }
     }
 

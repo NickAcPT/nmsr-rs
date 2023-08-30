@@ -46,7 +46,8 @@ pub(crate) struct SceneContextTextures {
     pub(crate) multisampled_output_texture: Option<SceneTexture>,
     pub(crate) texture_output_buffer: Buffer,
     pub(crate) texture_output_buffer_dimensions: BufferDimensions,
-    pub(crate) size: Size,
+    pub(crate) camera_size: Size,
+    pub(crate) viewport_size: Size,
 }
 
 pub fn premultiply_alpha(image: &mut RgbaImage) {

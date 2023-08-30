@@ -6,6 +6,8 @@ use crate::high_level::utils::{
 };
 use crate::low_level::utils::{look_from_yaw_pitch, minecraft_rotation_matrix};
 
+use super::pipeline::scene::Size;
+
 #[derive(Copy, Clone)]
 pub struct CameraRotation {
     pub yaw: f32,
@@ -179,6 +181,21 @@ impl CameraPositionParameters {
             } => Some(distance),
         }
     }
+    
+    pub fn to_absolute(&self, yaw: f32, pitch: f32) -> Self {
+        match self {
+            CameraPositionParameters::Absolute(_) => *self,
+            CameraPositionParameters::Orbital { look_at, distance } => {
+                // Look pos is a vector pointing in the direction the camera is looking (from the origin)
+                let look_pos = look_from_yaw_pitch(yaw, pitch);
+                // To get the position of the camera, we take the point where we want to look,
+                // and move backwards along the look pos vector by the distance we want to be from the look at point
+                let pos = *look_at + (-look_pos * *distance);
+                
+                CameraPositionParameters::Absolute(pos)
+            },
+        }
+    }
 }
 
 /// The camera used to view the scene
@@ -188,7 +205,7 @@ pub struct Camera {
     /// The rotation of the camera
     rotation: CameraRotation,
     /// The aspect ratio of the camera
-    aspect_ratio: f32,
+    size: Option<Size>,
     projection: ProjectionParameters,
 
     dirty: bool,
@@ -200,12 +217,12 @@ impl Camera {
         position: Vec3,
         rotation: CameraRotation,
         projection: ProjectionParameters,
-        aspect_ratio: f32,
+        size: Option<Size>,
     ) -> Self {
         Camera {
             position_parameters: CameraPositionParameters::Absolute(position),
             rotation,
-            aspect_ratio,
+            size,
             projection,
             dirty: true,
             cached_view_projection_matrix: Mat4::ZERO,
@@ -217,22 +234,26 @@ impl Camera {
         distance: f32,
         rotation: CameraRotation,
         projection: ProjectionParameters,
-        aspect_ratio: f32,
+        size: Option<Size>
     ) -> Self {
         Camera {
             position_parameters: CameraPositionParameters::Orbital { look_at, distance },
             rotation,
-            aspect_ratio,
+            size,
             projection,
             dirty: true,
             cached_view_projection_matrix: Mat4::ZERO,
         }
     }
+    
+    pub fn get_aspect_ratio(&self) -> f32 {
+        self.size.map(|size| size.width as f32 / size.height as f32).unwrap_or(1.0)
+    }
 
     camera_getters_setters!(
         position_parameters: CameraPositionParameters,
         rotation: CameraRotation,
-        aspect_ratio: f32,
+        size: Option<Size>,
         projection: ProjectionParameters
     );
 
@@ -254,8 +275,7 @@ impl Camera {
     }
 
     fn compute_view_projection_matrix(&self) -> Mat4 {
-        let projection = self.projection.compute_projection_matrix(self.aspect_ratio);
-
+        let projection = self.projection.compute_projection_matrix(self.get_aspect_ratio());
 
         let view_position = match self.position_parameters {
             CameraPositionParameters::Absolute(pos) => {

@@ -6,7 +6,7 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 
 use nmsr_player_parts::parts::part::Part;
-use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation};
+use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation, Size};
 use nmsr_rendering::high_level::pipeline::{
     GraphicsContext, GraphicsContextDescriptor, SceneContext, SceneContextWrapper,
 };
@@ -79,8 +79,6 @@ async fn main() -> anyhow::Result<()> {
     let adapter_info = adapter.get_info();
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
-    let aspect_ratio = config.width as f32 / config.height as f32;
-
     let sun = SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.35);
     
     let camera = Camera::new_absolute(
@@ -91,7 +89,10 @@ async fn main() -> anyhow::Result<()> {
             roll: 0.0,
         },
         ProjectionParameters::Perspective { fov: 110f32 },
-        aspect_ratio,
+        Some(Size {
+            width: config.width,
+            height: config.height,
+        }),
     );
 
     let mut ctx = PlayerPartProviderContext {
@@ -156,7 +157,10 @@ async fn main() -> anyhow::Result<()> {
                     new_config.height = size.height.max(1);
                     device.poll(wgpu::MaintainBase::Poll);
                     surface.configure(device, &new_config);
-                    camera.set_aspect_ratio(new_config.width as f32 / new_config.height as f32);
+                    camera.set_size(Some(Size {
+                        width: new_config.width,
+                        height: new_config.height,
+                    }));
 
                     scene.viewport_size_mut().width = new_config.width;
                     scene.viewport_size_mut().height = new_config.height;

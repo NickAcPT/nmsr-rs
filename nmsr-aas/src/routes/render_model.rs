@@ -4,7 +4,7 @@ use nmsr_rendering::{
     errors::NMSRRenderingError,
     high_level::{
         parts::provider::PlayerPartProviderContext,
-        pipeline::{pools::SceneContextPoolManager, scene::Scene},
+        pipeline::{pools::SceneContextPoolManager, scene::{Scene, Size}},
         player_model::PlayerModel,
     },
 };
@@ -31,6 +31,7 @@ pub(crate) async fn internal_render_model(
 
     let mode = &request.mode;
     let camera = request.get_camera();
+    
     let arm_rotation = request.get_arm_rotation();
     let lighting = request.get_lighting();
 
@@ -56,17 +57,17 @@ pub(crate) async fn internal_render_model(
         scene_context,
         camera,
         lighting,
-        size,
+        mode.get_viewport_size(),
         &part_context,
         parts,
     );
-
+    
     load_textures(resolved, &state, &request, &mut scene)?;
 
     scene.render(&state.graphics_context)?;
 
     let render = scene.copy_output_texture(&state.graphics_context).await?;
-    let render_bytes = create_png_from_bytes((size.width, size.height), &render)?;
+    let render_bytes = create_png_from_bytes((mode.get_viewport_size().width, mode.get_viewport_size().height), &render)?;
 
     Ok(render_bytes)
 }

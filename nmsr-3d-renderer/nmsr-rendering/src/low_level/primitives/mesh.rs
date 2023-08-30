@@ -10,14 +10,21 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn new(primitives: Vec<PrimitiveDispatch>) -> Self {
-        Mesh { primitives, model_transform: Mat4::IDENTITY }
+        Mesh {
+            primitives,
+            model_transform: Mat4::IDENTITY,
+        }
     }
     pub fn new_with_transform(primitives: Vec<PrimitiveDispatch>, model_transform: Mat4) -> Self {
-        Mesh { primitives, model_transform }
+        Mesh {
+            primitives,
+            model_transform,
+        }
     }
 }
 
 impl PartPrimitive for Mesh {
+    #[inline(always)]
     fn get_vertices(&self) -> Vec<Vertex> {
         self.primitives
             .iter()
@@ -26,10 +33,11 @@ impl PartPrimitive for Mesh {
             .collect()
     }
 
+    #[inline(always)]
     fn get_indices(&self) -> Vec<u16> {
         // Go through all primitives, get their indices, and add them to the list
         // Be sure to offset the indices by the number of vertices we've already added
-        let mut indices = Vec::new();
+        let mut indices = Vec::with_capacity(&self.primitives.len() * /* quad index count */ 6 * /* number of faces per cube */ 6);
         let mut offset = 0;
 
         for quad in &self.primitives {

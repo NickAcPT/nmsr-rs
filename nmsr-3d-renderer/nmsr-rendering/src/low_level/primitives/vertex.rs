@@ -23,8 +23,6 @@ impl Vertex {
             return *self;
         }
         
-        // (model_matrix * vec4<f32>(model.normal, 0.0)).xyz
-        
         let normal = model_transform.transform_vector3(self.normal).normalize();
         
         Vertex {

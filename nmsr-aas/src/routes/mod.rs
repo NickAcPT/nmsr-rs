@@ -140,7 +140,7 @@ impl NMSRState {
         let resolved = self.resolver.resolve(&request).await?;
 
         for index in 0..10 {
-            let _ = black_box(info_span!("prewarm_render", index = index)
+            let result = black_box(info_span!("prewarm_render", index = index)
                 .in_scope(|| {
                     black_box(render_skin::internal_render_skin(
                         request.clone(),
@@ -149,6 +149,8 @@ impl NMSRState {
                     ))
                 })
                 .await?);
+            
+            info!("Prewarm result: {:?}", result.len());
         }
 
         Ok(())

@@ -15,9 +15,6 @@ use crate::{
         RenderRequest, RenderRequestExtraSettings, RenderRequestFeatures, RenderRequestMode,
     },
 };
-
-#[serde_as]
-#[derive(Debug, Clone, Deserialize)]
 ///  The options are:
 ///  - `?exclude=<features>` or `?no=<features>`: exclude a feature from the entry (comma-separated, or multiple query strings)
 ///
@@ -37,10 +34,19 @@ use crate::{
 ///  
 ///  - `arms=<rotation>` or `arm=<rotation>`: set the rotation of the arms
 ///  - `dist=<distance>` or `distance=<distance>`: set the distance of the camera
+/// 
+///  - `xpos=<x>` or `x_pos=<x>`: set the x position of the camera (requires using Custom mode)
+///  - `ypos=<y>` or `y_pos=<y>`: set the y position of the camera (requires using Custom mode)
+///  - `zpos=<z>` or `z_pos=<z>`: set the z position of the camera (requires using Custom mode)
+/// 
+///  - `pos=<x>,<y>,<z>`: set the position of the camera (requires using Custom mode)
+#[serde_as]
+#[derive(Debug, Clone, Deserialize)]
 struct RenderRequestQueryParams {
     #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, RenderRequestFeatures>>")]
     #[serde(alias = "no")]
     exclude: Option<EnumSet<RenderRequestFeatures>>,
+
     noshading: Option<String>,
     nolayers: Option<String>,
 
@@ -65,9 +71,20 @@ struct RenderRequestQueryParams {
 
     #[serde(alias = "arm")]
     arms: Option<f32>,
-    
-    #[serde(alias = "dist")]
+
+    #[serde(alias = "d")]
     distance: Option<f32>,
+
+    #[serde(alias = "xpos")]
+    x_pos: Option<f32>,
+    #[serde(alias = "ypos")]
+    y_pos: Option<f32>,
+    #[serde(alias = "zpos")]
+    z_pos: Option<f32>,
+
+    #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, f32>>")]
+    pos: Option<Vec<f32>>,
+
 }
 
 impl RenderRequestQueryParams {
@@ -104,7 +121,14 @@ impl RenderRequestQueryParams {
         alex.or(steve).or(model)
     }
 
-    fn validate(&self, mode: &RenderRequestMode) -> Result<()> {
+    fn validate(&mut self, mode: &RenderRequestMode) -> Result<()> {
+        fn clamp(value: &mut Option<f32>, min: f32, max: f32) {
+            let epsilon = 0.01;
+            if let Some(value) = value {
+                *value = value.clamp(min + epsilon, max - epsilon)
+            }
+        }
+
         let [min_w, min_h, max_w, max_h] = mode.size_constraints();
 
         RenderRequestMode::validate_unit("width", self.width, min_w, max_w)?;
@@ -115,12 +139,49 @@ impl RenderRequestQueryParams {
         RenderRequestMode::validate_unit("roll", self.roll, -180.0, 360.0)?;
 
         RenderRequestMode::validate_unit("arm", self.arms, 0.0, 180.0)?;
-        
-        RenderRequestMode::validate_unit("distance", self.distance, -5.0, 30.0)?;
-        
+
+        //RenderRequestMode::validate_unit("distance", self.distance, -5.0, 30.0)?;
+
+        // Clamp yaw, pitch, roll so that there is no weirdness with the camera
+        clamp(&mut self.yaw, -180.0, 180.0);
+        clamp(&mut self.pitch, -90.0, 90.0);
+        clamp(&mut self.roll, -180.0, 360.0);
+
         if !mode.is_custom() && self.width.is_some() && self.height.is_some() {
-            return Err(RenderRequestError::BothWidthHeightSpecifiedError.into());
+            return Err(RenderRequestError::InvalidModeSettingSpecifiedError(
+                "both width and height settings",
+                "Pick one or the other to use as a constraint based on aspect-ratio or switch to custom mode.",
+            ).into());
         }
+
+        let has_positions =
+            self.x_pos.or(self.y_pos).or(self.z_pos).is_some() || self.pos.is_some();
+
+        if !mode.is_custom() && (has_positions) {
+            return Err(RenderRequestError::InvalidModeSettingSpecifiedError(
+                "camera positions",
+                "Switch to custom mode to make use of these.",
+            )
+            .into());
+        }
+
+        if let Some(pos) = &self.pos {
+            if pos.len() != 3 {
+                return Err(RenderRequestError::InvalidRenderSettingError(
+                    "camera position (pos parameter)",
+                    "3 valid numbers separated by commas".to_string(),
+                )
+                .into());
+            }
+
+            self.x_pos.replace(pos[0]);
+            self.y_pos.replace(pos[1]);
+            self.z_pos.replace(pos[2]);
+        }
+
+        RenderRequestMode::validate_unit("xpos", self.x_pos, -50.0, 50.0)?;
+        RenderRequestMode::validate_unit("ypos", self.y_pos, -50.0, 50.0)?;
+        RenderRequestMode::validate_unit("zpos", self.z_pos, -50.0, 50.0)?;
 
         Ok(())
     }
@@ -153,7 +214,7 @@ where
 
         let entry = RenderRequestEntry::try_from(entry_str)?;
 
-        let Query(query) = parts
+        let Query(mut query) = parts
             .extract_with_state::<Query<RenderRequestQueryParams>, S>(state)
             .await
             .map_err(RenderRequestError::from)?;
@@ -167,11 +228,17 @@ where
         let extra_settings = Some(RenderRequestExtraSettings {
             width: query.width,
             height: query.height,
-            yaw: query.yaw, //TODO: Clamp
+
+            yaw: query.yaw,
             pitch: query.pitch,
             roll: query.roll,
+
             arm_rotation: query.arms,
             distance: query.distance,
+
+            x_pos: query.x_pos,
+            y_pos: query.y_pos,
+            z_pos: query.z_pos,
         });
 
         Ok(RenderRequest::new_from_excluded_features(

@@ -34,35 +34,30 @@ pub enum RenderRequestMode {
 
 impl RenderRequestMode {
     pub(crate) fn is_custom(&self) -> bool {
-        matches!(self, RenderRequestMode::Custom)
+        matches!(self, Self::Custom)
     }
 
     pub(crate) fn is_isometric(&self) -> bool {
         matches!(
             self,
-            RenderRequestMode::FullBodyIso | RenderRequestMode::HeadIso
+            Self::FullBodyIso | Self::HeadIso | Self::FrontBust | Self::FrontFull | Self::Face
         )
+    }
+
+    pub(crate) fn is_front(&self) -> bool {
+        matches!(self, Self::FrontBust | Self::FrontFull | Self::Face)
     }
 
     pub(crate) fn is_bust(&self) -> bool {
-        matches!(
-            self,
-            RenderRequestMode::BodyBust | RenderRequestMode::FrontBust
-        )
+        matches!(self, Self::BodyBust | Self::FrontBust)
     }
 
     pub(crate) fn is_arms_open(&self) -> bool {
-        matches!(
-            self,
-            RenderRequestMode::FullBody | RenderRequestMode::BodyBust
-        )
+        matches!(self, Self::FullBody | Self::BodyBust)
     }
 
     pub(crate) fn is_head(&self) -> bool {
-        matches!(
-            self,
-            RenderRequestMode::Head | RenderRequestMode::Face | RenderRequestMode::HeadIso
-        )
+        matches!(self, Self::Head | Self::Face | Self::HeadIso)
     }
 
     pub(crate) fn is_square(&self) -> bool {
@@ -147,20 +142,32 @@ impl RenderRequestMode {
             return camera;
         }
 
-        let look_at_y = if self.is_head() { 28.5 } else { 16.5 };
+        let look_at_y = if self.is_head() { 28.0 } else { 16.5 };
 
         let look_at = [0.0, look_at_y, 0.0].into();
         let distance = if self.is_head() { 25.0 } else { 45.0 };
 
         let projection = if self.is_isometric() {
-            let aspect = if self.is_head() { 7.5 } else { 17.0 };
+            let aspect = if *self == Self::Face {
+                4.5
+            } else if self.is_head() {
+                7.5
+            } else {
+                17.0
+            };
 
             ProjectionParameters::Orthographic { aspect }
         } else {
             ProjectionParameters::Perspective { fov: 45.0 }
         };
 
-        let rotation = if self.is_isometric() {
+        let rotation = if self.is_front() {
+            CameraRotation {
+                yaw: 0.0,
+                pitch: 0.0,
+                roll: 0.0,
+            }
+        } else if self.is_isometric() {
             CameraRotation {
                 yaw: 45.0,
                 pitch: FRAC_1_SQRT_2.atan().to_degrees(),

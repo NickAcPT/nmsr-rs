@@ -4,7 +4,7 @@ use nmsr_rendering::{
     errors::NMSRRenderingError,
     high_level::{
         parts::provider::PlayerPartProviderContext,
-        pipeline::{pools::SceneContextPoolManager, scene::{Scene, Size}},
+        pipeline::{pools::SceneContextPoolManager, scene::Scene},
         player_model::PlayerModel,
     },
 };

@@ -35,8 +35,8 @@ pub enum RenderRequestError {
     LegacySkinUpgradeError,
     #[error("The render setting you've specified ({0}) is invalid. Valid values should be {1}.")]
     InvalidRenderSettingError(&'static str, String),
-    #[error("You've specified both width and height settings which is invalid for this mode. Pick one or the other to use as a constraint based on aspect-ratio.")]
-    BothWidthHeightSpecifiedError,
+    #[error("You've specified {0} which is invalid for this mode. {1}")]
+    InvalidModeSettingSpecifiedError(&'static str, &'static str),
 }
 
 #[derive(Error, Debug)]

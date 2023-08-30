@@ -49,6 +49,10 @@ pub struct RenderRequestExtraSettings {
 
     pub arm_rotation: Option<f32>,
     pub distance: Option<f32>,
+    
+    pub x_pos: Option<f32>,
+    pub y_pos: Option<f32>,
+    pub z_pos: Option<f32>,
 }
 
 impl RenderRequestExtraSettings {
@@ -131,20 +135,41 @@ impl RenderRequest {
         let mut camera = self.mode.get_camera();
 
         if let Some(settings) = &self.extra_settings {
-            if let Some(yaw) = settings.yaw {
-                camera.set_yaw(yaw)
-            }
+            // Only allow to set the yaw, pitch and roll if we are not in a front mode
+            if !self.mode.is_front() {
+                if let Some(yaw) = settings.yaw {
+                    camera.set_yaw(yaw)
+                }
 
-            if let Some(pitch) = settings.pitch {
-                camera.set_pitch(pitch)
-            }
+                if let Some(pitch) = settings.pitch {
+                    camera.set_pitch(pitch)
+                }
 
-            if let Some(roll) = settings.roll {
-                camera.set_roll(roll)
+                if let Some(roll) = settings.roll {
+                    camera.set_roll(roll)
+                }
+            }
+            
+            if self.mode.is_custom() {
+                if let Some(x_pos) = settings.x_pos {
+                    camera.set_look_at_x(x_pos)
+                }
+                
+                if let Some(y_pos) = settings.y_pos {
+                    camera.set_look_at_y(y_pos)
+                }
+                
+                if let Some(z_pos) = settings.z_pos {
+                    camera.set_look_at_z(z_pos)
+                }
             }
 
             if let Some(distance) = settings.distance {
-                camera.set_distance(camera.get_distance() + distance)
+                if self.mode.is_isometric() {
+                    camera.set_aspect(camera.get_aspect() + distance)
+                } else {
+                    camera.set_distance(camera.get_distance() + distance)
+                }
             }
 
             if camera.get_size().is_some() {
@@ -186,7 +211,7 @@ impl RenderRequest {
         let light = Vec3::new(0.0, 1.0, 6.21);
         let front_lighting = rot_quat.mul_vec3(light) * Vec3::new(1.0, 1.0, -1.0);
 
-        return SunInformation::new(front_lighting, 1.0, 0.5);
+        return SunInformation::new(front_lighting, 1.0, 0.621);
     }
 
     pub(crate) fn get_arm_rotation(&self) -> f32 {

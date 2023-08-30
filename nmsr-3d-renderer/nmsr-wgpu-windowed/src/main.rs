@@ -98,6 +98,7 @@ async fn main() -> anyhow::Result<()> {
     let mut ctx = PlayerPartProviderContext {
         model: PlayerModel::Alex,
         has_layers: true,
+        has_hat_layer: true,
         has_cape: true,
         arm_rotation: 10.0,
     };

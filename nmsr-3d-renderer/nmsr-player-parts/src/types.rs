@@ -23,13 +23,16 @@ impl PlayerBodyPartType {
     pub fn is_layer(&self) -> bool {
         matches!(
             self,
-            Self::HeadLayer
-                | Self::BodyLayer
+            Self::BodyLayer
                 | Self::LeftArmLayer
                 | Self::RightArmLayer
                 | Self::LeftLegLayer
                 | Self::RightLegLayer
         )
+    }
+
+    pub fn is_hat_layer(&self) -> bool {
+        matches!(self, Self::HeadLayer)
     }
 
     pub fn get_non_layer_part(&self) -> Self {

@@ -40,6 +40,7 @@ pub(crate) async fn internal_render_model(
     let final_model = request.model.unwrap_or(resolved.model);
 
     let has_layers = request.features.contains(RenderRequestFeatures::BodyLayers);
+    let has_hat_layer = request.features.contains(RenderRequestFeatures::HatLayer);
     let has_cape = request.features.contains(RenderRequestFeatures::Cape)
         && resolved
             .textures
@@ -47,7 +48,8 @@ pub(crate) async fn internal_render_model(
 
     let part_context = PlayerPartProviderContext {
         model: PlayerModel::from(final_model),
-        has_layers, // TODO - Hat layers
+        has_layers,
+        has_hat_layer,
         has_cape,
         arm_rotation,
     };

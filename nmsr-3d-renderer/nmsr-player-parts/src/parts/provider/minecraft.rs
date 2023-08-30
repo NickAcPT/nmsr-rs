@@ -54,7 +54,7 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
         context: &PlayerPartProviderContext,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
-        if body_part.is_layer() && !context.has_layers {
+        if body_part.is_layer() && !context.has_layers || body_part.is_hat_layer() && !context.has_hat_layer {
             return vec![];
         }
         
@@ -64,7 +64,7 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
 
         perform_arm_part_rotation(non_layer_body_part_type, &mut part, context.arm_rotation);
 
-        if body_part.is_layer() {
+        if body_part.is_layer() || body_part.is_hat_layer() {
             return vec![expand_player_body_part(non_layer_body_part_type, part)];
         }
         

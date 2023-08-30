@@ -114,7 +114,6 @@ where
         Ok(key.map(|k| self.base_path.join(k)))
     }
 
-    #[instrument(skip(self))]
     pub async fn get_cached_entry(&self, entry: &Key) -> Result<Option<ResultEntry>> {
         let path = self.get_cache_entry_path(entry).await?;
 

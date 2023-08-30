@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
-use std::fs;
+use tokio::fs;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -64,6 +64,7 @@ struct ResolvedModelTexturesCacheHandler {
 impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
     for MojangTextureCacheHandler
 {
+    #[inline]
     async fn get_cache_key(
         &self,
         entry: &str,
@@ -101,7 +102,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
         _config: &ModelCacheConfiguration,
         file: &PathBuf,
     ) -> Result<()> {
-        fs::write(file, value.data())
+        fs::write(file, value.data()).await
             .explain(format!("Unable to write texture {:?} to cache", entry))?;
 
         Ok(())
@@ -119,7 +120,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
         }
 
         let data =
-            fs::read(file).explain(format!("Unable to read texture {:?} from cache", entry))?;
+            fs::read(file).await.explain(format!("Unable to read texture {:?} from cache", entry))?;
 
         Ok(Some(MojangTexture::new_named(entry.to_string(), data)))
     }
@@ -216,6 +217,7 @@ impl ModelCache {
 impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheConfiguration, [u8; 1]>
     for ResolvedModelTexturesCacheHandler
 {
+    #[inline]
     async fn get_cache_key(
         &self,
         entry: &RenderRequestEntry,
@@ -246,7 +248,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         base: &PathBuf,
     ) -> Result<()> {
         if !base.exists() {
-            fs::create_dir_all(base)
+            fs::create_dir_all(base).await
                 .explain(format!("Unable to create cache directory for {:?}", &entry))?;
         }
 
@@ -289,7 +291,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             let texture_path = base.join(format!("{}{}", Into::<&str>::into(&texture), ".png"));
 
             if texture_path.exists() {
-                let read = fs::read(texture_path).explain(format!(
+                let read = fs::read(texture_path).await.explain(format!(
                     "Unable to read texture {:?} for {:?}",
                     &texture, &entry
                 ))?;
@@ -310,7 +312,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         marker: &PathBuf,
     ) -> Result<[u8; 1]> {
         let result =
-            fs::read(marker).explain(format!("Unable to read marker file for {:?}", entry))?;
+            fs::read(marker).await.explain(format!("Unable to read marker file for {:?}", entry))?;
 
         if result.len() != 1 {
             return Err(ModelCacheError::MarkerMetadataError(entry.clone()).into());
@@ -326,7 +328,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         _config: &ModelCacheConfiguration,
         marker: &PathBuf,
     ) -> Result<()> {
-        fs::write(marker, value.to_marker_slice())
+        fs::write(marker, value.to_marker_slice()).await
             .explain(format!("Unable to write marker file for {:?}", entry))?;
 
         Ok(())

@@ -84,7 +84,6 @@ pub struct TracingConfiguration {
 }
 
 impl ModelCacheConfiguration {
-    #[instrument(skip_all)]
     pub fn is_expired(&self, entry: &RenderRequestEntry, marker_metadata: Metadata, default_duration: &Duration) -> crate::error::Result<bool> {
         let bias = self.cache_biases.get(entry);
 

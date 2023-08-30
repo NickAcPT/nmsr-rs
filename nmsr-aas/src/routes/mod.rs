@@ -148,7 +148,7 @@ impl NMSRState {
                         resolved.clone(),
                     ))
                 })
-                .await);
+                .await)?;
             drop(result);
         }
 

@@ -126,6 +126,11 @@ where
             
             let marker_path = self.handler.get_marker_path(entry, &self.config).await?;
             let marker_path = path.join(marker_path);
+            
+            if !marker_path.exists() {
+                trace!("Cache entry path {} doesn't exist.", marker_path.display());
+                return Ok(None);
+            }
 
             let marker = self
                 .handler
@@ -134,7 +139,7 @@ where
 
             let marker_metadata = marker_path
                 .metadata()
-                .explain(format!("Unable to read marker for entry {:?}", entry))?;
+                .explain(format!("Unable to read marker for entry {:?} ({})", entry, marker_path.display()))?;
 
             let is_expired = self
                 .handler

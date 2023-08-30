@@ -51,6 +51,38 @@ pub struct RenderRequestExtraSettings {
     pub distance: Option<f32>,
 }
 
+impl RenderRequestExtraSettings {
+    pub(crate) fn get_size_for_mode(&self, mode: &RenderRequestMode) -> Size {
+        let mut size = mode.get_size();
+
+        if mode.is_custom() {
+            // Custom mode, use the extra settings as-is
+            if let Some(width) = self.width {
+                size.width = width;
+            }
+
+            if let Some(height) = self.height {
+                size.height = height;
+            }
+        } else {
+            // Not custom mode, if the user specified a width or height, use it based on the mode's aspect ratio
+            let aspect_ratio = size.width as f32 / size.height as f32;
+
+            if let Some(width) = self.width {
+                size.width = width;
+                size.height = (width as f32 / aspect_ratio) as u32;
+            }
+
+            if let Some(height) = self.height {
+                size.height = height;
+                size.width = (height as f32 * aspect_ratio) as u32;
+            }
+        }
+
+        size
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct RenderRequest {
     pub mode: RenderRequestMode,
@@ -114,25 +146,24 @@ impl RenderRequest {
             if let Some(distance) = settings.distance {
                 camera.set_distance(camera.get_distance() + distance)
             }
+
+            if camera.get_size().is_some() {
+                // Update our camera size based on the user settings if we have one already set
+                let mode = self.mode.get_base_render_mode().unwrap_or(self.mode);
+                let camera_size = settings.get_size_for_mode(&mode);
+                camera.set_size(Some(camera_size));
+            }
         }
 
         camera
     }
 
     pub(crate) fn get_size(&self) -> Size {
-        let mut size = self.mode.get_viewport_size();
-
         if let Some(settings) = &self.extra_settings {
-            if let Some(width) = settings.width {
-                size.width = width;
-            }
-
-            if let Some(height) = settings.height {
-                size.height = height;
-            }
+            settings.get_size_for_mode(&self.mode)
+        } else {
+            self.mode.get_size()
         }
-
-        size
     }
 
     pub(crate) fn get_lighting(&self) -> SunInformation {

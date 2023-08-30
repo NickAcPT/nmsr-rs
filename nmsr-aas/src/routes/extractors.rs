@@ -117,6 +117,10 @@ impl RenderRequestQueryParams {
         RenderRequestMode::validate_unit("arm", self.arms, 0.0, 180.0)?;
         
         RenderRequestMode::validate_unit("distance", self.distance, -5.0, 30.0)?;
+        
+        if !mode.is_custom() && self.width.is_some() && self.height.is_some() {
+            return Err(RenderRequestError::BothWidthHeightSpecifiedError.into());
+        }
 
         Ok(())
     }

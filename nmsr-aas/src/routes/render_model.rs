@@ -27,10 +27,10 @@ pub(crate) async fn internal_render_model(
 ) -> Result<Vec<u8>> {
     let scene_context = state.create_scene_context().await?;
 
-    let size = request.get_size();
-
     let mode = &request.mode;
     let camera = request.get_camera();
+    
+    let size = request.get_size();
     
     let arm_rotation = request.get_arm_rotation();
     let lighting = request.get_lighting();
@@ -57,7 +57,7 @@ pub(crate) async fn internal_render_model(
         scene_context,
         camera,
         lighting,
-        mode.get_viewport_size(),
+        size,
         &part_context,
         parts,
     );
@@ -67,7 +67,7 @@ pub(crate) async fn internal_render_model(
     scene.render(&state.graphics_context)?;
 
     let render = scene.copy_output_texture(&state.graphics_context).await?;
-    let render_bytes = create_png_from_bytes((mode.get_viewport_size().width, mode.get_viewport_size().height), &render)?;
+    let render_bytes = create_png_from_bytes((size.width, size.height), &render)?;
 
     Ok(render_bytes)
 }

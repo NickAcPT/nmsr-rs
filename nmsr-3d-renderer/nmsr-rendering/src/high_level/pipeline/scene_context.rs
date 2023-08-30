@@ -211,9 +211,14 @@ impl SceneContext {
             }
         } else {
             if let Some((texture_output_buffer_dimensions, texture_output_buffer)) = output {
-                if let Some(textures) = &mut self.textures {
+                let textures = self.textures.take();
+                
+                if let Some(mut textures) = textures {
                     textures.texture_output_buffer = texture_output_buffer;
                     textures.texture_output_buffer_dimensions = texture_output_buffer_dimensions;
+                    textures.viewport_size = viewport_size;
+                    
+                    self.textures = Some(textures);
                 }
             }
         }

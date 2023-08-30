@@ -80,7 +80,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
         Ok("".into())
     }
 
-    async fn is_expired(
+    fn is_expired(
         &self,
         entry: &str,
         config: &ModelCacheConfiguration,
@@ -228,7 +228,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         })
     }
 
-    async fn is_expired(
+    fn is_expired(
         &self,
         entry: &RenderRequestEntry,
         config: &ModelCacheConfiguration,

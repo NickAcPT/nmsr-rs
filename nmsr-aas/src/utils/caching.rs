@@ -35,7 +35,7 @@ where
     /// Checks whether the given entry is expired.
     ///
     /// If the entry is expired, it will be removed from the cache if it exists.
-    async fn is_expired(
+    fn is_expired(
         &self,
         entry: &Key,
         config: &Config,
@@ -143,8 +143,7 @@ where
 
             let is_expired = self
                 .handler
-                .is_expired(entry, &self.config, &marker, marker_metadata)
-                .await?;
+                .is_expired(entry, &self.config, &marker, marker_metadata)?;
 
             if is_expired {
                 trace!("Entry is expired, discarding.");

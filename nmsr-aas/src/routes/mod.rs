@@ -12,6 +12,7 @@ use nmsr_rendering::high_level::pipeline::{
 };
 pub use render::render;
 use tracing::{debug_span, info, info_span, instrument};
+use uuid::uuid;
 
 use std::{hint::black_box, sync::Arc};
 
@@ -125,9 +126,8 @@ impl NMSRState {
     async fn prewarm_renderer(&self) -> Result<()> {
         // Prewarm our renderer by actually rendering a few requests.
         // This will ensure that the renderer is initialized and ready to go when we start serving requests.
-        // `86ed67a77cf4e00350b6e3a966f312d4f5a0170a028c0699e6043a2374f99ff5` is one of the hashes of NickAc's skin.
-        let entry = RenderRequestEntry::TextureHash(
-            "86ed67a77cf4e00350b6e3a966f312d4f5a0170a028c0699e6043a2374f99ff5".to_owned(),
+        let entry = RenderRequestEntry::PlayerUuid(
+            uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"),
         );
         let request = RenderRequest::new_from_excluded_features(
             RenderRequestMode::FullBody,
@@ -140,7 +140,7 @@ impl NMSRState {
         let resolved = self.resolver.resolve(&request).await?;
 
         for index in 0..10 {
-            let result = info_span!("prewarm_render", index = index)
+            let result = black_box(info_span!("prewarm_render", index = index)
                 .in_scope(|| {
                     black_box(render_skin::internal_render_skin(
                         request.clone(),
@@ -148,7 +148,7 @@ impl NMSRState {
                         resolved.clone(),
                     ))
                 })
-                .await;
+                .await);
             drop(result);
         }
 

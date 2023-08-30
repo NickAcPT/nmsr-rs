@@ -6,7 +6,7 @@ use std::{
 
 use async_trait::async_trait;
 use derive_more::Debug;
-use tracing::{instrument, trace};
+use tracing::trace;
 
 use crate::error::{ExplainableExt, Result};
 

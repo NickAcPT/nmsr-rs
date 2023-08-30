@@ -4,7 +4,7 @@ use chrono::{DateTime, Local};
 use derive_more::Debug;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TryFromInto};
-use tracing::{instrument, trace};
+use tracing::trace;
 use twelf::config;
 
 use crate::{model::request::{cache::CacheBias, entry::RenderRequestEntry}, error::ExplainableExt};

@@ -197,17 +197,13 @@ impl RenderRequest {
         }
 
         let camera = self.get_camera();
-        let abs = (camera.get_yaw().abs() - 180.0).abs();
-        let yaw = if abs < 0.01 {
-            camera.get_yaw().abs() + 90.0
-        } else if camera.get_yaw().is_sign_positive() {
+        let one_eighty_diff = (camera.get_yaw().abs() - 180.0).abs();
+        let yaw = if (camera.get_yaw().is_sign_positive() || camera.get_yaw() <= -90.0)
+            && (one_eighty_diff > 0.01)
+        {
             camera.get_yaw()
         } else {
-            if camera.get_yaw() <= -90.0 {
-                camera.get_yaw()
-            } else {
-                camera.get_yaw() + 90.0
-            }
+            camera.get_yaw() + 90.0
         };
 
         let aligned_yaw = ((yaw + 180.0) / 90.0).floor() * 90.0;

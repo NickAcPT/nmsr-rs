@@ -39,7 +39,7 @@ pub fn create_buffer_and_bind_group<T: Pod>(
 #[instrument(name = "buffer_slice_wait", skip(output_buffer, device))]
 async fn wait_for_buffer_slice<'a>(
     output_buffer: &'a Buffer,
-    device: &'a wgpu::Device,
+    device: &wgpu::Device,
 ) -> Result<BufferSlice<'a>> {
     let buffer_slice = output_buffer.slice(..);
     let (tx, rx) = channel();

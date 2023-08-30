@@ -11,7 +11,7 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::render;
-use tracing::{debug_span, info, info_span, instrument};
+use tracing::{debug_span, info, info_span, instrument, trace};
 use uuid::uuid;
 
 use std::{hint::black_box, sync::Arc};
@@ -148,7 +148,7 @@ impl NMSRState {
                     .await?,
             );
 
-            info!("Prewarm result: {:?} bytes", result.len());
+            trace!("Prewarm result: {:?} bytes", result.len());
         }
 
         Ok(())

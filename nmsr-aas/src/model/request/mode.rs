@@ -56,12 +56,20 @@ impl RenderRequestMode {
         matches!(self, Self::FullBody | Self::BodyBust)
     }
 
-    pub(crate) fn is_head(&self) -> bool {
+    pub(crate) fn is_head_or_face(&self) -> bool {
         matches!(self, Self::Head | Self::Face | Self::HeadIso)
     }
 
+    pub(crate) fn is_head(&self) -> bool {
+        matches!(self, Self::Head)
+    }
+    
+    pub(crate) fn is_face(&self) -> bool {
+        matches!(self, Self::Face)
+    }
+
     pub(crate) fn is_square(&self) -> bool {
-        self.is_bust() || self.is_head()
+        self.is_bust() || self.is_head_or_face()
     }
 
     // [min_w, min_h, max_w, max_h]
@@ -142,26 +150,36 @@ impl RenderRequestMode {
             return camera;
         }
 
-        let look_at_y = if self.is_head() { 28.0 } else { 16.5 };
+        let mut look_at_y = 16.5;
+        if self.is_head_or_face() {
+            look_at_y += 11.5;
+        }
 
-        let look_at = [0.0, look_at_y, 0.0].into();
-        let distance = if self.is_head() { 25.0 } else { 45.0 };
+        let mut distance = 45.0;
+        if self.is_head_or_face() {
+            distance -= 20.0;
+        }
+        if self.is_head() {
+            distance -= 6.0;
+        }
 
         let projection = if self.is_isometric() {
-            let aspect = if *self == Self::Face {
-                4.5
-            } else if self.is_head() {
-                7.5
-            } else {
-                17.0
-            };
-
+            let mut aspect = 17.0;
+            
+            if self.is_head_or_face() {
+                aspect -= 9.5;
+            }
+            
+            if self.is_face() {
+                aspect -= 3.0;
+            }
+            
             ProjectionParameters::Orthographic { aspect }
         } else {
             ProjectionParameters::Perspective { fov: 45.0 }
         };
 
-        let rotation = if self.is_front() {
+        let rotation = if self.is_front() || self.is_custom() {
             CameraRotation {
                 yaw: 0.0,
                 pitch: 0.0,
@@ -173,6 +191,12 @@ impl RenderRequestMode {
                 pitch: FRAC_1_SQRT_2.atan().to_degrees(),
                 roll: 0.0,
             }
+        } else if self.is_head() {
+            CameraRotation {
+                yaw: 25.0,
+                pitch: 15.0,
+                roll: 0.0,
+            }
         } else {
             CameraRotation {
                 yaw: 20.0,
@@ -181,6 +205,7 @@ impl RenderRequestMode {
             }
         };
 
+        let look_at = [0.0, look_at_y, 0.0].into();
         Camera::new_orbital(look_at, distance, rotation, projection, None)
     }
 

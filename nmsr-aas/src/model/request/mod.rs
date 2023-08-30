@@ -49,7 +49,7 @@ pub struct RenderRequestExtraSettings {
 
     pub arm_rotation: Option<f32>,
     pub distance: Option<f32>,
-    
+
     pub x_pos: Option<f32>,
     pub y_pos: Option<f32>,
     pub z_pos: Option<f32>,
@@ -149,16 +149,16 @@ impl RenderRequest {
                     camera.set_roll(roll)
                 }
             }
-            
+
             if self.mode.is_custom() {
                 if let Some(x_pos) = settings.x_pos {
                     camera.set_look_at_x(x_pos)
                 }
-                
+
                 if let Some(y_pos) = settings.y_pos {
                     camera.set_look_at_y(y_pos)
                 }
-                
+
                 if let Some(z_pos) = settings.z_pos {
                     camera.set_look_at_z(z_pos)
                 }
@@ -197,8 +197,15 @@ impl RenderRequest {
         }
 
         let camera = self.get_camera();
+        let yaw = if (camera.get_yaw().abs() - 180.0).abs() < f32::EPSILON {
+            camera.get_yaw() - 90.0
+        } else if camera.get_yaw().is_sign_positive() {
+            camera.get_yaw()
+        } else {
+            camera.get_yaw() + 90.0
+        };
 
-        let aligned_yaw = ((camera.get_yaw() + 180.0) / 90.0).floor() * 90.0;
+        let aligned_yaw = ((yaw + 180.0) / 90.0).floor() * 90.0;
 
         let rot_quat: Quat = Quat::from_euler(
             EulerRot::ZXY,

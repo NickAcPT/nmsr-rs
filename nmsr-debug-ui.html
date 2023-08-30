@@ -202,16 +202,31 @@
         let applyButton = document.getElementById('apply-button');
         let imagePreview = document.getElementById('preview-image');
         let imageError = document.getElementById('image-error');
+        let resolvedNames = {};
+
+        if (window.location.search) {
+            let params = new URLSearchParams(window.location.search);
+            for (let [key, value] of params) {
+                let input = document.querySelector(`[name="${key}"]`) || (key == 'texture' ? textureInput : (key == 'mode' ? modeSelect : null));
+                if (input) {
+                    input.value = value;
+                }
+            }
+        }
+
+        let validMinecraftName = /^[a-zA-Z0-9_]{2,16}$/;
 
         applyButton.addEventListener('click', updateImage);
 
         updateImage();
 
-        document.querySelectorAll('input, select').forEach(input => input.addEventListener('input', updateImage));
+        let debouncedUpdateImage = debounce(updateImage, 300);
+        document.querySelectorAll('input').forEach(input => input.addEventListener('input', debouncedUpdateImage));
+        document.querySelectorAll('select').forEach(input => input.addEventListener('input', updateImage));
 
         async function updateImage() {
             recursiveSetEnabled(document.getElementById('camera-position-group'), modeSelect.value == 'custom');
-            
+
             // Find all inputs
             let inputs = document.querySelectorAll('input, select');
 
@@ -237,7 +252,8 @@
             }
             if (excluded.length > 0) params.append('no', excluded.join(','));
 
-            let imageUrl = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr/${modeSelect.value}/${textureInput.value}?${params.toString()}`;
+            let resolvedTexture = await tryResolveName(textureInput.value);
+            let imageUrl = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr/${modeSelect.value}/${resolvedTexture}?${params.toString()}`;
 
             // Request image and set it as the preview, or show an error
             try {
@@ -270,6 +286,28 @@
                 }
             }
         }
+
+        async function tryResolveName(name) {
+            if (resolvedNames && resolvedNames[name]) return resolvedNames[name];
+
+            if (!validMinecraftName.test(name)) return name;
+
+            let response = await fetch(`https://corsjangapi.b-cdn.net/users/profiles/minecraft/${name}`);
+            if (!response.ok) return name;
+
+            let data = await response.json();
+            resolvedNames[name] = data.id;
+            return data.id;
+        }
+
+        function debounce(func, timeout = 300) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => { func.apply(this, args); }, timeout);
+            };
+        }
+
     </script>
 </body>
 

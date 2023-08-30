@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NMSR - Test GUI</title>
+    <style>
+        body {
+            box-sizing: border-box;
+
+            font-family: system-ui, sans-serif;
+            margin: 0;
+            padding: 1.5rem;
+
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+
+            background-color: canvas;
+            color: canvastext;
+            color-scheme: light dark;
+
+            overflow: hidden;
+
+            gap: 1rem;
+        }
+
+        label,
+        p {
+            margin: 0;
+        }
+
+        #controls,
+        #image-preview {
+            flex: 1;
+            display: flex;
+            gap: 0.621rem;
+
+            height: 100vh;
+
+            justify-content: center;
+        }
+
+        #controls {
+            flex-direction: column;
+        }
+
+        #image-preview {
+            align-items: center;
+            justify-content: center;
+        }
+
+        input,
+        select,
+        button {
+            padding: 0.5rem;
+            margin-block-end: 0.5rem;
+        }
+
+        .group {
+            display: flex;
+            align-items: baseline;
+            gap: 0.2rem;
+            flex-wrap: wrap;
+            flex-direction: column;
+        }
+
+        .inner-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+
+            height: 100%;
+        }
+
+        .outer-group {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-evenly;
+            align-items: center;
+
+            gap: 1rem;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            align-self: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="image-preview">
+        <img src="#" alt="Image Preview" id="preview-image">
+        <p id="image-error"></p>
+    </div>
+    <div id="controls">
+
+        <h1>NMSR - Test GUI</h1>
+
+        <div class="outer-group" id="texture-group">
+            <div class="inner-group">
+                <label for="texture-group">Texture:</label>
+                <input type="text" id="texture" value="ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
+            </div>
+        </div>
+
+
+        <div class="outer-group">
+            <div class="inner-group" id="general-controls-group">
+                <label for="general-controls-group">General:</label>
+                <label for="mode">Mode:</label>
+                <select id="mode">
+                    <option value="full_body">FullBody</option>
+                    <option value="body_bust">BodyBust</option>
+                    <option value="front_full">FrontFull</option>
+                    <option value="front_bust">FrontBust</option>
+                    <option value="face">Face</option>
+                    <option value="head">Head</option>
+                    <option value="full_body_iso">FullBodyIso</option>
+                    <option value="head_iso">HeadIso</option>
+                    <option value="skin">Skin</option>
+                    <option value="custom">Custom</option>
+                </select>
+
+                <label for="model">Model:</label>
+                <select id="model" name="model">
+                    <option value="">(Default)</option>
+                    <option value="wide">Wide</option>
+                    <option value="slim">Slim</option>
+                </select>
+
+            </div>
+
+            <div class="inner-group" id="misc-controls-group">
+                <label for="misc-controls-group">Misc:</label>
+
+                <label for="arms">Arm Rotation:</label>
+                <input type="number" id="arms" name="arms" min="0" max="180" step="1">
+
+                <label for="distance">Camera Distance:</label>
+                <input type="number" id="distance" name="distance" step="1">
+            </div>
+
+            <div class="inner-group" id="features-group">
+                <label for="features-group">Features:</label>
+                <label><input type="checkbox" checked value="layers"> Layers</label>
+                <label><input type="checkbox" checked value="helmet"> Helmet</label>
+                <label><input type="checkbox" checked value="shadow"> Shadow</label>
+                <label><input type="checkbox" checked value="shading"> Shading</label>
+                <label><input type="checkbox" checked value="cape"> Cape</label>
+            </div>
+
+        </div>
+
+        <div class="outer-group" id="camera-group">
+            <div class="inner-group" id="camera-size-group">
+                <label for="camera-size-group">Size:</label>
+
+                <label for="width">Width:</label>
+                <input type="number" id="width" name="w">
+
+                <label for="height">Height:</label>
+                <input type="number" id="height" name="h">
+            </div>
+
+            <div class="inner-group" id="camera-rotation-group">
+                <label for="camera-rotation-group">Rotation:</label>
+
+                <label for="yaw">Yaw:</label>
+                <input type="number" id="yaw" name="y" min="-180" max="180" step="1">
+
+                <label for="pitch">Pitch:</label>
+                <input type="number" id="pitch" name="p" min="-90" max="90" step="1">
+
+                <label for="roll">Roll:</label>
+                <input type="number" id="roll" name="r" min="-180" max="360" step="1">
+            </div>
+
+            <div class="inner-group" id="camera-position-group">
+                <label for="camera-position-group">Position:</label>
+
+                <label for="xpos">X Position:</label>
+                <input type="number" id="xpos" name="xpos" step="1" min="-50" max="50">
+
+                <label for="ypos">Y Position:</label>
+                <input type="number" id="ypos" name="ypos" step="1" min="-50" max="50">
+
+                <label for="zpos">Z Position:</label>
+                <input type="number" id="zpos" name="zpos" step="1" min="-50" max="50">
+            </div>
+        </div>
+
+        <button id="apply-button">Apply</button>
+    </div>
+
+    <script type="module">
+        let modeSelect = document.getElementById('mode');
+        let textureInput = document.getElementById('texture');
+        let featuresGroup = document.getElementById('features-group');
+        let applyButton = document.getElementById('apply-button');
+        let imagePreview = document.getElementById('preview-image');
+        let imageError = document.getElementById('image-error');
+
+        applyButton.addEventListener('click', updateImage);
+
+        updateImage();
+
+        document.querySelectorAll('input, select').forEach(input => input.addEventListener('input', updateImage));
+
+        async function updateImage() {
+            recursiveSetEnabled(document.getElementById('camera-position-group'), modeSelect.value == 'custom');
+            
+            // Find all inputs
+            let inputs = document.querySelectorAll('input, select');
+
+            // Create an object to store the values
+            let values = {};
+
+            // Iterate over all inputs
+            for (let input of inputs) {
+                // Add the value to the object if it's not empty and not disabled
+                if (input.name && input.value && !input.disabled) {
+                    values[input.name] = input.value;
+                }
+            }
+
+            let params = new URLSearchParams(values);
+
+            // Add the features
+            let excluded = [];
+            for (let feature of featuresGroup.querySelectorAll('input')) {
+                if (!feature.checked) {
+                    excluded.push(feature.value);
+                }
+            }
+            if (excluded.length > 0) params.append('no', excluded.join(','));
+
+            let imageUrl = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr/${modeSelect.value}/${textureInput.value}?${params.toString()}`;
+
+            // Request image and set it as the preview, or show an error
+            try {
+                const response = await fetch(imageUrl);
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                const imageBlob = await response.blob();
+
+                imagePreview.style.display = 'block';
+                imageError.style.display = 'none';
+
+                imagePreview.src = URL.createObjectURL(imageBlob);
+            } catch (error) {
+                console.error('Error loading image:', error);
+                imagePreview.style.display = 'none';
+                imageError.style.display = 'block';
+
+                imageError.textContent = error;
+            }
+        }
+
+        function recursiveSetEnabled(root, enabled) {
+            for (let child of root.children) {
+                if (child.children.length > 0) {
+                    recursiveSetEnabled(child, enabled);
+                } else {
+                    // Disable this input
+                    child.disabled = !enabled;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

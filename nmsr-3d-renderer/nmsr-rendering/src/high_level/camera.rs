@@ -292,7 +292,7 @@ impl Camera {
                 let pos = look_at + (-look_pos * distance);
 
                 // Compute roll matrix
-                let roll_matrix = Mat4::from_rotation_z(self.rotation.roll.to_radians());
+                let roll_matrix = Mat4::from_rotation_z(-self.rotation.roll.to_radians());
 
                 roll_matrix * Mat4::look_at_rh(pos, look_at, Vec3::Y)
             }

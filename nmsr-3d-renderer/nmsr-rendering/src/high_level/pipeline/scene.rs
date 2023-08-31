@@ -6,6 +6,7 @@ use crate::{
         cube::Cube,
         mesh::{Mesh, PrimitiveDispatch},
         part_primitive::PartPrimitive,
+        quad::Quad,
     },
 };
 use bytemuck::{Pod, Zeroable};
@@ -117,14 +118,36 @@ where
         // Compute the body parts we need to render
         let computed_body_parts = Self::collect_player_parts(part_context, body_parts);
 
-        Self {
+        let mut scene = Self {
             camera,
             viewport_size,
             scene_context,
             textures: HashMap::new(),
             computed_body_parts,
             sun_information: Default::default(),
+        };
+
+        if part_context.shadow_y_pos.is_some() {
+            // We need to render the shadow, so upload the shadow texture already
+            let shadow_image = image::load_from_memory_with_format(
+                include_bytes!("shadow.png"),
+                image::ImageFormat::Png,
+            )
+            .ok()
+            .expect("Failed to load shadow texture");
+
+            let shadow_image = shadow_image
+                .as_rgba8()
+                .expect("Failed to convert shadow texture to RGBA8");
+
+            scene.set_texture(
+                graphics_context,
+                PlayerPartTextureType::Shadow,
+                &shadow_image,
+            );
         }
+
+        scene
     }
 
     pub fn camera_mut(&mut self) -> &mut Camera {
@@ -432,7 +455,7 @@ where
 }
 
 pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
-    (match part {
+    match part {
         Part::Cube {
             position,
             rotation,
@@ -473,12 +496,62 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
                 uv(&face_uvs.west, texture_size),
                 uv(&face_uvs.east, texture_size),
             )
+            .into()
         }
-        Part::Quad { .. } => {
-            unreachable!()
+        Part::Quad {
+            position,
+            size,
+            rotation,
+            face_uv,
+            texture,
+            anchor,
+        } => {
+            let translation = anchor
+                .or_else(|| Some(PartAnchorInfo { anchor: Vec3::ZERO }))
+                .unwrap();
+
+            let translation_mat = Mat4::from_translation(translation.anchor);
+            let neg_translation_mat = Mat4::from_translation(-translation.anchor);
+
+            let rotation = Mat4::from_quat(Quat::from_euler(
+                glam::EulerRot::YXZ,
+                rotation.y.to_radians(),
+                rotation.x.to_radians(),
+                rotation.z.to_radians(),
+            ));
+
+            let model_transform = translation_mat * rotation * neg_translation_mat;
+
+            let x_left = position.x + size.x;
+            let x_right = position.x;
+
+            let y = position.y + size.y;
+
+            let z_front = position.z + size.z;
+            let z_back = position.z;
+
+            let texture_size = texture.get_texture_size();
+            let final_face_uv = uv(
+                &FaceUv {
+                    top_left: face_uv.top_left,
+                    bottom_right: face_uv.bottom_right,
+                },
+                texture_size,
+            );
+            // Assume that the quad is always facing up (This is the case for the shadow)
+            // TODO: Fix normal when we introduce Ears parts
+
+            Quad::new_with_normal(
+                model_transform.transform_point3(Vec3::new(x_right, y, z_back)),
+                model_transform.transform_point3(Vec3::new(x_left, y, z_back)),
+                model_transform.transform_point3(Vec3::new(x_right, y, z_front)),
+                model_transform.transform_point3(Vec3::new(x_left, y, z_front)),
+                final_face_uv[0],
+                final_face_uv[1],
+                [0.0, 1.0, 0.0].into(),
+            ).into()
         }
-    })
-    .into()
+    }
 }
 
 fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {

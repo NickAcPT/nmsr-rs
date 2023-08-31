@@ -29,9 +29,9 @@ pub(crate) async fn internal_render_model(
 
     let mode = &request.mode;
     let camera = request.get_camera();
-    
+
     let size = request.get_size();
-    
+
     let arm_rotation = request.get_arm_rotation();
     let lighting = request.get_lighting();
 
@@ -46,12 +46,17 @@ pub(crate) async fn internal_render_model(
             .textures
             .contains_key(&ResolvedRenderEntryTextureType::Cape);
 
+    let has_shadow = request.features.contains(RenderRequestFeatures::Shadow);
+
+    let shadow_y_pos = Some(mode.get_shadow_y_pos()).filter(|_| has_shadow);
+
     let part_context = PlayerPartProviderContext {
         model: PlayerModel::from(final_model),
         has_layers,
         has_hat_layer,
         has_cape,
         arm_rotation,
+        shadow_y_pos,
     };
 
     let mut scene = Scene::new(
@@ -63,7 +68,7 @@ pub(crate) async fn internal_render_model(
         &part_context,
         parts,
     );
-    
+
     load_textures(resolved, &state, &request, &mut scene)?;
 
     scene.render(&state.graphics_context)?;

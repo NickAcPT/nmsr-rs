@@ -101,6 +101,7 @@ async fn main() -> anyhow::Result<()> {
         has_hat_layer: true,
         has_cape: true,
         arm_rotation: 10.0,
+        shadow_y_pos: Some(0.0)
     };
 
     let mut scene = build_scene(&graphics, config, &ctx, camera, sun);

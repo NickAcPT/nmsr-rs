@@ -2,8 +2,8 @@ use glam::Vec3;
 
 use crate::parts::part::{Part, PartAnchorInfo};
 use crate::parts::provider::{PartsProvider, PlayerPartProviderContext};
-use crate::types::PlayerBodyPartType;
 use crate::types::PlayerBodyPartType::*;
+use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
 
 pub struct MinecraftPlayerPartsProvider;
 
@@ -54,10 +54,12 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
         context: &PlayerPartProviderContext,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
-        if body_part.is_layer() && !context.has_layers || body_part.is_hat_layer() && !context.has_hat_layer {
+        if body_part.is_layer() && !context.has_layers
+            || body_part.is_hat_layer() && !context.has_hat_layer
+        {
             return vec![];
         }
-        
+
         let non_layer_body_part_type = body_part.get_non_layer_part();
 
         let mut part = compute_base_part(non_layer_body_part_type, context);
@@ -67,18 +69,34 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
         if body_part.is_layer() || body_part.is_hat_layer() {
             return vec![expand_player_body_part(non_layer_body_part_type, part)];
         }
-        
+
         let mut result = vec![part];
 
         if body_part == Body && context.has_cape {
             append_cape_part(&mut result);
         }
-        
+
+        if body_part == Head {
+            if let Some(shadow_y_pos) = context.shadow_y_pos {
+                let shadow = Part::new_quad(
+                    PlayerPartTextureType::Shadow,
+                    [-8.0, shadow_y_pos, -8.0],
+                    [16, 0, 16],
+                    uv_from_pos_and_size(0, 0, 128, 128),
+                );
+
+                result.push(shadow);
+            }
+        }
+
         result
     }
 }
 
-fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, context: &PlayerPartProviderContext) -> Part {
+fn compute_base_part(
+    non_layer_body_part_type: PlayerBodyPartType,
+    context: &PlayerPartProviderContext,
+) -> Part {
     match non_layer_body_part_type {
         Head => body_part! {
             pos: [-4, 24, -4],
@@ -134,18 +152,26 @@ fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, context: &Pla
     }
 }
 
-fn perform_arm_part_rotation(non_layer_body_part_type: PlayerBodyPartType, part: &mut Part, rotation_angle: f32) {
-    let normal_part_size = compute_base_part(non_layer_body_part_type, &PlayerPartProviderContext::default()).get_size();
-    
+fn perform_arm_part_rotation(
+    non_layer_body_part_type: PlayerBodyPartType,
+    part: &mut Part,
+    rotation_angle: f32,
+) {
+    let normal_part_size = compute_base_part(
+        non_layer_body_part_type,
+        &PlayerPartProviderContext::default(),
+    )
+    .get_size();
+
     if non_layer_body_part_type == LeftArm {
         let rotation = normal_part_size * Vec3::new(-1.0, 2.0, 0.0);
         part.set_anchor(Some(PartAnchorInfo { anchor: rotation }));
-    
+
         part.rotation_mut().z = -rotation_angle;
     } else if non_layer_body_part_type == RightArm {
         let rotation = normal_part_size * Vec3::new(1.0, 2.0, 0.0);
         part.set_anchor(Some(PartAnchorInfo { anchor: rotation }));
-    
+
         part.rotation_mut().z = rotation_angle;
     }
 }
@@ -157,13 +183,13 @@ fn append_cape_part(result: &mut Vec<Part>) {
         box_uv_start: (1, 1),
         texture_type: Cape
     };
-            
+
     cape.set_anchor(Some(PartAnchorInfo {
-        anchor: [0.0, 24.0, 2.0].into()
+        anchor: [0.0, 24.0, 2.0].into(),
     }));
-        
+
     cape.set_rotation([5.0, 180.0, 0.0].into());
-            
+
     result.push(cape);
 }
 

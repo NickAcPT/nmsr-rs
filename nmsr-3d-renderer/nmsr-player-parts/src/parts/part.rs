@@ -57,6 +57,22 @@ impl Part {
             anchor: None,
         }
     }
+    
+    pub fn new_quad(
+        texture: PlayerPartTextureType,
+        pos: [f32; 3],
+        size: [u32; 3],
+        uvs: [u16; 4],
+    ) -> Self{
+        Quad {
+            position: MinecraftPosition::new(pos[0], pos[1], pos[2]),
+            size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
+            rotation: MinecraftPosition::ZERO,
+            face_uv: uvs.into(),
+            texture,
+            anchor: None,
+        }
+    }
 
     pub fn expand(&self, amount: f32) -> Self {
         let mut new_part = *self;

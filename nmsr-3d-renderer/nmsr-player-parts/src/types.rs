@@ -52,6 +52,7 @@ impl PlayerBodyPartType {
 pub enum PlayerPartTextureType {
     Skin,
     Cape,
+    Shadow,
     #[cfg(feature = "ears")]
     Ears,
 }
@@ -61,6 +62,7 @@ impl PlayerPartTextureType {
         match self {
             Self::Skin => (64, 64),
             Self::Cape => (64, 32),
+            Self::Shadow => (128, 128),
             #[cfg(feature = "ears")]
             Self::Ears => todo!(),
         }

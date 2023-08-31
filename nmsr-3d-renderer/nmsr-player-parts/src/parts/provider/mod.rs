@@ -22,6 +22,7 @@ pub struct PlayerPartProviderContext {
     pub has_layers: bool,
     pub has_cape: bool,
     pub arm_rotation: f32,
+    pub shadow_y_pos: Option<f32>
 }
 
 pub trait PartsProvider {

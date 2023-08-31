@@ -40,7 +40,7 @@ impl NMSRState {
     pub async fn new(config: &NmsrConfiguration) -> Result<Self> {
         let mojang_client = MojangClient::new(Arc::new(config.mojank.clone()))?;
         let cache_config = config.caching.clone();
-        let model_cache = ModelCache::new("cache".into(), cache_config)?;
+        let model_cache = ModelCache::new("cache".into(), cache_config).await?;
 
         let resolver = RenderRequestResolver::new(model_cache, Arc::new(mojang_client));
 
@@ -100,7 +100,34 @@ impl NMSRState {
             self.prewarm_renderer().await?;
         }
 
+        info!("Starting cache clean-up task");
+        self.start_cache_cleanup_task()?;
+        
         Ok(())
+    }
+
+    fn start_cache_cleanup_task(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(self.cache_config.cleanup_interval);
+
+        let resolver = self.resolver.clone();
+        
+        tokio::task::spawn(async move {
+            loop {
+                interval.tick().await;
+
+                if let Err(err) = Self::do_cache_clean_up(resolver.clone()).await {
+                    tracing::error!("Error while cleaning up cache: {:?}", err);
+                }
+            }
+        });
+        
+        Ok(())
+    }
+
+    #[inline]
+    #[instrument(name = "clean_cache", skip_all)]
+    async fn do_cache_clean_up(resolver: Arc<RenderRequestResolver>) -> Result<()> {
+        resolver.do_cache_clean_up().await
     }
 
     #[instrument(skip(self))]

@@ -1,18 +1,21 @@
 use std::{
-    fs::{self, Metadata},
+    borrow::Cow,
+    fs::Metadata,
     marker::PhantomData,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use async_trait::async_trait;
 use derive_more::Debug;
+use tokio::fs;
+use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use tracing::trace;
 
 use crate::error::{ExplainableExt, Result};
 
 pub struct CacheSystem<Key, ResultEntry, Config, Marker, Handler>
 where
-    Key: Debug + ?Sized,
+    Key: Debug + ToOwned + ?Sized,
     Handler: CacheHandler<Key, ResultEntry, Config, Marker> + Sync,
 {
     base_path: PathBuf,
@@ -25,8 +28,16 @@ where
 #[allow(unused_variables)]
 pub trait CacheHandler<Key, Value, Config, Marker>
 where
-    Key: ?Sized,
+    Key: ToOwned + ?Sized,
 {
+    /// Given a path, returns the cache key for the entry.
+    /// This is used to determine which entries are expired when cleaning the cache.
+    async fn read_key_from_path<'a>(
+        &'a self,
+        config: &Config,
+        base_path: &'a Path,
+    ) -> Result<Option<Cow<'a, Key>>>;
+
     /// Gets the cache key for the given entry.
     ///
     /// If the entry is not cached, this should return `None`.
@@ -93,11 +104,12 @@ where
 impl<Key, ResultEntry, Config, Marker, Handler>
     CacheSystem<Key, ResultEntry, Config, Marker, Handler>
 where
-    Key: Debug + ?Sized,
+    Key: Debug + ToOwned + ?Sized,
     Handler: CacheHandler<Key, ResultEntry, Config, Marker> + Sync,
 {
-    pub fn new(base_path: PathBuf, config: Config, handler: Handler) -> Result<Self> {
+    pub async fn new(base_path: PathBuf, config: Config, handler: Handler) -> Result<Self> {
         fs::create_dir_all(&base_path)
+            .await
             .explain(format!("Unable to create cache directory {:?}", &base_path))?;
 
         Ok(Self {
@@ -118,44 +130,12 @@ where
         let path = self.get_cache_entry_path(entry).await?;
 
         if let Some(path) = path {
-            if !path.exists() {
-                trace!("Cache entry path doesn't exist.");
+            let marker_expired_result = self.get_marker_and_clean_expired_if_needed(entry, &path).await?;
+            if marker_expired_result.is_none() {
                 return Ok(None);
             }
             
-            let marker_path = self.handler.get_marker_path(entry, &self.config).await?;
-            let marker_path = path.join(marker_path);
-            
-            if !marker_path.exists() {
-                trace!("Cache entry path {} doesn't exist.", marker_path.display());
-                return Ok(None);
-            }
-
-            let marker = self
-                .handler
-                .read_marker(entry, &self.config, &marker_path)
-                .await?;
-
-            let marker_metadata = marker_path
-                .metadata()
-                .explain(format!("Unable to read marker for entry {:?} ({})", entry, marker_path.display()))?;
-
-            let is_expired = self
-                .handler
-                .is_expired(entry, &self.config, &marker, marker_metadata)?;
-
-            if is_expired {
-                trace!("Entry is expired, discarding.");
-                if path.is_dir() {
-                    fs::remove_dir_all(path)
-                        .explain(format!("Unable to remove expired cache entry {:?}", entry))?;
-                } else {
-                    fs::remove_file(path)
-                        .explain(format!("Unable to remove expired cache entry {:?}", entry))?;
-                }
-
-                return Ok(None);
-            }
+            let marker = marker_expired_result.unwrap();
 
             let result = self
                 .handler
@@ -163,11 +143,55 @@ where
                 .await?;
 
             trace!("Cache entry found.");
-            
+
             Ok(result)
         } else {
             Ok(None)
         }
+    }
+
+    async fn get_marker_and_clean_expired_if_needed(&self, entry: &Key, path: &PathBuf) -> Result<Option<Marker>> {
+        if !path.exists() {
+            trace!("Cache entry path doesn't exist.");
+            return Ok(None);
+        }
+        
+        let marker_path = self.handler.get_marker_path(entry, &self.config).await?;
+        let marker_path = path.join(marker_path);
+        if !marker_path.exists() {
+            trace!("Cache entry path {} doesn't exist.", marker_path.display());
+            return Ok(None);
+        }
+        let marker = self
+            .handler
+            .read_marker(entry, &self.config, &marker_path)
+            .await?;
+        let marker_metadata = marker_path.metadata().explain(format!(
+            "Unable to read marker for entry {:?} ({})",
+            entry,
+            marker_path.display()
+        ))?;
+        
+        let is_expired =
+            self.handler
+                .is_expired(entry, &self.config, &marker, marker_metadata)?;
+        
+        if is_expired {
+            trace!("Entry is expired, discarding.");
+            if path.is_dir() {
+                fs::remove_dir_all(path)
+                    .await
+                    .explain(format!("Unable to remove expired cache entry {:?}", entry))?;
+            } else {
+                fs::remove_file(path)
+                    .await
+                    .explain(format!("Unable to remove expired cache entry {:?}", entry))?;
+            }
+
+            return Ok(None);
+        }
+            
+        Ok(Some(marker))
     }
 
     pub async fn set_cache_entry(
@@ -195,5 +219,29 @@ where
         }
 
         Ok(path)
+    }
+
+    pub async fn perform_cache_cleanup(&self) -> Result<()> {
+        let entries = fs::read_dir(&self.base_path).await.explain(format!(
+            "Unable to read cache directory {}",
+            &self.base_path.display()
+        ))?;
+
+        let mut stream = ReadDirStream::new(entries);
+
+        while let Some(file) = stream.next().await {
+            let file = file.explain(format!(
+                "Unable to read cache entry while cleaning {}",
+                &self.base_path.display()
+            ))?;
+            
+            let path = file.path();
+            
+            if let Some(key) = self.handler.read_key_from_path(&self.config, &path).await? {
+                let _ = self.get_marker_and_clean_expired_if_needed(&key, &path).await?;
+            }
+        }
+
+        Ok(())
     }
 }

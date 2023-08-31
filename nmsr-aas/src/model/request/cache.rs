@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::Metadata, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashMap, fs::Metadata, path::{PathBuf, Path}, sync::Arc, time::Duration, borrow::Cow};
 
 use super::entry::RenderRequestEntry;
 use crate::error::{ExplainableExt, ModelCacheError, ModelCacheResult, Result};
@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
-use tokio::fs;
 use strum::IntoEnumIterator;
+use tokio::fs;
 
 use crate::{
     caching::{CacheHandler, CacheSystem},
@@ -61,9 +61,7 @@ struct ResolvedModelTexturesCacheHandler {
 
 #[async_trait]
 #[allow(unused_variables)]
-impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
-    for MojangTextureCacheHandler
-{
+impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTextureCacheHandler {
     #[inline]
     async fn get_cache_key(
         &self,
@@ -71,6 +69,15 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
         _config: &ModelCacheConfiguration,
     ) -> Result<Option<String>> {
         Ok(Some(entry.to_string()))
+    }
+
+    #[inline]
+    async fn read_key_from_path<'a>(
+        &'a self,
+        _config: &ModelCacheConfiguration,
+        path: &'a Path,
+    ) -> Result<Option<Cow<'a, str>>> {
+        Ok(path.file_name().and_then(|s| s.to_str()).map(|s| s.into()))
     }
 
     async fn get_marker_path(
@@ -102,7 +109,8 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
         _config: &ModelCacheConfiguration,
         file: &PathBuf,
     ) -> Result<()> {
-        fs::write(file, value.data()).await
+        fs::write(file, value.data())
+            .await
             .explain(format!("Unable to write texture {:?} to cache", entry))?;
 
         Ok(())
@@ -119,8 +127,9 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()>
             return Ok(None);
         }
 
-        let data =
-            fs::read(file).await.explain(format!("Unable to read texture {:?} from cache", entry))?;
+        let data = fs::read(file)
+            .await
+            .explain(format!("Unable to read texture {:?} from cache", entry))?;
 
         Ok(Some(MojangTexture::new_named(entry.to_string(), data)))
     }
@@ -159,12 +168,12 @@ pub struct ModelCache {
 }
 
 impl ModelCache {
-    pub fn new(cache_path: PathBuf, cache_config: ModelCacheConfiguration) -> Result<Self> {
+    pub async fn new(cache_path: PathBuf, cache_config: ModelCacheConfiguration) -> Result<Self> {
         let mojang = CacheSystem::new(
             cache_path.join("textures"),
             cache_config.clone(),
             MojangTextureCacheHandler,
-        )?;
+        ).await?;
 
         let mojang = Arc::new(mojang);
 
@@ -174,18 +183,18 @@ impl ModelCache {
             ResolvedModelTexturesCacheHandler {
                 mojang_texture_cache: mojang.clone(),
             },
-        )?;
+        ).await?;
 
         return Ok(Self {
             mojang: mojang.clone(),
             resolved_textures: resolved,
         });
     }
-    
+
     pub async fn get_cached_texture(&self, texture_id: &str) -> Result<Option<MojangTexture>> {
         self.mojang.get_cached_entry(&texture_id).await
     }
-    
+
     pub async fn cache_texture(&self, texture: &MojangTexture) -> Result<()> {
         if let Some(hash) = texture.hash() {
             self.mojang.set_cache_entry(hash, texture).await.map(|_| ())
@@ -193,14 +202,14 @@ impl ModelCache {
             Ok(())
         }
     }
-    
+
     pub async fn get_cached_resolved_texture(
         &self,
         entry: &RenderRequestEntry,
     ) -> Result<Option<ResolvedRenderEntryTextures>> {
         self.resolved_textures.get_cached_entry(entry).await
     }
-    
+
     pub async fn cache_resolved_texture(
         &self,
         entry: &RenderRequestEntry,
@@ -210,6 +219,13 @@ impl ModelCache {
             .set_cache_entry(entry, textures)
             .await
             .map(|_| ())
+    }
+
+    pub(crate) async fn do_cache_clean_up(&self) -> Result<()> {
+        self.resolved_textures.perform_cache_cleanup().await?;
+        self.mojang.perform_cache_cleanup().await?;
+        
+        Ok(())
     }
 }
 
@@ -228,6 +244,19 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             RenderRequestEntry::TextureHash(h) => Some(h.to_string()),
             RenderRequestEntry::PlayerSkin(_) => None,
         })
+    }
+    
+    #[inline]
+    async fn read_key_from_path<'a>(
+        &'a self,
+        _config: &ModelCacheConfiguration,
+        path: &'a Path,
+    ) -> Result<Option<Cow<'a, RenderRequestEntry>>> {
+        let file_name = path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string();
+        
+        let entry = RenderRequestEntry::try_from(file_name)?;
+        
+        Ok(Some(Cow::Owned(entry)))
     }
 
     fn is_expired(
@@ -248,7 +277,8 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         base: &PathBuf,
     ) -> Result<()> {
         if !base.exists() {
-            fs::create_dir_all(base).await
+            fs::create_dir_all(base)
+                .await
                 .explain(format!("Unable to create cache directory for {:?}", &entry))?;
         }
 
@@ -311,8 +341,9 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         _config: &ModelCacheConfiguration,
         marker: &PathBuf,
     ) -> Result<[u8; 1]> {
-        let result =
-            fs::read(marker).await.explain(format!("Unable to read marker file for {:?}", entry))?;
+        let result = fs::read(marker)
+            .await
+            .explain(format!("Unable to read marker file for {:?}", entry))?;
 
         if result.len() != 1 {
             return Err(ModelCacheError::MarkerMetadataError(entry.clone()).into());
@@ -328,7 +359,8 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         _config: &ModelCacheConfiguration,
         marker: &PathBuf,
     ) -> Result<()> {
-        fs::write(marker, value.to_marker_slice()).await
+        fs::write(marker, value.to_marker_slice())
+            .await
             .explain(format!("Unable to write marker file for {:?}", entry))?;
 
         Ok(())

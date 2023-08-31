@@ -250,6 +250,11 @@ impl RenderRequestResolver {
             textures,
         })
     }
+    
+    #[inline]
+    pub(crate) async fn do_cache_clean_up(&self) -> Result<()> {
+        self.model_cache.do_cache_clean_up().await
+    }
 }
 
 #[derive(Debug, Clone)]

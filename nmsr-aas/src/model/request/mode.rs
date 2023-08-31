@@ -116,14 +116,6 @@ impl RenderRequestMode {
             _ => None,
         }
     }
-
-    pub(crate) fn get_shadow_y_pos(&self) -> f32 {
-        if self.is_head() {
-            24.0 /* Head y-pos */ - 0.5 /* Hat layer offset */
-        } else {
-            -0.25 // Layer offset
-        }
-    }
 }
 
 impl RenderRequestMode {

@@ -230,4 +230,16 @@ impl RenderRequest {
         }
         self.mode.get_arm_rotation()
     }
+
+    pub(crate) fn get_shadow_y_pos(&self) -> Option<f32> {
+        if self.features.contains(RenderRequestFeatures::Shadow) {
+            if self.mode.is_head() {
+                Some(24.0)
+            } else {
+                Some(0.0)
+            }
+        } else {
+            None
+        }
+    }
 }

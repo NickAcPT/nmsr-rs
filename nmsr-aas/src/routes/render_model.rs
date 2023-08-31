@@ -46,9 +46,7 @@ pub(crate) async fn internal_render_model(
             .textures
             .contains_key(&ResolvedRenderEntryTextureType::Cape);
 
-    let has_shadow = request.features.contains(RenderRequestFeatures::Shadow);
-
-    let shadow_y_pos = Some(mode.get_shadow_y_pos()).filter(|_| has_shadow);
+    let shadow_y_pos = request.get_shadow_y_pos();
 
     let part_context = PlayerPartProviderContext {
         model: PlayerModel::from(final_model),
@@ -57,6 +55,7 @@ pub(crate) async fn internal_render_model(
         has_cape,
         arm_rotation,
         shadow_y_pos,
+        shadow_is_square: mode.is_head()
     };
 
     let mut scene = Scene::new(

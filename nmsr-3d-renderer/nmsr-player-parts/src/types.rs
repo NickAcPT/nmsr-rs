@@ -50,9 +50,9 @@ impl PlayerBodyPartType {
 
 #[derive(Debug, Copy, Clone, Display, IntoStaticStr, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PlayerPartTextureType {
-    Skin,
-    Cape,
     Shadow,
+    Cape,
+    Skin,
     #[cfg(feature = "ears")]
     Ears,
 }
@@ -66,5 +66,9 @@ impl PlayerPartTextureType {
             #[cfg(feature = "ears")]
             Self::Ears => todo!(),
         }
+    }
+    
+    pub fn is_shadow(&self) -> bool {
+        matches!(self, Self::Shadow)
     }
 }

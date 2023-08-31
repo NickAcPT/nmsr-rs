@@ -94,6 +94,9 @@ impl<T> Scene<T>
 where
     T: DerefMut<Target = SceneContext> + Send + Sync,
 {
+    const RECTANGLE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_rectangle.png");
+    const SQUARE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_square.png");
+
     pub fn new<P>(
         graphics_context: &GraphicsContext,
         mut scene_context: T,
@@ -128,13 +131,17 @@ where
         };
 
         if part_context.shadow_y_pos.is_some() {
+            let shadow_bytes = if part_context.shadow_is_square {
+                Self::SQUARE_SHADOW_BYTES
+            } else {
+                Self::RECTANGLE_SHADOW_BYTES
+            };
+
             // We need to render the shadow, so upload the shadow texture already
-            let shadow_image = image::load_from_memory_with_format(
-                include_bytes!("shadow.png"),
-                image::ImageFormat::Png,
-            )
-            .ok()
-            .expect("Failed to load shadow texture");
+            let shadow_image =
+                image::load_from_memory_with_format(shadow_bytes, image::ImageFormat::Png)
+                    .ok()
+                    .expect("Failed to load shadow texture");
 
             let shadow_image = shadow_image
                 .as_rgba8()
@@ -267,14 +274,20 @@ where
                 .ok_or(NMSRRenderingError::SceneContextTextureNotSet(texture))?
                 .view;
 
+            let filter = if texture.is_shadow() {
+                FilterMode::Linear
+            } else {
+                FilterMode::Nearest
+            };
+
             let texture_sampler = device.create_sampler(&SamplerDescriptor {
                 label: Some(texture.into()),
                 address_mode_u: AddressMode::ClampToEdge,
                 address_mode_v: AddressMode::ClampToEdge,
                 address_mode_w: AddressMode::ClampToEdge,
-                mag_filter: FilterMode::Nearest,
-                min_filter: FilterMode::Nearest,
-                mipmap_filter: FilterMode::Nearest,
+                mag_filter: filter,
+                min_filter: filter,
+                mipmap_filter: filter,
                 lod_min_clamp: 0.0,
                 lod_max_clamp: 0.0,
                 compare: None,
@@ -322,6 +335,7 @@ where
                 })
             });
 
+            let store_depth = !texture.is_shadow();
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(format!("Render pass for {}", texture).as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
@@ -336,7 +350,7 @@ where
                     view: &textures.depth_texture.view,
                     depth_ops: Some(Operations {
                         load: depth_load_opt,
-                        store: true,
+                        store: store_depth,
                     }),
                     stencil_ops: None,
                 }),
@@ -351,7 +365,9 @@ where
             rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
 
             load_op = LoadOp::Load;
-            depth_load_opt = LoadOp::Load;
+            if store_depth {
+                depth_load_opt = LoadOp::Load;
+            }
         }
 
         queue.submit(Some(encoder.finish()));
@@ -549,7 +565,8 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
                 final_face_uv[0],
                 final_face_uv[1],
                 [0.0, 1.0, 0.0].into(),
-            ).into()
+            )
+            .into()
         }
     }
 }

@@ -77,6 +77,8 @@ pub enum MojangRequestError {
     MojangFetchRequestError(String),
     #[error("Unable to resolve render request entity {1:?}: {0}")]
     UnableToResolveRenderRequestEntity(Box<dyn std::error::Error + Send + Sync>, crate::model::request::entry::RenderRequestEntry),
+    #[error("Unable to parse uuid {0} into xuid")]
+    UnableToParseUuidIntoXuid(Uuid),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;

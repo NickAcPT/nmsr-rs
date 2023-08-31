@@ -7,7 +7,10 @@ use tracing::{instrument, Span};
 
 use crate::error::{MojangRequestError, Result};
 
-use self::mojang::{client::MojangClient, model::GameProfileTexture};
+use self::{
+    geyser::resolve_geyser_uuid_to_texture_and_model,
+    mojang::{client::MojangClient, model::GameProfileTexture},
+};
 
 use super::request::{
     cache::ModelCache,
@@ -15,6 +18,7 @@ use super::request::{
     RenderRequest,
 };
 
+pub mod geyser;
 pub mod mojang;
 
 pub struct RenderRequestResolver {
@@ -170,7 +174,7 @@ impl RenderRequestResolver {
         let mut ears_texture = compile_error!("Implement ears texture");
 
         match &entry {
-            RenderRequestEntry::PlayerUuid(id) => {
+            RenderRequestEntry::MojangPlayerUuid(id) => {
                 let result = self
                     .mojang_requests_client
                     .resolve_uuid_to_game_profile(id)
@@ -190,6 +194,16 @@ impl RenderRequestResolver {
 
                 skin_texture = self.fetch_game_profile_texture(textures.skin()).await?;
                 cape_texture = self.fetch_game_profile_texture(cape).await?;
+            }
+            RenderRequestEntry::GeyserPlayerUuid(id) => {
+                let (texture_id, player_model) =
+                    resolve_geyser_uuid_to_texture_and_model(&self.mojang_requests_client, id)
+                        .await?;
+
+                skin_texture = Some(self.fetch_texture_from_mojang(&texture_id).await?);
+                cape_texture = None;
+                
+                model = Some(player_model);
             }
             RenderRequestEntry::TextureHash(skin_hash) => {
                 // If the skin is not cached, we'll have to fetch it from Mojang.
@@ -250,7 +264,7 @@ impl RenderRequestResolver {
             textures,
         })
     }
-    
+
     #[inline]
     pub(crate) async fn do_cache_clean_up(&self) -> Result<()> {
         self.model_cache.do_cache_clean_up().await

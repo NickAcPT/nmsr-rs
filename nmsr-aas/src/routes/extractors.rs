@@ -295,7 +295,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_render_request_from_request_parts() {
-        let entry = RenderRequestEntry::PlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
+        let entry = RenderRequestEntry::MojangPlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
 
         let expected = HashMap::from([
             (

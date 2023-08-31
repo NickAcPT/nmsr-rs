@@ -1,4 +1,11 @@
-use std::{collections::HashMap, fs::Metadata, path::{PathBuf, Path}, sync::Arc, time::Duration, borrow::Cow};
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    fs::Metadata,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
+};
 
 use super::entry::RenderRequestEntry;
 use crate::error::{ExplainableExt, ModelCacheError, ModelCacheResult, Result};
@@ -173,7 +180,8 @@ impl ModelCache {
             cache_path.join("textures"),
             cache_config.clone(),
             MojangTextureCacheHandler,
-        ).await?;
+        )
+        .await?;
 
         let mojang = Arc::new(mojang);
 
@@ -183,7 +191,8 @@ impl ModelCache {
             ResolvedModelTexturesCacheHandler {
                 mojang_texture_cache: mojang.clone(),
             },
-        ).await?;
+        )
+        .await?;
 
         return Ok(Self {
             mojang: mojang.clone(),
@@ -224,7 +233,7 @@ impl ModelCache {
     pub(crate) async fn do_cache_clean_up(&self) -> Result<()> {
         self.resolved_textures.perform_cache_cleanup().await?;
         self.mojang.perform_cache_cleanup().await?;
-        
+
         Ok(())
     }
 }
@@ -240,22 +249,29 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         _config: &ModelCacheConfiguration,
     ) -> Result<Option<String>> {
         Ok(match entry {
-            RenderRequestEntry::PlayerUuid(u) => Some(u.to_string()),
+            RenderRequestEntry::MojangPlayerUuid(u) | RenderRequestEntry::GeyserPlayerUuid(u) => {
+                Some(u.to_string())
+            }
             RenderRequestEntry::TextureHash(h) => Some(h.to_string()),
             RenderRequestEntry::PlayerSkin(_) => None,
         })
     }
-    
+
     #[inline]
     async fn read_key_from_path<'a>(
         &'a self,
         _config: &ModelCacheConfiguration,
         path: &'a Path,
     ) -> Result<Option<Cow<'a, RenderRequestEntry>>> {
-        let file_name = path.file_name().unwrap_or_default().to_str().unwrap_or_default().to_string();
-        
+        let file_name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_str()
+            .unwrap_or_default()
+            .to_string();
+
         let entry = RenderRequestEntry::try_from(file_name)?;
-        
+
         Ok(Some(Cow::Owned(entry)))
     }
 

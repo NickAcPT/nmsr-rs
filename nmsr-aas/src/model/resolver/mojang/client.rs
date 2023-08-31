@@ -71,7 +71,7 @@ impl MojangClient {
     }
 
     #[instrument(skip(self, parent_span), parent = parent_span)]
-    async fn do_request(
+    pub(crate) async fn do_request(
         &self,
         url: &str,
         method: Method,
@@ -140,5 +140,9 @@ impl MojangClient {
         let bytes = hyper::body::to_bytes(response.into_body()).await?;
 
         Ok(bytes.to_vec())
+    }
+
+    pub fn mojank_config(&self) -> &MojankConfiguration {
+        self.mojank_config.as_ref()
     }
 }

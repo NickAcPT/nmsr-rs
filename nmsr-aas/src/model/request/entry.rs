@@ -8,7 +8,8 @@ use crate::error::{RenderRequestError, RenderRequestResult};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Deserialize, Serialize)]
 pub enum RenderRequestEntry {
-    PlayerUuid(Uuid),
+    MojangPlayerUuid(Uuid),
+    GeyserPlayerUuid(Uuid),
     TextureHash(String),
     PlayerSkin(#[debug(skip)] Vec<u8>),
 }
@@ -22,7 +23,9 @@ impl TryFrom<String> for RenderRequestEntry {
             let uuid_version = uuid.get_version_num();
 
             if uuid_version == 4 {
-                Ok(RenderRequestEntry::PlayerUuid(uuid))
+                Ok(RenderRequestEntry::MojangPlayerUuid(uuid))
+            } else if uuid_version == 0 {
+                Ok(RenderRequestEntry::GeyserPlayerUuid(uuid))
             } else {
                 Err(RenderRequestError::InvalidPlayerUuidRequest(
                     value,
@@ -42,7 +45,7 @@ impl TryFrom<RenderRequestEntry> for String {
 
     fn try_from(value: RenderRequestEntry) -> Result<Self, Self::Error> {
         match value {
-            RenderRequestEntry::PlayerUuid(uuid) => Ok(uuid.to_string()),
+            RenderRequestEntry::MojangPlayerUuid(uuid) | RenderRequestEntry::GeyserPlayerUuid(uuid) => Ok(uuid.to_string()),
             RenderRequestEntry::TextureHash(hash) => Ok(hash),
             RenderRequestEntry::PlayerSkin(_) => Err(RenderRequestError::InvalidPlayerRequest(
                 "Unable to convert PlayerSkin to String".to_string(),

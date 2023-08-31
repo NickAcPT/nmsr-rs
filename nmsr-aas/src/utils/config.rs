@@ -56,6 +56,9 @@ pub struct MojankConfiguration {
     #[serde(default = "default_textures_server")]
     pub textures_server: String,
     
+    #[serde(default = "default_geyser_api_server")]
+    pub geysermc_api_server: String,
+    
     /// The rate limit to use for requests to the session server in a 1 second window.
     #[serde(default = "default_session_server_rate_limit")]
     pub session_server_rate_limit: u64,
@@ -124,4 +127,8 @@ fn default_session_server() -> String {
 
 fn default_textures_server() -> String {
     "https://textures.minecraft.net".to_string()
+}
+
+fn default_geyser_api_server() -> String {
+    "https://api.geysermc.org/".to_string()
 }

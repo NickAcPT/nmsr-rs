@@ -153,7 +153,7 @@ impl NMSRState {
     async fn prewarm_renderer(&self) -> Result<()> {
         // Prewarm our renderer by actually rendering a few requests.
         // This will ensure that the renderer is initialized and ready to go when we start serving requests.
-        let entry = RenderRequestEntry::PlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
+        let entry = RenderRequestEntry::MojangPlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
         let request = RenderRequest::new_from_excluded_features(
             RenderRequestMode::FullBody,
             entry,

@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use derive_more::Debug;
 use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
-use tracing::trace;
+use tracing::{instrument, trace};
 
 use crate::error::{ExplainableExt, Result};
 
@@ -130,11 +130,13 @@ where
         let path = self.get_cache_entry_path(entry).await?;
 
         if let Some(path) = path {
-            let marker_expired_result = self.get_marker_and_clean_expired_if_needed(entry, &path).await?;
+            let marker_expired_result = self
+                .get_marker_and_clean_expired_if_needed(entry, &path)
+                .await?;
             if marker_expired_result.is_none() {
                 return Ok(None);
             }
-            
+
             let marker = marker_expired_result.unwrap();
 
             let result = self
@@ -150,12 +152,17 @@ where
         }
     }
 
-    async fn get_marker_and_clean_expired_if_needed(&self, entry: &Key, path: &PathBuf) -> Result<Option<Marker>> {
+    #[instrument(name = "check_entry", skip(self, path))]
+    async fn get_marker_and_clean_expired_if_needed(
+        &self,
+        entry: &Key,
+        path: &PathBuf,
+    ) -> Result<Option<Marker>> {
         if !path.exists() {
             trace!("Cache entry path doesn't exist.");
             return Ok(None);
         }
-        
+
         let marker_path = self.handler.get_marker_path(entry, &self.config).await?;
         let marker_path = path.join(marker_path);
         if !marker_path.exists() {
@@ -171,11 +178,11 @@ where
             entry,
             marker_path.display()
         ))?;
-        
-        let is_expired =
-            self.handler
-                .is_expired(entry, &self.config, &marker, marker_metadata)?;
-        
+
+        let is_expired = self
+            .handler
+            .is_expired(entry, &self.config, &marker, marker_metadata)?;
+
         if is_expired {
             trace!("Entry is expired, discarding.");
             if path.is_dir() {
@@ -190,7 +197,7 @@ where
 
             return Ok(None);
         }
-            
+
         Ok(Some(marker))
     }
 
@@ -234,11 +241,13 @@ where
                 "Unable to read cache entry while cleaning {}",
                 &self.base_path.display()
             ))?;
-            
+
             let path = file.path();
-            
+
             if let Some(key) = self.handler.read_key_from_path(&self.config, &path).await? {
-                let _ = self.get_marker_and_clean_expired_if_needed(&key, &path).await?;
+                let _ = self
+                    .get_marker_and_clean_expired_if_needed(&key, &path)
+                    .await?;
             }
         }
 

@@ -11,7 +11,7 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::render;
-use tracing::{debug_span, info, info_span, instrument, trace};
+use tracing::{debug_span, info, info_span, instrument, Instrument};
 use uuid::uuid;
 
 use std::{hint::black_box, sync::Arc};
@@ -164,18 +164,12 @@ impl NMSRState {
 
         let resolved = self.resolver.resolve(&request).await?;
 
-        for index in 0..10 {
-            let result = black_box(
-                info_span!("prewarm_render", index = index)
-                    .in_scope(|| {
-                        black_box(render_model::internal_render_model(
-                            &request, self, &resolved,
-                        ))
-                    })
-                    .await?,
+        for index in 0..15 {
+            let _ = black_box(
+                black_box(render_model::internal_render_model(
+                    &request, self, &resolved,
+                )).instrument(info_span!("prewarm_render", index = index)).await?,
             );
-
-            trace!("Prewarm result: {:?} bytes", result.len());
         }
 
         Ok(())

@@ -5,7 +5,7 @@ use nmsr_rendering::{
     high_level::{
         parts::provider::PlayerPartProviderContext,
         pipeline::{pools::SceneContextPoolManager, scene::Scene},
-        player_model::PlayerModel,
+        model::PlayerModel,
     },
 };
 use tracing::instrument;
@@ -55,7 +55,8 @@ pub(crate) async fn internal_render_model(
         has_cape,
         arm_rotation,
         shadow_y_pos,
-        shadow_is_square: mode.is_head()
+        shadow_is_square: mode.is_head(),
+        armor_slots: None
     };
 
     let mut scene = Scene::new(

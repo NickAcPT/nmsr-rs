@@ -12,7 +12,9 @@ pub struct SceneContextPoolManager {
 }
 
 impl SceneContextPoolManager {
-    pub fn new(graphics_context: Arc<GraphicsContext>) -> Self { Self { graphics_context } }
+    pub fn new(graphics_context: Arc<GraphicsContext>) -> Self {
+        Self { graphics_context }
+    }
 }
 
 impl std::fmt::Debug for SceneContextPoolManager {
@@ -30,7 +32,13 @@ impl Manager for SceneContextPoolManager {
         Ok(SceneContext::new(&self.graphics_context))
     }
 
-    async fn recycle(&self, _: &mut Self::Type) -> RecycleResult<Self::Error> {
+    async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error> {
+        // If for some reason the smaa target is is no longer present, we're gonna rip
+        // the textures out of the scene context so that the smaa target can be recreated.
+        if obj.smaa_target.is_none() {
+            obj.textures.take();
+        }
+        
         Ok(())
     }
 }

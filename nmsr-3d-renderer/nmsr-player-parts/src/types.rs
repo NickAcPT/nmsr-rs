@@ -53,6 +53,9 @@ pub enum PlayerPartTextureType {
     Shadow,
     Cape,
     Skin,
+    Custom {
+        size: (u32, u32),
+    },
     #[cfg(feature = "ears")]
     Ears,
 }
@@ -62,12 +65,13 @@ impl PlayerPartTextureType {
         match self {
             Self::Skin => (64, 64),
             Self::Cape => (64, 32),
+            Self::Custom { size, .. } => *size,
             Self::Shadow => (128, 128),
             #[cfg(feature = "ears")]
             Self::Ears => todo!(),
         }
     }
-    
+
     pub fn is_shadow(&self) -> bool {
         matches!(self, Self::Shadow)
     }

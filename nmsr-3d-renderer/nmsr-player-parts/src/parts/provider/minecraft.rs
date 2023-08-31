@@ -1,11 +1,20 @@
+use std::marker::PhantomData;
+
 use glam::Vec3;
 
+use crate::model::ArmorMaterial;
 use crate::parts::part::{Part, PartAnchorInfo};
 use crate::parts::provider::{PartsProvider, PlayerPartProviderContext};
 use crate::types::PlayerBodyPartType::*;
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
 
-pub struct MinecraftPlayerPartsProvider;
+pub struct MinecraftPlayerPartsProvider<M>(PhantomData<[M; 4]>);
+
+impl<M> Default for MinecraftPlayerPartsProvider<M> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
 
 macro_rules! body_part {
     // Matcher on many body parts
@@ -48,10 +57,10 @@ fn box_uv(x: u16, y: u16, size: [u16; 3]) -> [[u16; 4]; 6] {
     [north, south, east, west, up, down]
 }
 
-impl PartsProvider for MinecraftPlayerPartsProvider {
+impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
     fn get_parts(
         &self,
-        context: &PlayerPartProviderContext,
+        context: &PlayerPartProviderContext<M>,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
         if body_part.is_layer() && !context.has_layers
@@ -64,10 +73,18 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
 
         let mut part = compute_base_part(non_layer_body_part_type, context);
 
-        perform_arm_part_rotation(non_layer_body_part_type, &mut part, context.arm_rotation);
+        perform_arm_part_rotation::<M>(non_layer_body_part_type, &mut part, &context);
 
         if body_part.is_layer() || body_part.is_hat_layer() {
-            return vec![expand_player_body_part(non_layer_body_part_type, part)];
+            let expand_offset = get_layer_expand_offset(non_layer_body_part_type);
+            let box_uv_offset: (i32, i32) = get_body_part_layer_uv_offset(non_layer_body_part_type);
+
+            return vec![expand_player_body_part(
+                non_layer_body_part_type,
+                part,
+                expand_offset,
+                box_uv_offset,
+            )];
         }
 
         let mut result = vec![part];
@@ -89,13 +106,31 @@ impl PartsProvider for MinecraftPlayerPartsProvider {
             }
         }
 
+        if let Some(armor_slots) = context.armor_slots {
+            let armor_slot = armor_slots.get_armor_slot_for_part(&non_layer_body_part_type);
+            for armor in armor_slot {
+                if let Some(amount) = armor.get_offset() {
+                    if let Some(texture) = armor.get_texture_type() {
+                        let mut armor_part = part.expand(amount);
+
+                        if let Some(face_uvs) = armor.get_uvs() {
+                            armor_part.set_texture(texture);
+                            armor_part.set_face_uvs(face_uvs);
+                            
+                            result.push(armor_part);
+                        }
+                    }
+                }
+            }
+        }
+
         result
     }
 }
 
-fn compute_base_part(
+fn compute_base_part<M: ArmorMaterial>(
     non_layer_body_part_type: PlayerBodyPartType,
-    context: &PlayerPartProviderContext,
+    context: &PlayerPartProviderContext<M>,
 ) -> Part {
     match non_layer_body_part_type {
         Head => body_part! {
@@ -152,16 +187,13 @@ fn compute_base_part(
     }
 }
 
-fn perform_arm_part_rotation(
+fn perform_arm_part_rotation<M: ArmorMaterial>(
     non_layer_body_part_type: PlayerBodyPartType,
     part: &mut Part,
-    rotation_angle: f32,
+    context: &PlayerPartProviderContext<M>,
 ) {
-    let normal_part_size = compute_base_part(
-        non_layer_body_part_type,
-        &PlayerPartProviderContext::default(),
-    )
-    .get_size();
+    let rotation_angle = context.arm_rotation;
+    let normal_part_size = compute_base_part(non_layer_body_part_type, &context).get_size();
 
     if non_layer_body_part_type == LeftArm {
         let rotation = normal_part_size * Vec3::new(-1.0, 2.0, 0.0);
@@ -193,10 +225,13 @@ fn append_cape_part(result: &mut Vec<Part>) {
     result.push(cape);
 }
 
-fn expand_player_body_part(non_layer_body_part_type: PlayerBodyPartType, part: Part) -> Part {
-    let expand_offset = get_layer_expand_offset(non_layer_body_part_type);
+fn expand_player_body_part(
+    non_layer_body_part_type: PlayerBodyPartType,
+    part: Part,
+    expand_offset: f32,
+    box_uv_offset: (i32, i32),
+) -> Part {
     let mut new_part = part.expand(expand_offset);
-    let box_uv_offset: (i32, i32) = get_body_part_layer_uv_offset(non_layer_body_part_type);
     if let Part::Quad { .. } = new_part {
         unreachable!("Got quad when expanding body part.")
     } else if let Part::Cube {

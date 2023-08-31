@@ -20,7 +20,7 @@ use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
 use nmsr_player_parts::parts::provider::PlayerPartProviderContext;
-use nmsr_player_parts::player_model::PlayerModel;
+use nmsr_player_parts::model::PlayerModel;
 use nmsr_player_parts::types::PlayerBodyPartType;
 use nmsr_rendering::high_level::camera::{
     Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
@@ -102,7 +102,8 @@ async fn main() -> anyhow::Result<()> {
         has_cape: true,
         arm_rotation: 10.0,
         shadow_y_pos: Some(0.0),
-        shadow_is_square: false
+        shadow_is_square: false,
+        armor_slots: None
     };
 
     let mut scene = build_scene(&graphics, config, &ctx, camera, sun);

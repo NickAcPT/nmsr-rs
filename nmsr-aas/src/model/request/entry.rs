@@ -1,5 +1,5 @@
 use derive_more::Debug;
-use nmsr_rendering::high_level::player_model::PlayerModel;
+use nmsr_rendering::high_level::model::PlayerModel;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumCount, EnumString, FromRepr};
 use uuid::Uuid;

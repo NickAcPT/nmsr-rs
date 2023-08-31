@@ -158,6 +158,20 @@ impl Part {
             Quad { texture, .. } => *texture,
         }
     }
+    
+    pub fn set_texture(&mut self, texture: PlayerPartTextureType) {
+        match self {
+            Cube { texture: ref mut t, .. } => *t = texture,
+            Quad { texture: ref mut t, .. } => *t = texture,
+        }
+    }
+    
+    pub fn set_face_uvs(&mut self, face_uvs: CubeFaceUvs) {
+        match self {
+            Cube { face_uvs: ref mut f, .. } => *f = face_uvs,
+            Quad { face_uv: ref mut f, .. } => unreachable!("Cannot set face UVs on a quad"),
+        }
+    }
 }
 
 /// A position in 3D space.

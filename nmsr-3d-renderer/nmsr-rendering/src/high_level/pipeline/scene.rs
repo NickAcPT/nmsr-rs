@@ -19,7 +19,7 @@ use nmsr_player_parts::{
         provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
         uv::FaceUv,
     },
-    types::{PlayerBodyPartType, PlayerPartTextureType},
+    types::{PlayerBodyPartType, PlayerPartTextureType}, model::ArmorMaterial,
 };
 use std::{
     collections::HashMap,
@@ -97,13 +97,13 @@ where
     const RECTANGLE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_rectangle.png");
     const SQUARE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_square.png");
 
-    pub fn new<P>(
+    pub fn new<P, M: ArmorMaterial>(
         graphics_context: &GraphicsContext,
         mut scene_context: T,
         mut camera: Camera,
         sun: SunInformation,
         viewport_size: Size,
-        part_context: &PlayerPartProviderContext,
+        part_context: &PlayerPartProviderContext<M>,
         body_parts: P,
     ) -> Self
     where
@@ -181,8 +181,8 @@ where
     }
 
     #[instrument(skip(part_provider_context))]
-    fn collect_player_parts<P>(
-        part_provider_context: &PlayerPartProviderContext,
+    fn collect_player_parts<P, C: ArmorMaterial>(
+        part_provider_context: &PlayerPartProviderContext<C>,
         body_parts: P,
     ) -> Vec<Part>
     where

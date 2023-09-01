@@ -202,7 +202,7 @@ impl RenderRequestResolver {
 
                 skin_texture = Some(self.fetch_texture_from_mojang(&texture_id).await?);
                 cape_texture = None;
-                
+
                 model = Some(player_model);
             }
             RenderRequestEntry::TextureHash(skin_hash) => {

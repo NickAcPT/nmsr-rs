@@ -3,9 +3,9 @@ use image::{ImageFormat, RgbaImage};
 use nmsr_rendering::{
     errors::NMSRRenderingError,
     high_level::{
+        model::{PlayerArmorSlots, PlayerModel},
         parts::provider::PlayerPartProviderContext,
         pipeline::{pools::SceneContextPoolManager, scene::Scene},
-        model::PlayerModel,
     },
 };
 use tracing::instrument;
@@ -13,6 +13,7 @@ use tracing::instrument;
 use crate::{
     error::Result,
     model::{
+        armor::{VanillaMinecraftArmorMaterial, VanillaMinecraftArmorMaterialData},
         request::{RenderRequest, RenderRequestFeatures},
         resolver::{ResolvedRenderEntryTextureType, ResolvedRenderRequest},
     },
@@ -48,7 +49,15 @@ pub(crate) async fn internal_render_model(
 
     let shadow_y_pos = request.get_shadow_y_pos();
 
-    let part_context = PlayerPartProviderContext {
+    let mut player_armor_slots = PlayerArmorSlots::default();
+
+    player_armor_slots
+        .chestplate
+        .replace(VanillaMinecraftArmorMaterialData::new(
+            VanillaMinecraftArmorMaterial::Diamond,
+        ));
+
+    let part_context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
         model: PlayerModel::from(final_model),
         has_layers,
         has_hat_layer,
@@ -56,7 +65,7 @@ pub(crate) async fn internal_render_model(
         arm_rotation,
         shadow_y_pos,
         shadow_is_square: mode.is_head(),
-        armor_slots: None
+        armor_slots: Some(player_armor_slots),
     };
 
     let mut scene = Scene::new(

@@ -68,6 +68,8 @@ pub enum MojangRequestError {
     #[error("Http error: {0}")]
     HttpRequestError(#[from] hyper::http::Error),
     #[error("Request error: {0}")]
+    BoxedRequestError(Box<dyn std::error::Error + Send + Sync>),
+    #[error("Request error: {0}")]
     RequestError(#[from] hyper::Error),
     #[error("Missing skin from game profile: {0}")]
     MissingSkinPropertyError(Uuid),

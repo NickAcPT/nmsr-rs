@@ -1,14 +1,12 @@
-use hyper::Method;
-use serde::Deserialize;
-use tracing::{instrument, Span};
-use uuid::Uuid;
-
+use super::mojang::client::MojangClient;
 use crate::{
     error::{MojangRequestError, MojangRequestResult},
     model::request::entry::RenderRequestEntryModel,
 };
-
-use super::mojang::client::MojangClient;
+use hyper::Method;
+use serde::Deserialize;
+use tracing::{instrument, Span};
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct GeyserSkinResponse {

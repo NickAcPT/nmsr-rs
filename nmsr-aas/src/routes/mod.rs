@@ -102,7 +102,7 @@ impl NMSRState {
 
         info!("Starting cache clean-up task");
         self.start_cache_cleanup_task()?;
-        
+
         Ok(())
     }
 
@@ -110,7 +110,7 @@ impl NMSRState {
         let mut interval = tokio::time::interval(self.cache_config.cleanup_interval);
 
         let resolver = self.resolver.clone();
-        
+
         tokio::task::spawn(async move {
             loop {
                 interval.tick().await;
@@ -120,7 +120,7 @@ impl NMSRState {
                 }
             }
         });
-        
+
         Ok(())
     }
 
@@ -153,7 +153,8 @@ impl NMSRState {
     async fn prewarm_renderer(&self) -> Result<()> {
         // Prewarm our renderer by actually rendering a few requests.
         // This will ensure that the renderer is initialized and ready to go when we start serving requests.
-        let entry = RenderRequestEntry::MojangPlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
+        let entry =
+            RenderRequestEntry::MojangPlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
         let request = RenderRequest::new_from_excluded_features(
             RenderRequestMode::FullBody,
             entry,
@@ -168,7 +169,9 @@ impl NMSRState {
             let _ = black_box(
                 black_box(render_model::internal_render_model(
                     &request, self, &resolved,
-                )).instrument(info_span!("prewarm_render", index = index)).await?,
+                ))
+                .instrument(info_span!("prewarm_render", index = index))
+                .await?,
             );
         }
 

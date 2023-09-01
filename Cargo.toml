@@ -11,6 +11,7 @@ members = [
     "nmsr-lib",
     #"nmsr-jni",
     "nmsr-aas",
+    "utils/nmsr-rendering-palette-extractor",
     "utils/nmsr-multi-parts-organizer",
     "utils/nmsr-backfaces-optimizer",
     "nmsr-3d-renderer/nmsr-player-parts",

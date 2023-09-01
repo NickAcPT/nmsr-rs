@@ -106,14 +106,16 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
             }
         }
 
-        if let Some(armor_slots) = context.armor_slots {
-            let armor_slot = armor_slots.get_armor_slot_for_part(&non_layer_body_part_type);
-            for armor in armor_slot {
-                if let Some(amount) = armor.get_offset() {
-                    if let Some(texture) = armor.get_texture_type() {
-                        let mut armor_part = part.expand(amount);
+        if let Some(armor_slots) = &context.armor_slots {
+            let part_slots = armor_slots.get_armor_slots_for_part(&non_layer_body_part_type);
+            for slot in part_slots {
+                let amount = slot.get_offset();
+                let mut armor_part = part.expand(amount);
 
-                        if let Some(face_uvs) = armor.get_uvs() {
+                if let Some(armor_slot) = armor_slots.get_armor_slot(slot) {
+                    if let Some(texture) = M::get_texture_type(slot) {
+                        if let Some(face_uvs) = M::get_texture_uvs(slot) {
+                            armor_part.set_texture(texture);
                             armor_part.set_texture(texture);
                             armor_part.set_face_uvs(face_uvs);
                             

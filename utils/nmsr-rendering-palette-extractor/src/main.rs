@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    path::PathBuf,
-};
+use std::{fs, path::PathBuf};
 
 use anyhow::{anyhow, Context, Ok, Result};
 use heck::ToUpperCamelCase;
@@ -13,8 +10,7 @@ fn main() -> Result<()> {
     let read_dir = path.read_dir().context("Failed to read directory")?;
 
     let mut entries = Vec::new();
-    
-    
+
     for dir_entry in read_dir {
         let entry = dir_entry.context("Failed to read directory entry")?;
         let entry = entry.path();
@@ -31,10 +27,14 @@ fn main() -> Result<()> {
             .ok_or(anyhow!("Failed to convert file name to str"))?
             .to_upper_camel_case();
 
-        let pixels = palette_img
+        let mut pixels: Vec<_> = palette_img
             .pixels()
-            .into_iter()
-            .map(|x| format!("0x{:02X}{:02X}{:02X}", x[0], x[1], x[2]))
+            .collect();
+        
+        pixels.sort_by_key(|f| f.0);
+        
+        let pixels = pixels.into_iter()
+            .map(|x| format!("[0x{:02X}, 0x{:02X}, 0x{:02X}]", x[0], x[1], x[2]))
             .collect::<Vec<_>>()
             .join(", ");
 
@@ -42,11 +42,10 @@ fn main() -> Result<()> {
     }
 
     entries.sort_by_key(|x| x.0.clone());
-    
+
     for (palette_name, pixels) in entries {
         println!("Self::{} => [{}],", palette_name, pixels);
     }
-    
-    
+
     Ok(())
 }

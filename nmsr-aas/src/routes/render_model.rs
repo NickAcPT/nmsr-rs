@@ -13,7 +13,7 @@ use tracing::instrument;
 use crate::{
     error::Result,
     model::{
-        armor::{VanillaMinecraftArmorMaterial, VanillaMinecraftArmorMaterialData},
+        armor::{VanillaMinecraftArmorMaterial, VanillaMinecraftArmorMaterialData, VanillaMinecraftArmorTrim, VanillaMinecraftArmorTrimMaterial},
         request::{RenderRequest, RenderRequestFeatures},
         resolver::{ResolvedRenderEntryTextureType, ResolvedRenderRequest},
     },
@@ -51,11 +51,12 @@ pub(crate) async fn internal_render_model(
 
     let mut player_armor_slots = PlayerArmorSlots::default();
 
-    player_armor_slots
-        .helmet
-        .replace(VanillaMinecraftArmorMaterialData::new(
-            VanillaMinecraftArmorMaterial::Iron,
-        ));
+    player_armor_slots.helmet.replace(
+        VanillaMinecraftArmorMaterialData::new(VanillaMinecraftArmorMaterial::Iron).with_trim(
+            VanillaMinecraftArmorTrim::Silence,
+            VanillaMinecraftArmorTrimMaterial::Redstone,
+        ),
+    );
 
     player_armor_slots
         .chestplate
@@ -144,8 +145,6 @@ async fn load_textures(
             &second_armor_layer,
         );
     }
-
-    // TODO: Upload textures from armor_data ^^
 
     Ok(())
 }

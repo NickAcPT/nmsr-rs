@@ -7,7 +7,7 @@ use hyper_tls::HttpsConnector;
 use std::time::Duration;
 use sync_wrapper::SyncWrapper;
 use tokio::sync::RwLock;
-use tower::{util::BoxService, Service, ServiceBuilder};
+use tower::{util::BoxService, Service, ServiceBuilder, ServiceExt};
 use tower_http::{
     classify::{NeverClassifyEos, ServerErrorsFailureClass},
     set_header::SetRequestHeaderLayer,
@@ -62,10 +62,9 @@ impl NmsrHttpClient {
 
         let response = {
             let mut client = self.inner.write().await;
-            client
-                .get_mut()
-                .call(request)
-                .await?
+            let service = client.get_mut().ready().await?;
+
+            service.call(request).await?
         };
 
         let body = response.into_body();
@@ -76,7 +75,7 @@ impl NmsrHttpClient {
     }
 }
 
-pub(crate) fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
+fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
     let https = HttpsConnector::new();
 
     let client = Client::builder().build(https);

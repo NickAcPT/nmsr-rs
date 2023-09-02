@@ -1,24 +1,21 @@
 use axum::http::{HeaderName, HeaderValue};
-use hyper::{body::HttpBody, client::HttpConnector, Body, Client, Method, Request, Response};
+use hyper::{
+    body::{to_bytes, Bytes},
+    Body, Client, Method, Request, Response,
+};
 use hyper_tls::HttpsConnector;
+use std::time::Duration;
 use sync_wrapper::SyncWrapper;
-use std::{error::Error, time::Duration};
 use tokio::sync::RwLock;
-use tower::{
-    limit::RateLimit,
-    util::{BoxLayer, BoxService, BoxCloneService},
-    Service, ServiceBuilder, BoxError,
-};
+use tower::{util::BoxService, BoxError, Service, ServiceBuilder};
 use tower_http::{
-    classify::{
-        NeverClassifyEos, ServerErrorsAsFailures, ServerErrorsFailureClass, SharedClassifier,
-    },
-    set_header::{SetRequestHeader, SetRequestHeaderLayer},
-    trace::{
-        DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, ResponseBody,
-        Trace, TraceLayer,
-    },
+    classify::{NeverClassifyEos, ServerErrorsFailureClass},
+    set_header::SetRequestHeaderLayer,
+    trace::{DefaultOnFailure, ResponseBody, TraceLayer},
 };
+use tracing::{instrument, Span};
+
+use crate::error::{MojangRequestError, MojangRequestResult};
 
 const USER_AGENT: &'static str = concat!(
     "NMSR-as-a-Service/",
@@ -26,7 +23,61 @@ const USER_AGENT: &'static str = concat!(
     " (Discord=@nickacpt; +https://nmsr.nickac.dev/)"
 );
 
-pub(crate) fn create_http_client(rate_limit_per_second: u64) -> RwLock<SyncWrapper<BoxService<Request<Body>, Response<ResponseBody<Body, NeverClassifyEos<ServerErrorsFailureClass>, (), (), DefaultOnFailure>>, BoxError>>> {
+pub struct NmsrHttpClient {
+    inner: RwLock<
+        SyncWrapper<
+            BoxService<
+                Request<Body>,
+                Response<
+                    ResponseBody<
+                        Body,
+                        NeverClassifyEos<ServerErrorsFailureClass>,
+                        (),
+                        (),
+                        DefaultOnFailure,
+                    >,
+                >,
+                BoxError,
+            >,
+        >,
+    >,
+}
+
+impl NmsrHttpClient {
+    pub fn new(rate_limit_per_second: u64) -> Self {
+        create_http_client(rate_limit_per_second)
+    }
+
+    #[instrument(skip(self, parent_span), parent = parent_span)]
+    pub(crate) async fn do_request(
+        &self,
+        url: &str,
+        method: Method,
+        parent_span: &Span,
+    ) -> MojangRequestResult<Bytes> {
+        let request = Request::builder()
+            .method(method)
+            .uri(url)
+            .body(Body::empty())?;
+
+        let response = {
+            let mut client = self.inner.write().await;
+            client
+                .get_mut()
+                .call(request)
+                .await
+                .map_err(MojangRequestError::BoxedRequestError)?
+        };
+
+        let body = response.into_body();
+
+        to_bytes(body)
+            .await
+            .map_err(|e| MojangRequestError::BoxedRequestError(Box::new(e)))
+    }
+}
+
+pub(crate) fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
     let https = HttpsConnector::new();
 
     let client = Client::builder().build(https);
@@ -43,5 +94,7 @@ pub(crate) fn create_http_client(rate_limit_per_second: u64) -> RwLock<SyncWrapp
         ))
         .service(client);
 
-    RwLock::new(SyncWrapper::new(service))
+    NmsrHttpClient {
+        inner: RwLock::new(SyncWrapper::new(service)),
+    }
 }

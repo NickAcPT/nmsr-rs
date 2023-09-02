@@ -1,40 +1,16 @@
 use crate::{
     config::MojankConfiguration,
-    error::{MojangRequestError, MojangRequestResult},
+    error::MojangRequestResult,
+    utils::http_client::NmsrHttpClient,
 };
-use axum::BoxError;
-use hyper::{Body, Method, Request, Response};
+use hyper::{Method, body::Bytes};
 use std::sync::Arc;
-use sync_wrapper::SyncWrapper;
-use tokio::sync::RwLock;
-use tower::{util::BoxService, Service};
-use tower_http::{
-    classify::{NeverClassifyEos, ServerErrorsFailureClass},
-    trace::{DefaultOnFailure, ResponseBody},
-};
 use tracing::{instrument, Span};
 use uuid::Uuid;
-
 use super::model::GameProfile;
 
 pub struct MojangClient {
-    client: RwLock<
-        SyncWrapper<
-            BoxService<
-                Request<Body>,
-                Response<
-                    ResponseBody<
-                        Body,
-                        NeverClassifyEos<ServerErrorsFailureClass>,
-                        (),
-                        (),
-                        DefaultOnFailure,
-                    >,
-                >,
-                BoxError,
-            >,
-        >,
-    >,
+    client: NmsrHttpClient,
     mojank_config: Arc<MojankConfiguration>,
 }
 
@@ -46,7 +22,7 @@ fn owo() {
 impl MojangClient {
     pub fn new(mojank: Arc<MojankConfiguration>) -> MojangRequestResult<Self> {
         Ok(MojangClient {
-            client: crate::utils::http_client::create_http_client(mojank.session_server_rate_limit),
+            client: NmsrHttpClient::new(mojank.session_server_rate_limit),
             mojank_config: mojank,
         })
     }
@@ -57,32 +33,8 @@ impl MojangClient {
         url: &str,
         method: Method,
         parent_span: &Span,
-    ) -> MojangRequestResult<
-        Response<
-            ResponseBody<
-                Body,
-                NeverClassifyEos<ServerErrorsFailureClass>,
-                (),
-                (),
-                DefaultOnFailure,
-            >,
-        >,
-    > {
-        let request = Request::builder()
-            .method(method)
-            .uri(url)
-            .body(Body::empty())?;
-
-        let response = {
-            let mut client = self.client.write().await;
-            client
-                .get_mut()
-                .call(request)
-                .await
-                .map_err(MojangRequestError::BoxedRequestError)?
-        };
-
-        Ok(response)
+    ) -> MojangRequestResult<Bytes> {
+        self.client.do_request(url, method, parent_span).await
     }
 
     pub async fn resolve_uuid_to_game_profile(
@@ -94,8 +46,7 @@ impl MojangClient {
             session_server = self.mojank_config.session_server
         );
 
-        let response = self.do_request(&url, Method::GET, &Span::current()).await?;
-        let bytes = hyper::body::to_bytes(response.into_body()).await?;
+        let bytes = self.do_request(&url, Method::GET, &Span::current()).await?;
 
         Ok(serde_json::from_slice(&bytes)?)
     }
@@ -111,8 +62,7 @@ impl MojangClient {
             textures_server = self.mojank_config.textures_server
         );
 
-        let response = self.do_request(&url, Method::GET, &Span::current()).await?;
-        let bytes = hyper::body::to_bytes(response.into_body()).await?;
+        let bytes = self.do_request(&url, Method::GET, &Span::current()).await?;
 
         Ok(bytes.to_vec())
     }

@@ -13,6 +13,8 @@ pub enum NMSRaaSError {
     MojangRequestError(#[from] MojangRequestError),
     #[error("Render error: {0}")]
     RenderError(#[from] nmsr_rendering::errors::NMSRRenderingError),
+    #[error("Armor manager error: {0}")]
+    ArmorManagerError(#[from] ArmorManagerError),
 }
 
 #[derive(Error, Debug)]
@@ -81,6 +83,11 @@ pub enum MojangRequestError {
     UnableToResolveRenderRequestEntity(Box<dyn std::error::Error + Send + Sync>, crate::model::request::entry::RenderRequestEntry),
     #[error("Unable to parse uuid {0} into xuid")]
     UnableToParseUuidIntoXuid(Uuid),
+}
+
+#[derive(Error, Debug)]
+pub enum ArmorManagerError {
+    ArmorParseError(#[from] strum::ParseError),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;

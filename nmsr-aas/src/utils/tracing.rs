@@ -163,7 +163,7 @@ impl<B> OnResponse<B> for NmsrTracing<B> {
             if let Some(NmsrErrorExtension(original_error)) =
                 response.extensions().get::<NmsrErrorExtension>()
             {
-                span.record("exception.message", field::display(original_error.clone()));
+                span.record("exception.message", field::display(original_error));
             } else {
                 span.record("exception.message", &"Unknown error");
             }

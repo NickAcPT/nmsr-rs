@@ -27,10 +27,9 @@ pub async fn resolve_geyser_uuid_to_texture_and_model(
         geysermc_api_server = client.mojank_config().geysermc_api_server
     );
 
-    let response = client
+    let bytes = client
         .do_request(&url, Method::GET, &Span::current())
         .await?;
-    let bytes = hyper::body::to_bytes(response.into_body()).await?;
 
     let response: GeyserSkinResponse = serde_json::from_slice(&bytes)?;
 

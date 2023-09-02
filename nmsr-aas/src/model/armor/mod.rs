@@ -1,8 +1,9 @@
 pub mod manager;
 
 use nmsr_rendering::high_level::{types::PlayerPartTextureType, model::{ArmorMaterial, PlayerArmorSlot}};
+use strum::IntoStaticStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr, strum::EnumString)]
 pub enum VanillaMinecraftArmorMaterial {
     Chainmail,
     Diamond,
@@ -101,7 +102,7 @@ impl VanillaMinecraftArmorMaterialData {
 }
 
 impl ArmorMaterial for VanillaMinecraftArmorMaterialData {
-    fn get_texture_type(slot: PlayerArmorSlot) -> Option<PlayerPartTextureType> {
+    fn get_texture_type(_slot: PlayerArmorSlot) -> Option<PlayerPartTextureType> {
         Some(VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE)
     }
 }

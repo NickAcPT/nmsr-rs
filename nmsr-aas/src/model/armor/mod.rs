@@ -1,9 +1,9 @@
 pub mod manager;
 
 use nmsr_rendering::high_level::{types::PlayerPartTextureType, model::{ArmorMaterial, PlayerArmorSlot}};
-use strum::IntoStaticStr;
+use strum::{IntoStaticStr, Display};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, IntoStaticStr, strum::EnumString)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, IntoStaticStr, strum::EnumString)]
 pub enum VanillaMinecraftArmorMaterial {
     Chainmail,
     Diamond,
@@ -14,7 +14,7 @@ pub enum VanillaMinecraftArmorMaterial {
     Turtle,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub enum VanillaMinecraftArmorTrim {
     Coast,
     Dune,
@@ -34,7 +34,7 @@ pub enum VanillaMinecraftArmorTrim {
     Wild,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub enum VanillaMinecraftArmorTrimMaterial {
     Amethyst,
     Copper,
@@ -48,7 +48,7 @@ pub enum VanillaMinecraftArmorTrimMaterial {
     Redstone,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub enum VanillaMinecraftArmorTrimPalette {
     Amethyst,
     Copper,

@@ -9,7 +9,7 @@ use tokio::fs;
 
 use crate::{
     caching::{CacheHandler, CacheSystem},
-    error::{ExplainableExt, Result},
+    error::{ArmorManagerError, ExplainableExt, Result},
     utils::http_client::NmsrHttpClient,
 };
 
@@ -23,14 +23,15 @@ impl CacheHandler<VanillaMinecraftArmorMaterial, Vec<u8>, (), ()>
 {
     async fn read_key_from_path<'a>(
         &'a self,
-        config: &(),
+        _config: &(),
         base_path: &'a Path,
     ) -> Result<Option<Cow<'a, VanillaMinecraftArmorMaterial>>> {
         let option = base_path
             .file_name()
             .and_then(|f| f.to_str())
             .map(|f| VanillaMinecraftArmorMaterial::try_from(f))
-            .transpose()?;
+            .transpose()
+            .map_err(ArmorManagerError::ArmorParseError)?;
 
         Ok(option.map(|f| Cow::Owned(f)))
     }
@@ -42,7 +43,7 @@ impl CacheHandler<VanillaMinecraftArmorMaterial, Vec<u8>, (), ()>
     ) -> Result<Option<String>> {
         let str: &'static str = entry.into();
 
-        Ok(Some(str.into()))
+        Ok(Some(str.into())).into()
     }
 
     fn is_expired(
@@ -62,8 +63,9 @@ impl CacheHandler<VanillaMinecraftArmorMaterial, Vec<u8>, (), ()>
         _config: &(),
         file: &PathBuf,
     ) -> Result<()> {
-        fs::write(file, value).await?;
-        todo!()
+        fs::write(file, value)
+            .await
+            .explain_closure(|| format!("Unable to write armor file for {entry}"))
     }
 
     async fn read_cache(
@@ -121,10 +123,23 @@ impl VanillaMinecraftArmorManager {
             VanillaMinecraftArmorMaterialCacheHandler,
         )
         .await?;
-    
+
         Ok(Self {
             client: NmsrHttpClient::new(20),
             armor_cache,
         })
+    }
+    
+    pub async fn get_armor_texture(&self, material: VanillaMinecraftArmorMaterial) -> Result<Vec<u8>> {
+        let armor_texture = self
+            .armor_cache
+            .get_cached_entry(&material).await?;
+
+        if let Some(armor_texture) = armor_texture {
+            return Ok(armor_texture);
+        }
+        
+        
+        unimplemented!()
     }
 }

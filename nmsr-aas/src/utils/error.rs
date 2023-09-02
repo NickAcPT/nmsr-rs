@@ -87,6 +87,7 @@ pub enum MojangRequestError {
 
 #[derive(Error, Debug)]
 pub enum ArmorManagerError {
+    #[error("Unable to parse armor: {0}")]
     ArmorParseError(#[from] strum::ParseError),
 }
 
@@ -94,6 +95,7 @@ pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;
 pub(crate) type RenderRequestResult<T> = std::result::Result<T, RenderRequestError>;
 pub(crate) type ModelCacheResult<T> = std::result::Result<T, ModelCacheError>;
 pub(crate) type MojangRequestResult<T> = std::result::Result<T, MojangRequestError>;
+pub(crate) type ArmorManagerResult<T> = std::result::Result<T, ArmorManagerError>;
 
 pub trait ExplainableExt<T> {
     fn explain_closure<O: FnOnce() -> String>(self, message: O) -> Result<T>;

@@ -17,6 +17,8 @@ mod mode;
 
 pub use mode::*;
 
+use super::armor::VanillaMinecraftArmorMaterialData;
+
 #[derive(EnumSetType, EnumString, Debug, Display)]
 #[strum(serialize_all = "snake_case")]
 #[enumset(serialize_repr = "array")]
@@ -53,6 +55,11 @@ pub struct RenderRequestExtraSettings {
     pub x_pos: Option<f32>,
     pub y_pos: Option<f32>,
     pub z_pos: Option<f32>,
+    
+    pub helmet: Option<VanillaMinecraftArmorMaterialData>,
+    pub chestplate: Option<VanillaMinecraftArmorMaterialData>,
+    pub leggings: Option<VanillaMinecraftArmorMaterialData>,
+    pub boots: Option<VanillaMinecraftArmorMaterialData>,
 }
 
 impl RenderRequestExtraSettings {

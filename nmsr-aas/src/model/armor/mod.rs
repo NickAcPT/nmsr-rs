@@ -1,12 +1,14 @@
 pub mod manager;
 
-use std::iter::repeat;
+use std::{collections::VecDeque, iter::repeat};
 
 use nmsr_rendering::high_level::{
     model::{ArmorMaterial, PlayerArmorSlot},
     types::PlayerPartTextureType,
 };
-use strum::{Display, IntoStaticStr};
+use strum::{Display, IntoEnumIterator, IntoStaticStr};
+
+use crate::error::{ArmorManagerError, ArmorManagerResult};
 
 #[derive(
     Debug, Display, Clone, Copy, PartialEq, Eq, IntoStaticStr, strum::EnumString, strum::EnumIter,
@@ -92,7 +94,7 @@ impl VanillaMinecraftArmorTrim {
     }
 }
 
-#[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, strum::EnumIter, strum::IntoStaticStr)]
 pub enum VanillaMinecraftArmorTrimMaterial {
     Amethyst,
     Copper,
@@ -173,6 +175,60 @@ impl VanillaMinecraftArmorMaterialData {
 
         self
     }
+}
+
+impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
+    type Error = ArmorManagerError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let mut split_values: VecDeque<_> = value.split("_").collect();
+        let material: VanillaMinecraftArmorMaterial = if split_values.len() == 0 {
+            return Err(ArmorManagerError::EmptyArmorSlotError);
+        } else {
+            partial_match(split_values.pop_front().unwrap_or_default())?
+        };
+
+        let trims = if split_values.len() == 0 {
+            Vec::new()
+        } else if split_values.len() % 2 != 0 {
+            return Err(ArmorManagerError::InvalidTrimCountError(split_values.len()));
+        } else {
+            let values = split_values.make_contiguous();
+
+            values
+                .chunks_exact(2)
+                .into_iter()
+                .map(|chunk| {
+                    let trim: VanillaMinecraftArmorTrim = partial_match(chunk[0])?;
+                    let material: VanillaMinecraftArmorTrimMaterial = partial_match(chunk[1])?;
+
+                    ArmorManagerResult::Ok(VanillaMinecraftArmorTrimData::new(trim, material))
+                })
+                .map(|x| x.ok())
+                .flatten()
+                .collect::<Vec<_>>()
+        };
+
+        Ok(Self {
+            material,
+            trims,
+        })
+    }
+}
+
+fn partial_match<E>(value: &str) -> ArmorManagerResult<E>
+where
+    E: IntoEnumIterator + ToString,
+{
+    E::iter()
+        .find(|x| {
+            x.to_string()
+                .to_lowercase()
+                .starts_with(&value.to_lowercase())
+        })
+        .ok_or(ArmorManagerError::UnknownPartialArmorMaterialName(
+            value.to_string(),
+        ))
 }
 
 impl ArmorMaterial for VanillaMinecraftArmorMaterialData {

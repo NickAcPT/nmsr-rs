@@ -13,7 +13,7 @@ use tracing::instrument;
 use crate::{
     error::Result,
     model::{
-        armor::{VanillaMinecraftArmorMaterial, VanillaMinecraftArmorMaterialData, VanillaMinecraftArmorTrim, VanillaMinecraftArmorTrimMaterial},
+        armor::VanillaMinecraftArmorMaterialData,
         request::{RenderRequest, RenderRequestFeatures},
         resolver::{ResolvedRenderEntryTextureType, ResolvedRenderRequest},
     },
@@ -51,31 +51,15 @@ pub(crate) async fn internal_render_model(
 
     let mut player_armor_slots = PlayerArmorSlots::default();
 
-    player_armor_slots.helmet.replace(
-        VanillaMinecraftArmorMaterialData::new(VanillaMinecraftArmorMaterial::Iron).with_trim(
-            VanillaMinecraftArmorTrim::Silence,
-            VanillaMinecraftArmorTrimMaterial::Redstone,
-        ),
-    );
-
-    player_armor_slots
-        .chestplate
-        .replace(VanillaMinecraftArmorMaterialData::new(
-            VanillaMinecraftArmorMaterial::Diamond,
-        ));
-
-    player_armor_slots
-        .leggings
-        .replace(VanillaMinecraftArmorMaterialData::new(
-            VanillaMinecraftArmorMaterial::Gold,
-        ));
-
-    player_armor_slots
-        .boots
-        .replace(VanillaMinecraftArmorMaterialData::new(
-            VanillaMinecraftArmorMaterial::Netherite,
-        ));
-
+    player_armor_slots.helmet = request
+        .extra_settings.as_ref().and_then(|x| x.helmet.clone());
+    player_armor_slots.chestplate = request
+        .extra_settings.as_ref().and_then(|x| x.chestplate.clone());
+    player_armor_slots.leggings = request
+        .extra_settings.as_ref().and_then(|x| x.leggings.clone());
+    player_armor_slots.boots = request
+        .extra_settings.as_ref().and_then(|x| x.boots.clone());
+    
     let part_context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
         model: PlayerModel::from(final_model),
         has_layers,

@@ -1,3 +1,13 @@
+use crate::{
+    error::{NMSRaaSError, RenderRequestError, Result},
+    model::{
+        armor::VanillaMinecraftArmorMaterialData,
+        request::{
+            entry::{RenderRequestEntry, RenderRequestEntryModel},
+            RenderRequest, RenderRequestExtraSettings, RenderRequestFeatures, RenderRequestMode,
+        },
+    },
+};
 use async_trait::async_trait;
 use axum::{
     extract::{FromRequestParts, Path, Query},
@@ -6,15 +16,8 @@ use axum::{
 };
 use enumset::EnumSet;
 use serde::Deserialize;
+use serde_with::TryFromInto;
 use serde_with::{formats::CommaSeparator, serde_as, DisplayFromStr, StringWithSeparator};
-
-use crate::{
-    error::{NMSRaaSError, RenderRequestError, Result},
-    model::request::{
-        entry::{RenderRequestEntry, RenderRequestEntryModel},
-        RenderRequest, RenderRequestExtraSettings, RenderRequestFeatures, RenderRequestMode,
-    },
-};
 ///  The options are:
 ///  - `?exclude=<features>` or `?no=<features>`: exclude a feature from the entry (comma-separated, or multiple query strings)
 ///
@@ -34,12 +37,17 @@ use crate::{
 ///  
 ///  - `arms=<rotation>` or `arm=<rotation>`: set the rotation of the arms
 ///  - `dist=<distance>` or `distance=<distance>`: set the distance of the camera
-/// 
+///
 ///  - `xpos=<x>` or `x_pos=<x>`: set the x position of the camera (requires using Custom mode)
 ///  - `ypos=<y>` or `y_pos=<y>`: set the y position of the camera (requires using Custom mode)
 ///  - `zpos=<z>` or `z_pos=<z>`: set the z position of the camera (requires using Custom mode)
-/// 
+///
 ///  - `pos=<x>,<y>,<z>`: set the position of the camera (requires using Custom mode)
+///
+///  - `?helmet=<helmet>`: set the helmet of the entry
+///  - `?chestplate=<chestplate>`: set the chestplate of the entry
+///  - `?leggings=<leggings>`: set the leggings of the entry
+///  - `?boots=<boots>`: set the boots of the entry
 #[serde_as]
 #[derive(Debug, Clone, Deserialize)]
 struct RenderRequestQueryParams {
@@ -85,6 +93,14 @@ struct RenderRequestQueryParams {
     #[serde_as(as = "Option<StringWithSeparator::<CommaSeparator, f32>>")]
     pos: Option<Vec<f32>>,
 
+    #[serde_as(as = "Option<TryFromInto<String>>")]
+    helmet: Option<VanillaMinecraftArmorMaterialData>,
+    #[serde_as(as = "Option<TryFromInto<String>>")]
+    chestplate: Option<VanillaMinecraftArmorMaterialData>,
+    #[serde_as(as = "Option<TryFromInto<String>>")]
+    leggings: Option<VanillaMinecraftArmorMaterialData>,
+    #[serde_as(as = "Option<TryFromInto<String>>")]
+    boots: Option<VanillaMinecraftArmorMaterialData>,
 }
 
 impl RenderRequestQueryParams {
@@ -239,6 +255,11 @@ where
             x_pos: query.x_pos,
             y_pos: query.y_pos,
             z_pos: query.z_pos,
+            
+            helmet: query.helmet,
+            chestplate: query.chestplate,
+            leggings: query.leggings,
+            boots: query.boots,
         });
 
         Ok(RenderRequest::new_from_excluded_features(
@@ -295,7 +316,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_render_request_from_request_parts() {
-        let entry = RenderRequestEntry::MojangPlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
+        let entry =
+            RenderRequestEntry::MojangPlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
 
         let expected = HashMap::from([
             (

@@ -97,6 +97,12 @@ pub enum ArmorManagerError {
     ArmorTextureLoadError(PathBuf, image::error::ImageError),
     #[error("Unable to upgrade armor texture to 64x64")]
     ArmorTextureUpgradeError,
+    #[error("Empty armor slot")]
+    EmptyArmorSlotError,
+    #[error("Unknown partial armor material name: {0}")]
+    UnknownPartialArmorMaterialName(String),
+    #[error("Invalid trim count: {0}")]
+    InvalidTrimCountError(usize),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;

@@ -3,6 +3,8 @@ use hyper::StatusCode;
 use thiserror::Error;
 use uuid::Uuid;
 
+use crate::model::armor::VanillaMinecraftArmorMaterialData;
+
 #[derive(Error, Debug)]
 pub enum NMSRaaSError {
     #[error("Invalid player request: {0}")]
@@ -89,6 +91,12 @@ pub enum MojangRequestError {
 pub enum ArmorManagerError {
     #[error("Unable to parse armor: {0}")]
     ArmorParseError(#[from] strum::ParseError),
+    #[error("Missing Armor texture for {0:?}")]
+    MissingArmorTextureError(VanillaMinecraftArmorMaterialData),
+    #[error("Unable to load armor texture for {0:?}: {1}")]
+    ArmorTextureLoadError(VanillaMinecraftArmorMaterialData, image::error::ImageError),
+    #[error("Unable to upgrade armor texture to 64x64")]
+    ArmorTextureUpgradeError,
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRaaSError>;

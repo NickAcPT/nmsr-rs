@@ -54,6 +54,7 @@ pub enum PlayerPartTextureType {
     Cape,
     Skin,
     Custom {
+        key: &'static str,
         size: (u32, u32),
     },
     #[cfg(feature = "ears")]

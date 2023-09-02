@@ -24,13 +24,14 @@ use crate::{
             cache::ModelCache, entry::RenderRequestEntry, RenderRequest, RenderRequestFeatures,
             RenderRequestMode,
         },
-        resolver::{mojang::client::MojangClient, RenderRequestResolver},
+        resolver::{mojang::client::MojangClient, RenderRequestResolver}, armor::manager::VanillaMinecraftArmorManager,
     },
 };
 
 #[derive(Clone)]
 pub struct NMSRState {
     pub resolver: Arc<RenderRequestResolver>,
+    pub armor_manager: Arc<VanillaMinecraftArmorManager>,
     pub graphics_context: Arc<GraphicsContext>,
     pools: Arc<GraphicsContextPools>,
     cache_config: ModelCacheConfiguration,
@@ -56,11 +57,14 @@ impl NMSRState {
 
         let pools = GraphicsContextPools::new((&graphics_context).clone())?;
 
+        let armor_manager = VanillaMinecraftArmorManager::new("cache".into()).await?;
+        
         Ok(Self {
             resolver: Arc::new(resolver),
             graphics_context,
             pools: Arc::new(pools),
             cache_config: config.caching.clone(),
+            armor_manager: Arc::new(armor_manager)
         })
     }
 

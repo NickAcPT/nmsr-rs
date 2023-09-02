@@ -1,9 +1,16 @@
 pub mod manager;
 
-use nmsr_rendering::high_level::{types::PlayerPartTextureType, model::{ArmorMaterial, PlayerArmorSlot}};
-use strum::{IntoStaticStr, Display};
+use std::iter::repeat;
 
-#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, IntoStaticStr, strum::EnumString)]
+use nmsr_rendering::high_level::{
+    model::{ArmorMaterial, PlayerArmorSlot},
+    types::PlayerPartTextureType,
+};
+use strum::{Display, IntoStaticStr};
+
+#[derive(
+    Debug, Display, Clone, Copy, PartialEq, Eq, IntoStaticStr, strum::EnumString, strum::EnumIter,
+)]
 pub enum VanillaMinecraftArmorMaterial {
     Chainmail,
     Diamond,
@@ -12,6 +19,39 @@ pub enum VanillaMinecraftArmorMaterial {
     Leather,
     Netherite,
     Turtle,
+}
+
+impl VanillaMinecraftArmorMaterial {
+    fn layer_count(&self) -> usize {
+        2
+    }
+
+    pub fn has_overlay(&self) -> bool {
+        matches!(self, Self::Leather)
+    }
+
+    pub fn get_layer_name(&self, id: u32, is_overlay: bool) -> String {
+        let name = self.to_string().to_lowercase();
+
+        if is_overlay {
+            format!("{name}_layer_{id}_overlay.png")
+        } else {
+            format!("{name}_layer_{id}.png")
+        }
+    }
+
+    pub fn get_layer_names(&self) -> Vec<String> {
+        let result = (0..self.layer_count()).map(|i| (i + 1).to_string());
+
+        if self.has_overlay() {
+            result
+                .zip(repeat("overlay"))
+                .map(|(layer, overlay)| format!("{}_{}", layer, overlay))
+                .collect()
+        } else {
+            result.collect()
+        }
+    }
 }
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
@@ -73,37 +113,57 @@ pub struct VanillaMinecraftArmorTrimData {
 }
 
 impl VanillaMinecraftArmorTrimData {
-    pub fn new(trim: VanillaMinecraftArmorTrim, material: VanillaMinecraftArmorTrimMaterial) -> Self { Self { trim, material } }
+    pub fn new(
+        trim: VanillaMinecraftArmorTrim,
+        material: VanillaMinecraftArmorTrimMaterial,
+    ) -> Self {
+        Self { trim, material }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq,)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VanillaMinecraftArmorMaterialData {
-    material: VanillaMinecraftArmorMaterial,
-    trim: Vec<VanillaMinecraftArmorTrimData>,
+    pub material: VanillaMinecraftArmorMaterial,
+    pub trim: Vec<VanillaMinecraftArmorTrimData>,
 }
 
 impl VanillaMinecraftArmorMaterialData {
-    pub const ARMOR_TEXTURE: PlayerPartTextureType = PlayerPartTextureType::Custom { size: (64, 32) };
-    
-    pub fn new(
-        material: VanillaMinecraftArmorMaterial
-    ) -> Self {
+    pub const ARMOR_TEXTURE_ONE: PlayerPartTextureType = PlayerPartTextureType::Custom {
+        key: "armor_1",
+        size: (64, 64),
+    };
+
+    pub const ARMOR_TEXTURE_TWO: PlayerPartTextureType = PlayerPartTextureType::Custom {
+        key: "armor_2",
+        size: (64, 64),
+    };
+
+    pub fn new(material: VanillaMinecraftArmorMaterial) -> Self {
         Self {
             material,
             trim: Vec::new(),
         }
     }
-    
-    pub fn add_trim(&mut self, trim: VanillaMinecraftArmorTrim, material: VanillaMinecraftArmorTrimMaterial) -> &mut Self {
-        self.trim.push(VanillaMinecraftArmorTrimData::new(trim, material));
-        
+
+    pub fn add_trim(
+        &mut self,
+        trim: VanillaMinecraftArmorTrim,
+        material: VanillaMinecraftArmorTrimMaterial,
+    ) -> &mut Self {
+        self.trim
+            .push(VanillaMinecraftArmorTrimData::new(trim, material));
+
         self
     }
 }
 
 impl ArmorMaterial for VanillaMinecraftArmorMaterialData {
-    fn get_texture_type(_slot: PlayerArmorSlot) -> Option<PlayerPartTextureType> {
-        Some(VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE)
+    fn get_texture_type(slot: PlayerArmorSlot) -> Option<PlayerPartTextureType> {
+        Some(if slot.is_leggings() {
+            VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_TWO
+        } else {
+            VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_ONE
+        })
     }
 }
 

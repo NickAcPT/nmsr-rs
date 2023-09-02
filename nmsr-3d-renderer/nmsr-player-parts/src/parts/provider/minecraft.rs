@@ -2,9 +2,10 @@ use std::marker::PhantomData;
 
 use glam::Vec3;
 
-use crate::model::ArmorMaterial;
+use crate::model::{ArmorMaterial, PlayerArmorSlot, PlayerArmorSlots};
 use crate::parts::part::{Part, PartAnchorInfo};
 use crate::parts::provider::{PartsProvider, PlayerPartProviderContext};
+use crate::parts::uv::uv_from_pos_and_size;
 use crate::types::PlayerBodyPartType::*;
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
 
@@ -31,30 +32,9 @@ macro_rules! body_part {
             crate::types::PlayerPartTextureType::$texture_type,
             $pos,
             $size,
-            box_uv($uv_x, $uv_y, $size),
+            crate::parts::uv::box_uv($uv_x, $uv_y, $size),
         )
     };
-}
-
-fn uv_from_pos_and_size(x: u16, y: u16, size_x: u16, size_y: u16) -> [u16; 4] {
-    [x, y, x + size_x, y + size_y]
-}
-
-fn box_uv(x: u16, y: u16, size: [u16; 3]) -> [[u16; 4]; 6] {
-    let size_x = size[0];
-    let size_y = size[1];
-    let size_z = size[2];
-
-    // Generate UVs for a box with the given size, starting at the given position.
-    let north = uv_from_pos_and_size(x, y, size_x, size_y);
-    let south = uv_from_pos_and_size(x + size_x + size_z, y, size_x, size_y);
-    let east = uv_from_pos_and_size(x - size_z, y, size_z, size_y);
-    let west = uv_from_pos_and_size(x + size_x, y, size_z, size_y);
-    let up = uv_from_pos_and_size(x, y - size_z, size_x, size_z);
-    let down = uv_from_pos_and_size(x + size_x, y - size_z, size_x, size_z);
-
-    // Return the UVs in the order [north, south, east, west, up, down]
-    [north, south, east, west, up, down]
 }
 
 impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
@@ -71,9 +51,13 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
 
         let non_layer_body_part_type = body_part.get_non_layer_part();
 
-        let mut part = compute_base_part(non_layer_body_part_type, context);
-
-        perform_arm_part_rotation::<M>(non_layer_body_part_type, &mut part, &context);
+        let mut part = compute_base_part(non_layer_body_part_type, context.model.is_slim_arms());
+        perform_arm_part_rotation(
+            non_layer_body_part_type,
+            &mut part,
+            context.model.is_slim_arms(),
+            context.arm_rotation,
+        );
 
         if body_part.is_layer() || body_part.is_hat_layer() {
             let expand_offset = get_layer_expand_offset(non_layer_body_part_type);
@@ -107,20 +91,31 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
         }
 
         if let Some(armor_slots) = &context.armor_slots {
-            let part_slots = armor_slots.get_armor_slots_for_part(&non_layer_body_part_type);
+            let part_slots =
+                PlayerArmorSlots::<()>::get_armor_slots_for_part(&non_layer_body_part_type);
+                
             for slot in part_slots {
-                let amount = slot.get_offset();
-                let mut armor_part = part.expand(amount);
-
                 if let Some(armor_slot) = armor_slots.get_armor_slot(slot) {
                     if let Some(texture) = M::get_texture_type(slot) {
-                        if let Some(face_uvs) = M::get_texture_uvs(slot) {
-                            armor_part.set_texture(texture);
-                            armor_part.set_texture(texture);
-                            armor_part.set_face_uvs(face_uvs);
-                            
-                            result.push(armor_part);
+                        let amount = slot.get_offset();
+                        let mut armor_part =
+                            compute_base_part(non_layer_body_part_type, false).expand_splat(amount);
+
+                        if slot == PlayerArmorSlot::Chestplate
+                            && non_layer_body_part_type != PlayerBodyPartType::Body
+                        {
+                            armor_part = armor_part.expand([0.0, 0.0, 0.05].into());
                         }
+
+                        perform_arm_part_rotation(
+                            non_layer_body_part_type,
+                            &mut armor_part,
+                            false,
+                            context.arm_rotation,
+                        );
+
+                        armor_part.set_texture(texture);
+                        result.push(armor_part);
                     }
                 }
             }
@@ -130,10 +125,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
     }
 }
 
-fn compute_base_part<M: ArmorMaterial>(
-    non_layer_body_part_type: PlayerBodyPartType,
-    context: &PlayerPartProviderContext<M>,
-) -> Part {
+pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_arms: bool) -> Part {
     match non_layer_body_part_type {
         Head => body_part! {
             pos: [-4, 24, -4],
@@ -146,7 +138,7 @@ fn compute_base_part<M: ArmorMaterial>(
             box_uv_start: (20, 20)
         },
         LeftArm => {
-            if context.model.is_slim_arms() {
+            if is_slim_arms {
                 body_part! {
                     pos: [-7, 12, -2],
                     size: [3, 12, 4],
@@ -161,7 +153,7 @@ fn compute_base_part<M: ArmorMaterial>(
             }
         }
         RightArm => {
-            if context.model.is_slim_arms() {
+            if is_slim_arms {
                 body_part! {
                     pos: [4, 12, -2],
                     size: [3, 12, 4],
@@ -189,24 +181,24 @@ fn compute_base_part<M: ArmorMaterial>(
     }
 }
 
-fn perform_arm_part_rotation<M: ArmorMaterial>(
+fn perform_arm_part_rotation(
     non_layer_body_part_type: PlayerBodyPartType,
     part: &mut Part,
-    context: &PlayerPartProviderContext<M>,
+    is_slim_arms: bool,
+    arm_rotation_angle: f32,
 ) {
-    let rotation_angle = context.arm_rotation;
-    let normal_part_size = compute_base_part(non_layer_body_part_type, &context).get_size();
+    let normal_part_size = compute_base_part(non_layer_body_part_type, is_slim_arms).get_size();
 
     if non_layer_body_part_type == LeftArm {
         let rotation = normal_part_size * Vec3::new(-1.0, 2.0, 0.0);
         part.set_anchor(Some(PartAnchorInfo { anchor: rotation }));
 
-        part.rotation_mut().z = -rotation_angle;
+        part.rotation_mut().z = -arm_rotation_angle;
     } else if non_layer_body_part_type == RightArm {
         let rotation = normal_part_size * Vec3::new(1.0, 2.0, 0.0);
         part.set_anchor(Some(PartAnchorInfo { anchor: rotation }));
 
-        part.rotation_mut().z = rotation_angle;
+        part.rotation_mut().z = arm_rotation_angle;
     }
 }
 
@@ -233,7 +225,7 @@ fn expand_player_body_part(
     expand_offset: f32,
     box_uv_offset: (i32, i32),
 ) -> Part {
-    let mut new_part = part.expand(expand_offset);
+    let mut new_part = part.expand_splat(expand_offset);
     if let Part::Quad { .. } = new_part {
         unreachable!("Got quad when expanding body part.")
     } else if let Part::Cube {
@@ -243,7 +235,7 @@ fn expand_player_body_part(
         let current_box_uv = face_uvs.north.top_left;
 
         let size = part.get_size();
-        *face_uvs = box_uv(
+        *face_uvs = crate::parts::uv::box_uv(
             (current_box_uv.x as i32 + box_uv_offset.0) as u16,
             (current_box_uv.y as i32 + box_uv_offset.1) as u16,
             [size.x as u16, size.y as u16, size.z as u16],

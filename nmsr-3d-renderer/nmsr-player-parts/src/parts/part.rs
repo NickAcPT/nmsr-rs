@@ -74,7 +74,11 @@ impl Part {
         }
     }
 
-    pub fn expand(&self, amount: f32) -> Self {
+    pub fn expand_splat(&self, amount: f32) -> Self {
+        self.expand(Vec3::splat(amount))
+    }
+    
+    pub fn expand(&self, amount: Vec3) -> Self {
         let mut new_part = *self;
         let amount = amount * 2.0;
 
@@ -151,6 +155,13 @@ impl Part {
             Quad { position, .. } => *position,
         }
     }
+    
+    pub fn position_mut(&mut self) -> &mut MinecraftPosition {
+        match self {
+            Cube { position, .. } => position,
+            Quad { position, .. } => position,
+        }
+    }
 
     pub fn get_texture(&self) -> PlayerPartTextureType {
         match self {
@@ -163,6 +174,13 @@ impl Part {
         match self {
             Cube { texture: ref mut t, .. } => *t = texture,
             Quad { texture: ref mut t, .. } => *t = texture,
+        }
+    }
+    
+    pub fn get_face_uvs(&self) -> CubeFaceUvs {
+        match self {
+            Cube { face_uvs, .. } => *face_uvs,
+            Quad { face_uv, .. } => unimplemented!("Cannot get face UVs on a quad"),
         }
     }
     

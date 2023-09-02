@@ -52,9 +52,27 @@ pub(crate) async fn internal_render_model(
     let mut player_armor_slots = PlayerArmorSlots::default();
 
     player_armor_slots
+        .helmet
+        .replace(VanillaMinecraftArmorMaterialData::new(
+            VanillaMinecraftArmorMaterial::Iron,
+        ));
+
+    player_armor_slots
         .chestplate
         .replace(VanillaMinecraftArmorMaterialData::new(
             VanillaMinecraftArmorMaterial::Diamond,
+        ));
+
+    player_armor_slots
+        .leggings
+        .replace(VanillaMinecraftArmorMaterialData::new(
+            VanillaMinecraftArmorMaterial::Gold,
+        ));
+
+    player_armor_slots
+        .boots
+        .replace(VanillaMinecraftArmorMaterialData::new(
+            VanillaMinecraftArmorMaterial::Netherite,
         ));
 
     let part_context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
@@ -78,7 +96,7 @@ pub(crate) async fn internal_render_model(
         parts,
     );
 
-    load_textures(resolved, &state, &request, &mut scene)?;
+    load_textures(resolved, &state, &request, &part_context, &mut scene).await?;
 
     scene.render(&state.graphics_context)?;
 
@@ -89,12 +107,15 @@ pub(crate) async fn internal_render_model(
 }
 
 #[instrument(skip_all)]
-fn load_textures(
+async fn load_textures(
     resolved: &ResolvedRenderRequest,
     state: &NMSRState,
     request: &RenderRequest,
+    part_provider: &PlayerPartProviderContext<VanillaMinecraftArmorMaterialData>,
     scene: &mut Scene<Object<SceneContextPoolManager>>,
 ) -> Result<()> {
+    let armor_slots = part_provider.armor_slots.as_ref().expect("msg");
+
     for (&texture_type, texture_bytes) in &resolved.textures {
         let mut image_buffer = load_image(&texture_bytes)?;
 
@@ -104,6 +125,27 @@ fn load_textures(
 
         scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);
     }
+
+    let (main_layer, second_armor_layer) = state
+        .armor_manager
+        .create_armor_texture(armor_slots)
+        .await?;
+
+    scene.set_texture(
+        &state.graphics_context,
+        VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_ONE,
+        &main_layer,
+    );
+
+    if let Some(second_armor_layer) = second_armor_layer {
+        scene.set_texture(
+            &state.graphics_context,
+            VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_TWO,
+            &second_armor_layer,
+        );
+    }
+
+    // TODO: Upload textures from armor_data ^^
 
     Ok(())
 }

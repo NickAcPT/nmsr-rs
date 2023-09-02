@@ -7,7 +7,7 @@ use hyper_tls::HttpsConnector;
 use std::time::Duration;
 use sync_wrapper::SyncWrapper;
 use tokio::sync::RwLock;
-use tower::{util::BoxService, BoxError, Service, ServiceBuilder};
+use tower::{util::BoxService, Service, ServiceBuilder};
 use tower_http::{
     classify::{NeverClassifyEos, ServerErrorsFailureClass},
     set_header::SetRequestHeaderLayer,
@@ -37,7 +37,7 @@ pub struct NmsrHttpClient {
                         DefaultOnFailure,
                     >,
                 >,
-                BoxError,
+                hyper::Error,
             >,
         >,
     >,
@@ -65,8 +65,7 @@ impl NmsrHttpClient {
             client
                 .get_mut()
                 .call(request)
-                .await
-                .map_err(MojangRequestError::BoxedRequestError)?
+                .await?
         };
 
         let body = response.into_body();
@@ -85,7 +84,6 @@ pub(crate) fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
     let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
     let service = ServiceBuilder::new()
         .boxed()
-        .buffer(5)
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))
         .layer(tracing)
         .layer(SetRequestHeaderLayer::overriding(

@@ -103,7 +103,12 @@ impl VanillaMinecraftArmorManager {
 
     async fn init(&self) -> Result<()> {
         self.download_materials().await?;
+        self.download_trims().await?;
 
+        Ok(())
+    }
+
+    async fn download_trims(&self) -> Result<()> {
         for trim in VanillaMinecraftArmorTrim::iter() {
             let trim_path = self.get_trim_file_path(trim);
 
@@ -135,10 +140,9 @@ impl VanillaMinecraftArmorManager {
                 }
             }
         }
-
+        
         Ok(())
     }
-
     async fn download_materials(&self) -> Result<()> {
         for material in VanillaMinecraftArmorMaterial::iter() {
             let material_path = self.get_material_file_path(material);

@@ -60,31 +60,43 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     
     // We have 8 bits reserved for shading, meaning we can have 256 different shading values
     var MAX_VALUE_PER_SHADING = 255.0;
+    
+    // We have 8 bits reserved for depth, meaning we can have 256 different depth values
+    var MAX_VALUE_PER_DEPTH = 255.0;
 
     var u = u32(vertex.tex_coord.x * MAX_VALUE_PER_UV);
     var v = u32(vertex.tex_coord.y * MAX_VALUE_PER_UV);
     var shading = u32(compute_sun_lighting(vertex.normal) * MAX_VALUE_PER_SHADING);
-    var camera_distance = clamp(((transform * vec4<f32>(0.0, 0.0, 0.0, 1.0)).z - vertex.position.z) * vertex.position.w, 0.0, 1.0);
+    var camera_distance = vertex.position.z / vertex.position.w;
+
+    var near = 0.1;
+    var far = 100.0;
+
+    var depth = 1.0 - ((camera_distance - near) / (far - near));
+    
+    var final_depth = u32(depth * MAX_VALUE_PER_DEPTH);
 
     // Our Red channel is composed of the 6 bits of the u coordinate + 2 bits from the v coordinate
     // U is used as-is because our coordinates are 0-63
-    // 0   1   2   3   4   5   6   7
+    // 1   2   3   4   5   6   7   8
     // [    ---- u ----    ]   [ v ]
-    var r = (u | (v >> 6u)) & 0xFFu;
+    var r = (u & 0xFCu) | ((v & 0x3u) << 6u);
     
     // Our Green channel is composed of the 4 remaining bits of the v coordinate + 4 bits from the shading
-    // U is used as-is because our coordinates are 0-63
-    // 0   1   2   3   4   5   6   7
+    // V is used as-is because our coordinates are 0-63
+    // 1   2   3   4   5   6   7   8
     // [  -- v --  ]   [  -- s --  ]
-    var g = ((v >> 2u) | (shading >> 4u)) & 0xFFu;
-
-    var proj_r = transform[2][2];
-    var proj_q = transform[2][3];
-
-    var near = proj_q / (proj_r + 1.0);
-    var far = proj_q / proj_r;
-
-    var depth = (1.0 / camera_distance - 1.0 / near) / (1.0 / far - 1.0 / near);
-
-    return vec4<f32>(depth, depth, depth, 1.0);//vec4<f32>(f32(r) / 256.0, f32(g) / 256.0, 0.0, 1.0);
+    var g = ((v >> 2u) & 0xFu) | ((shading & 0xFu) << 4u);
+    
+    // Our Blue channel is composed of the 4 remaining bits of the shading + 4 bits from the depth
+    // 1   2   3   4   5   6   7   8
+    // [  -- s --  ]   [  -- d --  ]
+    var b = ((shading >> 4u) & 0xFu) | ((final_depth & 0xFu) << 4u);
+    
+    // Our Alpha channel is composed of the 4 remaining bits of the depth
+    // 1   2   3   4   5   6   7   8
+    // [  -- d --  ]   1   1   1   1
+    var a = ((final_depth >> 4u) & 0xFu) | 0xF0u;
+    
+    return vec4<f32>(f32(r) / 255.0, f32(g) / 255.0, f32(b) / 255.0, f32(a) / 255.0);//vec4<f32>(f32(r) / 256.0, f32(g) / 256.0, 0.0, 1.0);
 }

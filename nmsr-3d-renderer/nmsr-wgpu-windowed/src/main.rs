@@ -14,7 +14,7 @@ use nmsr_rendering::low_level::Vec3;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use strum::IntoEnumIterator;
 
-use wgpu::{Backends, Instance};
+use wgpu::{Backends, Instance, ShaderSource};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -47,14 +47,14 @@ async fn main() -> anyhow::Result<()> {
 
     let size = window.inner_size();
 
-    let graphics = GraphicsContext::new(GraphicsContextDescriptor {
+    let graphics = GraphicsContext::new_with_shader(GraphicsContextDescriptor {
         backends: Some(wgpu::Backends::all()),
         surface_provider: Box::new(|i: &Instance| unsafe {
             Some(i.create_surface(&window).unwrap())
         }),
         default_size: (size.width, size.height),
         texture_format: None,
-    })
+    }, ShaderSource::Wgsl(include_str!("uv_shader.wgsl").into()))
     .await
     .expect("Expected Nmsr Pipeline");
 

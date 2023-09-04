@@ -186,7 +186,7 @@ impl GraphicsContext {
             device.create_bind_group_layout(&BindGroupLayoutDescriptor {
                 entries: &[BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: ShaderStages::VERTEX,
+                    visibility: ShaderStages::VERTEX_FRAGMENT,
                     ty: BindingType::Buffer {
                         ty: BufferBindingType::Uniform,
                         has_dynamic_offset: false,

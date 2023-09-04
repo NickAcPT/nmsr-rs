@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Ok, Result};
 use image::{GenericImage, ImageBuffer, Rgba, RgbaImage};
@@ -69,8 +69,11 @@ async fn main() -> Result<()> {
             ShaderSource::Wgsl(shader.into()),
         )
         .await?;
-    
-        println!("Created graphics context {:?}", graphics_context.multisampling_strategy);
+
+        println!(
+            "Created graphics context {:?}",
+            graphics_context.multisampling_strategy
+        );
 
         let scene_context = SceneContext::new(&graphics_context);
 
@@ -105,8 +108,6 @@ async fn main() -> Result<()> {
                 ImageBuffer::from_raw(viewport_size.width, viewport_size.height, render)
                     .ok_or(anyhow!("Unable to convert render to image"))?;
 
-            //render_image.save(format!("renders/render-{:?}-{}.png", part, back_face))?;
-
             to_process.push(PartRenderOutput {
                 part,
                 image: render_image,
@@ -125,13 +126,7 @@ async fn main() -> Result<()> {
     let mut layers: HashMap<usize, RgbaImage> = HashMap::new();
 
     for (point, pixels) in processed {
-        // Go through each element in pixels, and remove elements on it until we find a pixel that is not transparent
-        //let bad_pixels = pixels
-        //    .iter()
-        //    .take_while(|(_, part)| part.is_layer())
-        //    .collect::<Vec<_>>();
-
-        for (index, (pixel, _)) in pixels.iter()/* .skip(bad_pixels.len()) */.enumerate() {
+        for (index, (pixel, _)) in pixels.iter().enumerate() {
             let img = layers
                 .entry(index)
                 .or_insert_with(|| RgbaImage::new(viewport_size.width, viewport_size.height));
@@ -169,12 +164,21 @@ fn process_render_outputs(
         .group_by(|(x, y, _, _)| (*x, *y))
         .into_iter()
         .flat_map(|(_, group)| {
-            let pixels = group
+            let pixels: Vec<(Point, (Rgba<u8>, PlayerBodyPartType))> = group
                 .map(|(x, y, pixel, part)| (Point::from((x, y)), (pixel, part)))
-                .sorted_by_key(|(_, (pixel, _))| pixel[2])
+                .sorted_by_key(|(_, (pixel, _))| -(pixel[2] as i32))
                 .collect::<Vec<_>>();
 
-            pixels
+            //let bad_pixels = pixels
+            //    .iter()
+            //    .take_while(|(_, (_, part))| part.is_layer())
+            //    .count();
+
+            //if pixels.len() > bad_pixels && !pixels.iter().all(|(_, (_, part))| part.is_layer()) {
+            //    pixels.into_iter().skip(bad_pixels).collect()
+            //} else {
+                pixels
+            //}
         })
         .into_group_map();
 

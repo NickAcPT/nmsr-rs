@@ -110,7 +110,8 @@ impl GraphicsContext {
         Self::new_with_shader(
             descriptor,
             wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
-        ).await
+        )
+        .await
     }
 
     #[inline]

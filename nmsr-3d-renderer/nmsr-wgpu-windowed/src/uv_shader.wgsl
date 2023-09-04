@@ -98,5 +98,10 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     // [  -- d --  ]   1   1   1   1
     var a = ((final_depth >> 4u) & 0xFu) | 0xF0u;
     
-    return vec4<f32>(f32(r) / 255.0, f32(g) / 255.0, f32(b) / 255.0, f32(a) / 255.0);//vec4<f32>(f32(r) / 256.0, f32(g) / 256.0, 0.0, 1.0);
+    var dim = textureDimensions(texture);
+    //var x = vertex.tex_coord.x;//(round(vertex.tex_coord.x * f32(dim.x)) / f32(dim.x));
+    //var y = vertex.tex_coord.y;//(round(vertex.tex_coord.y * f32(dim.y)) / f32(dim.y));
+    //old coords: return vec4<f32>(x, 1.0 - y, depth, 1.0);
+    
+    return vec4<f32>(f32(r) / 255.0, f32(g) / 255.0, f32(b) / 255.0, f32(a) / 255.0);
 }

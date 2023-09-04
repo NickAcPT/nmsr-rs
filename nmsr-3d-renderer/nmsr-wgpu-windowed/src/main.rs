@@ -712,9 +712,10 @@ fn debug_ui(
                 ))
                 .changed();
 
-            *needs_rebuild |= ui
-                .checkbox(&mut part_ctx.has_layers, "Has Layers")
-                .changed();
+            *needs_rebuild |= ui.checkbox(&mut part_ctx.has_layers, "Has Layers").changed();
+
+            *needs_rebuild |= ui.checkbox(&mut part_ctx.has_hat_layer, "Has Hat").changed();
+            
             *needs_rebuild |= ui.checkbox(&mut part_ctx.has_cape, "Has Cape").changed();
         });
         

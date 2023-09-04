@@ -14,7 +14,7 @@ use nmsr_rendering::low_level::Vec3;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use strum::IntoEnumIterator;
 
-use wgpu::{Backends, Instance, ShaderSource};
+use wgpu::{Backends, Instance, ShaderSource, Features};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -54,6 +54,7 @@ async fn main() -> anyhow::Result<()> {
         }),
         default_size: (size.width, size.height),
         texture_format: None,
+        features: Features::empty()
     }, ShaderSource::Wgsl(include_str!("uv_shader.wgsl").into()))
     .await
     .expect("Expected Nmsr Pipeline");

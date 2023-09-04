@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Ok, Result};
+use bytemuck::checked::cast_slice;
 use image::{GenericImage, ImageBuffer, Rgba, RgbaImage};
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
@@ -10,12 +11,14 @@ use nmsr_rendering::high_level::{
     pipeline::{
         scene::{Scene, Size, SunInformation},
         Backends, GraphicsContext, GraphicsContextDescriptor, SceneContext, SceneContextWrapper,
-        ShaderSource,
+        ShaderSource, TextureFormat, Features,
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
     IntoEnumIterator,
 };
 use tokio::fs;
+
+type Rgba16Image = ImageBuffer<Rgba<u16>, Vec<u16>>;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -64,7 +67,8 @@ async fn main() -> Result<()> {
                 backends: Some(Backends::all()),
                 surface_provider: Box::new(|_| None),
                 default_size: (0, 0),
-                texture_format: None,
+                texture_format: Some(TextureFormat::Rgba16Unorm),
+                features: Features::TEXTURE_FORMAT_16BIT_NORM
             },
             ShaderSource::Wgsl(shader.into()),
         )
@@ -103,9 +107,10 @@ async fn main() -> Result<()> {
             scene.render(&graphics_context)?;
 
             let render = scene.copy_output_texture(&graphics_context).await?;
-
-            let render_image: RgbaImage =
-                ImageBuffer::from_raw(viewport_size.width, viewport_size.height, render)
+            let cast_slice: Vec<u16> = cast_slice::<u8, u16>(&render).to_vec();
+            
+            let render_image: Rgba16Image =
+                ImageBuffer::from_raw(viewport_size.width, viewport_size.height, cast_slice)
                     .ok_or(anyhow!("Unable to convert render to image"))?;
 
             to_process.push(PartRenderOutput {
@@ -123,13 +128,13 @@ async fn main() -> Result<()> {
         .map(|layers| layers.len())
         .unwrap_or_default();
 
-    let mut layers: HashMap<usize, RgbaImage> = HashMap::new();
+    let mut layers: HashMap<usize, Rgba16Image> = HashMap::new();
 
     for (point, pixels) in processed {
         for (index, (pixel, _)) in pixels.iter().enumerate() {
             let img = layers
                 .entry(index)
-                .or_insert_with(|| RgbaImage::new(viewport_size.width, viewport_size.height));
+                .or_insert_with(|| Rgba16Image::new(viewport_size.width, viewport_size.height));
 
             unsafe {
                 img.unsafe_put_pixel(point.x, point.y, *pixel);
@@ -150,7 +155,7 @@ async fn main() -> Result<()> {
 
 fn process_render_outputs(
     to_process: Vec<PartRenderOutput>,
-) -> HashMap<Point, Vec<(Rgba<u8>, PlayerBodyPartType)>> {
+) -> HashMap<Point, Vec<(Rgba<u16>, PlayerBodyPartType)>> {
     let pixels: HashMap<_, Vec<_>> = to_process
         .into_iter()
         .flat_map(|PartRenderOutput { part, image }| {
@@ -164,7 +169,7 @@ fn process_render_outputs(
         .group_by(|(x, y, _, _)| (*x, *y))
         .into_iter()
         .flat_map(|(_, group)| {
-            let pixels: Vec<(Point, (Rgba<u8>, PlayerBodyPartType))> = group
+            let pixels = group
                 .map(|(x, y, pixel, part)| (Point::from((x, y)), (pixel, part)))
                 .sorted_by_key(|(_, (pixel, _))| -(pixel[2] as i32))
                 .collect::<Vec<_>>();
@@ -187,7 +192,7 @@ fn process_render_outputs(
 
 struct PartRenderOutput {
     part: PlayerBodyPartType,
-    image: RgbaImage,
+    image: Rgba16Image,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

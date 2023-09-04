@@ -8,7 +8,7 @@ use enumset::EnumSet;
 use image::RgbaImage;
 use nmsr_rendering::high_level::pipeline::{
     pools::SceneContextPoolManager, Backends, GraphicsContext, GraphicsContextDescriptor,
-    GraphicsContextPools,
+    GraphicsContextPools, Features,
 };
 pub use render::render;
 use tracing::{debug_span, info, info_span, instrument, Instrument};
@@ -50,6 +50,7 @@ impl NMSRState {
             surface_provider: Box::new(|_| None),
             default_size: (0, 0), // can be zero since we don't provide any surface
             texture_format: None,
+            features: Features::empty()
         })
         .await?;
 

@@ -7,11 +7,12 @@ use wgpu::{
     BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
     ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
     PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
-    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
-    ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages,
+    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 pub use wgpu::{
-    Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat, ShaderSource
+    Adapter, Backends, Device, Instance, Queue, ShaderSource, Surface, SurfaceConfiguration,
+    TextureFormat, Features
 };
 
 use crate::{
@@ -100,6 +101,7 @@ pub struct GraphicsContextDescriptor<'a> {
     pub surface_provider: Box<ServiceProvider<'a>>,
     pub default_size: (u32, u32),
     pub texture_format: Option<TextureFormat>,
+    pub features: Features,
 }
 
 impl GraphicsContext {
@@ -141,7 +143,7 @@ impl GraphicsContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+                    features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES | descriptor.features,
                     limits: wgpu::Limits::default(),
                 },
                 None,
@@ -174,7 +176,9 @@ impl GraphicsContext {
         };
 
         let texture_format = surface_view_format
-            .unwrap_or(descriptor.texture_format)
+            .ok()
+            .flatten()
+            .or(descriptor.texture_format)
             .unwrap_or(Self::DEFAULT_TEXTURE_FORMAT);
 
         let adapter =

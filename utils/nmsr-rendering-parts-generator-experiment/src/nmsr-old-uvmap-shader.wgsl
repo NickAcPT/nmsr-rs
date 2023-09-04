@@ -55,9 +55,6 @@ fn fs_main(vertex: VertexOutput, @builtin(front_facing) front_facing: bool) -> @
     //backingface:    discard;
     //backingface:}
     
-    // We have 8 bits reserved for depth, meaning we can have 256 different depth values
-    var MAX_VALUE_PER_DEPTH = 255.0;
-
     var camera_distance = vertex.position.z / vertex.position.w;
 
     var near = 0.1;

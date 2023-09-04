@@ -113,8 +113,14 @@ impl SceneContext {
             .map_or(true, |textures| textures.viewport_size != viewport_size);
 
         let output = if needs_output_buffer_resize {
-            let output_buffer_dimensions =
-                BufferDimensions::new(viewport_size.width as usize, viewport_size.height as usize);
+            let output_buffer_dimensions = BufferDimensions::new(
+                viewport_size.width as usize,
+                viewport_size.height as usize,
+                graphics_context
+                    .texture_format
+                    .block_size(None)
+                    .unwrap_or(4) as usize,
+            );
 
             let output_buffer_desc = BufferDescriptor {
                 size: output_buffer_dimensions.size(),
@@ -212,12 +218,12 @@ impl SceneContext {
         } else {
             if let Some((texture_output_buffer_dimensions, texture_output_buffer)) = output {
                 let textures = self.textures.take();
-                
+
                 if let Some(mut textures) = textures {
                     textures.texture_output_buffer = texture_output_buffer;
                     textures.texture_output_buffer_dimensions = texture_output_buffer_dimensions;
                     textures.viewport_size = viewport_size;
-                    
+
                     self.textures = Some(textures);
                 }
             }

@@ -7,8 +7,8 @@ use wgpu::{
     BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
     ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
     PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
-    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages,
-    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderSource,
+    ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
@@ -107,6 +107,17 @@ impl GraphicsContext {
     pub const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
     pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {
+        Self::new_with_shader(
+            descriptor,
+            wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
+        ).await
+    }
+
+    #[inline]
+    pub async fn new_with_shader(
+        descriptor: GraphicsContextDescriptor<'_>,
+        shader: ShaderSource<'_>,
+    ) -> Result<Self> {
         let backends = wgpu::util::backend_bits_from_env()
             .or(descriptor.backends)
             .ok_or(NMSRRenderingError::NoBackendFound)?;
@@ -235,7 +246,7 @@ impl GraphicsContext {
 
         let shader = device.create_shader_module(ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
+            source: shader,
         });
 
         let vertex_buffer_layout = VertexBufferLayout {
@@ -319,23 +330,23 @@ impl GraphicsContext {
         texture_format: &TextureFormat,
     ) -> MultiSamplingStrategy {
         let wants_smaa = env::var("NMSR_USE_SMAA").is_ok();
-        
+
         let format = *texture_format;
         let sample_flags = adapter.get_texture_format_features(format).flags;
-        
+
         let env_sample_count = env::var("NMSR_SAMPLE_COUNT")
             .ok()
             .and_then(|it| it.parse::<u32>().ok());
-        
-        let count = env_sample_count.unwrap_or_else(|| vec![16, 8, 4, 2, 1]
-            .iter()
-            .find(|&&sample_count| sample_flags.sample_count_supported(sample_count))
-            .copied()
-            .unwrap_or(1));
 
-        let mut strat = MultiSamplingStrategy::MSAA(
-            count,
-        );
+        let count = env_sample_count.unwrap_or_else(|| {
+            vec![16, 8, 4, 2, 1]
+                .iter()
+                .find(|&&sample_count| sample_flags.sample_count_supported(sample_count))
+                .copied()
+                .unwrap_or(1)
+        });
+
+        let mut strat = MultiSamplingStrategy::MSAA(count);
 
         if wants_smaa {
             strat = MultiSamplingStrategy::SMAAWithMSAA((

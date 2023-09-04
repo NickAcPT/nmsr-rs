@@ -178,6 +178,10 @@ impl RenderRequest {
                     camera.set_distance(camera.get_distance() + distance)
                 }
             }
+            
+            if settings.helmet.as_ref().or(settings.boots.as_ref()).is_some() {
+                camera.set_distance(camera.get_distance() + 2.0);
+            }
 
             if camera.get_size().is_some() {
                 // Update our camera size based on the user settings if we have one already set

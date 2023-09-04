@@ -30,7 +30,7 @@ pub(crate) async fn internal_render_skin(
     }
 
     let skin_image = image::load_from_memory(&skin)
-        .map_err(|_| NMSRRenderingError::ImageFromRawError)?
+        .map_err(NMSRRenderingError::ImageFromRawError)?
         .into_rgba8();
 
     let processed = state.process_skin(skin_image, request.features)?;

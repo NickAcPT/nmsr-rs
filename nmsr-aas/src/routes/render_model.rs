@@ -135,6 +135,6 @@ async fn load_textures(
 
 fn load_image(texture: &[u8]) -> Result<RgbaImage> {
     let img = image::load_from_memory_with_format(&texture, ImageFormat::Png)
-        .map_err(|_| NMSRRenderingError::ImageFromRawError)?;
+        .map_err(NMSRRenderingError::ImageFromRawError)?;
     Ok(img.into_rgba8())
 }

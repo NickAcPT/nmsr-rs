@@ -23,8 +23,8 @@ pub enum NMSRRenderingError {
     BufferAsyncError(#[from] BufferAsyncError),
     #[error("RecvError: {0}")]
     RecvError(#[from] RecvError),
-    #[error("Unable to convert image from raw bytes")]
-    ImageFromRawError,
+    #[error("Unable to convert image from raw bytes: {0}")]
+    ImageFromRawError(image::ImageError),
     #[error("Pool error: {0}")]
     PoolError(#[from] deadpool::managed::PoolError<Box<Self>>),
     #[error("Pool Build error: {0}")]

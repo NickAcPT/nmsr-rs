@@ -1,6 +1,6 @@
 pub mod manager;
 
-use std::{collections::VecDeque, iter::repeat};
+use std::collections::VecDeque;
 
 use nmsr_rendering::high_level::{
     model::{ArmorMaterial, PlayerArmorSlot},
@@ -47,8 +47,7 @@ impl VanillaMinecraftArmorMaterial {
 
         if self.has_overlay() {
             result
-                .zip(repeat("overlay"))
-                .map(|(layer, overlay)| format!("{}_{}", layer, overlay))
+                .flat_map(|layer| vec![layer.to_owned(), format!("{}_overlay", &layer)])
                 .collect()
         } else {
             result.collect()
@@ -209,10 +208,7 @@ impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
                 .collect::<Vec<_>>()
         };
 
-        Ok(Self {
-            material,
-            trims,
-        })
+        Ok(Self { material, trims })
     }
 }
 

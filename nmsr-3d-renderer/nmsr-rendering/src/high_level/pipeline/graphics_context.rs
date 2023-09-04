@@ -7,11 +7,11 @@ use wgpu::{
     BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
     ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
     PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
-    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderSource,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
     ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 pub use wgpu::{
-    Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat,
+    Adapter, Backends, Device, Instance, Queue, Surface, SurfaceConfiguration, TextureFormat, ShaderSource
 };
 
 use crate::{

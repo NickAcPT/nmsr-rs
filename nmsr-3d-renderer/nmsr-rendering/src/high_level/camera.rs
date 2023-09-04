@@ -53,7 +53,6 @@ impl core::ops::AddAssign for CameraRotation {
     }
 }
 
-
 #[derive(Copy, Clone)]
 pub enum ProjectionParameters {
     Perspective {
@@ -181,7 +180,7 @@ impl CameraPositionParameters {
             } => Some(distance),
         }
     }
-    
+
     pub fn to_absolute(&self, yaw: f32, pitch: f32) -> Self {
         match self {
             CameraPositionParameters::Absolute(_) => *self,
@@ -191,14 +190,15 @@ impl CameraPositionParameters {
                 // To get the position of the camera, we take the point where we want to look,
                 // and move backwards along the look pos vector by the distance we want to be from the look at point
                 let pos = *look_at + (-look_pos * *distance);
-                
+
                 CameraPositionParameters::Absolute(pos)
-            },
+            }
         }
     }
 }
 
 /// The camera used to view the scene
+#[derive(Clone, Copy)]
 pub struct Camera {
     /// The position of the camera
     position_parameters: CameraPositionParameters,
@@ -234,7 +234,7 @@ impl Camera {
         distance: f32,
         rotation: CameraRotation,
         projection: ProjectionParameters,
-        size: Option<Size>
+        size: Option<Size>,
     ) -> Self {
         Camera {
             position_parameters: CameraPositionParameters::Orbital { look_at, distance },
@@ -245,9 +245,11 @@ impl Camera {
             cached_view_projection_matrix: Mat4::ZERO,
         }
     }
-    
+
     pub fn get_aspect_ratio(&self) -> f32 {
-        self.size.map(|size| size.width as f32 / size.height as f32).unwrap_or(1.0)
+        self.size
+            .map(|size| size.width as f32 / size.height as f32)
+            .unwrap_or(1.0)
     }
 
     camera_getters_setters!(
@@ -275,11 +277,17 @@ impl Camera {
     }
 
     fn compute_view_projection_matrix(&self) -> Mat4 {
-        let projection = self.projection.compute_projection_matrix(self.get_aspect_ratio());
+        let projection = self
+            .projection
+            .compute_projection_matrix(self.get_aspect_ratio());
 
         let view_position = match self.position_parameters {
             CameraPositionParameters::Absolute(pos) => {
-                let view = minecraft_rotation_matrix(self.rotation.yaw, self.rotation.pitch, self.rotation.roll);
+                let view = minecraft_rotation_matrix(
+                    self.rotation.yaw,
+                    self.rotation.pitch,
+                    self.rotation.roll,
+                );
                 let position = Mat4::from_translation(-pos);
 
                 view * position

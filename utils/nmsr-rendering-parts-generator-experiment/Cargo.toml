@@ -1,0 +1,15 @@
+[package]
+name = "nmsr-rendering-parts-generator-experiment"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+homepage.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.75"
+image = { version = "0.24.7", default-features = false, features = ["png"] }
+itertools = "0.11.0"
+nmsr-rendering = { version = "0.1.0", path = "../../nmsr-3d-renderer/nmsr-rendering" }
+tokio = { version = "1.32.0", features = ["full"] }

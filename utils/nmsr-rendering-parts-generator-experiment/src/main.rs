@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     
     let mut to_process: Vec<PartRenderOutput> = vec![];
 
-    for back_face in vec![false, true] {
+    for back_face in vec![false/* , true */] {
         let mut shader: String = include_str!("nmsr-new-uvmap-shader.wgsl").into();
         if back_face {
             shader = shader.replace("//backingface:", "")
@@ -171,7 +171,7 @@ fn process_render_outputs(
         .flat_map(|(_, group)| {
             let pixels = group
                 .map(|(x, y, pixel, part)| (Point::from((x, y)), (pixel, part)))
-                .sorted_by_key(|(_, (pixel, _))| -(get_depth(pixel[2] as u32, pixel[3] as u32) as i32))
+                .sorted_by_key(|(_, (pixel, _))| (get_depth(pixel) as i32))
                 .collect::<Vec<_>>();
 
             //let bad_pixels = pixels
@@ -190,16 +190,20 @@ fn process_render_outputs(
     pixels
 }
 
-fn get_depth(blue: u32, alpha: u32) -> u16 {
-    let ba: u32 = (blue | (alpha << 8)) as u32;
-
+fn get_depth(pixel: &Rgba<u8>) -> u16 {
+    let r = pixel[0] as u32;
+    let g = pixel[1] as u32;
+    let b = pixel[2] as u32;
+    let a = pixel[3] as u32;
+    
+    let rgba: u32 = (r | (g << 8) | (b << 16) | (a << 24)) as u32;
     // Our Blue channel is composed of the 4 remaining bits of the shading + 4 bits from the depth
     // 1   2   3   4   5   6   7   8
     // [  -- s --  ]   [  -- d --  ]
     // Our Alpha channel is composed of the 8 remaining bits of the depth
     // 1   2   3   4   5   6   7   8
     // [          -- d --          ]
-    let depth = ((ba >> 3) & 0x1FFF) as u16;
+    let depth = ((rgba >> 20) & 0x1FFF) as u16;
     
     depth
 }

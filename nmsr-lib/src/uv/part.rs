@@ -11,11 +11,11 @@ use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
 pub(crate) enum UvImagePixel {
     RawPixel {
-        position: Point<u8>,
+        position: Point<u16>,
         rgba: [u8; 4],
     },
     UvPixel {
-        position: Point<u8>,
+        position: Point<u16>,
         uv: Point<u8>,
         depth: u16,
         shading: u8,
@@ -71,16 +71,16 @@ impl UvImagePixel {
         if store_raw_pixels {
             Some(RawPixel {
                 position: Point {
-                    x: x as u8,
-                    y: y as u8,
+                    x: x as u16,
+                    y: y as u16,
                 },
                 rgba: [channels[0], channels[1], channels[2], channels[3]],
             })
         } else {
             Some(UvPixel {
                 position: Point {
-                    x: x as u8,
-                    y: y as u8,
+                    x: x as u16,
+                    y: y as u16,
                 },
                 uv: Point {
                     x: u as u8,
@@ -122,10 +122,14 @@ fn test_uv_pixel() {
         rgba: u32,
         channels: [u8; 4],
     }
+    
+    let pixels = U { rgba: 0xe0f55fe2 };
+    let mut channels = unsafe { pixels.channels };
+    channels.reverse();
+    
+    println!("{:#10x}", final_number);
 
-    let pixels = U { rgba: final_number };
-
-    let pixel = UvImagePixel::new(1, 1, &Rgba(unsafe { pixels.channels }), false);
+    let pixel = UvImagePixel::new(1, 1, &Rgba([36, 173, 63, 145]), false);
 
     assert_eq!(
         pixel,

@@ -83,17 +83,17 @@ impl Cube {
 
         // Bottom is facing towards the negative Y axis (Down).
         let bottom_quad = Quad::new_with_normal(
-            Vec3::new(x_right, y_down - small, z_back),
             Vec3::new(x_left, y_down - small, z_back),
-            Vec3::new(x_right, y_down - small, z_front),
+            Vec3::new(x_right, y_down - small, z_back),
             Vec3::new(x_left, y_down - small, z_front),
+            Vec3::new(x_right, y_down - small, z_front),
             bottom_face_uv[0],
             bottom_face_uv[1],
             [0.0, -1.0, 0.0].into(),
         );
 
         // Left is facing towards the negative X axis (West).
-        let left_quad = Quad::new_with_normal(
+        let left_quad: Quad = Quad::new_with_normal(
             Vec3::new(x_left - small, y_up, z_front),
             Vec3::new(x_left - small, y_up, z_back),
             Vec3::new(x_left - small, y_down, z_front),

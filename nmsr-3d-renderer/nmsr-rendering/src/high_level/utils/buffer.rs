@@ -71,7 +71,7 @@ pub async fn read_buffer(
         drop(data);
         output_buffer.unmap();
 
-        unmultiply_alpha(&mut bytes);
+        //unmultiply_alpha(&mut bytes);
 
         Ok(bytes)
     })

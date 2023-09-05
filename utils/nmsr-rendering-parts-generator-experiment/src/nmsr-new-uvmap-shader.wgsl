@@ -63,7 +63,7 @@ fn fs_main(vertex: VertexOutput, @builtin(front_facing) front_facing: bool) -> @
     //frontface:}
     
     // Using 6 bits for each u and v coordinate since Minecraft uses at most 64x64 textures for skins
-    var MAX_VALUE_PER_UV = 63.0;
+    var MAX_VALUE_PER_UV = 64.0;
     
     // We have 8 bits reserved for shading, meaning we can have 256 different shading values
     var MAX_VALUE_PER_SHADING = 255.0;
@@ -71,9 +71,9 @@ fn fs_main(vertex: VertexOutput, @builtin(front_facing) front_facing: bool) -> @
     // We have 12 bits reserved for depth, meaning we can have 4096 different depth values
     var MAX_VALUE_PER_DEPTH = 4095.0;
 
-    var u = 32u;//u32(vertex.tex_coord.x * MAX_VALUE_PER_UV);
-    var v = 23u;//u32(vertex.tex_coord.y * MAX_VALUE_PER_UV);
-    var shading = 255u;//u32(compute_sun_lighting(vertex.normal) * MAX_VALUE_PER_SHADING);
+    var u = u32(floor(vertex.tex_coord.x * MAX_VALUE_PER_UV));
+    var v = u32(floor(vertex.tex_coord.y * MAX_VALUE_PER_UV));
+    var shading = u32(compute_sun_lighting(vertex.normal) * MAX_VALUE_PER_SHADING);
     var camera_distance = vertex.position.z / vertex.position.w;
 
     var near = 0.1;
@@ -81,7 +81,7 @@ fn fs_main(vertex: VertexOutput, @builtin(front_facing) front_facing: bool) -> @
 
     var depth = 1.0 - ((camera_distance - near) / (far - near));
     
-    var final_depth = 3621u;//u32(depth * MAX_VALUE_PER_DEPTH);
+    var final_depth = u32(depth * MAX_VALUE_PER_DEPTH);
 
     // Our Red channel is composed of the 6 bits of the u coordinate + 2 bits from the v coordinate
     // U is used as-is because our coordinates are 0-63
@@ -99,6 +99,11 @@ fn fs_main(vertex: VertexOutput, @builtin(front_facing) front_facing: bool) -> @
     // [          -- d --          ]
     
     var final_number = ((final_depth & 0x1FFFu) << 20u) | ((shading & 0xFFu) << 12u) | ((v & 0x3Fu) << 6u) | (u & 0x3Fu);
+    // Final number is in rgba bits
+    var r = final_number & 0xFFu;
+    var g = (final_number >> 8u) & 0xFFu;
+    var b = (final_number >> 16u) & 0xFFu;
+    var a = (final_number >> 24u) & 0xFFu;
     
-    return unpack4x8unorm(final_number);
+    return vec4<f32>(f32(r) / 255.0, f32(g) / 255.0, f32(b) / 255.0, f32(a) / 255.0);
 }

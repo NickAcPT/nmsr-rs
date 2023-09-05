@@ -22,9 +22,3 @@ pub fn apply_uv_map(input: &RgbaImage, uv: &UvImage) -> Result<RgbaImage> {
 
     Ok(image)
 }
-
-pub fn get_uv_max_depth(image: &RgbaImage) -> u16 {
-    compile_error!("Update this to use the new UV system");
-    let points = image.pixels().map(|&p| p.0[2]).collect::<Vec<_>>();
-    *points.iter().max().unwrap_or(&0) as u16
-}

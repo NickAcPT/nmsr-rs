@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Ok, Result};
-use bytemuck::checked::cast_slice;
 use image::{GenericImage, ImageBuffer, Rgba, RgbaImage};
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
@@ -11,14 +10,12 @@ use nmsr_rendering::high_level::{
     pipeline::{
         scene::{Scene, Size, SunInformation},
         Backends, GraphicsContext, GraphicsContextDescriptor, SceneContext, SceneContextWrapper,
-        ShaderSource, TextureFormat, Features,
+        ShaderSource, Features,
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
     IntoEnumIterator,
 };
 use tokio::fs;
-
-type Rgba16Image = ImageBuffer<Rgba<u16>, Vec<u16>>;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -54,12 +51,16 @@ async fn main() -> Result<()> {
         armor_slots: None,
     };
 
+    fs::create_dir_all("renders/parts").await?;
+    
     let mut to_process: Vec<PartRenderOutput> = vec![];
 
     for back_face in vec![false, true] {
-        let mut shader: String = include_str!("nmsr-old-uvmap-shader.wgsl").into();
+        let mut shader: String = include_str!("nmsr-new-uvmap-shader.wgsl").into();
         if back_face {
             shader = shader.replace("//backingface:", "")
+        } else {
+            shader = shader.replace("//frontface:", "")
         }
 
         let graphics_context = GraphicsContext::new_with_shader(
@@ -67,8 +68,8 @@ async fn main() -> Result<()> {
                 backends: Some(Backends::all()),
                 surface_provider: Box::new(|_| None),
                 default_size: (0, 0),
-                texture_format: Some(TextureFormat::Rgba16Unorm),
-                features: Features::TEXTURE_FORMAT_16BIT_NORM
+                texture_format: None,
+                features: Features::empty()
             },
             ShaderSource::Wgsl(shader.into()),
         )
@@ -107,12 +108,13 @@ async fn main() -> Result<()> {
             scene.render(&graphics_context)?;
 
             let render = scene.copy_output_texture(&graphics_context).await?;
-            let cast_slice: Vec<u16> = cast_slice::<u8, u16>(&render).to_vec();
             
-            let render_image: Rgba16Image =
-                ImageBuffer::from_raw(viewport_size.width, viewport_size.height, cast_slice)
+            let render_image: RgbaImage =
+                ImageBuffer::from_raw(viewport_size.width, viewport_size.height, render)
                     .ok_or(anyhow!("Unable to convert render to image"))?;
 
+            render_image.save(format!("renders/parts/{:?}-{}.png", part, back_face))?;
+            
             to_process.push(PartRenderOutput {
                 part,
                 image: render_image,
@@ -134,15 +136,13 @@ async fn main() -> Result<()> {
         for (index, (pixel, _)) in pixels.iter().enumerate() {
             let img = layers
                 .entry(index)
-                .or_insert_with(|| Rgba16Image::new(viewport_size.width, viewport_size.height));
+                .or_insert_with(|| RgbaImage::new(viewport_size.width, viewport_size.height));
 
             unsafe {
                 img.unsafe_put_pixel(point.x, point.y, *pixel);
             }
         }
     }
-
-    fs::create_dir_all("renders").await?;
 
     for (index, img) in layers {
         img.save(format!("renders/render-layer-{}.png", index))?;
@@ -155,7 +155,7 @@ async fn main() -> Result<()> {
 
 fn process_render_outputs(
     to_process: Vec<PartRenderOutput>,
-) -> HashMap<Point, Vec<(Rgba<u16>, PlayerBodyPartType)>> {
+) -> HashMap<Point, Vec<(Rgba<u8>, PlayerBodyPartType)>> {
     let pixels: HashMap<_, Vec<_>> = to_process
         .into_iter()
         .flat_map(|PartRenderOutput { part, image }| {
@@ -171,7 +171,7 @@ fn process_render_outputs(
         .flat_map(|(_, group)| {
             let pixels = group
                 .map(|(x, y, pixel, part)| (Point::from((x, y)), (pixel, part)))
-                .sorted_by_key(|(_, (pixel, _))| -(pixel[2] as i32))
+                .sorted_by_key(|(_, (pixel, _))| -(get_depth(pixel[2] as u32, pixel[3] as u32) as i32))
                 .collect::<Vec<_>>();
 
             //let bad_pixels = pixels
@@ -190,9 +190,23 @@ fn process_render_outputs(
     pixels
 }
 
+fn get_depth(blue: u32, alpha: u32) -> u16 {
+    let ba: u32 = (blue | (alpha << 8)) as u32;
+
+    // Our Blue channel is composed of the 4 remaining bits of the shading + 4 bits from the depth
+    // 1   2   3   4   5   6   7   8
+    // [  -- s --  ]   [  -- d --  ]
+    // Our Alpha channel is composed of the 8 remaining bits of the depth
+    // 1   2   3   4   5   6   7   8
+    // [          -- d --          ]
+    let depth = ((ba >> 3) & 0x1FFF) as u16;
+    
+    depth
+}
+
 struct PartRenderOutput {
     part: PlayerBodyPartType,
-    image: Rgba16Image,
+    image: RgbaImage,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

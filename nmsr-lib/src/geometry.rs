@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
 pub struct Point<T: Debug> {
     pub(crate) x: T,

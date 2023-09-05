@@ -152,7 +152,7 @@ impl RenderingEntry {
             }
         }
 
-        final_image = crop_image(final_image);
+        //final_image = crop_image(final_image);
 
         // Return it
         Ok(final_image)

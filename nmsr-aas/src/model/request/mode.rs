@@ -6,12 +6,12 @@ use nmsr_rendering::high_level::{
     pipeline::scene::Size,
     types::PlayerBodyPartType,
 };
-use strum::{EnumString, IntoEnumIterator};
+use strum::{EnumString, IntoEnumIterator, EnumIter};
 use tracing::instrument;
 
 use crate::error::{RenderRequestError, Result};
 
-#[derive(EnumString, Debug, PartialEq, Clone, Copy)]
+#[derive(EnumString, Debug, PartialEq, Clone, Copy, EnumIter)]
 #[strum(serialize_all = "snake_case")]
 pub enum RenderRequestMode {
     Skin,

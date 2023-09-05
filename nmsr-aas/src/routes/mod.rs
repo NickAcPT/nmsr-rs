@@ -11,6 +11,7 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools, Features,
 };
 pub use render::render;
+use strum::IntoEnumIterator;
 use tracing::{debug_span, info, info_span, instrument, Instrument};
 use uuid::uuid;
 
@@ -161,7 +162,7 @@ impl NMSRState {
         // This will ensure that the renderer is initialized and ready to go when we start serving requests.
         let entry =
             RenderRequestEntry::MojangPlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
-        let request = RenderRequest::new_from_excluded_features(
+        let mut request = RenderRequest::new_from_excluded_features(
             RenderRequestMode::FullBody,
             entry,
             None,
@@ -171,12 +172,14 @@ impl NMSRState {
 
         let resolved = self.resolver.resolve(&request).await?;
 
-        for index in 0..15 {
+        for mode in RenderRequestMode::iter() {
+            request.mode = mode;
+            
             let _ = black_box(
                 black_box(render_model::internal_render_model(
                     &request, self, &resolved,
                 ))
-                .instrument(info_span!("prewarm_render", index = index))
+                .instrument(info_span!("prewarm_render", mode = ?mode))
                 .await?,
             );
         }

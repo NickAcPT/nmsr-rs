@@ -1,11 +1,10 @@
 use std::borrow::BorrowMut;
-
 use crate::errors::{NMSRError, Result};
 use crate::uv::part::UvImagePixel;
 use crate::uv::uv_magic::UvImage;
-use crate::uv::Rgba16Image;
+use image::RgbaImage;
 
-pub fn apply_uv_map(input: &Rgba16Image, uv: &UvImage) -> Result<Rgba16Image> {
+pub fn apply_uv_map(input: &RgbaImage, uv: &UvImage) -> Result<RgbaImage> {
     // Generate a new image
     let mut image = image::ImageBuffer::new(uv.size.0, uv.size.1);
 
@@ -24,26 +23,8 @@ pub fn apply_uv_map(input: &Rgba16Image, uv: &UvImage) -> Result<Rgba16Image> {
     Ok(image)
 }
 
-pub fn get_uv_max_depth(image: &Rgba16Image) -> u16 {
+pub fn get_uv_max_depth(image: &RgbaImage) -> u16 {
     compile_error!("Update this to use the new UV system");
     let points = image.pixels().map(|&p| p.0[2]).collect::<Vec<_>>();
     *points.iter().max().unwrap_or(&0) as u16
 }
-
-pub(crate) const U16_TO_U8_PIXEL_RATIO: f32 = u8::MAX as f32 / u16::MAX as f32;
-pub(crate) const U8_TO_U16_PIXEL_RATIO: f32 = u16::MAX as f32 / u8::MAX as f32;
-
-macro_rules! u16_to_u8 {
-    ($x:expr) => {
-        ($x as f32 * crate::uv::utils::U16_TO_U8_PIXEL_RATIO) as u8
-    };
-}
-
-macro_rules! u8_to_u16 {
-    ($x:expr) => {
-        ($x as f32 * crate::uv::utils::U8_TO_U16_PIXEL_RATIO) as u16
-    };
-}
-
-pub(crate) use u16_to_u8;
-pub(crate) use u8_to_u16;

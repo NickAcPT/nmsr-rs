@@ -1,6 +1,7 @@
 use crate::errors::Result;
 use crate::uv::part::UvImagePixel;
-use crate::{uv::utils::apply_uv_map, uv::utils::get_uv_max_depth, uv::Rgba16Image};
+use crate::{uv::utils::apply_uv_map, uv::utils::get_uv_max_depth};
+use image::RgbaImage;
 #[cfg(feature = "serializable_parts")]
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +15,7 @@ pub struct UvImage {
 }
 
 impl UvImage {
-    pub fn new(name: String, uv_image: Rgba16Image, store_raw_pixels: bool) -> UvImage {
+    pub fn new(name: String, uv_image: RgbaImage, store_raw_pixels: bool) -> UvImage {
         let max_depth = get_uv_max_depth(&uv_image);
         let uv_pixels = uv_image
             .enumerate_pixels()
@@ -29,7 +30,7 @@ impl UvImage {
         }
     }
 
-    pub fn apply(&self, original_image: &Rgba16Image) -> Result<Rgba16Image> {
+    pub fn apply(&self, original_image: &RgbaImage) -> Result<RgbaImage> {
         apply_uv_map(original_image, self)
     }
 }

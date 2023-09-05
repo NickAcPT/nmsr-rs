@@ -1,3 +1,4 @@
+use image::RgbaImage;
 #[cfg(feature = "serializable_parts")]
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +10,7 @@ use vfs::VfsPath;
 
 use crate::errors::{NMSRError, Result};
 use crate::utils::{into_par_iter_if_enabled, open_image_from_vfs};
-use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage, uv::Rgba16Image};
+use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
@@ -114,7 +115,7 @@ impl PartsManager {
 
         let loaded_parts: Vec<_> = into_par_iter_if_enabled!(part_entries)
             .map(|(name, entry)| Ok((name, open_image_from_vfs(&entry)?.into_rgba8())))
-            .map(|result: Result<(String, Rgba16Image)>| -> Result<UvImage> {
+            .map(|result: Result<(String, RgbaImage)>| -> Result<UvImage> {
                 let (name, image) = result?;
                 let uv_image = UvImage::new(name, image, store_raw_pixels);
 

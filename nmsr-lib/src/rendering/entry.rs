@@ -5,10 +5,10 @@ use ears_rs::{features::EarsFeatures, parser::EarsParser};
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
 
-use crate::{errors::NMSRError, errors::Result, parts::player_model::PlayerModel, uv::Rgba16Image};
+use crate::{errors::NMSRError, errors::Result, parts::player_model::PlayerModel};
 
 pub struct RenderingEntry {
-    pub skin: Rgba16Image,
+    pub skin: RgbaImage,
     pub model: PlayerModel,
     pub render_shading: bool,
     pub render_layers: bool,

@@ -1,5 +1,5 @@
 use image::imageops::crop;
-use image::{GenericImage, ImageBuffer, Pixel, Rgba};
+use image::{GenericImage, ImageBuffer, Pixel, Rgba, RgbaImage};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 use tracing::{instrument, trace_span};
@@ -10,9 +10,7 @@ use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::utils::par_iterator_if_enabled;
 use crate::uv::part::UvImagePixel;
-use crate::uv::utils::u8_to_u16;
 use crate::uv::uv_magic::UvImage;
-use crate::uv::Rgba16Image;
 
 impl RenderingEntry {
     #[instrument(level = "trace", skip(self, parts_manager, uv_image, skin, _span), parent = _span, fields(part = uv_image.name.as_str()))]
@@ -20,9 +18,9 @@ impl RenderingEntry {
         &self,
         parts_manager: &PartsManager,
         uv_image: &UvImage,
-        skin: &Rgba16Image,
+        skin: &RgbaImage,
         _span: &tracing::Span,
-    ) -> Result<Rgba16Image> {
+    ) -> Result<RgbaImage> {
         let mut applied_uv = trace_span!("apply_uv").in_scope(|| uv_image.apply(skin))?;
 
         if !self.render_shading {
@@ -60,7 +58,7 @@ impl RenderingEntry {
     }
 
     #[instrument(level = "trace", skip(parts_manager))]
-    pub fn render(&self, parts_manager: &PartsManager) -> Result<Rgba16Image> {
+    pub fn render(&self, parts_manager: &PartsManager) -> Result<RgbaImage> {
         // Compute all the parts needed to be rendered
         let all_parts = parts_manager.get_parts(self);
 
@@ -128,7 +126,7 @@ impl RenderingEntry {
 
         // Merge final image
         let (width, height) = (first_uv.width(), first_uv.height());
-        let mut final_image: Rgba16Image = ImageBuffer::new(width, height);
+        let mut final_image: RgbaImage = ImageBuffer::new(width, height);
 
         if let Some(environment) = &parts_manager.environment_background {
             let _span = trace_span!("set_environment_background").entered();
@@ -164,7 +162,7 @@ impl RenderingEntry {
 const CROP_MARGIN: u32 = 15;
 
 #[instrument(level = "trace", skip(image))]
-fn crop_image(mut image: Rgba16Image) -> Rgba16Image {
+fn crop_image(mut image: RgbaImage) -> RgbaImage {
     let mut min_x: u32 = image.width();
     let mut min_y: u32 = image.height();
     let mut max_x: u32 = 0;

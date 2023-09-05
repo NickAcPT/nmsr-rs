@@ -129,7 +129,7 @@ fn test_uv_pixel() {
     
     println!("{:#10x}", final_number);
 
-    let pixel = UvImagePixel::new(1, 1, &Rgba([36, 173, 63, 145]), false);
+    let pixel = UvImagePixel::new(1, 1, &Rgba(channels), false);
 
     assert_eq!(
         pixel,

@@ -429,9 +429,9 @@ where
         Ok(())
     }
 
-    pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext) -> Result<Vec<u8>> {
+    pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext, cleanup_alpha: bool) -> Result<Vec<u8>> {
         self.scene_context
-            .copy_output_texture(graphics_context)
+            .copy_output_texture(graphics_context, cleanup_alpha)
             .await
     }
 

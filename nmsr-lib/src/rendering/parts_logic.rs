@@ -1,5 +1,3 @@
-use either::Either;
-
 use crate::parts::manager::PartsManager;
 #[cfg(feature = "ears")]
 use crate::rendering::ears_parts_logic::get_ears_parts;
@@ -51,26 +49,5 @@ impl PartsManager {
         {
             iterator.collect()
         }
-    }
-
-    pub(crate) fn get_overlay(&self, uv: &UvImage) -> Option<&UvImage> {
-        let mut iterator = Either::Left(self.model_overlays.iter());
-
-        #[cfg(feature = "ears")]
-        {
-            if let Some(ears_manager) = &self.ears_parts_manager {
-                iterator = Either::Right(
-                    iterator
-                        .unwrap_left()
-                        .chain(ears_manager.model_overlays.iter()),
-                );
-            }
-        }
-        #[cfg(not(feature = "ears"))]
-        {
-            iterator = Either::Right(iterator.unwrap_left());
-        }
-
-        iterator.find(|other| other.name.eq(&uv.name))
     }
 }

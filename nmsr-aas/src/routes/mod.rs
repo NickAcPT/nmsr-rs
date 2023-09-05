@@ -50,7 +50,8 @@ impl NMSRState {
             surface_provider: Box::new(|_| None),
             default_size: (0, 0), // can be zero since we don't provide any surface
             texture_format: None,
-            features: Features::empty()
+            features: Features::empty(),
+            blend_state: None
         })
         .await?;
 

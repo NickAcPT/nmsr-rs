@@ -47,15 +47,16 @@ async fn main() -> anyhow::Result<()> {
 
     let size = window.inner_size();
 
-    let graphics = GraphicsContext::new_with_shader(GraphicsContextDescriptor {
+    let graphics = GraphicsContext::new(GraphicsContextDescriptor {
         backends: Some(wgpu::Backends::all()),
         surface_provider: Box::new(|i: &Instance| unsafe {
             Some(i.create_surface(&window).unwrap())
         }),
         default_size: (size.width, size.height),
         texture_format: None,
-        features: Features::empty()
-    }, ShaderSource::Wgsl(include_str!("uv_shader.wgsl").into()))
+        features: Features::empty(),
+        blend_state: None
+    })
     .await
     .expect("Expected Nmsr Pipeline");
 

@@ -56,6 +56,7 @@ pub async fn read_buffer(
     device: &wgpu::Device,
     output_buffer: &wgpu::Buffer,
     dimensions: &BufferDimensions,
+    cleanup_alpha: bool,
 ) -> Result<Vec<u8>> {
     let buffer_slice = wait_for_buffer_slice(output_buffer, device).await?;
 
@@ -71,7 +72,9 @@ pub async fn read_buffer(
         drop(data);
         output_buffer.unmap();
 
-        //unmultiply_alpha(&mut bytes);
+        if cleanup_alpha {
+            unmultiply_alpha(&mut bytes);
+        }
 
         Ok(bytes)
     })

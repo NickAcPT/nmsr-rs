@@ -274,13 +274,18 @@ impl SceneContext {
             .ok_or(NMSRRenderingError::SceneContextTexturesNotInitialized)
     }
 
-    pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext) -> Result<Vec<u8>> {
+    pub async fn copy_output_texture(
+        &self,
+        graphics_context: &GraphicsContext,
+        cleanup_alpha: bool,
+    ) -> Result<Vec<u8>> {
         let textures = self.try_textures()?;
 
         read_buffer(
             &graphics_context.device,
             &textures.texture_output_buffer,
             &textures.texture_output_buffer_dimensions,
+            cleanup_alpha,
         )
         .await
     }

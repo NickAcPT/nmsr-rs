@@ -4,7 +4,7 @@ use deadpool::managed::{Object, Pool};
 use smaa::SmaaMode;
 use wgpu::{
     vertex_attr_array, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingType, BlendState, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
+    BindingType, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
     ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
     PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
     RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages,
@@ -12,7 +12,7 @@ use wgpu::{
 };
 pub use wgpu::{
     Adapter, Backends, Device, Instance, Queue, ShaderSource, Surface, SurfaceConfiguration,
-    TextureFormat, Features
+    TextureFormat, Features, BlendState
 };
 
 use crate::{
@@ -102,6 +102,7 @@ pub struct GraphicsContextDescriptor<'a> {
     pub default_size: (u32, u32),
     pub texture_format: Option<TextureFormat>,
     pub features: Features,
+    pub blend_state: Option<BlendState>,
 }
 
 impl GraphicsContext {
@@ -263,6 +264,8 @@ impl GraphicsContext {
         let multisampling_strategy = Self::get_multisampling_strategy(&adapter, &texture_format);
         let sample_count = multisampling_strategy.get_msaa_sample_count();
 
+        let blend = descriptor.blend_state.or(Some(BlendState::PREMULTIPLIED_ALPHA_BLENDING));
+        
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
@@ -293,7 +296,7 @@ impl GraphicsContext {
                 entry_point: "fs_main",
                 targets: &[Some(ColorTargetState {
                     format: texture_format,
-                    blend: Some(BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+                    blend,
                     write_mask: ColorWrites::ALL,
                 })],
             }),

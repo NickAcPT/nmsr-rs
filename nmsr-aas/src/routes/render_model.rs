@@ -85,7 +85,7 @@ pub(crate) async fn internal_render_model(
 
     scene.render(&state.graphics_context)?;
 
-    let render = scene.copy_output_texture(&state.graphics_context).await?;
+    let render = scene.copy_output_texture(&state.graphics_context, true).await?;
     let render_bytes = create_png_from_bytes((size.width, size.height), &render)?;
 
     Ok(render_bytes)

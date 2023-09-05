@@ -13,46 +13,15 @@ use crate::uv::part::UvImagePixel;
 use crate::uv::uv_magic::UvImage;
 
 impl RenderingEntry {
-    #[instrument(level = "trace", skip(self, parts_manager, uv_image, skin, _span), parent = _span, fields(part = uv_image.name.as_str()))]
+    #[instrument(level = "trace", skip(self, uv_image, skin, _span), parent = _span, fields(part = uv_image.name.as_str()))]
     fn apply_uv_and_overlay(
         &self,
-        parts_manager: &PartsManager,
         uv_image: &UvImage,
         skin: &RgbaImage,
         _span: &tracing::Span,
     ) -> Result<RgbaImage> {
-        let mut applied_uv = trace_span!("apply_uv").in_scope(|| uv_image.apply(skin))?;
-
-        if !self.render_shading {
-            return Ok(applied_uv);
-        }
-
-        let overlay = parts_manager.get_overlay(uv_image);
-
-        if let Some(overlay) = overlay {
-            let _span_guard = trace_span!("apply_overlay").entered();
-            for uv_pixel in &overlay.uv_pixels {
-                if let UvImagePixel::RawPixel {
-                    position,
-                    rgba: overlay_channels,
-                } = uv_pixel
-                {
-                    let pixel_channels = applied_uv
-                        .get_pixel_mut(position.x as u32, position.y as u32)
-                        .channels_mut();
-
-                    for channel_index in 0..4 {
-                        let original_percent =
-                            (pixel_channels[channel_index] as f32) / u8::MAX as f32;
-                        let overlay_percent =
-                            (overlay_channels[channel_index] as f32) / u8::MAX as f32;
-
-                        pixel_channels[channel_index] =
-                            ((original_percent * overlay_percent) * (u8::MAX as f32)) as u8;
-                    }
-                }
-            }
-        }
+        let applied_uv =
+            trace_span!("apply_uv").in_scope(|| uv_image.apply(skin, self.render_shading))?;
 
         Ok(applied_uv)
     }
@@ -67,12 +36,7 @@ impl RenderingEntry {
             let current = tracing::Span::current();
 
             par_iterator_if_enabled!(all_parts)
-                .map(|&p| {
-                    (
-                        p,
-                        self.apply_uv_and_overlay(parts_manager, p, &self.skin, &current),
-                    )
-                })
+                .map(|&p| (p, self.apply_uv_and_overlay(p, &self.skin, &current)))
                 .collect()
         });
 

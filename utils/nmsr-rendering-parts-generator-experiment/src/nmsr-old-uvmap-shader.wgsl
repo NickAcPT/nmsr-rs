@@ -63,6 +63,7 @@ fn fs_main(vertex: VertexOutput, @builtin(front_facing) front_facing: bool) -> @
     var depth = 1.0 - ((camera_distance - near) / (far - near));
     
     var dim = textureDimensions(texture);
+    
     var x = vertex.tex_coord.x;
     var y = vertex.tex_coord.y;
     return vec4<f32>(x, 1.0 - y, depth, 1.0);

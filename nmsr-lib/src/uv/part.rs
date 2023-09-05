@@ -6,29 +6,28 @@ use serde::{Deserialize, Serialize};
 
 use crate::geometry::Point;
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
-use crate::uv::utils::u16_to_u8;
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
 pub(crate) enum UvImagePixel {
     RawPixel {
-        position: Point<u16>,
+        position: Point<u8>,
         rgba: [u8; 4],
     },
     UvPixel {
-        position: Point<u16>,
+        position: Point<u8>,
         uv: Point<u8>,
-        depth: u16,
+        depth: u8,
     },
 }
 
 impl UvImagePixel {
     const COORDINATE_RESOLVE_SMOOTHING_SCALE: u32 = 64;
-    const TRANSPARENCY_CUTOFF: u16 = 250;
+    const TRANSPARENCY_CUTOFF: u8 = 250;
     const SKIN_SIZE: u32 = 64;
 
-    fn resolve_coordinate(value: u16, is_u: bool, max_size: u32) -> u32 {
-        let value_normalized = value as f32 / u16::MAX as f32;
+    fn resolve_coordinate(value: u8, is_u: bool, max_size: u32) -> u32 {
+        let value_normalized = value as f32 / u8::MAX as f32;
         let new_coord = (value_normalized) * (max_size as f32 - 1.0);
         let new_coord = new_coord.round();
 
@@ -42,9 +41,10 @@ impl UvImagePixel {
     pub(crate) fn new(
         x: u32,
         y: u32,
-        original_pixel: &Rgba<u16>,
+        original_pixel: &Rgba<u8>,
         store_raw_pixels: bool,
     ) -> Option<Self> {
+        compile_error!("Update this to use the new UV system");
         let channels = original_pixel.channels();
         // The coordinates are stored in the following format
         // - R - U coordinate (Horizontal, X)
@@ -72,21 +72,21 @@ impl UvImagePixel {
         if store_raw_pixels {
             Some(RawPixel {
                 position: Point {
-                    x: x as u16,
-                    y: y as u16,
+                    x: x as u8,
+                    y: y as u8,
                 },
                 rgba: [
-                    u16_to_u8!(channels[0]),
-                    u16_to_u8!(channels[1]),
-                    u16_to_u8!(channels[2]),
-                    u16_to_u8!(channels[3]),
+                    channels[0],
+                    channels[1],
+                    channels[2],
+                    channels[3],
                 ],
             })
         } else {
             Some(UvPixel {
                 position: Point {
-                    x: x as u16,
-                    y: y as u16,
+                    x: x as u8,
+                    y: y as u8,
                 },
                 uv: Point {
                     x: u as u8,

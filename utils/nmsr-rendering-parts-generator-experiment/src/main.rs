@@ -128,7 +128,7 @@ async fn main() -> Result<()> {
         .map(|layers| layers.len())
         .unwrap_or_default();
 
-    let mut layers: HashMap<usize, Rgba16Image> = HashMap::new();
+    let mut layers: HashMap<usize, _> = HashMap::new();
 
     for (point, pixels) in processed {
         for (index, (pixel, _)) in pixels.iter().enumerate() {

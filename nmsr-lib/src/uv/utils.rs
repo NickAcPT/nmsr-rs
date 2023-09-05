@@ -25,8 +25,9 @@ pub fn apply_uv_map(input: &Rgba16Image, uv: &UvImage) -> Result<Rgba16Image> {
 }
 
 pub fn get_uv_max_depth(image: &Rgba16Image) -> u16 {
+    compile_error!("Update this to use the new UV system");
     let points = image.pixels().map(|&p| p.0[2]).collect::<Vec<_>>();
-    *points.iter().max().unwrap_or(&0)
+    *points.iter().max().unwrap_or(&0) as u16
 }
 
 pub(crate) const U16_TO_U8_PIXEL_RATIO: f32 = u8::MAX as f32 / u16::MAX as f32;

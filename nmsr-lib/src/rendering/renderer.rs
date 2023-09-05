@@ -45,12 +45,12 @@ impl RenderingEntry {
 
                     for channel_index in 0..4 {
                         let original_percent =
-                            (pixel_channels[channel_index] as f32) / u16::MAX as f32;
+                            (pixel_channels[channel_index] as f32) / u8::MAX as f32;
                         let overlay_percent =
-                            (u8_to_u16!(overlay_channels[channel_index]) as f32) / u16::MAX as f32;
+                            (overlay_channels[channel_index] as f32) / u8::MAX as f32;
 
                         pixel_channels[channel_index] =
-                            ((original_percent * overlay_percent) * (u16::MAX as f32)) as u16;
+                            ((original_percent * overlay_percent) * (u8::MAX as f32)) as u8;
                     }
                 }
             }
@@ -136,17 +136,10 @@ impl RenderingEntry {
             for uv_pixel in &environment.uv_pixels {
                 if let UvImagePixel::RawPixel { position, rgba } = uv_pixel {
                     unsafe {
-                        let rgba = [
-                            u8_to_u16!(rgba[0]),
-                            u8_to_u16!(rgba[1]),
-                            u8_to_u16!(rgba[2]),
-                            u8_to_u16!(rgba[3]),
-                        ];
-
                         final_image.unsafe_put_pixel(
                             position.x as u32,
                             position.y as u32,
-                            Rgba(rgba),
+                            Rgba(*rgba),
                         )
                     }
                 }

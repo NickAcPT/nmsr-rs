@@ -1,4 +1,3 @@
-use image::imageops::crop;
 use image::{GenericImage, ImageBuffer, Pixel, Rgba, RgbaImage};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
@@ -116,34 +115,7 @@ impl RenderingEntry {
             }
         }
 
-        //final_image = crop_image(final_image);
-
         // Return it
         Ok(final_image)
     }
-}
-
-const CROP_MARGIN: u32 = 15;
-
-#[instrument(level = "trace", skip(image))]
-fn crop_image(mut image: RgbaImage) -> RgbaImage {
-    let mut min_x: u32 = image.width();
-    let mut min_y: u32 = image.height();
-    let mut max_x: u32 = 0;
-    let mut max_y: u32 = 0;
-
-    for (x, y, pixel) in image.enumerate_pixels() {
-        let pixel_alpha = pixel.0[3];
-        if pixel_alpha > 0 {
-            // We found a pixel with alpha, so we need to crop
-            min_x = min_x.min(x);
-            min_y = min_y.min(y);
-            max_x = max_x.max(x);
-            max_y = max_y.max(y);
-        }
-    }
-
-    let min_x = min_x.saturating_sub(CROP_MARGIN);
-    let max_x = max_x.saturating_add(CROP_MARGIN);
-    crop(&mut image, min_x, min_y, max_x - min_x, max_y - min_y).to_image()
 }

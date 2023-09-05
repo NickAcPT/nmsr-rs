@@ -14,7 +14,7 @@ use nmsr_rendering::low_level::Vec3;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use strum::IntoEnumIterator;
 
-use wgpu::{Backends, Instance, ShaderSource, Features};
+use wgpu::{Backends, Instance, Features};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;

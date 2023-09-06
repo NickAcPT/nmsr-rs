@@ -102,6 +102,7 @@ pub struct RenderRequestQueryParams {
 pub struct RenderRequestMultipartParams {
     #[serde(flatten)]
     pub query: RenderRequestQueryParams,
+    #[serde(alias = "texture")]
     pub skin: Vec<u8>,
 }
 

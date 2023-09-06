@@ -81,6 +81,7 @@ mtpng = "0.3.5"
 chrono = "0.4.26"
 tokio-stream = { version = "0.1.14", features = ["fs"] }
 sync_wrapper = "0.1.2"
+axum-extra = { version = "0.7.7", features = ["multipart"] }
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

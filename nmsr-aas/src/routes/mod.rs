@@ -1,33 +1,32 @@
 pub mod extractors;
+pub mod query;
 mod render;
 mod render_model;
 mod render_skin;
-
-use deadpool::managed::Object;
-use enumset::EnumSet;
-use image::RgbaImage;
-use nmsr_rendering::high_level::pipeline::{
-    pools::SceneContextPoolManager, Backends, GraphicsContext, GraphicsContextDescriptor,
-    GraphicsContextPools, Features,
-};
-pub use render::render;
-use strum::IntoEnumIterator;
-use tracing::{debug_span, info, info_span, instrument, Instrument};
-use uuid::uuid;
-
-use std::{hint::black_box, sync::Arc};
-
 use crate::{
     config::{ModelCacheConfiguration, NmsrConfiguration},
     error::{RenderRequestError, Result},
     model::{
+        armor::manager::VanillaMinecraftArmorManager,
         request::{
             cache::ModelCache, entry::RenderRequestEntry, RenderRequest, RenderRequestFeatures,
             RenderRequestMode,
         },
-        resolver::{mojang::client::MojangClient, RenderRequestResolver}, armor::manager::VanillaMinecraftArmorManager,
+        resolver::{mojang::client::MojangClient, RenderRequestResolver},
     },
 };
+use deadpool::managed::Object;
+use enumset::EnumSet;
+use image::RgbaImage;
+use nmsr_rendering::high_level::pipeline::{
+    pools::SceneContextPoolManager, Backends, Features, GraphicsContext, GraphicsContextDescriptor,
+    GraphicsContextPools,
+};
+pub use render::render;
+use std::{hint::black_box, sync::Arc};
+use strum::IntoEnumIterator;
+use tracing::{debug_span, info, info_span, instrument, Instrument};
+use uuid::uuid;
 
 #[derive(Clone)]
 pub struct NMSRState {
@@ -52,7 +51,7 @@ impl NMSRState {
             default_size: (0, 0), // can be zero since we don't provide any surface
             texture_format: None,
             features: Features::empty(),
-            blend_state: None
+            blend_state: None,
         })
         .await?;
 
@@ -61,13 +60,13 @@ impl NMSRState {
         let pools = GraphicsContextPools::new((&graphics_context).clone())?;
 
         let armor_manager = VanillaMinecraftArmorManager::new("cache".into()).await?;
-        
+
         Ok(Self {
             resolver: Arc::new(resolver),
             graphics_context,
             pools: Arc::new(pools),
             cache_config: config.caching.clone(),
-            armor_manager: Arc::new(armor_manager)
+            armor_manager: Arc::new(armor_manager),
         })
     }
 
@@ -174,7 +173,7 @@ impl NMSRState {
 
         for mode in RenderRequestMode::iter() {
             request.mode = mode;
-            
+
             let _ = black_box(
                 black_box(render_model::internal_render_model(
                     &request, self, &resolved,

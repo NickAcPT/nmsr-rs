@@ -54,6 +54,15 @@ impl TryFrom<RenderRequestEntry> for String {
     }
 }
 
+
+impl TryFrom<Vec<u8>> for RenderRequestEntry {
+    type Error = RenderRequestError;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        Ok(RenderRequestEntry::PlayerSkin(value))
+    }
+}
+
 #[derive(Debug, Default, Clone, Copy, FromRepr, Display, EnumString, EnumCount, PartialEq)]
 pub enum RenderRequestEntryModel {
     #[default]

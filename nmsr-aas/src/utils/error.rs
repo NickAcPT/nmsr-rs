@@ -33,6 +33,12 @@ pub enum RenderRequestError {
     PathRejection(#[from] axum::extract::rejection::PathRejection),
     #[error("Query Rejection Error: {0}")]
     QueryRejection(#[from] axum::extract::rejection::QueryRejection),
+    #[error("Multipart Error: {0}")]
+    MultipartError(#[from] axum_extra::extract::multipart::MultipartError),
+    #[error("Multipart Rejection: {0}")]
+    MultipartRejection(#[from] axum_extra::extract::multipart::MultipartRejection),
+    #[error("Unable to decode multipart: {0} ({1})")]
+    MultipartDecodeError(serde_json::Error, serde_json::Value),
     #[error("Invalid render mode: {0}")]
     InvalidRenderMode(String),
     #[error("Unable to upgrade legacy skin to modern format")]
@@ -41,6 +47,8 @@ pub enum RenderRequestError {
     InvalidRenderSettingError(&'static str, String),
     #[error("You've specified {0} which is invalid for this mode. {1}")]
     InvalidModeSettingSpecifiedError(&'static str, &'static str),
+    #[error("Missing render request texture. Did you forget to specify a texture?")]
+    MissingRenderRequestEntry,
 }
 
 #[derive(Error, Debug)]
@@ -82,7 +90,10 @@ pub enum MojangRequestError {
     #[error("Received result while fetching from mojang: {0}")]
     MojangFetchRequestError(String),
     #[error("Unable to resolve render request entity {1:?}: {0}")]
-    UnableToResolveRenderRequestEntity(Box<dyn std::error::Error + Send + Sync>, crate::model::request::entry::RenderRequestEntry),
+    UnableToResolveRenderRequestEntity(
+        Box<dyn std::error::Error + Send + Sync>,
+        crate::model::request::entry::RenderRequestEntry,
+    ),
     #[error("Unable to parse uuid {0} into xuid")]
     UnableToParseUuidIntoXuid(Uuid),
 }
@@ -113,8 +124,11 @@ pub(crate) type ArmorManagerResult<T> = std::result::Result<T, ArmorManagerError
 
 pub trait ExplainableExt<T> {
     fn explain_closure<O: FnOnce() -> String>(self, message: O) -> Result<T>;
-    
-    fn explain(self, message: String) -> Result<T> where Self: Sized {
+
+    fn explain(self, message: String) -> Result<T>
+    where
+        Self: Sized,
+    {
         self.explain_closure(move || message)
     }
 }

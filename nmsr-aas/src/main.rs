@@ -7,6 +7,7 @@ use crate::routes::NMSRState;
 use crate::utils::tracing::NmsrTracing;
 
 use anyhow::Context;
+use axum::routing::post;
 use opentelemetry::StringValue;
 use tower_http::cors::AllowMethods;
 use tower_http::cors::Any;
@@ -71,6 +72,7 @@ async fn main() -> anyhow::Result<()> {
     let router = Router::new()
         .route("/", get(root))
         .route("/:mode/:texture", get(render))
+        .route("/:mode", post(render))
         .with_state(state);
 
     let trace_layer = NmsrTracing::new_trace_layer();

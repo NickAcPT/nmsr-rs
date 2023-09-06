@@ -26,9 +26,9 @@ const IMAGE_PNG_MIME: &'static str = "image/png";
 #[axum::debug_handler]
 #[instrument(skip(state, method))]
 pub async fn render(
-    request: RenderRequest,
     state: State<NMSRState>,
     method: Method,
+    request: RenderRequest,
 ) -> Result<Response> {
     let resolved = state.resolver.resolve(&request).await?;
 

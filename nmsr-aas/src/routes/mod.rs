@@ -172,6 +172,10 @@ impl NMSRState {
         let resolved = self.resolver.resolve(&request).await?;
 
         for mode in RenderRequestMode::iter() {
+            if mode == RenderRequestMode::Skin {
+                continue;
+            }
+            
             request.mode = mode;
 
             let _ = black_box(

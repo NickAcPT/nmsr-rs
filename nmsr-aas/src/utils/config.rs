@@ -34,11 +34,6 @@ pub struct ModelCacheConfiguration {
     #[serde(with = "humantime_serde")]
     pub resolve_cache_duration: Duration,
 
-    /// The duration of time to keep a rendered model in the cache.
-    /// This is effectively for how long to cache the rendered outputs.
-    #[serde(with = "humantime_serde")]
-    pub render_cache_duration: Duration,
-
     /// Cache biases for specific entries.
     /// A cache bias is a duration of time to keep a specific entry in the cache.
     /// This is useful for entries that are requested often, such as the models in the home page.

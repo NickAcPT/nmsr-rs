@@ -28,12 +28,6 @@ cleanup_interval = "1h"
 # This value is also used for the Cache-Control header age for the skin requests.
 resolve_cache_duration = "15m"
 
-# How long it takes to expire the cache of the rendered models.
-# Setting this to a big value will reduce the amount of renders that need to be done, but will increase the time
-# it takes to update the skin for a player.
-# This value is also used for the Cache-Control header age for the render requests.
-render_cache_duration = "15m"
-
 # Cache biases for specific entries.
 # A cache bias is a duration of time to keep a specific entry in the cache.
 # This is useful for entries that are requested often, such as the models in the home page.

@@ -202,12 +202,19 @@ impl NMSRState {
         }
 
         // Get the cache duration for this entry.
+        let entry_duration = self.cache_config.get_cache_duration(&request.entry);
+        
         // Limit our max-age duration to 1 year if we have set this entry to be cached forever.
-        let duration = self
-            .cache_config
-            .get_cache_duration(&request.entry)
-            .min(&Self::ONE_YEAR_DURATION);
+        let max_age_duration = entry_duration.min(&Self::ONE_YEAR_DURATION);
 
-        format!("public, max-age={}, immutable", duration.as_secs()).into()
+        let immutable = if entry_duration == &Duration::MAX {
+            ", immutable"
+        } else {
+            ""
+        };
+
+        let max_age = max_age_duration.as_secs();
+        
+        format!("public, max-age={max_age}{immutable}").into()
     }
 }

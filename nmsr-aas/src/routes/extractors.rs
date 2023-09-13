@@ -12,6 +12,7 @@ use axum::{
 };
 use axum_extra::extract::Multipart;
 use hyper::{body::Bytes, Method, Request};
+use is_empty::IsEmpty;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
@@ -105,7 +106,7 @@ where
         let excluded_features = query.get_excluded_features();
 
         let model = query.get_model();
-
+        
         let extra_settings = Some(RenderRequestExtraSettings {
             width: query.width,
             height: query.height,
@@ -125,7 +126,7 @@ where
             chestplate: query.chestplate,
             leggings: query.leggings,
             boots: query.boots,
-        });
+        }).filter(|s| !s.is_empty());
 
         Ok(RenderRequest::new_from_excluded_features(
             mode,

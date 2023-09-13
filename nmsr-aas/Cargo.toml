@@ -88,6 +88,8 @@ indoc = "2"
 
 xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 
+is_empty = "0.2"
+
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [
     "git",

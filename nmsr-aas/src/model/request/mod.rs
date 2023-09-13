@@ -1,5 +1,6 @@
 use derive_more::Debug;
 use enumset::{EnumSet, EnumSetType};
+use is_empty::IsEmpty;
 use nmsr_rendering::{
     high_level::{
         camera::Camera,
@@ -40,7 +41,7 @@ pub enum RenderRequestFeatures {
     Ears,
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, IsEmpty)]
 pub struct RenderRequestExtraSettings {
     pub yaw: Option<f32>,
     pub pitch: Option<f32>,

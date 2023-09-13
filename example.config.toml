@@ -14,6 +14,7 @@ endpoint = "http://127.0.0.1:4317"
 service_name = "nmsr-aas"
 
 
+# Caching configuration.
 [caching]
 # The interval of time to run the cleanup task.
 # This task will remove any files in the cache that are older than the image cache expiry.
@@ -36,7 +37,7 @@ render_cache_duration = "15m"
 # Cache biases for specific entries.
 # A cache bias is a duration of time to keep a specific entry in the cache.
 # This is useful for entries that are requested often, such as the models in the home page.
-# Examples:
+# Example:
 #
 # [cache_biases]
 # # Cache NickAc's skin for 2h:
@@ -47,6 +48,7 @@ render_cache_duration = "15m"
 [caching.cache_biases]
 
 
+# Mojank configuration (Mojang API and Geyser API).
 [mojank]
 # The URL to the Mojang API's session server.
 # This can be useful if you want to use a caching proxy for the Mojang API and is used to
@@ -56,3 +58,17 @@ session_server = "https://sessionserver.mojang.com"
 textures_server = "https://textures.minecraft.net"
 # The rate limit to use for requests to the session server in a 1 second window.
 session_server_rate_limit = 10
+# The URL to the Geyser API's server.
+# This is used to get the bedrock skin for a player based on their Floodgate UUID.
+geysermc_api_server = "https://api.geysermc.org/"
+
+# Rendering configuration.
+# This is used when setting up the rendering engine.
+# Example:
+#  
+# [rendering]
+# # The number of MSAA samples to use when rendering.
+# sample_count = 1
+# # Whether to use SMAA.
+# use_smaa = true
+[rendering]

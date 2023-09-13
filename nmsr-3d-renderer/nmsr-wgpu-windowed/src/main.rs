@@ -55,7 +55,9 @@ async fn main() -> anyhow::Result<()> {
         default_size: (size.width, size.height),
         texture_format: None,
         features: Features::empty(),
-        blend_state: None
+        blend_state: None,
+        sample_count: None,
+        use_smaa: None,
     })
     .await
     .expect("Expected Nmsr Pipeline");

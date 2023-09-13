@@ -258,6 +258,8 @@ async fn process_group_logic(
         texture_format: None,
         features: Features::empty(),
         blend_state: Some(BlendState::REPLACE),
+        sample_count: None,
+        use_smaa: None,
     };
 
     let graphics_context = if shadow_y_pos.is_none() {

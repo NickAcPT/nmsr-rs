@@ -42,6 +42,8 @@ impl NMSRState {
         let mojang_client = MojangClient::new(Arc::new(config.mojank.clone()))?;
         let cache_config = config.caching.clone();
         let model_cache = ModelCache::new("cache".into(), cache_config).await?;
+        
+        let rendering_config = config.rendering.clone();
 
         let resolver = RenderRequestResolver::new(model_cache, Arc::new(mojang_client));
 
@@ -52,6 +54,8 @@ impl NMSRState {
             texture_format: None,
             features: Features::empty(),
             blend_state: None,
+            sample_count: rendering_config.as_ref().map(|c| c.sample_count),
+            use_smaa: rendering_config.as_ref().map(|c| c.use_smaa),
         })
         .await?;
 
@@ -100,11 +104,8 @@ impl NMSRState {
         info!("Pre-loading our cache biases.");
         self.preload_cache_biases().await?;
 
-        #[cfg(not(debug_assertions))]
-        {
-            info!("Pre-warming model renderer.");
-            self.prewarm_renderer().await?;
-        }
+        info!("Pre-warming model renderer.");
+        self.prewarm_renderer().await?;
 
         info!("Starting cache clean-up task");
         self.start_cache_cleanup_task()?;

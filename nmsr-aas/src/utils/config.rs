@@ -16,6 +16,7 @@ pub struct NmsrConfiguration {
     pub tracing: Option<TracingConfiguration>,
     pub caching: ModelCacheConfiguration,
     pub mojank: MojankConfiguration,
+    pub rendering: Option<RenderingConfiguration>,
 }
 
 #[serde_as]
@@ -64,11 +65,6 @@ pub struct MojankConfiguration {
     pub session_server_rate_limit: u64,
 }
 
-#[inline]
-fn default_session_server_rate_limit() -> u64 {
-    100
-}
-
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct ServerConfiguration {
     /// The address to bind the server to.
@@ -84,6 +80,14 @@ pub struct TracingConfiguration {
     /// The service name to use for traces.
     #[serde(default = "default_service_name")]
     pub service_name: String,
+}
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct RenderingConfiguration {
+    /// The number of MSAA samples to use when rendering.
+    pub sample_count: u32,
+    /// Whether to use SMAA.
+    pub use_smaa: bool,
 }
 
 impl ModelCacheConfiguration {
@@ -115,6 +119,11 @@ impl ModelCacheConfiguration {
         
         return Ok(expiry < SystemTime::now());
     }
+}
+
+#[inline]
+fn default_session_server_rate_limit() -> u64 {
+    100
 }
 
 fn default_service_name() -> String {

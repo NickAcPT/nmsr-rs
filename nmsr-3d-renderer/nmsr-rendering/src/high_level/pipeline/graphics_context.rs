@@ -4,15 +4,15 @@ use deadpool::managed::{Object, Pool};
 use smaa::SmaaMode;
 use wgpu::{
     vertex_attr_array, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingType, BufferAddress, BufferBindingType, BufferSize, ColorTargetState,
-    ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
+    BindingType, BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites,
+    CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
     PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
     RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages,
     TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 pub use wgpu::{
-    Adapter, Backends, Device, Instance, Queue, ShaderSource, Surface, SurfaceConfiguration,
-    TextureFormat, Features, BlendState
+    Adapter, Backends, BlendState, Device, Features, Instance, Queue, ShaderSource, Surface,
+    SurfaceConfiguration, TextureFormat,
 };
 
 use crate::{
@@ -103,6 +103,45 @@ pub struct GraphicsContextDescriptor<'a> {
     pub texture_format: Option<TextureFormat>,
     pub features: Features,
     pub blend_state: Option<BlendState>,
+    pub sample_count: Option<u32>,
+    pub use_smaa: Option<bool>,
+}
+
+impl<'a> GraphicsContextDescriptor<'a> {
+    pub(crate) fn get_multisampling_strategy(
+        adapter: &Adapter,
+        texture_format: &TextureFormat,
+        use_smaa: Option<bool>,
+        sample_count: Option<u32>,
+    ) -> MultiSamplingStrategy {
+        let wants_smaa = use_smaa.unwrap_or(env::var("NMSR_USE_SMAA").is_ok());
+
+        let format = *texture_format;
+        let sample_flags = adapter.get_texture_format_features(format).flags;
+
+        let env_sample_count = env::var("NMSR_SAMPLE_COUNT")
+            .ok()
+            .and_then(|it| it.parse::<u32>().ok());
+
+        let count = sample_count.or(env_sample_count).unwrap_or_else(|| {
+            vec![16, 8, 4, 2, 1]
+                .iter()
+                .find(|&&sample_count| sample_flags.sample_count_supported(sample_count))
+                .copied()
+                .unwrap_or(1)
+        });
+
+        let mut strat = MultiSamplingStrategy::MSAA(count);
+
+        if wants_smaa {
+            strat = MultiSamplingStrategy::SMAAWithMSAA((
+                SmaaMode::Smaa1X,
+                strat.get_msaa_sample_count(),
+            ));
+        }
+
+        strat
+    }
 }
 
 impl GraphicsContext {
@@ -144,7 +183,8 @@ impl GraphicsContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES | descriptor.features,
+                    features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
+                        | descriptor.features,
                     limits: wgpu::Limits::default(),
                 },
                 None,
@@ -261,11 +301,18 @@ impl GraphicsContext {
             attributes: &vertex_attr_array![0 => Float32x3, 1 => Float32x2, 2 => Float32x3],
         };
 
-        let multisampling_strategy = Self::get_multisampling_strategy(&adapter, &texture_format);
+        let multisampling_strategy = GraphicsContextDescriptor::get_multisampling_strategy(
+            &adapter,
+            &texture_format,
+            descriptor.use_smaa,
+            descriptor.sample_count,
+        );
         let sample_count = multisampling_strategy.get_msaa_sample_count();
 
-        let blend = descriptor.blend_state.or(Some(BlendState::PREMULTIPLIED_ALPHA_BLENDING));
-        
+        let blend = descriptor
+            .blend_state
+            .or(Some(BlendState::PREMULTIPLIED_ALPHA_BLENDING));
+
         let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
@@ -331,38 +378,5 @@ impl GraphicsContext {
                 surface.configure(&self.device, config);
             }
         }
-    }
-
-    pub(crate) fn get_multisampling_strategy(
-        adapter: &Adapter,
-        texture_format: &TextureFormat,
-    ) -> MultiSamplingStrategy {
-        let wants_smaa = env::var("NMSR_USE_SMAA").is_ok();
-
-        let format = *texture_format;
-        let sample_flags = adapter.get_texture_format_features(format).flags;
-
-        let env_sample_count = env::var("NMSR_SAMPLE_COUNT")
-            .ok()
-            .and_then(|it| it.parse::<u32>().ok());
-
-        let count = env_sample_count.unwrap_or_else(|| {
-            vec![16, 8, 4, 2, 1]
-                .iter()
-                .find(|&&sample_count| sample_flags.sample_count_supported(sample_count))
-                .copied()
-                .unwrap_or(1)
-        });
-
-        let mut strat = MultiSamplingStrategy::MSAA(count);
-
-        if wants_smaa {
-            strat = MultiSamplingStrategy::SMAAWithMSAA((
-                SmaaMode::Smaa1X,
-                strat.get_msaa_sample_count(),
-            ));
-        }
-
-        strat
     }
 }

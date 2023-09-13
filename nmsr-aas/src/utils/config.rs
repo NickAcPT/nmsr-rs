@@ -91,10 +91,10 @@ pub struct RenderingConfiguration {
 }
 
 impl ModelCacheConfiguration {
-    pub fn is_expired(&self, entry: &RenderRequestEntry, marker_metadata: Metadata, default_duration: &Duration) -> crate::error::Result<bool> {
+    pub fn get_cache_duration(&self, entry: &RenderRequestEntry) -> &Duration {
         let bias = self.cache_biases.get(entry);
 
-        let duration = if let Some(bias) = bias {
+        if let Some(bias) = bias {
             trace!("Found cache bias for entry: {:?}", bias);
             
             match bias {
@@ -102,8 +102,12 @@ impl ModelCacheConfiguration {
                 CacheBias::CacheIndefinitely => &Duration::MAX,
             }
         } else {
-            default_duration
-        };
+            &self.resolve_cache_duration
+        }
+    }
+    
+    pub fn is_expired(&self, entry: &RenderRequestEntry, marker_metadata: Metadata) -> crate::error::Result<bool> {
+        let duration = self.get_cache_duration(entry);
 
         // Short-circuit never expiring entry.
         if duration == &Duration::MAX {

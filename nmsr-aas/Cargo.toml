@@ -23,7 +23,7 @@ async-trait = "0.1.73"
 twelf = { version = "0.12.0", default-features = false, features = [
     "env",
     "toml",
-    "default_trait"
+    "default_trait",
 ] }
 
 # Serde - Serialization and Deserialization framework
@@ -85,6 +85,8 @@ axum-extra = { version = "0.7.7", features = ["multipart"] }
 
 regex = "1.9.5"
 indoc = "2"
+
+xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

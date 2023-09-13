@@ -52,14 +52,22 @@ pub(crate) async fn internal_render_model(
     let mut player_armor_slots = PlayerArmorSlots::default();
 
     player_armor_slots.helmet = request
-        .extra_settings.as_ref().and_then(|x| x.helmet.clone());
+        .extra_settings
+        .as_ref()
+        .and_then(|x| x.helmet.clone());
     player_armor_slots.chestplate = request
-        .extra_settings.as_ref().and_then(|x| x.chestplate.clone());
+        .extra_settings
+        .as_ref()
+        .and_then(|x| x.chestplate.clone());
     player_armor_slots.leggings = request
-        .extra_settings.as_ref().and_then(|x| x.leggings.clone());
+        .extra_settings
+        .as_ref()
+        .and_then(|x| x.leggings.clone());
     player_armor_slots.boots = request
-        .extra_settings.as_ref().and_then(|x| x.boots.clone());
-    
+        .extra_settings
+        .as_ref()
+        .and_then(|x| x.boots.clone());
+
     let part_context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
         model: PlayerModel::from(final_model),
         has_layers,
@@ -85,7 +93,9 @@ pub(crate) async fn internal_render_model(
 
     scene.render(&state.graphics_context)?;
 
-    let render = scene.copy_output_texture(&state.graphics_context, true).await?;
+    let render = scene
+        .copy_output_texture(&state.graphics_context, true)
+        .await?;
     let render_bytes = create_png_from_bytes((size.width, size.height), &render)?;
 
     Ok(render_bytes)
@@ -99,8 +109,6 @@ async fn load_textures(
     part_provider: &PlayerPartProviderContext<VanillaMinecraftArmorMaterialData>,
     scene: &mut Scene<Object<SceneContextPoolManager>>,
 ) -> Result<()> {
-    let armor_slots = part_provider.armor_slots.as_ref().expect("msg");
-
     for (&texture_type, texture_bytes) in &resolved.textures {
         let mut image_buffer = load_image(&texture_bytes)?;
 
@@ -111,23 +119,25 @@ async fn load_textures(
         scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);
     }
 
-    let (main_layer, second_armor_layer) = state
-        .armor_manager
-        .create_armor_texture(armor_slots)
-        .await?;
+    if let Some(armor_slots) = part_provider.armor_slots.as_ref() {
+        let (main_layer, second_armor_layer) = state
+            .armor_manager
+            .create_armor_texture(armor_slots)
+            .await?;
 
-    scene.set_texture(
-        &state.graphics_context,
-        VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_ONE,
-        &main_layer,
-    );
-
-    if let Some(second_armor_layer) = second_armor_layer {
         scene.set_texture(
             &state.graphics_context,
-            VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_TWO,
-            &second_armor_layer,
+            VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_ONE,
+            &main_layer,
         );
+
+        if let Some(second_armor_layer) = second_armor_layer {
+            scene.set_texture(
+                &state.graphics_context,
+                VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_TWO,
+                &second_armor_layer,
+            );
+        }
     }
 
     Ok(())

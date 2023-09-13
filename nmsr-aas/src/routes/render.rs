@@ -12,6 +12,7 @@ use mtpng::{
     ColorType, Header,
 };
 use tracing::{instrument, trace_span};
+use xxhash_rust::xxh3::xxh3_64;
 
 use crate::{
     error::{ExplainableExt, Result},
@@ -37,34 +38,41 @@ pub async fn render(
     }
 
     let result = match request.mode {
-        RenderRequestMode::Skin => internal_render_skin(request.clone(), &state, resolved).await,
+        RenderRequestMode::Skin => internal_render_skin(&request, &state, resolved).await,
         _ => internal_render_model(&request, &state, &resolved).await,
     }?;
 
-    let mut res = create_image_response(result)?;
+    let mut res = create_image_response(result, &state, &request)?;
+    let hash = xxh3_64(format!("{:?}", request).as_bytes());
 
-    res.headers_mut().insert(
-        "Etag",
-        HeaderValue::from_str(format!("{:?}", request).as_str()).expect("msg"),
-    );
+    if let Ok(etag_value) = HeaderValue::from_str(&format!("{hash:x}")) {
+        res.headers_mut().insert(
+            "Etag",
+            etag_value,
+        );
+    }
 
     Ok(res)
 }
 
-fn create_image_response<T>(skin: T) -> Result<Response>
+fn create_image_response<T>(skin: T, State(state): &State<NMSRState>, request: &RenderRequest) -> Result<Response>
 where
     T: IntoResponse,
 {
     let mut response = skin.into_response();
-
+    let cache_ctrl = state.get_cache_control_for_request(request);
+    
+    if let Ok(cache_ctrl) = HeaderValue::from_str(&cache_ctrl) {
+        response.headers_mut().insert(
+            CACHE_CONTROL,
+            cache_ctrl,
+        );
+    }
+    
     response
         .headers_mut()
         .insert(CONTENT_TYPE, HeaderValue::from_static(IMAGE_PNG_MIME));
-
-    response.headers_mut().insert(
-        CACHE_CONTROL,
-        HeaderValue::from_static("public, max-age 3600, only-if-cached"),
-    );
+        
 
     Ok(response)
 }

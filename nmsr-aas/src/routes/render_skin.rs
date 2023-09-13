@@ -11,7 +11,7 @@ use crate::{
 use super::{render::create_png_from_bytes, NMSRState};
 
 pub(crate) async fn internal_render_skin(
-    request: RenderRequest,
+    request: &RenderRequest,
     state: &NMSRState,
     mut resolved: ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {

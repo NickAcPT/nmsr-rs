@@ -104,8 +104,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
     ) -> Result<bool> {
         config.is_expired(
             &RenderRequestEntry::TextureHash(entry.to_string()),
-            marker_metadata,
-            &config.resolve_cache_duration,
+            marker_metadata
         )
     }
 
@@ -281,7 +280,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         _marker: &[u8; 1],
         marker_metadata: Metadata,
     ) -> Result<bool> {
-        config.is_expired(entry, marker_metadata, &config.resolve_cache_duration)
+        config.is_expired(entry, marker_metadata)
     }
 
     async fn write_cache(

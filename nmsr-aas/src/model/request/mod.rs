@@ -171,16 +171,20 @@ impl RenderRequest {
                 }
             }
 
-            if let Some(distance) = settings.distance {
-                if self.mode.is_isometric() {
-                    camera.set_aspect(camera.get_aspect() + distance)
-                } else {
-                    camera.set_distance(camera.get_distance() + distance)
-                }
+            let mut distance = settings.distance.unwrap_or_default();
+            
+            if !self.mode.is_isometric() && settings.helmet.as_ref().or(settings.boots.as_ref()).is_some() {
+                distance += 2.0;
             }
             
-            if settings.helmet.as_ref().or(settings.boots.as_ref()).is_some() {
-                camera.set_distance(camera.get_distance() + 2.0);
+            if self.mode.is_face() && settings.helmet.as_ref().is_some() {
+                distance += 0.5;
+            }
+            
+            if self.mode.is_isometric() {
+                camera.set_aspect(camera.get_aspect() + distance)
+            } else {
+                camera.set_distance(camera.get_distance() + distance)
             }
 
             if camera.get_size().is_some() {

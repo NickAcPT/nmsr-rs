@@ -162,7 +162,7 @@ impl RenderRequestMode {
         if self.is_head() {
             distance -= 6.0;
         }
-    
+        
         let projection = if self.is_isometric() {
             let mut aspect = 17.0;
             

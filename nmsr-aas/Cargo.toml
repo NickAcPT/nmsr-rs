@@ -83,6 +83,9 @@ tokio-stream = { version = "0.1.14", features = ["fs"] }
 sync_wrapper = "0.1.2"
 axum-extra = { version = "0.7.7", features = ["multipart"] }
 
+regex = "1.9.5"
+indoc = "2"
+
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [
     "git",

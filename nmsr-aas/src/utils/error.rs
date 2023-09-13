@@ -51,6 +51,21 @@ pub enum RenderRequestError {
     MissingRenderRequestEntry,
 }
 
+impl RenderRequestError {
+    pub fn is_bad_request(&self) -> bool {
+        matches!(
+            self,
+            RenderRequestError::InvalidUUID(_)
+                | RenderRequestError::InvalidPlayerUuidRequest(_, _)
+                | RenderRequestError::InvalidPlayerRequest(_)
+                | RenderRequestError::InvalidRenderMode(_)
+                | RenderRequestError::InvalidRenderSettingError(_, _)
+                | RenderRequestError::InvalidModeSettingSpecifiedError(_, _)
+                | RenderRequestError::MissingRenderRequestEntry
+        )
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum ModelCacheError {
     #[error("Unable to read marker for entry {0:?}")]
@@ -144,7 +159,20 @@ pub struct NmsrErrorExtension(pub NMSRaaSError);
 impl IntoResponse for NMSRaaSError {
     fn into_response(self) -> axum::response::Response {
         let mut res = axum::response::IntoResponse::into_response(self.to_string());
-        *res.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
+        
+        let is_bad_request = if let Self::RenderRequestError(error) = &self {
+            error.is_bad_request()
+        } else {
+            false
+        };
+        
+        let error = if is_bad_request {
+            StatusCode::BAD_REQUEST
+        } else {
+            StatusCode::INTERNAL_SERVER_ERROR
+        };
+        
+        *res.status_mut() = error;
         
         res.extensions_mut().insert(NmsrErrorExtension(self));
         

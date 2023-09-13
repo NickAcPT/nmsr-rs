@@ -196,8 +196,8 @@ impl NMSRState {
     }
 
     pub fn get_cache_control_for_request(&self, request: &RenderRequest) -> Cow<'_, str> {
-        // Don't cache requests with extra settings for now.
-        if request.extra_settings.is_some() {
+        // Don't cache requests using custom mode.
+        if request.mode.is_custom() {
             return "public, no-store".into();
         }
 

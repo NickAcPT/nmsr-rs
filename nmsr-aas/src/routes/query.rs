@@ -30,8 +30,8 @@ use serde_with::{formats::CommaSeparator, serde_as, DisplayFromStr, StringWithSe
 ///  - `?steve`: set the model of the entry to steve [compatibility with old URLs]
 ///  - `?process`: process the skin (upgrade skin to 1.8 format, strip alpha from the body regions, apply erase regions if Ears feature is enabled)
 ///  
-///  - `arms=<rotation>` or `arm=<rotation>`: set the rotation of the arms
-///  - `dist=<distance>` or `distance=<distance>`: set the distance of the camera
+///  - `?arms=<rotation>` or `arm=<rotation>`: set the rotation of the arms
+///  - `?dist=<distance>` or `distance=<distance>`: set the distance of the camera
 ///
 ///  - `xpos=<x>` or `x_pos=<x>`: set the x position of the camera (requires using Custom mode)
 ///  - `ypos=<y>` or `y_pos=<y>`: set the y position of the camera (requires using Custom mode)
@@ -159,7 +159,7 @@ impl RenderRequestQueryParams {
 
         RenderRequestMode::validate_unit("arm", self.arms, 0.0, 180.0)?;
 
-        //RenderRequestMode::validate_unit("distance", self.distance, -5.0, 30.0)?;
+        RenderRequestMode::validate_unit("distance", self.distance, -5.0, 30.0)?;
 
         // Clamp yaw, pitch, roll so that there is no weirdness with the camera
         clamp(&mut self.yaw, -180.0, 180.0);

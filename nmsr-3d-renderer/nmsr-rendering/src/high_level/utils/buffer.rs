@@ -62,7 +62,7 @@ pub async fn read_buffer(
 
     let data = buffer_slice.get_mapped_range();
 
-    trace_span!("image_from_raw").in_scope(|| {
+    trace_span!("image_from_buffer").in_scope(|| {
         let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);
 
         for chunk in data.chunks(dimensions.padded_bytes_per_row as usize) {

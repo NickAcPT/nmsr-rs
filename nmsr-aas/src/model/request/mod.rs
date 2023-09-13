@@ -1,5 +1,5 @@
 use derive_more::Debug;
-use enumset::{EnumSet, EnumSetType};
+use enumset::{EnumSet, EnumSetType, enum_set};
 use is_empty::IsEmpty;
 use nmsr_rendering::{
     high_level::{
@@ -56,7 +56,7 @@ pub struct RenderRequestExtraSettings {
     pub x_pos: Option<f32>,
     pub y_pos: Option<f32>,
     pub z_pos: Option<f32>,
-    
+
     pub helmet: Option<VanillaMinecraftArmorMaterialData>,
     pub chestplate: Option<VanillaMinecraftArmorMaterialData>,
     pub leggings: Option<VanillaMinecraftArmorMaterialData>,
@@ -130,13 +130,13 @@ impl RenderRequest {
         excluded_features: EnumSet<RenderRequestFeatures>,
         extra_settings: Option<RenderRequestExtraSettings>,
     ) -> Self {
-        RenderRequest {
+        Self::cleanup_request(RenderRequest {
             mode,
             entry,
             model,
             features: EnumSet::all().difference(excluded_features),
             extra_settings,
-        }
+        })
     }
 
     pub(crate) fn get_camera(&self) -> Camera {
@@ -173,15 +173,21 @@ impl RenderRequest {
             }
 
             let mut distance = settings.distance.unwrap_or_default();
-            
-            if !self.mode.is_isometric() && settings.helmet.as_ref().or(settings.boots.as_ref()).is_some() {
+
+            if !self.mode.is_isometric()
+                && settings
+                    .helmet
+                    .as_ref()
+                    .or(settings.boots.as_ref())
+                    .is_some()
+            {
                 distance += 2.0;
             }
-            
+
             if self.mode.is_face() && settings.helmet.as_ref().is_some() {
                 distance += 0.5;
             }
-            
+
             if self.mode.is_isometric() {
                 camera.set_aspect(camera.get_aspect() + distance)
             } else {
@@ -257,5 +263,30 @@ impl RenderRequest {
         } else {
             None
         }
+    }
+
+    fn cleanup_request(mut request: RenderRequest) -> RenderRequest {
+        if !request.mode.is_skin() {
+            // If we're not rendering a skin, remove the unprocessed skin feature
+            request.features.remove(RenderRequestFeatures::UnProcessedSkin);
+        } else {
+            // Otherwise, just keep the unprocessed skin feature (if exists)
+            request.features = request.features.intersection(enum_set!(RenderRequestFeatures::UnProcessedSkin));
+        }
+        
+        // If we're rendering just the head or face, remove the armor except for the helmet
+        // And remove some extra features we know aren't targeting the head
+        if request.mode.is_head_or_face() {
+            if let Some(extra_settings) = request.extra_settings.as_mut() {
+                extra_settings.chestplate = None;
+                extra_settings.leggings = None;
+                extra_settings.boots = None;
+            }
+
+            request.features.remove(RenderRequestFeatures::BodyLayers);
+            request.features.remove(RenderRequestFeatures::Cape);
+        }
+
+        request
     }
 }

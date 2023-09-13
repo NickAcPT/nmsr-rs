@@ -71,6 +71,10 @@ impl RenderRequestMode {
     pub(crate) fn is_square(&self) -> bool {
         self.is_bust() || self.is_head_or_face()
     }
+    
+    pub(crate) fn is_skin(&self) -> bool {
+        matches!(self, Self::Skin)
+    }
 
     // [min_w, min_h, max_w, max_h]
     pub fn size_constraints(&self) -> [u32; 4] {

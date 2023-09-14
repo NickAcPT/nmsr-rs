@@ -28,6 +28,11 @@ cleanup_interval = "1h"
 # This value is also used for the Cache-Control header age for the skin requests.
 resolve_cache_duration = "15m"
 
+# The duration of time to keep a texture in the cache.
+# This is effectively for how long to cache the player's skin, cape and other textures
+# even if the player's UUID wasn't requested for some time.
+texture_cache_duration = "48h"
+
 # Cache biases for specific entries.
 # A cache bias is a duration of time to keep a specific entry in the cache.
 # This is useful for entries that are requested often, such as the models in the home page.

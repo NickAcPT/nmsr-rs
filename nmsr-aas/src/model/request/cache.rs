@@ -102,9 +102,10 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         _marker: &(),
         marker_metadata: Metadata,
     ) -> Result<bool> {
-        config.is_expired(
+        config.is_expired_with_default(
             &RenderRequestEntry::TextureHash(entry.to_string()),
-            marker_metadata
+            marker_metadata,
+            &config.texture_cache_duration
         )
     }
 

@@ -7,7 +7,7 @@ use serde_with::{serde_as, TryFromInto};
 use tracing::trace;
 use twelf::config;
 
-use crate::{model::request::{cache::CacheBias, entry::RenderRequestEntry}, error::ExplainableExt};
+use crate::{model::request::{cache::CacheBias, entry::RenderRequestEntry}, error::{ExplainableExt, Result}};
 
 #[config]
 #[derive(Default, Debug)]
@@ -29,10 +29,16 @@ pub struct ModelCacheConfiguration {
     pub cleanup_interval: Duration,
     
     /// The duration of time to keep a resolved model in the cache.
-    /// This is effectively for how long to cache the player's skin, cape and other textures.
+    /// This is effectively for how long to cache the UUID -> the player's skin, cape and other textures.
     /// When given a player uuid, we will resolve it with Mojang's API and cache the result.
     #[serde(with = "humantime_serde")]
     pub resolve_cache_duration: Duration,
+    
+    /// The duration of time to keep a texture in the cache.
+    /// This is effectively for how long to cache the player's skin, cape and other textures
+    /// even if the player's UUID wasn't requested for some time.
+    #[serde(with = "humantime_serde")]
+    pub texture_cache_duration: Duration,
 
     /// Cache biases for specific entries.
     /// A cache bias is a duration of time to keep a specific entry in the cache.
@@ -86,7 +92,7 @@ pub struct RenderingConfiguration {
 }
 
 impl ModelCacheConfiguration {
-    pub fn get_cache_duration(&self, entry: &RenderRequestEntry) -> &Duration {
+    pub fn get_cache_duration(&self, entry: &RenderRequestEntry, default_duration: &Duration) -> &Duration {
         let bias = self.cache_biases.get(entry);
 
         if let Some(bias) = bias {
@@ -97,12 +103,16 @@ impl ModelCacheConfiguration {
                 CacheBias::CacheIndefinitely => &Duration::MAX,
             }
         } else {
-            &self.resolve_cache_duration
+            default_duration
         }
     }
     
-    pub fn is_expired(&self, entry: &RenderRequestEntry, marker_metadata: Metadata) -> crate::error::Result<bool> {
-        let duration = self.get_cache_duration(entry);
+    pub fn is_expired(&self, entry: &RenderRequestEntry, marker_metadata: Metadata) -> Result<bool> {
+        self.is_expired_with_default(entry, marker_metadata, &self.resolve_cache_duration)
+    }
+    
+    pub fn is_expired_with_default(&self, entry: &RenderRequestEntry, marker_metadata: Metadata, default_duration: &Duration) -> Result<bool> {
+        let duration = self.get_cache_duration(entry, default_duration);
 
         // Short-circuit never expiring entry.
         if duration == &Duration::MAX {
@@ -122,7 +132,7 @@ impl ModelCacheConfiguration {
 
 #[inline]
 fn default_session_server_rate_limit() -> u64 {
-    100
+    10
 }
 
 fn default_service_name() -> String {

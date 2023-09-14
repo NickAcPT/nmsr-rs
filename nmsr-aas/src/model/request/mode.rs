@@ -14,6 +14,7 @@ use crate::error::{RenderRequestError, Result};
 #[derive(EnumString, Debug, PartialEq, Clone, Copy, EnumIter)]
 #[strum(serialize_all = "snake_case")]
 pub enum RenderRequestMode {
+    #[strum(serialize = "skin", serialize = "texture")]
     Skin,
     #[strum(serialize = "fullbody", serialize = "full", serialize = "full_body")]
     FullBody,

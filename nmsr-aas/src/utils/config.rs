@@ -1,4 +1,8 @@
-use std::{collections::HashMap, time::{Duration, SystemTime}, fs::Metadata};
+use std::{
+    collections::HashMap,
+    fs::Metadata,
+    time::{Duration, SystemTime},
+};
 
 use chrono::{DateTime, Local};
 use derive_more::Debug;
@@ -7,7 +11,10 @@ use serde_with::{serde_as, TryFromInto};
 use tracing::trace;
 use twelf::config;
 
-use crate::{model::request::{cache::CacheBias, entry::RenderRequestEntry}, error::{ExplainableExt, Result}};
+use crate::{
+    error::ExplainableExt,
+    model::request::{cache::CacheBias, entry::RenderRequestEntry},
+};
 
 #[config]
 #[derive(Default, Debug)]
@@ -27,13 +34,13 @@ pub struct ModelCacheConfiguration {
     /// This task will run on startup, and then every time the interval has passed.
     #[serde(with = "humantime_serde")]
     pub cleanup_interval: Duration,
-    
+
     /// The duration of time to keep a resolved model in the cache.
     /// This is effectively for how long to cache the UUID -> the player's skin, cape and other textures.
     /// When given a player uuid, we will resolve it with Mojang's API and cache the result.
     #[serde(with = "humantime_serde")]
     pub resolve_cache_duration: Duration,
-    
+
     /// The duration of time to keep a texture in the cache.
     /// This is effectively for how long to cache the player's skin, cape and other textures
     /// even if the player's UUID wasn't requested for some time.
@@ -53,14 +60,14 @@ pub struct MojankConfiguration {
     /// This is used to resolve the player's skin, cape and other textures.
     #[serde(default = "default_session_server")]
     pub session_server: String,
-    
+
     /// The textures server to use for downloading player textures.
     #[serde(default = "default_textures_server")]
     pub textures_server: String,
-    
+
     #[serde(default = "default_geyser_api_server")]
     pub geysermc_api_server: String,
-    
+
     /// The rate limit to use for requests to the session server in a 1 second window.
     #[serde(default = "default_session_server_rate_limit")]
     pub session_server_rate_limit: u64,
@@ -92,12 +99,20 @@ pub struct RenderingConfiguration {
 }
 
 impl ModelCacheConfiguration {
-    pub fn get_cache_duration(&self, entry: &RenderRequestEntry, default_duration: &Duration) -> &Duration {
+    pub fn get_cache_duration(&self, entry: &RenderRequestEntry) -> &Duration {
+        self.get_cache_duration_with_default(entry, &self.resolve_cache_duration)
+    }
+
+    pub fn get_cache_duration_with_default<'a>(
+        &'a self,
+        entry: &RenderRequestEntry,
+        default_duration: &'a Duration,
+    ) -> &'a Duration {
         let bias = self.cache_biases.get(entry);
 
         if let Some(bias) = bias {
             trace!("Found cache bias for entry: {:?}", bias);
-            
+
             match bias {
                 CacheBias::KeepCachedFor(duration) => duration,
                 CacheBias::CacheIndefinitely => &Duration::MAX,
@@ -106,13 +121,22 @@ impl ModelCacheConfiguration {
             default_duration
         }
     }
-    
-    pub fn is_expired(&self, entry: &RenderRequestEntry, marker_metadata: Metadata) -> Result<bool> {
+
+    pub fn is_expired(
+        &self,
+        entry: &RenderRequestEntry,
+        marker_metadata: Metadata,
+    ) -> crate::error::Result<bool> {
         self.is_expired_with_default(entry, marker_metadata, &self.resolve_cache_duration)
     }
-    
-    pub fn is_expired_with_default(&self, entry: &RenderRequestEntry, marker_metadata: Metadata, default_duration: &Duration) -> Result<bool> {
-        let duration = self.get_cache_duration(entry, default_duration);
+
+    pub fn is_expired_with_default(
+        &self,
+        entry: &RenderRequestEntry,
+        marker_metadata: Metadata,
+        default_duration: &Duration,
+    ) -> crate::error::Result<bool> {
+        let duration = self.get_cache_duration_with_default(entry, default_duration);
 
         // Short-circuit never expiring entry.
         if duration == &Duration::MAX {
@@ -123,9 +147,9 @@ impl ModelCacheConfiguration {
             "Unable to get marker modified date for entry {:?}",
             &entry
         ))? + *duration;
-        
+
         trace!("Entry expires on {}", Into::<DateTime<Local>>::into(expiry));
-        
+
         return Ok(expiry < SystemTime::now());
     }
 }

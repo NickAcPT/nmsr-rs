@@ -24,6 +24,7 @@ use crate::error::NmsrErrorExtension;
 
 const X_FORWARDED_FOR_HEADER: HeaderName = HeaderName::from_static("x-forwarded-for");
 const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
+const REFERER: HeaderName = HeaderName::from_static("referer");
 
 pub struct NmsrTracing<B> {
     _phantom: std::marker::PhantomData<B>,
@@ -106,6 +107,7 @@ impl<B> MakeSpan<B> for NmsrTracing<B> {
             http.client_ip = Empty,
             otel.kind = ?opentelemetry::trace::SpanKind::Server,
             http.status_code = Empty,
+            http.referer = Empty,
             otel.status_code = Empty,
             trace_id = Empty,
 
@@ -149,6 +151,11 @@ impl<B> OnRequest<B> for NmsrTracing<B> {
         span.record("http.path", &path);
         span.record("http.client_ip", &client_ip);
         span.record("request_id", &request_id);
+
+        let referer = Self::extract_header_as_str(request.headers(), REFERER);
+        if let Some(referer) = referer {
+            span.record("http.referer", &referer);
+        }
     }
 }
 

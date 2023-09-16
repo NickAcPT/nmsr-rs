@@ -338,7 +338,7 @@ fn build_scene(
             height: config.height,
         },
         ctx,
-        PlayerBodyPartType::iter(),
+        &PlayerBodyPartType::iter().collect::<Vec<_>>(),
     );
 
     // Create pipeline layout

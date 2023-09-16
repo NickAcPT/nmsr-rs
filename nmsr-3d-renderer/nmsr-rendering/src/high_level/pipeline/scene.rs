@@ -14,12 +14,13 @@ use glam::{Mat4, Quat, Vec2, Vec3};
 use image::RgbaImage;
 use itertools::Itertools;
 use nmsr_player_parts::{
+    model::ArmorMaterial,
     parts::{
         part::{Part, PartAnchorInfo},
         provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
         uv::FaceUv,
     },
-    types::{PlayerBodyPartType, PlayerPartTextureType}, model::ArmorMaterial,
+    types::{PlayerBodyPartType, PlayerPartTextureType},
 };
 use std::{
     collections::HashMap,
@@ -97,17 +98,15 @@ where
     const RECTANGLE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_rectangle.png");
     const SQUARE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_square.png");
 
-    pub fn new<P, M: ArmorMaterial>(
+    pub fn new<M: ArmorMaterial>(
         graphics_context: &GraphicsContext,
         mut scene_context: T,
         mut camera: Camera,
         sun: SunInformation,
         viewport_size: Size,
         part_context: &PlayerPartProviderContext<M>,
-        body_parts: P,
+        body_parts: &[PlayerBodyPartType],
     ) -> Self
-    where
-        P: IntoIterator<Item = PlayerBodyPartType> + Debug,
     {
         // Initialize our camera with the viewport size
         Self::update_scene_context(
@@ -119,7 +118,7 @@ where
         );
 
         // Compute the body parts we need to render
-        let computed_body_parts = Self::collect_player_parts(part_context, body_parts);
+        let computed_body_parts = Self::collect_player_parts(part_context, &body_parts);
 
         let mut scene = Self {
             camera,
@@ -169,13 +168,10 @@ where
         &self.computed_body_parts
     }
 
-    pub fn has_texture(
-        &self,
-        texture_type: PlayerPartTextureType,
-    ) -> Result<bool> {
+    pub fn has_texture(&self, texture_type: PlayerPartTextureType) -> Result<bool> {
         Ok(self.textures.contains_key(&texture_type))
     }
-    
+
     pub fn set_texture(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -188,16 +184,19 @@ where
     }
 
     #[instrument(skip(part_provider_context))]
-    fn collect_player_parts<P, C: ArmorMaterial>(
+    fn collect_player_parts<C: ArmorMaterial>(
         part_provider_context: &PlayerPartProviderContext<C>,
-        body_parts: P,
+        body_parts: &[PlayerBodyPartType],
     ) -> Vec<Part>
-    where
-        P: IntoIterator<Item = PlayerBodyPartType> + Debug,
     {
-        let mut parts = body_parts
-            .into_iter()
-            .flat_map(|part| PlayerPartsProvider::Minecraft.get_parts(part_provider_context, part))
+        let providers = vec![PlayerPartsProvider::Minecraft, PlayerPartsProvider::Ears];
+
+        let mut parts = providers
+            .iter()
+            .flat_map(|provider| {
+                body_parts.iter()
+                    .flat_map(|part| provider.get_parts(part_provider_context, *part))
+            })
             .collect::<Vec<Part>>();
 
         // Sort the parts by texture. This allows us to render all parts with the same texture in one go.
@@ -436,7 +435,11 @@ where
         Ok(())
     }
 
-    pub async fn copy_output_texture(&self, graphics_context: &GraphicsContext, cleanup_alpha: bool) -> Result<Vec<u8>> {
+    pub async fn copy_output_texture(
+        &self,
+        graphics_context: &GraphicsContext,
+        cleanup_alpha: bool,
+    ) -> Result<Vec<u8>> {
         self.scene_context
             .copy_output_texture(graphics_context, cleanup_alpha)
             .await
@@ -471,7 +474,7 @@ where
         part_context: &PlayerPartProviderContext,
         body_parts: Vec<PlayerBodyPartType>,
     ) -> &[Part] {
-        self.computed_body_parts = Self::collect_player_parts(part_context, body_parts);
+        self.computed_body_parts = Self::collect_player_parts(part_context, &body_parts);
 
         self.parts()
     }
@@ -491,7 +494,7 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             let center = *position + *size / 2.0;
 
             let translation = anchor
-                .or_else(|| Some(PartAnchorInfo { anchor: Vec3::ZERO }))
+                .or_else(|| Some(PartAnchorInfo::default()))
                 .unwrap();
 
             let translation_mat = Mat4::from_translation(translation.anchor);
@@ -530,7 +533,7 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             anchor,
         } => {
             let translation = anchor
-                .or_else(|| Some(PartAnchorInfo { anchor: Vec3::ZERO }))
+                .or_else(|| Some(PartAnchorInfo::default()))
                 .unwrap();
 
             let translation_mat = Mat4::from_translation(translation.anchor);

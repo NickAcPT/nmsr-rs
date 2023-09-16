@@ -280,7 +280,7 @@ async fn process_group_logic(
         sun,
         viewport_size,
         &part_provider,
-        vec![],
+        &[],
     );
 
     scene.set_texture(

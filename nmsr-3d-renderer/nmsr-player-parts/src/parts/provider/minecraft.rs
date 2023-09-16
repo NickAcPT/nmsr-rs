@@ -191,12 +191,12 @@ fn perform_arm_part_rotation(
 
     if non_layer_body_part_type == LeftArm {
         let rotation = normal_part_size * Vec3::new(-1.0, 2.0, 0.0);
-        part.set_anchor(Some(PartAnchorInfo { anchor: rotation }));
+        part.set_anchor(Some(PartAnchorInfo::new_position(rotation)));
 
         part.rotation_mut().z = -arm_rotation_angle;
     } else if non_layer_body_part_type == RightArm {
         let rotation = normal_part_size * Vec3::new(1.0, 2.0, 0.0);
-        part.set_anchor(Some(PartAnchorInfo { anchor: rotation }));
+        part.set_anchor(Some(PartAnchorInfo::new_position(rotation)));
 
         part.rotation_mut().z = arm_rotation_angle;
     }
@@ -210,9 +210,7 @@ fn append_cape_part(result: &mut Vec<Part>) {
         texture_type: Cape
     };
 
-    cape.set_anchor(Some(PartAnchorInfo {
-        anchor: [0.0, 24.0, 2.0].into(),
-    }));
+    cape.set_anchor(Some(PartAnchorInfo::new_position([0.0, 24.0, 2.0].into())));
 
     cape.set_rotation([5.0, 180.0, 0.0].into());
 

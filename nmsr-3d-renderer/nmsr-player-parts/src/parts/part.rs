@@ -1,12 +1,40 @@
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
-use crate::types::PlayerPartTextureType;
+use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
 use glam::Vec3;
+
+use super::provider::minecraft::compute_base_part;
 
 #[derive(Debug, Copy, Clone)]
 pub struct PartAnchorInfo {
     pub anchor: MinecraftPosition,
 }
+impl PartAnchorInfo {
+    pub fn new_position(anchor: MinecraftPosition) -> Self {
+        Self { anchor }
+    }
+
+    pub fn new_part(part: PlayerBodyPartType, slim_arms: bool) -> Self {
+        let part = compute_base_part(part, slim_arms);
+        
+        let pos = part.get_position();
+        let size = part.get_size();
+        
+        let anchor = [pos.x, pos.y + size.y, pos.z].into();
+        
+        Self::new_position(anchor)
+    }
+}
+
+impl Default for PartAnchorInfo {
+    fn default() -> Self {
+        Self {
+            anchor: MinecraftPosition::ZERO,
+        }
+    }
+}
+
+
 
 #[derive(Debug, Copy, Clone)]
 pub enum Part {
@@ -57,13 +85,13 @@ impl Part {
             anchor: None,
         }
     }
-    
+
     pub fn new_quad(
         texture: PlayerPartTextureType,
         pos: [f32; 3],
         size: [u32; 3],
         uvs: [u16; 4],
-    ) -> Self{
+    ) -> Self {
         Quad {
             position: MinecraftPosition::new(pos[0], pos[1], pos[2]),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
@@ -77,7 +105,7 @@ impl Part {
     pub fn expand_splat(&self, amount: f32) -> Self {
         self.expand(Vec3::splat(amount))
     }
-    
+
     pub fn expand(&self, amount: Vec3) -> Self {
         let mut new_part = *self;
         let amount = amount * 2.0;
@@ -106,39 +134,49 @@ impl Part {
 
         new_part
     }
-    
+
     pub fn get_anchor(&self) -> Option<PartAnchorInfo> {
         match self {
             Cube { anchor, .. } => *anchor,
             Quad { anchor, .. } => *anchor,
         }
     }
-    
+
     pub fn set_anchor(&mut self, anchor: Option<PartAnchorInfo>) {
         match self {
-            Cube { anchor: ref mut a, .. } => *a = anchor,
-            Quad { anchor: ref mut a, .. } => *a = anchor,
+            Cube {
+                anchor: ref mut a, ..
+            } => *a = anchor,
+            Quad {
+                anchor: ref mut a, ..
+            } => *a = anchor,
         }
     }
-    
+
     pub fn get_rotation(&self) -> MinecraftPosition {
         match self {
             Cube { rotation, .. } => *rotation,
             Quad { rotation, .. } => *rotation,
         }
     }
-    
+
     pub fn rotation_mut(&mut self) -> &mut MinecraftPosition {
         match self {
             Cube { rotation, .. } => rotation,
             Quad { rotation, .. } => rotation,
         }
     }
-    
+
     pub fn set_rotation(&mut self, rotation: MinecraftPosition) {
         match self {
-            Cube { rotation: ref mut r, .. } => *r = rotation,
-            Quad { rotation: ref mut r, .. } => *r = rotation,
+            Cube {
+                rotation: ref mut r,
+                ..
+            } => *r = rotation,
+            Quad {
+                rotation: ref mut r,
+                ..
+            } => *r = rotation,
         }
     }
 
@@ -155,7 +193,7 @@ impl Part {
             Quad { position, .. } => *position,
         }
     }
-    
+
     pub fn position_mut(&mut self) -> &mut MinecraftPosition {
         match self {
             Cube { position, .. } => position,
@@ -169,25 +207,34 @@ impl Part {
             Quad { texture, .. } => *texture,
         }
     }
-    
+
     pub fn set_texture(&mut self, texture: PlayerPartTextureType) {
         match self {
-            Cube { texture: ref mut t, .. } => *t = texture,
-            Quad { texture: ref mut t, .. } => *t = texture,
+            Cube {
+                texture: ref mut t, ..
+            } => *t = texture,
+            Quad {
+                texture: ref mut t, ..
+            } => *t = texture,
         }
     }
-    
+
     pub fn get_face_uvs(&self) -> CubeFaceUvs {
         match self {
             Cube { face_uvs, .. } => *face_uvs,
             Quad { face_uv, .. } => unimplemented!("Cannot get face UVs on a quad"),
         }
     }
-    
+
     pub fn set_face_uvs(&mut self, face_uvs: CubeFaceUvs) {
         match self {
-            Cube { face_uvs: ref mut f, .. } => *f = face_uvs,
-            Quad { face_uv: ref mut f, .. } => unreachable!("Cannot set face UVs on a quad"),
+            Cube {
+                face_uvs: ref mut f,
+                ..
+            } => *f = face_uvs,
+            Quad {
+                face_uv: ref mut f, ..
+            } => unreachable!("Cannot set face UVs on a quad"),
         }
     }
 }

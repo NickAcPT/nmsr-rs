@@ -107,7 +107,7 @@ pub(crate) async fn internal_render_model(
         lighting,
         size,
         &part_context,
-        parts,
+        &parts,
     );
 
     load_textures(resolved, &state, &request, &part_context, &mut scene).await?;

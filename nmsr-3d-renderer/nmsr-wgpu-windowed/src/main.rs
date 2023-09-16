@@ -36,9 +36,9 @@ async fn main() -> anyhow::Result<()> {
     let mut renderdoc =
         renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
 
-    renderdoc
-        .launch_replay_ui(true, None)
-        .expect("Failed to launch RenderDoc replay UI");
+    //renderdoc
+    //    .launch_replay_ui(true, None)
+    //    .expect("Failed to launch RenderDoc replay UI");
 
     let mut event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
@@ -111,7 +111,7 @@ async fn main() -> anyhow::Result<()> {
         #[cfg(feature = "ears")] ears_features: None
     };
 
-    let mut scene = build_scene(&graphics, config, &ctx, camera, sun);
+    let mut scene = build_scene(&graphics, config, &mut ctx, camera, sun);
 
     println!("surface_view_format: {:?}", surface_view_format);
     println!("MSAA samples: {:?}", &graphics.multisampling_strategy);
@@ -325,10 +325,20 @@ async fn main() -> anyhow::Result<()> {
 fn build_scene(
     graphics: &GraphicsContext,
     config: &wgpu::SurfaceConfiguration,
-    ctx: &PlayerPartProviderContext,
+    ctx: &mut PlayerPartProviderContext,
     camera: Camera,
     sun: SunInformation
 ) -> Scene<SceneContextWrapper> {
+    let skin_bytes =
+        include_bytes!("ears_v0_sample_ear_out_front_claws_horn_tail_back_3_snout_4x3x4-0,2_wings_symmetric_dual_normal.png");
+    let skin_image = image::load_from_memory(skin_bytes).unwrap();
+    let mut skin_rgba = skin_image.to_rgba8();
+    
+    #[cfg(feature = "ears")]
+    {
+        ctx.ears_features = ears_rs::parser::EarsParser::parse(&skin_rgba).unwrap();
+    }
+    
     let mut scene = Scene::new(
         graphics,
         SceneContext::new(graphics).into(),
@@ -343,11 +353,6 @@ fn build_scene(
     );
 
     // Create pipeline layout
-    let skin_bytes =
-        include_bytes!("blockbench_alex.png");
-    let skin_image = image::load_from_memory(skin_bytes).unwrap();
-    let mut skin_rgba = skin_image.to_rgba8();
-
     ears_rs::utils::strip_alpha(&mut skin_rgba);
 
     // Upload skin and cape

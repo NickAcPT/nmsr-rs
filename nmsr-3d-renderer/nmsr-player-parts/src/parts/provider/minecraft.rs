@@ -87,7 +87,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
         if let Some(armor_slots) = &context.armor_slots {
             let part_slots =
                 PlayerArmorSlots::<()>::get_armor_slots_for_part(&non_layer_body_part_type);
-                
+
             for slot in part_slots {
                 if let Some(armor_slot) = armor_slots.get_armor_slot(slot) {
                     if let Some(texture) = M::get_texture_type(slot) {
@@ -179,7 +179,7 @@ pub(crate) fn perform_arm_part_rotation(
 
     if non_layer_body_part_type == LeftArm {
         let rotation = normal_part_size * Vec3::new(-1.0, 2.0, 0.0);
-        
+
         part.set_anchor(Some(anchor.with_rotation_anchor(rotation)));
 
         part.rotation_mut().z = -arm_rotation_angle;
@@ -199,7 +199,9 @@ fn append_cape_part(result: &mut Vec<Part>) {
         texture_type: Cape
     };
 
-    cape.set_anchor(Some(PartAnchorInfo::new_rotation_anchor_position([0.0, 24.0, 2.0].into())));
+    cape.set_anchor(Some(PartAnchorInfo::new_rotation_anchor_position(
+        [0.0, 24.0, 2.0].into(),
+    )));
 
     cape.set_rotation([5.0, 180.0, 0.0].into());
 

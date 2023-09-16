@@ -188,17 +188,17 @@ where
         part_provider_context: &PlayerPartProviderContext<C>,
         body_parts: &[PlayerBodyPartType],
     ) -> Vec<Part> {
-        let providers = if SystemTime::now()
+        let providers = /* if SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs()
             % 2
             == 0
-        {
+        { */
             vec![PlayerPartsProvider::Minecraft, PlayerPartsProvider::Ears]
-        } else {
+        /* } else {
             vec![PlayerPartsProvider::Ears]
-        };
+        } */;
 
         let mut parts = providers
             .iter()

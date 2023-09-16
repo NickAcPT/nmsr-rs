@@ -20,7 +20,6 @@ pub trait ArmorMaterial {
     fn get_texture_type(slot: PlayerArmorSlot) -> Option<PlayerPartTextureType> {
         None
     }
-
 }
 
 impl ArmorMaterial for () {}
@@ -41,16 +40,18 @@ impl PlayerArmorSlot {
             1
         }
     }
-    
+
     pub fn is_leggings(&self) -> bool {
         matches!(self, Self::Leggings)
     }
 
     pub fn get_offset(&self) -> f32 {
         if self.is_leggings() {
-            /* Dillation from the game */ 0.5 - /* Extra Leggings dillation */ 0.1
+            /* Dillation from the game */
+            0.5 - /* Extra Leggings dillation */ 0.1
         } else {
-            /* Dillation from the game */ 1.0
+            /* Dillation from the game */
+            1.0
         }
     }
 }
@@ -78,8 +79,12 @@ impl<M: ArmorMaterial> PlayerArmorSlots<M> {
     pub fn get_all_materials_in_slots(&self) -> Vec<(&M, PlayerArmorSlot)> {
         vec![
             self.helmet.as_ref().map(|a| (a, PlayerArmorSlot::Helmet)),
-            self.chestplate.as_ref().map(|a| (a, PlayerArmorSlot::Chestplate)),
-            self.leggings.as_ref().map(|a| (a, PlayerArmorSlot::Leggings)),
+            self.chestplate
+                .as_ref()
+                .map(|a| (a, PlayerArmorSlot::Chestplate)),
+            self.leggings
+                .as_ref()
+                .map(|a| (a, PlayerArmorSlot::Leggings)),
             self.boots.as_ref().map(|a| (a, PlayerArmorSlot::Boots)),
         ]
         .into_iter()
@@ -95,7 +100,7 @@ impl<M: ArmorMaterial> PlayerArmorSlots<M> {
             PlayerArmorSlot::Boots => self.boots.as_ref(),
         }
     }
-    
+
     pub fn get_parts_for_armor_slot(slot: PlayerArmorSlot) -> Vec<PlayerBodyPartType> {
         match slot {
             PlayerArmorSlot::Helmet => vec![PlayerBodyPartType::Head],
@@ -109,10 +114,9 @@ impl<M: ArmorMaterial> PlayerArmorSlots<M> {
                 PlayerBodyPartType::LeftLeg,
                 PlayerBodyPartType::RightLeg,
             ],
-            PlayerArmorSlot::Boots => vec![
-                PlayerBodyPartType::LeftLeg,
-                PlayerBodyPartType::RightLeg,
-            ],
+            PlayerArmorSlot::Boots => {
+                vec![PlayerBodyPartType::LeftLeg, PlayerBodyPartType::RightLeg]
+            }
         }
     }
 

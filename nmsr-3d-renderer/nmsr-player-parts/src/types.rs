@@ -46,7 +46,7 @@ impl PlayerBodyPartType {
             _ => *self,
         }
     }
-    
+
     pub fn is_arm(&self) -> bool {
         matches!(self.get_non_layer_part(), Self::LeftArm | Self::RightArm)
     }
@@ -57,10 +57,7 @@ pub enum PlayerPartTextureType {
     Shadow,
     Cape,
     Skin,
-    Custom {
-        key: &'static str,
-        size: (u32, u32),
-    }
+    Custom { key: &'static str, size: (u32, u32) },
 }
 
 impl PlayerPartTextureType {

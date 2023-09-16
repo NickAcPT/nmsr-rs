@@ -12,7 +12,7 @@ impl FaceUvPoint {
     pub fn to_uv(&self, texture_size: Vec2) -> Vec2 {
         Vec2::new(
             self.x as f32 / texture_size.x,
-            self.y as f32 / texture_size.y
+            self.y as f32 / texture_size.y,
         )
     }
 }
@@ -28,15 +28,27 @@ pub struct FaceUv {
 impl FaceUv {
     pub fn flip_vertically(self) -> Self {
         Self {
-            top_left: FaceUvPoint { x: self.top_left.x, y: self.bottom_right.y },
-            bottom_right: FaceUvPoint { x: self.bottom_right.x, y: self.top_left.y },
+            top_left: FaceUvPoint {
+                x: self.top_left.x,
+                y: self.bottom_right.y,
+            },
+            bottom_right: FaceUvPoint {
+                x: self.bottom_right.x,
+                y: self.top_left.y,
+            },
         }
     }
-    
+
     pub fn flip_horizontally(self) -> Self {
         Self {
-            top_left: FaceUvPoint { x: self.bottom_right.x, y: self.top_left.y },
-            bottom_right: FaceUvPoint { x: self.top_left.x, y: self.bottom_right.y },
+            top_left: FaceUvPoint {
+                x: self.bottom_right.x,
+                y: self.top_left.y,
+            },
+            bottom_right: FaceUvPoint {
+                x: self.top_left.x,
+                y: self.bottom_right.y,
+            },
         }
     }
 }

@@ -27,99 +27,95 @@ fn process_pos(pos: [f32; 3], is_slim_arms: bool) -> [f32; 3] {
             *ele = if is_slim_arms { 3.0 } else { 4.0 };
         }
     }
-    
+
     pos
 }
 
 macro_rules! declare_ears_parts {
-    {@part $parts: expr, $part: expr, $features: expr, $is_slim_arms: expr, $body_part: ident: [$(
+    {$parts: expr, $part: expr, $is_slim_arms:expr, $(
         $ears_part: ident {
             texture: $texture: ident,
             pos: $pos: expr,
             rot: $rot: expr,
             size: $size: expr,
             uv: [$($uv: tt)*],
-            feature: $($feature: tt)*
+            enabled: $($feature: tt)*
          } $(,)*
-    )+] $(,)*} => {
+    )+} => {
         {
             use crate::parts::uv::uv_from_pos_and_size;
 
-            if $part == PlayerBodyPartType::$body_part {
-                $(
-                    if $features.$($feature)* {
-                        let _ = EarsPlayerBodyPartType::$ears_part;
-                        let mut part_quad = Part::new_quad(
-                            PlayerPartTextureType::$texture,
-                            process_pos($pos, $is_slim_arms),
-                            $size,
-                            uv_from_pos_and_size($($uv)*),
-                        );
+            $(
+                if $($feature)* {
+                    let _ = EarsPlayerBodyPartType::$ears_part;
+                    let mut part_quad = Part::new_quad(
+                        PlayerPartTextureType::$texture,
+                        process_pos($pos, $is_slim_arms),
+                        $size,
+                        uv_from_pos_and_size($($uv)*),
+                    );
 
-                        part_quad.set_anchor(Some(PartAnchorInfo::new_part_anchor_translate(
-                            $part,
-                            $is_slim_arms,
-                        )));
+                    part_quad.set_anchor(Some(PartAnchorInfo::new_part_anchor_translate(
+                        $part,
+                        $is_slim_arms,
+                    )));
 
-                        part_quad.set_rotation($rot.into());
+                    part_quad.set_rotation($rot.into());
 
-                        $parts.push(part_quad);
-                    }
-                )+
-            };
-        }
-    };
-
-    {$($body_part: ident: [$($body: tt)+]),*} => {
-        impl EarsPlayerPartsProvider {
-            fn handle_body_part(
-                &self,
-                part: PlayerBodyPartType,
-                is_slim_arms: bool,
-                features: &EarsFeatures,
-            ) -> Vec<Part> {
-                let mut parts = Vec::new();
-                $(declare_ears_parts!{@part parts, part, features, is_slim_arms, $body_part: [$($body)+]})+
-
-                parts
-            }
+                    $parts.push(part_quad);
+                }
+            )+
         }
     };
 }
 
 const ARM_PIXEL_CANARY: f32 = 0xe621 as f32;
+impl EarsPlayerPartsProvider {
+    fn handle_body_part(
+        &self,
+        part: PlayerBodyPartType,
+        is_slim_arms: bool,
+        features: &EarsFeatures,
+    ) -> Vec<Part> {
+        let mut parts = Vec::new();
 
-declare_ears_parts! {
-    LeftLeg: [
-        LeftLegClaw {
-            texture: Skin,
-            pos: [0.0, 0.0, -4.0],
-            rot: [0.0, 0.0, 0.0],
-            size: [4, 0, 4],
-            uv: [16, 48, 4, 4],
-            feature: claws
-        },
-    ],
-    RightLeg: [
-        RightLegClaw {
-            texture: Skin,
-            pos: [0.0, 0.0, -4.0],
-            rot: [0.0, 0.0, 0.0],
-            size: [4, 0, 4],
-            uv: [0, 16, 4, 4],
-            feature: claws
-        },
-    ],
-    LeftArm: [
-        LeftArmClaw {
-            texture: Skin,
-            pos: [-4.0, 0.0, ARM_PIXEL_CANARY],
-            rot: [0.0, 0.0, 90.0],
-            size: [4, 0, 4],
-            uv: [44, 48, 4, 4],
-            feature: claws
-        },
-    ]
+        if part == PlayerBodyPartType::LeftLeg {
+            declare_ears_parts! { parts, part, is_slim_arms,
+                LeftLegClaw {
+                    texture: Skin,
+                    pos: [0.0, 0.0, -4.0],
+                    rot: [0.0, 0.0, 40.0],
+                    size: [4, 0, 4],
+                    uv: [16, 48, 4, 4],
+                    enabled: features.claws
+                },
+            };
+        } else if part == PlayerBodyPartType::RightLeg {
+            declare_ears_parts! { parts, part, is_slim_arms,
+                RightLegClaw {
+                    texture: Skin,
+                    pos: [0.0, 0.0, -4.0],
+                    rot: [0.0, 0.0, 40.0],
+                    size: [4, 0, 4],
+                    uv: [0, 16, 4, 4],
+                    enabled: features.claws
+                },
+            };
+        } else if part == PlayerBodyPartType::LeftArm {
+            declare_ears_parts! { parts, part, is_slim_arms,
+                LeftArmClaw {
+                    texture: Skin,
+                    pos: [0.0, 0.0, 0.0],
+                    rot: [0.0, 0.0, 40.0],
+                    size: [4, 0, 4],
+                    uv: [44, 48, 4, 4],
+                    enabled: features.claws
+                },
+            };
+        }
+
+        parts
+    }
 }
 
 impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {

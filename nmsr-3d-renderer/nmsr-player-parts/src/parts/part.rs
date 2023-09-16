@@ -15,12 +15,12 @@ impl PartAnchorInfo {
         self.rotation_anchor = rotation_anchor;
         self
     }
-    
+
     pub fn with_translation_anchor(mut self, translation_anchor: MinecraftPosition) -> Self {
         self.translation_anchor = translation_anchor;
         self
     }
-    
+
     pub fn new_rotation_anchor_position(rotation_anchor: MinecraftPosition) -> Self {
         Self {
             rotation_anchor,

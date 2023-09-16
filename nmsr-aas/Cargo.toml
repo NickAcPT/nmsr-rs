@@ -11,7 +11,7 @@ homepage.workspace = true
 # NMSR Rendering - Library for rendering using a wgpu backed rendering engine
 nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering" }
 
-ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
+ears-rs = { path = "../../ears-rs" }
 
 anyhow = "1.0.75"
 axum = { version = "0.6.20", features = ["macros"] }
@@ -89,6 +89,10 @@ indoc = "2"
 xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 
 is_empty = "0.2"
+
+[features]
+default = []
+ears = ["nmsr-rendering/ears"]
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

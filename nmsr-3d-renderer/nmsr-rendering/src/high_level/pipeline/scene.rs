@@ -169,6 +169,13 @@ where
         &self.computed_body_parts
     }
 
+    pub fn has_texture(
+        &self,
+        texture_type: PlayerPartTextureType,
+    ) -> Result<bool> {
+        Ok(self.textures.contains_key(&texture_type))
+    }
+    
     pub fn set_texture(
         &mut self,
         graphics_context: &GraphicsContext,

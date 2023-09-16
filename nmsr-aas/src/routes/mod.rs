@@ -5,7 +5,7 @@ mod render_model;
 mod render_skin;
 use crate::{
     config::{ModelCacheConfiguration, NmsrConfiguration},
-    error::{RenderRequestError, Result},
+    error::Result,
     model::{
         armor::manager::VanillaMinecraftArmorManager,
         request::{
@@ -88,17 +88,16 @@ impl NMSRState {
         skin_image: RgbaImage,
         features: EnumSet<RenderRequestFeatures>,
     ) -> Result<RgbaImage> {
-        let mut skin_image = ears_rs::utils::legacy_upgrader::upgrade_skin_if_needed(skin_image)
-            .ok_or(RenderRequestError::LegacySkinUpgradeError)?;
+        let mut skin_image = ears_rs::utils::upgrade_skin_if_needed(skin_image);
 
         #[cfg(feature = "ears")]
         {
             if features.contains(RenderRequestFeatures::Ears) {
-                ears_rs::utils::eraser::process_erase_regions(&mut skin_image)?;
+                ears_rs::utils::process_erase_regions(&mut skin_image)?;
             }
         }
 
-        ears_rs::utils::alpha::strip_alpha(&mut skin_image);
+        ears_rs::utils::strip_alpha(&mut skin_image);
 
         Ok(skin_image)
     }

@@ -299,7 +299,7 @@ async fn main() -> anyhow::Result<()> {
                     let skin_image = image::load_from_memory(&skin_bytes).unwrap();
                     let mut skin_rgba = skin_image.to_rgba8();
 
-                    ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
+                    ears_rs::utils::strip_alpha(&mut skin_rgba);
 
                     // Upload skin and cape
                     scene.set_texture(
@@ -347,7 +347,7 @@ fn build_scene(
     let skin_image = image::load_from_memory(skin_bytes).unwrap();
     let mut skin_rgba = skin_image.to_rgba8();
 
-    ears_rs::utils::alpha::strip_alpha(&mut skin_rgba);
+    ears_rs::utils::strip_alpha(&mut skin_rgba);
 
     // Upload skin and cape
     scene.set_texture(

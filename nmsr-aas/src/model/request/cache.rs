@@ -9,11 +9,12 @@ use std::{
 
 use super::entry::RenderRequestEntry;
 use crate::error::{ExplainableExt, ModelCacheError, ModelCacheResult, Result};
+#[cfg(feature = "ears")]
+use crate::model::resolver::ResolvedRenderEntryEarsTextureType;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
-use strum::IntoEnumIterator;
 use tokio::fs;
 
 use crate::{
@@ -105,7 +106,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         config.is_expired_with_default(
             &RenderRequestEntry::TextureHash(entry.to_string()),
             marker_metadata,
-            &config.texture_cache_duration
+            &config.texture_cache_duration,
         )
     }
 
@@ -252,7 +253,8 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             RenderRequestEntry::MojangPlayerUuid(u) | RenderRequestEntry::GeyserPlayerUuid(u) => {
                 Some(u.to_string())
             }
-            RenderRequestEntry::TextureHash(_) | RenderRequestEntry::PlayerSkin(_) => None,
+            RenderRequestEntry::TextureHash(hash) => Some(hash.to_owned()),
+            RenderRequestEntry::PlayerSkin(_) => None,
         })
     }
 
@@ -298,7 +300,8 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         }
 
         for (texture_type, texture) in &value.textures {
-            let texture_path = base.join(format!("{}{}", Into::<&str>::into(texture_type), ".png"));
+            let texture_path =
+                base.join(format!("{}{}", Into::<&str>::into(*texture_type), ".png"));
 
             if let Some(texture_hash) = texture.hash() {
                 let cache_path = self
@@ -332,8 +335,19 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
     ) -> Result<Option<ResolvedRenderEntryTextures>> {
         let mut textures = HashMap::new();
 
-        for texture in ResolvedRenderEntryTextureType::iter() {
-            let texture_path = base.join(format!("{}{}", Into::<&str>::into(&texture), ".png"));
+        let textures_to_read = [
+            ResolvedRenderEntryTextureType::Skin,
+            ResolvedRenderEntryTextureType::Cape,
+            #[cfg(feature = "ears")]
+            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Wings),
+            #[cfg(feature = "ears")]
+            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape),
+            #[cfg(feature = "ears")]
+            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Emissive),
+        ];
+
+        for texture in textures_to_read {
+            let texture_path = base.join(format!("{}{}", Into::<&str>::into(texture), ".png"));
 
             if texture_path.exists() {
                 let read = fs::read(texture_path).await.explain(format!(

@@ -56,9 +56,7 @@ pub enum PlayerPartTextureType {
     Custom {
         key: &'static str,
         size: (u32, u32),
-    },
-    #[cfg(feature = "ears")]
-    Ears,
+    }
 }
 
 impl PlayerPartTextureType {
@@ -68,8 +66,6 @@ impl PlayerPartTextureType {
             Self::Cape => (64, 32),
             Self::Custom { size, .. } => *size,
             Self::Shadow => (128, 128),
-            #[cfg(feature = "ears")]
-            Self::Ears => todo!(),
         }
     }
 

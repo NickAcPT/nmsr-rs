@@ -1,14 +1,14 @@
 use nmsr_rendering::errors::NMSRRenderingError;
 
+use super::NMSRState;
 use crate::{
     error::{RenderRequestError, Result},
     model::{
         request::{RenderRequest, RenderRequestFeatures},
         resolver::{ResolvedRenderEntryTextureType, ResolvedRenderRequest},
     },
+    utils::png::create_png_from_bytes,
 };
-
-use super::{render::create_png_from_bytes, NMSRState};
 
 pub(crate) async fn internal_render_skin(
     request: &RenderRequest,

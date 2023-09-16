@@ -143,11 +143,12 @@
 
             <div class="inner-group" id="features-group">
                 <label for="features-group">Features:</label>
-                <label><input type="checkbox" checked value="layers"> Layers</label>
-                <label><input type="checkbox" checked value="helmet"> Helmet</label>
-                <label><input type="checkbox" checked value="shadow"> Shadow</label>
-                <label><input type="checkbox" checked value="shading"> Shading</label>
-                <label><input type="checkbox" checked value="cape"> Cape</label>
+                <label><input type="checkbox" checked value="layers">Layers</label>
+                <label><input type="checkbox" checked value="helmet">Helmet</label>
+                <label><input type="checkbox" checked value="shadow">Shadow</label>
+                <label><input type="checkbox" checked value="shading">Shading</label>
+                <label><input type="checkbox" checked value="cape">Cape</label>
+                <label><input type="checkbox" value="ears">Ears</label>
             </div>
 
         </div>
@@ -279,7 +280,8 @@
         updateImage();
 
         let debouncedUpdateImage = debounce(updateImage, 300);
-        document.querySelectorAll('input').forEach(input => input.addEventListener('input', debouncedUpdateImage));
+        document.querySelectorAll('input:not([type="checkbox"])').forEach(input => input.addEventListener('input', debouncedUpdateImage));
+        document.querySelectorAll('input[type="checkbox"]').forEach(input => input.addEventListener('input', updateImage));
         document.querySelectorAll('select').forEach(input => input.addEventListener('input', updateImage));
 
         async function updateImage() {

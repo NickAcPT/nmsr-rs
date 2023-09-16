@@ -10,6 +10,9 @@ use nmsr_rendering::{
 };
 use tracing::instrument;
 
+use super::NMSRState;
+#[cfg(feature = "ears")]
+use crate::model::resolver::ResolvedRenderEntryEarsTextureType;
 use crate::{
     error::Result,
     model::{
@@ -17,9 +20,8 @@ use crate::{
         request::{RenderRequest, RenderRequestFeatures},
         resolver::{ResolvedRenderEntryTextureType, ResolvedRenderRequest},
     },
+    utils::png::create_png_from_bytes,
 };
-
-use super::{render::create_png_from_bytes, NMSRState};
 
 pub(crate) async fn internal_render_model(
     request: &RenderRequest,
@@ -42,10 +44,29 @@ pub(crate) async fn internal_render_model(
 
     let has_layers = request.features.contains(RenderRequestFeatures::BodyLayers);
     let has_hat_layer = request.features.contains(RenderRequestFeatures::HatLayer);
-    let has_cape = request.features.contains(RenderRequestFeatures::Cape)
-        && resolved
+
+    #[allow(unused_variables)]
+    let has_cape = {
+        let has_cape_feature = request.features.contains(RenderRequestFeatures::Cape);
+        let has_cape = resolved
             .textures
             .contains_key(&ResolvedRenderEntryTextureType::Cape);
+
+        let has_ears_feature = false;
+        let has_ears_cape = false;
+
+        #[cfg(feature = "ears")]
+        let has_ears_feature = request.features.contains(RenderRequestFeatures::Ears);
+
+        #[cfg(feature = "ears")]
+        let has_ears_cape = resolved
+            .textures
+            .contains_key(&ResolvedRenderEntryTextureType::Ears(
+                ResolvedRenderEntryEarsTextureType::Cape,
+            ));
+
+        has_cape_feature && (has_cape || (has_ears_feature && has_ears_cape))
+    };
 
     let shadow_y_pos = request.get_shadow_y_pos();
 

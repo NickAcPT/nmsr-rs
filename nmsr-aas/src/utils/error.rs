@@ -17,6 +17,10 @@ pub enum NMSRaaSError {
     RenderError(#[from] nmsr_rendering::errors::NMSRRenderingError),
     #[error("Armor manager error: {0}")]
     ArmorManagerError(#[from] ArmorManagerError),
+
+    #[cfg(feature = "ears")]
+    #[error("Ears error: {0}")]
+    EarsError(#[from] ears_rs::utils::errors::EarsError),
 }
 
 #[derive(Error, Debug)]
@@ -159,23 +163,23 @@ pub struct NmsrErrorExtension(pub NMSRaaSError);
 impl IntoResponse for NMSRaaSError {
     fn into_response(self) -> axum::response::Response {
         let mut res = axum::response::IntoResponse::into_response(self.to_string());
-        
+
         let is_bad_request = if let Self::RenderRequestError(error) = &self {
             error.is_bad_request()
         } else {
             false
         };
-        
+
         let error = if is_bad_request {
             StatusCode::BAD_REQUEST
         } else {
             StatusCode::INTERNAL_SERVER_ERROR
         };
-        
+
         *res.status_mut() = error;
-        
+
         res.extensions_mut().insert(NmsrErrorExtension(self));
-        
+
         res
     }
 }

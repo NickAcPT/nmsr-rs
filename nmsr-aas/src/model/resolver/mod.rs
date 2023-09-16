@@ -1,22 +1,19 @@
-use std::{collections::HashMap, sync::Arc};
-
-use derive_more::Debug;
-use nmsr_rendering::high_level::types::PlayerPartTextureType;
-use strum::EnumCount;
-use tracing::{instrument, Span};
-
-use crate::error::{MojangRequestError, Result};
-
 use self::{
     geyser::resolve_geyser_uuid_to_texture_and_model,
     mojang::{client::MojangClient, model::GameProfileTexture},
 };
-
 use super::request::{
     cache::ModelCache,
     entry::{RenderRequestEntry, RenderRequestEntryModel},
     RenderRequest,
 };
+use crate::error::{MojangRequestError, Result};
+use derive_more::Debug;
+use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParser};
+use nmsr_rendering::high_level::types::PlayerPartTextureType;
+use std::{collections::HashMap, sync::Arc};
+use strum::EnumCount;
+use tracing::{instrument, Span};
 
 pub mod geyser;
 pub mod mojang;
@@ -26,21 +23,72 @@ pub struct RenderRequestResolver {
     mojang_requests_client: Arc<MojangClient>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, strum::IntoStaticStr, strum::EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ResolvedRenderEntryTextureType {
     Cape,
     Skin,
     #[cfg(feature = "ears")]
-    Ears,
+    Ears(ResolvedRenderEntryEarsTextureType),
+}
+
+impl From<ResolvedRenderEntryTextureType> for &'static str {
+    fn from(value: ResolvedRenderEntryTextureType) -> Self {
+        match value {
+            ResolvedRenderEntryTextureType::Cape => "Cape",
+            ResolvedRenderEntryTextureType::Skin => "Skin",
+            #[cfg(feature = "ears")]
+            ResolvedRenderEntryTextureType::Ears(ears) => ears.key(),
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ResolvedRenderEntryEarsTextureType {
+    Cape,
+    Wings,
+    Emissive,
+}
+
+#[cfg(feature = "ears")]
+impl ResolvedRenderEntryEarsTextureType {
+    fn size(&self) -> (u32, u32) {
+        match self {
+            Self::Cape | Self::Wings => (20, 16),
+            Self::Emissive => (64, 64),
+        }
+    }
+
+    fn key(&self) -> &'static str {
+        match self {
+            Self::Cape => "ears_cape",
+            Self::Wings => "ears_wings",
+            Self::Emissive => "ears_emissive",
+        }
+    }
+
+    fn alfalfa_key(&self) -> Option<AlfalfaDataKey> {
+        match self {
+            Self::Cape => Some(AlfalfaDataKey::Cape),
+            Self::Wings => Some(AlfalfaDataKey::Wings),
+            _ => None,
+        }
+    }
 }
 
 impl From<ResolvedRenderEntryTextureType> for PlayerPartTextureType {
     fn from(value: ResolvedRenderEntryTextureType) -> Self {
         match value {
             ResolvedRenderEntryTextureType::Skin => PlayerPartTextureType::Skin,
-            ResolvedRenderEntryTextureType::Cape => PlayerPartTextureType::Cape,
+            ResolvedRenderEntryTextureType::Cape
+            | ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape) => {
+                PlayerPartTextureType::Cape
+            }
             #[cfg(feature = "ears")]
-            ResolvedRenderEntryTextureType::Ears => PlayerPartTextureType::Ears,
+            ResolvedRenderEntryTextureType::Ears(ears) => PlayerPartTextureType::Custom {
+                key: ears.key(),
+                size: ears.size(),
+            },
         }
     }
 }
@@ -170,8 +218,6 @@ impl RenderRequestResolver {
         let model: Option<RenderRequestEntryModel>;
         let skin_texture: Option<MojangTexture>;
         let cape_texture: Option<MojangTexture>;
-        #[cfg(feature = "ears")]
-        let mut ears_texture = compile_error!("Implement ears texture");
 
         match &entry {
             RenderRequestEntry::MojangPlayerUuid(id) => {
@@ -220,11 +266,15 @@ impl RenderRequestResolver {
 
         let mut textures = HashMap::new();
 
-        if let Some(skin_texture) = skin_texture {
-            textures.insert(ResolvedRenderEntryTextureType::Skin, skin_texture);
-        }
         if let Some(cape_texture) = cape_texture {
             textures.insert(ResolvedRenderEntryTextureType::Cape, cape_texture);
+        }
+
+        if let Some(skin_texture) = skin_texture {
+            #[cfg(feature = "ears")]
+            Self::resolve_ears_textures(&skin_texture, &mut textures);
+
+            textures.insert(ResolvedRenderEntryTextureType::Skin, skin_texture);
         }
 
         let result = ResolvedRenderEntryTextures::new(textures, model);
@@ -234,6 +284,67 @@ impl RenderRequestResolver {
             .await?;
 
         Ok(result)
+    }
+
+    #[cfg(feature = "ears")]
+    fn resolve_ears_textures(
+        skin_texture: &MojangTexture,
+        textures: &mut HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
+    ) -> Option<EarsFeatures> {
+        use std::borrow::Cow;
+
+        use xxhash_rust::xxh3::xxh3_128;
+
+        use crate::utils::png::create_png_from_bytes;
+
+        if let Ok(image) = image::load_from_memory(skin_texture.data()) {
+            let image = image.into_rgba8();
+
+            let features = EarsParser::parse(&image).ok().flatten();
+            let alfalfa = ears_rs::alfalfa::read_alfalfa(&image).ok().flatten();
+
+            if let Some(alfalfa) = alfalfa {
+                for texture_type in [
+                    ResolvedRenderEntryEarsTextureType::Cape,
+                    ResolvedRenderEntryEarsTextureType::Wings,
+                ]
+                .iter()
+                {
+                    if let Some(alfalfa_key) = texture_type.alfalfa_key() {
+                        if let Some(data) = alfalfa.get_data(alfalfa_key) {
+                            let hash = format!("{:x}", xxh3_128(&data));
+
+                            let data = if alfalfa_key == AlfalfaDataKey::Cape {
+                                let image = image::load_from_memory(data)
+                                    .map(|i| i.into_rgba8())
+                                    .map(|i| ears_rs::utils::convert_ears_cape_to_mojang_cape(i))
+                                    .ok()
+                                    .and_then(|i| {
+                                        create_png_from_bytes((i.width(), i.height()), &i).ok()
+                                    });
+
+                                if let Some(image) = image {
+                                    Cow::Owned(image)
+                                } else {
+                                    Cow::Borrowed(data)
+                                }
+                            } else {
+                                Cow::Borrowed(data)
+                            };
+                            
+                            textures.insert(
+                                ResolvedRenderEntryTextureType::Ears(*texture_type),
+                                MojangTexture::new_named(hash, data.into_owned()),
+                            );
+                        }
+                    }
+                }
+            }
+
+            features
+        } else {
+            None
+        }
     }
 
     pub async fn resolve(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {

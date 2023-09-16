@@ -5,7 +5,7 @@ use ears_rs::{features::EarsFeatures, parser::EarsParser};
 use image::buffer::ConvertBuffer;
 use image::RgbaImage;
 
-use crate::{errors::NMSRError, errors::Result, parts::player_model::PlayerModel};
+use crate::{errors::Result, parts::player_model::PlayerModel};
 
 pub struct RenderingEntry {
     pub skin: RgbaImage,
@@ -29,17 +29,16 @@ impl Debug for RenderingEntry {
 impl RenderingEntry {
     pub fn process_skin(skin: RgbaImage) -> Result<RgbaImage> {
         // Make sure the skin is 64x64
-        let mut skin = ears_rs::utils::legacy_upgrader::upgrade_skin_if_needed(skin)
-            .ok_or(NMSRError::LegacySkinUpgradeError)?;
+        let mut skin = ears_rs::utils::upgrade_skin_if_needed(skin);
 
         #[cfg(feature = "ears")]
         {
             // If using Ears, process the erase sections specified in the Alfalfa data
-            ears_rs::utils::eraser::process_erase_regions(&mut skin)?;
+            ears_rs::utils::process_erase_regions(&mut skin)?;
         }
 
         // Strip the alpha data from the skin
-        ears_rs::utils::alpha::strip_alpha(&mut skin);
+        ears_rs::utils::strip_alpha(&mut skin);
 
         Ok(skin)
     }

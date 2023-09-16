@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use ears_rs::utils::legacy_upgrader::upgrade_skin_if_needed;
+use ears_rs::utils::upgrade_skin_if_needed;
 use hyper::Method;
 use image::{GenericImageView, RgbaImage};
 use nmsr_rendering::high_level::{
@@ -247,8 +247,7 @@ impl VanillaMinecraftArmorManager {
 
         applicable.apply_modifications_if_needed(&mut image);
 
-        let image =
-            upgrade_skin_if_needed(image).ok_or(ArmorManagerError::ArmorTextureUpgradeError)?;
+        let image = upgrade_skin_if_needed(image);
 
         for part_type in PlayerArmorSlots::<()>::get_parts_for_armor_slot(slot) {
             let part = compute_base_part(part_type, false);

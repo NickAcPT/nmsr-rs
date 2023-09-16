@@ -18,6 +18,19 @@ enum EarsPlayerBodyPartType {
     RightLegClaw,
 }
 
+#[inline(always)]
+fn process_pos(pos: [f32; 3], is_slim_arms: bool) -> [f32; 3] {
+    let mut pos = pos;
+
+    for ele in pos.as_mut_slice() {
+        if (*ele).abs() == ARM_PIXEL_CANARY {
+            *ele = if is_slim_arms { 3.0 } else { 4.0 };
+        }
+    }
+    
+    pos
+}
+
 macro_rules! declare_ears_parts {
     {@part $parts: expr, $part: expr, $features: expr, $is_slim_arms: expr, $body_part: ident: [$(
         $ears_part: ident {
@@ -38,7 +51,7 @@ macro_rules! declare_ears_parts {
                         let _ = EarsPlayerBodyPartType::$ears_part;
                         let mut part_quad = Part::new_quad(
                             PlayerPartTextureType::$texture,
-                            $pos,
+                            process_pos($pos, $is_slim_arms),
                             $size,
                             uv_from_pos_and_size($($uv)*),
                         );
@@ -74,6 +87,8 @@ macro_rules! declare_ears_parts {
     };
 }
 
+const ARM_PIXEL_CANARY: f32 = 0xe621 as f32;
+
 declare_ears_parts! {
     LeftLeg: [
         LeftLegClaw {
@@ -98,8 +113,8 @@ declare_ears_parts! {
     LeftArm: [
         LeftArmClaw {
             texture: Skin,
-            pos: [0.0, 0.0, 0.0],
-            rot: [45.0, 0.0, 0.0],
+            pos: [-4.0, 0.0, ARM_PIXEL_CANARY],
+            rot: [0.0, 0.0, 90.0],
             size: [4, 0, 4],
             uv: [44, 48, 4, 4],
             feature: claws

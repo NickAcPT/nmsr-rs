@@ -527,7 +527,7 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
                 uv(&face_uvs.north, texture_size),
                 uv(&face_uvs.south, texture_size),
                 uv(&face_uvs.up, texture_size),
-                uv(&face_uvs.down, texture_size),
+                uv(&face_uvs.down.flip_horizontally(), texture_size),
                 uv(&face_uvs.west, texture_size),
                 uv(&face_uvs.east, texture_size),
             )

@@ -12,12 +12,12 @@ pub struct PartAnchorInfo {
 }
 impl PartAnchorInfo {
     pub fn with_rotation_anchor(mut self, rotation_anchor: MinecraftPosition) -> Self {
-        self.rotation_anchor = rotation_anchor;
+        self.rotation_anchor = self.rotation_anchor + rotation_anchor;
         self
     }
 
     pub fn with_translation_anchor(mut self, translation_anchor: MinecraftPosition) -> Self {
-        self.translation_anchor = translation_anchor;
+        self.translation_anchor = self.translation_anchor + translation_anchor;
         self
     }
 
@@ -34,7 +34,7 @@ impl PartAnchorInfo {
         let pos = part.get_position();
         let size = part.get_size();
 
-        let translation_anchor = [pos.x, pos.y, pos.z].into();
+        let translation_anchor: Vec3 = [pos.x, pos.y, pos.z].into();
 
         Self {
             rotation_anchor: MinecraftPosition::ZERO,

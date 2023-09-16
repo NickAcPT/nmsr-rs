@@ -127,13 +127,13 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
         LeftArm => {
             if is_slim_arms {
                 body_part! {
-                    pos: [-7, 12, -2],
+                    pos: [2, 0, 2],
                     size: [3, 12, 4],
                     box_uv_start: (36, 52)
                 }
             } else {
                 body_part! {
-                    pos: [-8, 12, -2],
+                    pos: [2, 0, 2],
                     size: [4, 12, 4],
                     box_uv_start: (36, 52)
                 }
@@ -178,16 +178,16 @@ pub(crate) fn perform_arm_part_rotation(
     let anchor = part.get_anchor().unwrap_or_default();
 
     if non_layer_body_part_type == LeftArm {
-        let rotation = normal_part_size * Vec3::new(-1.0, 2.0, 0.0);
+        let rotation = normal_part_size * Vec3::new(1.0, 1.0, 0.5);
 
         part.set_anchor(Some(anchor.with_rotation_anchor(rotation)));
 
-        part.rotation_mut().z = -arm_rotation_angle;
+        part.rotation_mut().z += -arm_rotation_angle;
     } else if non_layer_body_part_type == RightArm {
         let rotation = normal_part_size * Vec3::new(1.0, 2.0, 0.0);
         part.set_anchor(Some(anchor.with_rotation_anchor(rotation)));
 
-        part.rotation_mut().z = arm_rotation_angle;
+        part.rotation_mut().z += arm_rotation_angle;
     }
 }
 

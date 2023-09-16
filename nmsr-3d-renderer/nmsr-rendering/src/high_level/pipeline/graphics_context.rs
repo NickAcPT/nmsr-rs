@@ -205,7 +205,7 @@ impl GraphicsContext {
         if let Some(surface) = &surface {
             if let Ok(Some(surface_config)) = surface_config.as_mut() {
                 surface_config.view_formats.push(surface_config.format);
-                surface_config.present_mode = PresentMode::AutoNoVsync;
+                surface_config.present_mode = PresentMode::AutoVsync;
                 surface.configure(&device, surface_config);
             }
         }

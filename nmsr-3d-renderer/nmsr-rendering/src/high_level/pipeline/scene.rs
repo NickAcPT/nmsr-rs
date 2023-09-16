@@ -26,7 +26,6 @@ use std::{
     collections::HashMap,
     fmt::Debug,
     ops::{Deref, DerefMut},
-    time::{SystemTime, UNIX_EPOCH},
 };
 use tracing::{instrument, trace_span};
 use wgpu::{
@@ -496,12 +495,15 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
     let anchor = part.get_anchor().or_else(|| Some(PartAnchorInfo::default())).unwrap();
             
     let position = part.get_position() + anchor.translation_anchor;
+    
+    println!("position: {:?}", position);
+    dbg!(anchor.rotation_anchor + position);
             
     // Compute center of cube
     let center = position + part.get_size() / 2.0;
 
-    let rot_translation_mat = Mat4::from_translation(anchor.rotation_anchor);
-    let neg_rot_translation_mat = Mat4::from_translation(-anchor.rotation_anchor);
+    let rot_translation_mat = Mat4::from_translation(anchor.rotation_anchor + position);
+    let neg_rot_translation_mat = Mat4::from_translation(-anchor.rotation_anchor - position);
 
     let rotation_mat = Mat4::from_quat(Quat::from_euler(
         glam::EulerRot::YXZ,
@@ -518,7 +520,6 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             face_uvs,
             ..
         } => {
-
             let texture_size = part.get_texture().get_texture_size();
 
             Cube::new(

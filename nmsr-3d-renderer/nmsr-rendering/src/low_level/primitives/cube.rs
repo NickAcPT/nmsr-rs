@@ -1,10 +1,11 @@
-use glam::{Vec3, Mat4};
+use glam::{Mat4, Vec3};
 
 use crate::low_level::primitives::mesh::Mesh;
 use crate::low_level::primitives::part_primitive::PartPrimitive;
 use crate::low_level::primitives::quad::Quad;
 use crate::low_level::primitives::vertex::Vertex;
 
+use super::mesh::PrimitiveDispatch;
 use super::vertex::VertexUvCoordinates;
 
 pub struct Cube {

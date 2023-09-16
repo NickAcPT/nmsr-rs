@@ -107,7 +107,8 @@ async fn main() -> anyhow::Result<()> {
         arm_rotation: 10.0,
         shadow_y_pos: Some(0.0),
         shadow_is_square: false,
-        armor_slots: None
+        armor_slots: None,
+        #[cfg(feature = "ears")] ears_features: None
     };
 
     let mut scene = build_scene(&graphics, config, &ctx, camera, sun);

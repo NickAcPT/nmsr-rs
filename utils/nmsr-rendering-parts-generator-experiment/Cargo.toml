@@ -14,3 +14,7 @@ image = { version = "0.24.7", default-features = false, features = ["png"] }
 itertools = "0.11.0"
 nmsr-rendering = { version = "0.1.0", path = "../../nmsr-3d-renderer/nmsr-rendering" }
 tokio = { version = "1.32.0", features = ["full"] }
+
+[features]
+default = []
+ears = ["nmsr-rendering/ears"]

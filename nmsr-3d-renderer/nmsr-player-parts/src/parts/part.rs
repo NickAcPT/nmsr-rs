@@ -7,34 +7,40 @@ use super::provider::minecraft::compute_base_part;
 
 #[derive(Debug, Copy, Clone)]
 pub struct PartAnchorInfo {
-    pub anchor: MinecraftPosition,
+    pub rotation_anchor: MinecraftPosition,
+    pub translation_anchor: MinecraftPosition,
 }
 impl PartAnchorInfo {
-    pub fn new_position(anchor: MinecraftPosition) -> Self {
-        Self { anchor }
+    pub fn new_rotation_anchor_position(rotation_anchor: MinecraftPosition) -> Self {
+        Self {
+            rotation_anchor,
+            translation_anchor: MinecraftPosition::ZERO,
+        }
     }
 
-    pub fn new_part(part: PlayerBodyPartType, slim_arms: bool) -> Self {
+    pub fn new_part_anchor_translate(part: PlayerBodyPartType, slim_arms: bool) -> Self {
         let part = compute_base_part(part, slim_arms);
-        
+
         let pos = part.get_position();
         let size = part.get_size();
-        
-        let anchor = [pos.x, pos.y + size.y, pos.z].into();
-        
-        Self::new_position(anchor)
+
+        let translation_anchor = [pos.x, pos.y, pos.z].into();
+
+        Self {
+            rotation_anchor: MinecraftPosition::ZERO,
+            translation_anchor,
+        }
     }
 }
 
 impl Default for PartAnchorInfo {
     fn default() -> Self {
         Self {
-            anchor: MinecraftPosition::ZERO,
+            rotation_anchor: MinecraftPosition::ZERO,
+            translation_anchor: MinecraftPosition::ZERO,
         }
     }
 }
-
-
 
 #[derive(Debug, Copy, Clone)]
 pub enum Part {

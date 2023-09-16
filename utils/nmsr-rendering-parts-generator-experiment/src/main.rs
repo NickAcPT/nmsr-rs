@@ -242,6 +242,7 @@ async fn process_group_logic(
         shadow_y_pos,
         shadow_is_square: false,
         armor_slots: None,
+        #[cfg(feature = "ears")] ears_features: None
     };
 
     let mut shader: String = include_str!("nmsr-new-uvmap-shader.wgsl").into();

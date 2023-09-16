@@ -1,7 +1,10 @@
+use ears_rs::features::EarsFeatures;
+
 use crate::parts::part::Part;
 use crate::model::{PlayerModel, PlayerArmorSlots, ArmorMaterial};
 use crate::types::PlayerBodyPartType;
 
+use self::ears::EarsPlayerPartsProvider;
 use self::minecraft::MinecraftPlayerPartsProvider;
 
 pub mod ears;
@@ -25,6 +28,8 @@ pub struct PlayerPartProviderContext<M = ()> where M: ArmorMaterial {
     pub shadow_y_pos: Option<f32>,
     pub shadow_is_square: bool,
     pub armor_slots: Option<PlayerArmorSlots<M>>,
+    #[cfg(feature = "ears")]
+    pub ears_features: Option<EarsFeatures>
 }
 
 pub trait PartsProvider<M: ArmorMaterial> {
@@ -44,7 +49,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
         match self {
             Self::Minecraft => MinecraftPlayerPartsProvider::default().get_parts(context, body_part),
             #[cfg(feature = "ears")]
-            Self::Ears => todo!(),
+            Self::Ears => EarsPlayerPartsProvider.get_parts(context, body_part)
         }
     }
 }

@@ -1,4 +1,5 @@
 use deadpool::managed::Object;
+use ears_rs::parser::EarsParser;
 use image::{ImageFormat, RgbaImage};
 use nmsr_rendering::{
     errors::NMSRRenderingError,
@@ -89,7 +90,7 @@ pub(crate) async fn internal_render_model(
         .as_ref()
         .and_then(|x| x.boots.clone());
 
-    let part_context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
+    let mut part_context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
         model: PlayerModel::from(final_model),
         has_layers,
         has_hat_layer,
@@ -98,7 +99,14 @@ pub(crate) async fn internal_render_model(
         shadow_y_pos,
         shadow_is_square: mode.is_head(),
         armor_slots: Some(player_armor_slots),
+        #[cfg(feature = "ears")]
+        ears_features: None,
     };
+
+    #[cfg(feature = "ears")]
+    if request.features.contains(RenderRequestFeatures::Ears) {
+        load_ears_features(&mut part_context, resolved);
+    }
 
     let mut scene = Scene::new(
         &state.graphics_context,
@@ -110,7 +118,7 @@ pub(crate) async fn internal_render_model(
         &parts,
     );
 
-    load_textures(resolved, &state, &request, &part_context, &mut scene).await?;
+    load_textures(resolved, &state, &request, &mut part_context, &mut scene).await?;
 
     scene.render(&state.graphics_context)?;
 
@@ -122,12 +130,26 @@ pub(crate) async fn internal_render_model(
     Ok(render_bytes)
 }
 
+#[cfg(feature = "ears")]
+fn load_ears_features(
+    part_context: &mut PlayerPartProviderContext<VanillaMinecraftArmorMaterialData>,
+    resolved: &ResolvedRenderRequest,
+) {
+    if let Some(skin_bytes) = resolved.textures.get(&ResolvedRenderEntryTextureType::Skin) {
+        if let Ok(skin_image) = load_image(&skin_bytes) {
+            if let Ok(features) = EarsParser::parse(&skin_image) {
+                part_context.ears_features = features;
+            }
+        }
+    }
+}
+
 #[instrument(skip_all)]
 async fn load_textures(
     resolved: &ResolvedRenderRequest,
     state: &NMSRState,
     request: &RenderRequest,
-    part_provider: &PlayerPartProviderContext<VanillaMinecraftArmorMaterialData>,
+    part_provider: &mut PlayerPartProviderContext<VanillaMinecraftArmorMaterialData>,
     scene: &mut Scene<Object<SceneContextPoolManager>>,
 ) -> Result<()> {
     for (&texture_type, texture_bytes) in &resolved.textures {

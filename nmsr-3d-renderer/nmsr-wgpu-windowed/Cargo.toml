@@ -19,3 +19,7 @@ image = { version = "0.24.6", features = ["png"], default-features = false }
 ears-rs = { path = "../../../ears-rs" }
 libloader = "0.1.4"
 anyhow = "1.0.72"
+
+[features]
+default = []
+ears = ["nmsr-player-parts/ears"]

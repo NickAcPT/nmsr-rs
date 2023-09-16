@@ -39,6 +39,10 @@ pub fn uv_from_pos_and_size(x: u16, y: u16, size_x: u16, size_y: u16) -> [u16; 4
     [x, y, x + size_x, y + size_y]
 }
 
+pub fn uv_from_pos_and_size_flipped(x: u16, y: u16, size_x: u16, size_y: u16) -> [u16; 4] {
+    [x + size_x, y + size_y, x, y]
+}
+
 pub fn box_uv(x: u16, y: u16, size: [u16; 3]) -> [[u16; 4]; 6] {
     let size_x = size[0];
     let size_y = size[1];

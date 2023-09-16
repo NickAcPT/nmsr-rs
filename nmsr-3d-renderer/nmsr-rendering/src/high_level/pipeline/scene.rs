@@ -490,30 +490,12 @@ where
 }
 
 pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
-    let rotation = part.get_rotation();
-    
-    let anchor = part.get_anchor().or_else(|| Some(PartAnchorInfo::default())).unwrap();
             
-    let position = part.get_position() + anchor.translation_anchor;
-    
-    println!("position: {:?}", position);
-    dbg!(anchor.rotation_anchor + position);
-            
-    // Compute center of cube
+    let position = part.get_position();
     let center = position + part.get_size() / 2.0;
-
-    let rot_translation_mat = Mat4::from_translation(anchor.rotation_anchor + position);
-    let neg_rot_translation_mat = Mat4::from_translation(-anchor.rotation_anchor - position);
-
-    let rotation_mat = Mat4::from_quat(Quat::from_euler(
-        glam::EulerRot::YXZ,
-        rotation.y.to_radians(),
-        rotation.x.to_radians(),
-        rotation.z.to_radians(),
-    ));
-
-    let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
     
+    let model_transform = part.get_rotation_matrix();
+
     match part {
         Part::Cube {
             size,

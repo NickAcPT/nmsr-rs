@@ -1,7 +1,7 @@
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
-use glam::Vec3;
+use glam::{Vec3, Mat4, Quat};
 
 use super::provider::minecraft::compute_base_part;
 
@@ -58,19 +58,17 @@ pub enum Part {
     Cube {
         position: MinecraftPosition,
         size: MinecraftPosition,
-        rotation: MinecraftPosition,
+        rotation_matrix: Mat4,
         face_uvs: CubeFaceUvs,
         texture: PlayerPartTextureType,
-        anchor: Option<PartAnchorInfo>,
     },
     /// Represents a quad as a part of a player model.
     Quad {
         position: MinecraftPosition,
         size: MinecraftPosition,
-        rotation: MinecraftPosition,
+        rotation_matrix: Mat4,
         face_uv: FaceUv,
         texture: PlayerPartTextureType,
-        anchor: Option<PartAnchorInfo>,
     },
 }
 
@@ -95,10 +93,9 @@ impl Part {
         Cube {
             position: MinecraftPosition::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
-            rotation: MinecraftPosition::ZERO,
+            rotation_matrix: Mat4::IDENTITY,
             face_uvs: uvs.into(),
             texture,
-            anchor: None,
         }
     }
 
@@ -111,10 +108,9 @@ impl Part {
         Quad {
             position: MinecraftPosition::new(pos[0], pos[1], pos[2]),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
-            rotation: MinecraftPosition::ZERO,
+            rotation_matrix: Mat4::IDENTITY,
             face_uv: uvs.into(),
             texture,
-            anchor: None,
         }
     }
 
@@ -151,49 +147,42 @@ impl Part {
         new_part
     }
 
-    pub fn get_anchor(&self) -> Option<PartAnchorInfo> {
+
+    pub fn get_rotation_matrix(&self) -> Mat4 {
         match self {
-            Cube { anchor, .. } => *anchor,
-            Quad { anchor, .. } => *anchor,
+            Cube { rotation_matrix, .. } => *rotation_matrix,
+            Quad { rotation_matrix, .. } => *rotation_matrix,
         }
     }
 
-    pub fn set_anchor(&mut self, anchor: Option<PartAnchorInfo>) {
+    fn rotation_matrix_mut(&mut self) -> &mut Mat4 {
         match self {
-            Cube {
-                anchor: ref mut a, ..
-            } => *a = anchor,
-            Quad {
-                anchor: ref mut a, ..
-            } => *a = anchor,
+            Cube { rotation_matrix, .. } => rotation_matrix,
+            Quad { rotation_matrix, .. } => rotation_matrix,
         }
     }
 
-    pub fn get_rotation(&self) -> MinecraftPosition {
-        match self {
-            Cube { rotation, .. } => *rotation,
-            Quad { rotation, .. } => *rotation,
-        }
-    }
+    pub fn rotate(&mut self, rotation: MinecraftPosition, anchor: Option<PartAnchorInfo>) {
+        let anchor = anchor.unwrap_or_default();
+        
+        let offset = self.get_position();
+        
+        *self.position_mut() += anchor.translation_anchor;
+        
+        let pos_translation_mat = Mat4::from_translation(anchor.translation_anchor);
+        let rot_translation_mat = Mat4::from_translation(anchor.rotation_anchor);
+        let neg_rot_translation_mat = Mat4::from_translation(-anchor.rotation_anchor);
 
-    pub fn rotation_mut(&mut self) -> &mut MinecraftPosition {
-        match self {
-            Cube { rotation, .. } => rotation,
-            Quad { rotation, .. } => rotation,
-        }
-    }
+        let rotation_mat = Mat4::from_quat(Quat::from_euler(
+            glam::EulerRot::YXZ,
+            rotation.y.to_radians(),
+            rotation.x.to_radians(),
+            rotation.z.to_radians(),
+        ));
 
-    pub fn set_rotation(&mut self, rotation: MinecraftPosition) {
-        match self {
-            Cube {
-                rotation: ref mut r,
-                ..
-            } => *r = rotation,
-            Quad {
-                rotation: ref mut r,
-                ..
-            } => *r = rotation,
-        }
+        let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
+        
+        *self.rotation_matrix_mut() *= model_transform;
     }
 
     pub fn get_size(&self) -> MinecraftPosition {

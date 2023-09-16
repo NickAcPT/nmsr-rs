@@ -85,15 +85,14 @@ async fn main() -> anyhow::Result<()> {
 
     let sun = SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.35);
     
-    let camera = Camera::new_orbital(
-        Vec3::new(1.5, 6.0, 4.0),
-        20.0,
+    let camera = Camera::new_absolute(
+        Vec3::new(0.0, 30.0, -20.0),
         CameraRotation {
-            yaw: 20.0,
-            pitch: 10.0,
+            yaw: 0.0,
+            pitch: 0.0,
             roll: 0.0,
         },
-        ProjectionParameters::Perspective { fov: 45f32 },
+        ProjectionParameters::Perspective { fov: 110f32 },
         Some(Size {
             width: config.width,
             height: config.height,
@@ -290,7 +289,7 @@ async fn main() -> anyhow::Result<()> {
                 scene.update(&graphics);
 
                 if needs_rebuild {
-                    last_computed_parts = scene.rebuild_parts(&ctx, vec![PlayerBodyPartType::LeftArm]).to_vec();
+                    last_computed_parts = scene.rebuild_parts(&ctx, PlayerBodyPartType::iter().collect()).to_vec();
                 }
 
                 if needs_skin_rebuild {
@@ -350,7 +349,7 @@ fn build_scene(
             height: config.height,
         },
         ctx,
-        &vec![PlayerBodyPartType::LeftArm],
+        &PlayerBodyPartType::iter().collect::<Vec<_>>(),
     );
 
     // Create pipeline layout

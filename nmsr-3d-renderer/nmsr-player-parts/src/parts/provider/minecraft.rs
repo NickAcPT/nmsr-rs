@@ -127,13 +127,13 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
         LeftArm => {
             if is_slim_arms {
                 body_part! {
-                    pos: [2, 0, 2],
+                    pos: [-7, 12, -2],
                     size: [3, 12, 4],
                     box_uv_start: (36, 52)
                 }
             } else {
                 body_part! {
-                    pos: [2, 0, 2],
+                    pos: [-8, 12, -2],
                     size: [4, 12, 4],
                     box_uv_start: (36, 52)
                 }
@@ -174,20 +174,24 @@ pub(crate) fn perform_arm_part_rotation(
     is_slim_arms: bool,
     arm_rotation_angle: f32,
 ) {
-    let normal_part_size = compute_base_part(non_layer_body_part_type, is_slim_arms).get_size();
-    let anchor = part.get_anchor().unwrap_or_default();
+    let normal_part = compute_base_part(non_layer_body_part_type, is_slim_arms);
+    let normal_part_size = normal_part.get_size();
 
     if non_layer_body_part_type == LeftArm {
-        let rotation = normal_part_size * Vec3::new(1.0, 1.0, 0.5);
+        let anchor = normal_part.get_position() + normal_part_size * Vec3::new(1.0, 1.0, 0.5);
 
-        part.set_anchor(Some(anchor.with_rotation_anchor(rotation)));
-
-        part.rotation_mut().z += -arm_rotation_angle;
+        part.rotate(
+            [0.0, 0.0, -arm_rotation_angle].into(),
+            Some(PartAnchorInfo::new_rotation_anchor_position(anchor.into())),
+        );
+        
     } else if non_layer_body_part_type == RightArm {
-        let rotation = normal_part_size * Vec3::new(1.0, 2.0, 0.0);
-        part.set_anchor(Some(anchor.with_rotation_anchor(rotation)));
+        let anchor = normal_part.get_position() + normal_part_size * Vec3::new(0.0, 1.0, 0.5);
 
-        part.rotation_mut().z += arm_rotation_angle;
+        part.rotate(
+            [0.0, 0.0, arm_rotation_angle].into(),
+            Some(PartAnchorInfo::new_rotation_anchor_position(anchor.into())),
+        );
     }
 }
 
@@ -199,11 +203,9 @@ fn append_cape_part(result: &mut Vec<Part>) {
         texture_type: Cape
     };
 
-    cape.set_anchor(Some(PartAnchorInfo::new_rotation_anchor_position(
+    cape.rotate([5.0, 180.0, 0.0].into(), Some(PartAnchorInfo::new_rotation_anchor_position(
         [0.0, 24.0, 2.0].into(),
     )));
-
-    cape.set_rotation([5.0, 180.0, 0.0].into());
 
     result.push(cape);
 }

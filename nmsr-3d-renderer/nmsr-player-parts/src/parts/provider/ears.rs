@@ -55,12 +55,13 @@ macro_rules! declare_ears_parts {
                         uv_from_pos_and_size($($uv)*),
                     );
 
-                    part_quad.set_anchor(Some(PartAnchorInfo::new_part_anchor_translate(
-                        $part,
-                        $is_slim_arms,
-                    )));
-
-                    part_quad.set_rotation($rot.into());
+                    part_quad.rotate(
+                        $rot.into(),
+                        Some(PartAnchorInfo::new_part_anchor_translate(
+                            $part,
+                            $is_slim_arms,
+                        )),
+                    );
 
                     $parts.push(part_quad);
                 }

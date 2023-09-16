@@ -1,11 +1,11 @@
 use ears_rs::features::EarsFeatures;
 
+use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
 use crate::parts::part::Part;
-use crate::model::{PlayerModel, PlayerArmorSlots, ArmorMaterial};
 use crate::types::PlayerBodyPartType;
 
 use self::ears::EarsPlayerPartsProvider;
-use self::minecraft::MinecraftPlayerPartsProvider;
+use self::minecraft::{perform_arm_part_rotation, MinecraftPlayerPartsProvider};
 
 pub mod ears;
 pub mod minecraft;
@@ -19,7 +19,10 @@ pub enum PlayerPartsProvider {
 
 /// Context for player parts.
 #[derive(Copy, Clone, Default)]
-pub struct PlayerPartProviderContext<M = ()> where M: ArmorMaterial {
+pub struct PlayerPartProviderContext<M = ()>
+where
+    M: ArmorMaterial,
+{
     pub model: PlayerModel,
     pub has_hat_layer: bool,
     pub has_layers: bool,
@@ -29,7 +32,7 @@ pub struct PlayerPartProviderContext<M = ()> where M: ArmorMaterial {
     pub shadow_is_square: bool,
     pub armor_slots: Option<PlayerArmorSlots<M>>,
     #[cfg(feature = "ears")]
-    pub ears_features: Option<EarsFeatures>
+    pub ears_features: Option<EarsFeatures>,
 }
 
 pub trait PartsProvider<M: ArmorMaterial> {
@@ -46,10 +49,25 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
         context: &PlayerPartProviderContext<M>,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
-        match self {
-            Self::Minecraft => MinecraftPlayerPartsProvider::default().get_parts(context, body_part),
+        let mut parts = match self {
+            Self::Minecraft => {
+                MinecraftPlayerPartsProvider::default().get_parts(context, body_part)
+            }
             #[cfg(feature = "ears")]
-            Self::Ears => EarsPlayerPartsProvider.get_parts(context, body_part)
+            Self::Ears => EarsPlayerPartsProvider.get_parts(context, body_part),
+        };
+
+        if body_part.is_arm() {
+            for mut part in &mut parts {
+                perform_arm_part_rotation(
+                    body_part.get_non_layer_part(),
+                    &mut part,
+                    context.model.is_slim_arms(),
+                    context.arm_rotation,
+                );
+            }
         }
+
+        parts
     }
 }

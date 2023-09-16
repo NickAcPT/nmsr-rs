@@ -51,13 +51,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
 
         let non_layer_body_part_type = body_part.get_non_layer_part();
 
-        let mut part = compute_base_part(non_layer_body_part_type, context.model.is_slim_arms());
-        perform_arm_part_rotation(
-            non_layer_body_part_type,
-            &mut part,
-            context.model.is_slim_arms(),
-            context.arm_rotation,
-        );
+        let part = compute_base_part(non_layer_body_part_type, context.model.is_slim_arms());
 
         if body_part.is_layer() || body_part.is_hat_layer() {
             let expand_offset = get_layer_expand_offset(non_layer_body_part_type);
@@ -106,13 +100,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
                         {
                             armor_part = armor_part.expand([0.0, 0.0, 0.05].into());
                         }
-
-                        perform_arm_part_rotation(
-                            non_layer_body_part_type,
-                            &mut armor_part,
-                            false,
-                            context.arm_rotation,
-                        );
 
                         armor_part.set_texture(texture);
                         result.push(armor_part);
@@ -181,22 +168,24 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
     }
 }
 
-fn perform_arm_part_rotation(
+pub(crate) fn perform_arm_part_rotation(
     non_layer_body_part_type: PlayerBodyPartType,
     part: &mut Part,
     is_slim_arms: bool,
     arm_rotation_angle: f32,
 ) {
     let normal_part_size = compute_base_part(non_layer_body_part_type, is_slim_arms).get_size();
+    let anchor = part.get_anchor().unwrap_or_default();
 
     if non_layer_body_part_type == LeftArm {
         let rotation = normal_part_size * Vec3::new(-1.0, 2.0, 0.0);
-        part.set_anchor(Some(PartAnchorInfo::new_rotation_anchor_position(rotation)));
+        
+        part.set_anchor(Some(anchor.with_rotation_anchor(rotation)));
 
         part.rotation_mut().z = -arm_rotation_angle;
     } else if non_layer_body_part_type == RightArm {
         let rotation = normal_part_size * Vec3::new(1.0, 2.0, 0.0);
-        part.set_anchor(Some(PartAnchorInfo::new_rotation_anchor_position(rotation)));
+        part.set_anchor(Some(anchor.with_rotation_anchor(rotation)));
 
         part.rotation_mut().z = arm_rotation_angle;
     }

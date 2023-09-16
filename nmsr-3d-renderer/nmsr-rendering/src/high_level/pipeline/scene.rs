@@ -26,6 +26,7 @@ use std::{
     collections::HashMap,
     fmt::Debug,
     ops::{Deref, DerefMut},
+    time::{SystemTime, UNIX_EPOCH},
 };
 use tracing::{instrument, trace_span};
 use wgpu::{
@@ -106,8 +107,7 @@ where
         viewport_size: Size,
         part_context: &PlayerPartProviderContext<M>,
         body_parts: &[PlayerBodyPartType],
-    ) -> Self
-    {
+    ) -> Self {
         // Initialize our camera with the viewport size
         Self::update_scene_context(
             &mut camera,
@@ -187,14 +187,24 @@ where
     fn collect_player_parts<C: ArmorMaterial>(
         part_provider_context: &PlayerPartProviderContext<C>,
         body_parts: &[PlayerBodyPartType],
-    ) -> Vec<Part>
-    {
-        let providers = vec![PlayerPartsProvider::Minecraft, PlayerPartsProvider::Ears];
+    ) -> Vec<Part> {
+        let providers = if SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            % 2
+            == 0
+        {
+            vec![PlayerPartsProvider::Minecraft, PlayerPartsProvider::Ears]
+        } else {
+            vec![PlayerPartsProvider::Ears]
+        };
 
         let mut parts = providers
             .iter()
             .flat_map(|provider| {
-                body_parts.iter()
+                body_parts
+                    .iter()
                     .flat_map(|part| provider.get_parts(part_provider_context, *part))
             })
             .collect::<Vec<Part>>();
@@ -481,33 +491,32 @@ where
 }
 
 pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
+    let rotation = part.get_rotation();
+    
+    let translation = part.get_anchor().or_else(|| Some(PartAnchorInfo::default())).unwrap();
+            
+    // Compute center of cube
+    let center = part.get_position() + translation.translation_anchor + part.get_size() / 2.0;
+
+    let translation_mat = Mat4::from_translation(-translation.translation_anchor);
+    let rot_translation_mat = Mat4::from_translation(translation.rotation_anchor);
+    let neg_rot_translation_mat = Mat4::from_translation(-translation.rotation_anchor);
+
+    let rotation_mat = Mat4::from_quat(Quat::from_euler(
+        glam::EulerRot::YXZ,
+        rotation.y.to_radians(),
+        rotation.x.to_radians(),
+        rotation.z.to_radians(),
+    ));
+
+    let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
+    
     match part {
         Part::Cube {
-            position,
-            rotation,
-            anchor,
             size,
             face_uvs,
             ..
         } => {
-            // Compute center of cube
-            let center = *position + *size / 2.0;
-
-            let translation = anchor
-                .or_else(|| Some(PartAnchorInfo::default()))
-                .unwrap();
-
-            let translation_mat = Mat4::from_translation(translation.anchor);
-            let neg_translation_mat = Mat4::from_translation(-translation.anchor);
-
-            let rotation = Mat4::from_quat(Quat::from_euler(
-                glam::EulerRot::YXZ,
-                rotation.y.to_radians(),
-                rotation.x.to_radians(),
-                rotation.z.to_radians(),
-            ));
-
-            let model_transform = translation_mat * rotation * neg_translation_mat;
 
             let texture_size = part.get_texture().get_texture_size();
 
@@ -527,27 +536,10 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
         Part::Quad {
             position,
             size,
-            rotation,
             face_uv,
             texture,
-            anchor,
+            ..
         } => {
-            let translation = anchor
-                .or_else(|| Some(PartAnchorInfo::default()))
-                .unwrap();
-
-            let translation_mat = Mat4::from_translation(translation.anchor);
-            let neg_translation_mat = Mat4::from_translation(-translation.anchor);
-
-            let rotation = Mat4::from_quat(Quat::from_euler(
-                glam::EulerRot::YXZ,
-                rotation.y.to_radians(),
-                rotation.x.to_radians(),
-                rotation.z.to_radians(),
-            ));
-
-            let model_transform = translation_mat * rotation * neg_translation_mat;
-
             let x_left = position.x + size.x;
             let x_right = position.x;
 

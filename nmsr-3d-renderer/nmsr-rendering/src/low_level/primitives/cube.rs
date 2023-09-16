@@ -5,7 +5,6 @@ use crate::low_level::primitives::part_primitive::PartPrimitive;
 use crate::low_level::primitives::quad::Quad;
 use crate::low_level::primitives::vertex::Vertex;
 
-use super::mesh::PrimitiveDispatch;
 use super::vertex::VertexUvCoordinates;
 
 pub struct Cube {

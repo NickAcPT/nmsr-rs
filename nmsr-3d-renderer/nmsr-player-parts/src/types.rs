@@ -46,6 +46,10 @@ impl PlayerBodyPartType {
             _ => *self,
         }
     }
+    
+    pub fn is_arm(&self) -> bool {
+        matches!(self.get_non_layer_part(), Self::LeftArm | Self::RightArm)
+    }
 }
 
 #[derive(Debug, Copy, Clone, Display, IntoStaticStr, PartialEq, Eq, Hash, PartialOrd, Ord)]

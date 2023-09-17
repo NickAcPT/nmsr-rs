@@ -156,7 +156,7 @@ impl Default for EarsPlayerPartsProvider {
         parts.push((
             RightArm,
             vec![declare_ears_part_vertical! {
-                LeftArmClaw {
+                RightArmClaw {
                     pos: [ARM_PIXEL_CANARY, -4.0, 4.0],
                     rot: [0.0, 90.0, 0.0],
                     size: [4, 4],
@@ -170,28 +170,30 @@ impl Default for EarsPlayerPartsProvider {
 
         parts.push((
             Body,
-            vec![declare_ears_part_horizontal! {
+            vec![declare_ears_part_vertical! {
                 WingAsymmetricRight {
                     texture: PlayerPartEarsTextureType::Wings.into(),
-                    pos: [8.0 - 2.0, 14.0, 4.0],
-                    rot: [90.0, -60.0, 0.0],
+                    pos: [8.0 - 2.0, -2.0, 4.0],
+                    rot: [0.0, -90.0, 0.0],
                     size: [20, 16],
                     uv: [0, 0, 20, 16],
+                    normal: Vec3::X,
                     enabled: |f| f.wing.is_some_and(|w| w.mode == WingMode::AsymmetricR || w.mode == WingMode::SymmetricDual)
                 }
             },
-            declare_ears_part_horizontal! {
+            declare_ears_part_vertical! {
                 WingAsymmetricLeft {
                     texture: PlayerPartEarsTextureType::Wings.into(),
-                    pos: [2.0, 14.0, 4.0],
-                    rot: [90.0, -120.0, 0.0],
+                    pos: [2.0, -2.0, 4.0],
+                    rot: [0.0, -120.0, 0.0],
                     size: [20, 16],
                     uv: [0, 0, 20, 16],
+                    normal: Vec3::NEG_X,
                     enabled: |f| f.wing.is_some_and(|w| w.mode == WingMode::AsymmetricL || w.mode == WingMode::SymmetricDual)
                 }
             },
             declare_ears_part_horizontal! {
-                WingAsymmetricSingle {
+                WingSymmetricSingle {
                     texture: PlayerPartEarsTextureType::Wings.into(),
                     pos: [4.0, 14.0, 4.0],
                     rot: [90.0, -90.0, 0.0],
@@ -296,7 +298,7 @@ impl EarsPlayerPartsProvider {
                         cw: true
                     }
                 });
-                
+
                 result.push(declare_ears_part_vertical! {
                     EarAroundLeft {
                         pos: [8.0, 0.0, anchor_z],
@@ -457,8 +459,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         if p.double_sided {
                             let mut back = p.clone();
                             back.normal *= -1.0;
-                            
-                            back.double_sided = false;
                             back.vertical_flip ^= true;
 
                             if let Some(uv) = p.back_uv {
@@ -504,8 +504,14 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                                 .with_rotation_anchor(pos.into()),
                         ),
                     );
-                    
-                    *part_quad.position_mut() += part_definition.normal * 0.01;
+
+                    if part_definition.double_sided {
+                        let normalized = part_quad
+                            .get_rotation_matrix()
+                            .transform_vector3(part_definition.normal)
+                            .normalize();
+                        *part_quad.position_mut() -= normalized * 0.01;
+                    }
 
                     result.push(part_quad);
                 }
@@ -518,17 +524,23 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
     }
 }
 
-fn process_uvs(mut uv: [u16; 4], horizontal_flip: bool, upside_down: bool, cw: bool, vertical: bool) -> FaceUv {
+fn process_uvs(
+    mut uv: [u16; 4],
+    horizontal_flip: bool,
+    upside_down: bool,
+    cw: bool,
+    vertical: bool,
+) -> FaceUv {
     if cw {
         uv.swap(2, 3);
     }
-    
+
     let mut uvs = FaceUv::from(uv_from_pos_and_size(uv[0], uv[1], uv[2], uv[3]));
-    
+
     if vertical {
         //uvs = uvs.flip_vertically();
     }
-    
+
     if upside_down {
         uvs = uvs.flip_vertically();
     }
@@ -536,10 +548,10 @@ fn process_uvs(mut uv: [u16; 4], horizontal_flip: bool, upside_down: bool, cw: b
     if horizontal_flip {
         uvs = uvs.flip_horizontally();
     }
-    
+
     if cw {
         uvs = uvs.rotate_cw();
     }
-    
+
     uvs
 }

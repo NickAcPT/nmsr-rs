@@ -89,13 +89,13 @@ impl Part {
         texture: PlayerPartTextureType,
         pos: [i32; 3],
         size: [u32; 3],
-        uvs: [[u16; 4]; 6],
+        uvs: CubeFaceUvs,
     ) -> Self {
         Cube {
             position: MinecraftPosition::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
             rotation_matrix: Mat4::IDENTITY,
-            face_uvs: uvs.into(),
+            face_uvs: uvs,
             texture,
         }
     }
@@ -104,15 +104,15 @@ impl Part {
         texture: PlayerPartTextureType,
         pos: [f32; 3],
         size: [u32; 3],
-        uvs: [u16; 4],
+        uvs: FaceUv,
         normal: Vec3
     ) -> Self {
         Quad {
             position: MinecraftPosition::new(pos[0], pos[1], pos[2]),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
             rotation_matrix: Mat4::IDENTITY,
-            face_uv: uvs.into(),
-            normal: normal,
+            face_uv: uvs,
+            normal,
             texture,
         }
     }

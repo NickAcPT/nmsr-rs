@@ -520,10 +520,7 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
 
             let texture_size = texture.get_texture_size();
             let final_face_uv = uv(
-                &FaceUv {
-                    top_left: face_uv.top_left,
-                    bottom_right: face_uv.bottom_right,
-                },
+                &face_uv,
                 texture_size,
             );
             
@@ -534,6 +531,8 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
                 model_transform.transform_point3(Vec3::new(x_left, y_bottom, z_front)),
                 final_face_uv[0],
                 final_face_uv[1],
+                final_face_uv[2],
+                final_face_uv[3],
                 *normal,
             )
             .into()
@@ -541,15 +540,20 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
     }
 }
 
-fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 2] {
+fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 4] {
     let texture_size = Vec2::new(texture_size.0 as f32, texture_size.1 as f32);
 
     let mut top_left = face_uvs.top_left.to_uv(texture_size);
+    let mut top_right = face_uvs.top_right.to_uv(texture_size);
+    let mut bottom_left = face_uvs.bottom_left.to_uv(texture_size);
     let mut bottom_right = face_uvs.bottom_right.to_uv(texture_size);
 
     let small_offset = 0.000; //Vec2::ONE / texture_size / 32.0;//001;
 
     top_left += small_offset;
+    top_right += Vec2::new(-small_offset, small_offset);
     bottom_right -= small_offset;
-    [top_left, bottom_right]
+    bottom_left += Vec2::new(small_offset, -small_offset);
+    
+    [top_left, top_right, bottom_left, bottom_right]
 }

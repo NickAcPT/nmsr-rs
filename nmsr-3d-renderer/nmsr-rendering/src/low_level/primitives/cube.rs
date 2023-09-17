@@ -29,12 +29,12 @@ impl Cube {
         center: Vec3,
         size: Vec3,
         model_transform: Mat4,
-        front_face_uv: [VertexUvCoordinates; 2],
-        back_face_uv: [VertexUvCoordinates; 2],
-        top_face_uv: [VertexUvCoordinates; 2],
-        bottom_face_uv: [VertexUvCoordinates; 2],
-        left_face_uv: [VertexUvCoordinates; 2],
-        right_face_uv: [VertexUvCoordinates; 2],
+        front_face_uv: [VertexUvCoordinates; 4],
+        back_face_uv: [VertexUvCoordinates; 4],
+        top_face_uv: [VertexUvCoordinates; 4],
+        bottom_face_uv: [VertexUvCoordinates; 4],
+        left_face_uv: [VertexUvCoordinates; 4],
+        right_face_uv: [VertexUvCoordinates; 4],
     ) -> Self {
         let small = 0f32; //1.0 / 256.0;
 
@@ -56,6 +56,8 @@ impl Cube {
             Vec3::new(x_left, y_down, z_front + small),
             front_face_uv[0],
             front_face_uv[1],
+            front_face_uv[2],
+            front_face_uv[3],
             [0.0, 0.0, -1.0].into(),
         );
 
@@ -67,6 +69,8 @@ impl Cube {
             Vec3::new(x_right, y_down, z_back - small),
             back_face_uv[0],
             back_face_uv[1],
+            back_face_uv[2],
+            back_face_uv[3],
             [0.0, 0.0, 1.0].into(),
         );
 
@@ -78,6 +82,8 @@ impl Cube {
             Vec3::new(x_left, y_up + small, z_front),
             top_face_uv[0],
             top_face_uv[1],
+            top_face_uv[2],
+            top_face_uv[3],
             [0.0, 1.0, 0.0].into(),
         );
 
@@ -89,6 +95,8 @@ impl Cube {
             Vec3::new(x_right, y_down - small, z_front),
             bottom_face_uv[0],
             bottom_face_uv[1],
+            bottom_face_uv[2],
+            bottom_face_uv[3],
             [0.0, -1.0, 0.0].into(),
         );
 
@@ -100,6 +108,8 @@ impl Cube {
             Vec3::new(x_left - small, y_down, z_back),
             left_face_uv[0],
             left_face_uv[1],
+            left_face_uv[2],
+            left_face_uv[3],
             [-1.0, 0.0, 0.0].into(),
         );
 
@@ -111,6 +121,8 @@ impl Cube {
             Vec3::new(x_right + small, y_down, z_front),
             right_face_uv[0],
             right_face_uv[1],
+            right_face_uv[2],
+            right_face_uv[3],
             [1.0, 0.0, 0.0].into(),
         );
 

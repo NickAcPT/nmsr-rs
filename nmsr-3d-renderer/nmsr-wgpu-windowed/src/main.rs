@@ -349,7 +349,7 @@ fn build_scene(
         };
     }
     
-    let mut skin_rgba = load_image!("ears_v0_sample_ear_out_front_claws_horn_tail_back_3_snout_4x3x4-0,2_wings_symmetric_dual_normal.png");
+    let mut skin_rgba = load_image!("download (19).png");
     
     #[cfg(feature = "ears")]
     {

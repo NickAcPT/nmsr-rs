@@ -5,8 +5,6 @@ use crate::low_level::primitives::vertex::Vertex;
 
 use super::vertex::VertexUvCoordinates;
 
-
-
 pub struct Quad {
     top_left: Vertex,
     top_right: Vertex,
@@ -29,20 +27,6 @@ impl Quad {
             bottom_right,
         }
     }
-
-    /// Create a new quad with the given vertex positions and uv coordinates
-    pub fn new(
-        top_left: Vec3,
-        top_right: Vec3,
-        bottom_left: Vec3,
-        bottom_right: Vec3,
-        top_left_uv: VertexUvCoordinates,
-        bottom_right_uv: VertexUvCoordinates,
-    ) -> Self {
-        let normal = (top_right - top_left).cross(bottom_left - top_left).normalize();
-        
-        Self::new_with_normal(top_left, top_right, bottom_left, bottom_right, top_left_uv, bottom_right_uv, normal)
-    }
     
     pub fn new_with_normal(
         top_left: Vec3,
@@ -50,13 +34,15 @@ impl Quad {
         bottom_left: Vec3,
         bottom_right: Vec3,
         top_left_uv: VertexUvCoordinates,
+        top_right_uv: VertexUvCoordinates,
+        bottom_left_uv: VertexUvCoordinates,
         bottom_right_uv: VertexUvCoordinates,
         normal: Vec3,
     ) -> Self {
         Quad {
             top_left: Vertex::new(top_left, top_left_uv, normal),
-            top_right: Vertex::new(top_right, [bottom_right_uv.x, top_left_uv.y].into(), normal),
-            bottom_left: Vertex::new(bottom_left, [top_left_uv.x, bottom_right_uv.y].into(), normal),
+            top_right: Vertex::new(top_right, top_right_uv, normal),
+            bottom_left: Vertex::new(bottom_left, bottom_left_uv, normal),
             bottom_right: Vertex::new(bottom_right, bottom_right_uv, normal),
         }
     }

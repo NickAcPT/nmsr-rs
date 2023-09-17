@@ -192,6 +192,13 @@ impl Part {
         }
     }
 
+    pub fn size_mut(&mut self) -> &mut MinecraftPosition {
+        match self {
+            Cube { size, .. } => size,
+            Quad { size, .. } => size,
+        }
+    }
+    
     pub fn get_position(&self) -> MinecraftPosition {
         match self {
             Cube { position, .. } => *position,

@@ -6,11 +6,14 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 
 use nmsr_player_parts::parts::part::Part;
-use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation, Size};
+use nmsr_player_parts::parts::uv::{uv_from_pos_and_size, CubeFaceUvs};
+use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation, Size, MARKER_TEXTURE};
 use nmsr_rendering::high_level::pipeline::{
     GraphicsContext, GraphicsContextDescriptor, SceneContext, SceneContextWrapper,
 };
-use nmsr_rendering::low_level::Vec3;
+use nmsr_rendering::low_level::{Vec3, Mat4};
+use nmsr_rendering::low_level::primitives::cube::Cube;
+use nmsr_rendering::low_level::primitives::mesh::{Mesh, PrimitiveDispatch};
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use strum::IntoEnumIterator;
 
@@ -21,11 +24,16 @@ use winit::event_loop::EventLoop;
 
 use nmsr_player_parts::parts::provider::PlayerPartProviderContext;
 use nmsr_player_parts::model::PlayerModel;
-use nmsr_player_parts::types::PlayerBodyPartType;
+use nmsr_player_parts::types::{PlayerBodyPartType, PlayerPartTextureType};
 use nmsr_rendering::high_level::camera::{
     Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
 };
 use winit::platform::run_return::EventLoopExtRunReturn;
+
+fn get_parts() -> Vec<PlayerBodyPartType> {
+    //PlayerBodyPartType::iter().collect()
+    vec![PlayerBodyPartType::LeftArm]
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -36,10 +44,8 @@ async fn main() -> anyhow::Result<()> {
     let mut renderdoc =
         renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
 
-    //renderdoc
-    //    .launch_replay_ui(true, None)
-    //    .expect("Failed to launch RenderDoc replay UI");
-
+    let mut showed_replay_ui = false;
+        
     let mut event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
     builder = builder.with_title("NMSR WGPU Windowed");
@@ -215,6 +221,13 @@ async fn main() -> anyhow::Result<()> {
                         }
                         // R
                         Some(event::VirtualKeyCode::R) => {
+                            if !showed_replay_ui {
+                                renderdoc
+                                    .launch_replay_ui(true, None)
+                                    .expect("Failed to launch RenderDoc replay UI");
+                                showed_replay_ui = true;
+                            }
+                            
                             //println!("Triggering RenderDoc capture.");
                             println!("Last frame time: {:?}", last_frame_time);
                             renderdoc.trigger_capture();
@@ -289,7 +302,7 @@ async fn main() -> anyhow::Result<()> {
                 scene.update(&graphics);
 
                 if needs_rebuild {
-                    last_computed_parts = scene.rebuild_parts(&ctx, PlayerBodyPartType::iter().collect()).to_vec();
+                    last_computed_parts = scene.rebuild_parts(&ctx, get_parts()).to_vec();
                 }
 
                 if needs_skin_rebuild {
@@ -329,16 +342,23 @@ fn build_scene(
     camera: Camera,
     sun: SunInformation
 ) -> Scene<SceneContextWrapper> {
-    let skin_bytes =
-        include_bytes!("ears_v0_sample_ear_out_front_claws_horn_tail_back_3_snout_4x3x4-0,2_wings_symmetric_dual_normal.png");
-    let skin_image = image::load_from_memory(skin_bytes).unwrap();
-    let mut skin_rgba = skin_image.to_rgba8();
+    macro_rules! load_image {
+        ($image: literal) => {
+            {
+                let skin_bytes = include_bytes!($image);
+                let skin_image = image::load_from_memory(skin_bytes).unwrap();
+                skin_image.to_rgba8()
+            }
+        };
+    }
+    
+    let mut skin_rgba = load_image!("ears_v0_sample_ear_out_front_claws_horn_tail_back_3_snout_4x3x4-0,2_wings_symmetric_dual_normal.png");
     
     #[cfg(feature = "ears")]
     {
         ctx.ears_features = ears_rs::parser::EarsParser::parse(&skin_rgba).unwrap();
     }
-    
+        
     let mut scene = Scene::new(
         graphics,
         SceneContext::new(graphics).into(),
@@ -349,7 +369,7 @@ fn build_scene(
             height: config.height,
         },
         ctx,
-        &PlayerBodyPartType::iter().collect::<Vec<_>>(),
+        &get_parts(),
     );
 
     // Create pipeline layout
@@ -370,6 +390,13 @@ fn build_scene(
         graphics,
         nmsr_player_parts::types::PlayerPartTextureType::Cape,
         &cape_rgba,
+    );
+    
+    let marker_lines = load_image!("lines.png");
+    scene.set_texture(
+        graphics,
+        MARKER_TEXTURE,
+        &marker_lines,
     );
 
     scene

@@ -206,6 +206,7 @@ where
                     .iter()
                     .flat_map(|part| provider.get_parts(part_provider_context, *part))
             })
+            .flat_map(inspect_part)
             .collect::<Vec<Part>>();
 
         // Sort the parts by texture. This allows us to render all parts with the same texture in one go.
@@ -489,19 +490,65 @@ where
     }
 }
 
-pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
+pub const MARKER_TEXTURE: PlayerPartTextureType = PlayerPartTextureType::Custom {
+    key: "marker",
+    size: (3, 1),
+};
+
+fn inspect_part(part: Part) -> Vec<Part> {
+    let mut result = vec![part];
+
+    let final_pos = part
+        .get_rotation_matrix()
+        .transform_point3(part.get_position());
+
+    result.append(&mut marker(final_pos));
+
+    result
+}
+
+fn marker(center: Vec3) -> Vec<Part> {
+    let size = 4.0;
+    let axes = Vec3::AXES;
+
+    axes.iter()
+        .enumerate()
+        .map(|(index, axis)| {
+            let size = (size * *axis) + 0.25;
+            let uvs =
+                [nmsr_player_parts::parts::uv::uv_from_pos_and_size(index as u16, 0, 1, 1); 6];
+
+            let actual_pos = center - size / 2.0;
+
+            let position = Vec3::ZERO;
+            let position: [i32; 3] = [position.x as i32, position.y as i32, position.z as i32];
+
+            let mut part = Part::new_cube(MARKER_TEXTURE, position, [0; 3], uvs);
             
+            *part.size_mut() = size;
+            
+            part.rotate(
+                Vec3::ZERO,
+                Some(PartAnchorInfo {
+                    translation_anchor: actual_pos,
+                    ..Default::default()
+                }),
+            );
+            
+            
+            part
+        })
+        .collect()
+}
+
+pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
     let position = part.get_position();
     let center = position + part.get_size() / 2.0;
-    
+
     let model_transform = part.get_rotation_matrix();
 
     match part {
-        Part::Cube {
-            size,
-            face_uvs,
-            ..
-        } => {
+        Part::Cube { size, face_uvs, .. } => {
             let texture_size = part.get_texture().get_texture_size();
 
             Cube::new(

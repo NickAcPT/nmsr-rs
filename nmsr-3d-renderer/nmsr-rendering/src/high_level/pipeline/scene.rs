@@ -10,7 +10,7 @@ use crate::{
     },
 };
 use bytemuck::{Pod, Zeroable};
-use glam::{Mat4, Quat, Vec2, Vec3};
+use glam::{Vec2, Vec3};
 use image::RgbaImage;
 use itertools::Itertools;
 use nmsr_player_parts::{
@@ -498,11 +498,6 @@ pub const MARKER_TEXTURE: PlayerPartTextureType = PlayerPartTextureType::Custom 
 fn inspect_part(part: Part) -> Vec<Part> {
     let mut result = vec![];
 
-    let final_pos = part
-        .get_rotation_matrix()
-        .transform_point3(part.get_position());
-
-    //result.append(&mut marker(final_pos));
     result.append(&mut part.get_markers().iter().flat_map(|p| marker(*p)).collect::<Vec<_>>());
     result.push(part);
 

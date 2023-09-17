@@ -127,15 +127,15 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
         LeftArm => {
             if is_slim_arms {
                 body_part! {
-                    pos: [0, 0, 0],
-                    //pos: [-7, 12, -2],
+                    //pos: [0, 0, 0],
+                    pos: [-7, 12, -2],
                     size: [3, 12, 4],
                     box_uv_start: (36, 52)
                 }
             } else {
                 body_part! {
-                    pos: [0, 0, 0],
-                    //pos: [-8, 12, -2],
+                    //pos: [0, 0, 0],
+                    pos: [-8, 12, -2],
                     size: [4, 12, 4],
                     box_uv_start: (36, 52)
                 }

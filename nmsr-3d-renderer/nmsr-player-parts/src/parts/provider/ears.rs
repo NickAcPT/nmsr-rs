@@ -37,6 +37,7 @@ macro_rules! declare_ears_parts {
             texture: $texture: ident,
             pos: $pos: expr,
             rot: $rot: expr,
+            rot_anchor: $rot_anchor: expr,
             size: $size: expr,
             uv: [$($uv: tt)*],
             enabled: $($feature: tt)*
@@ -60,7 +61,7 @@ macro_rules! declare_ears_parts {
                         Some(PartAnchorInfo::new_part_anchor_translate(
                             $part,
                             $is_slim_arms,
-                        )),
+                        ).with_rotation_anchor(glam::Vec3::from(process_pos($rot_anchor, $is_slim_arms)))),
                     );
 
                     $parts.push(part_quad);
@@ -86,6 +87,7 @@ impl EarsPlayerPartsProvider {
                     texture: Skin,
                     pos: [0.0, 0.0, -4.0],
                     rot: [0.0, 0.0, 0.0],
+                    rot_anchor: [0.0, 0.0, 0.0],
                     size: [4, 0, 4],
                     uv: [16, 48, 4, 4],
                     enabled: features.claws
@@ -97,6 +99,7 @@ impl EarsPlayerPartsProvider {
                     texture: Skin,
                     pos: [0.0, 0.0, -4.0],
                     rot: [0.0, 0.0, 0.0],
+                    rot_anchor: [0.0, 0.0, 0.0],
                     size: [4, 0, 4],
                     uv: [0, 16, 4, 4],
                     enabled: features.claws
@@ -108,6 +111,7 @@ impl EarsPlayerPartsProvider {
                     texture: Skin,
                     pos: [ARM_PIXEL_CANARY, 0.0, -4.0],
                     rot: [0.0, 0.0, 90.0],
+                    rot_anchor: [ARM_PIXEL_CANARY, 0.0, 0.0],
                     size: [4, 0, 4],
                     uv: [44, 48, 4, 4],
                     enabled: features.claws

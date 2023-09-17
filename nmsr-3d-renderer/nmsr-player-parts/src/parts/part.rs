@@ -37,7 +37,7 @@ impl PartAnchorInfo {
         let translation_anchor: Vec3 = [pos.x, pos.y, pos.z].into();
 
         Self {
-            rotation_anchor: MinecraftPosition::ZERO,
+            rotation_anchor: translation_anchor,
             translation_anchor,
         }
     }
@@ -167,15 +167,15 @@ impl Part {
     }
 
     pub fn rotate(&mut self, rotation: MinecraftPosition, anchor: Option<PartAnchorInfo>) {
+        let prev_rotation = *self.rotation_matrix_mut();
+        
         let anchor = anchor.unwrap_or_default();
-        
-        let offset = self.get_position();
-        
         *self.position_mut() += anchor.translation_anchor;
         
-        let pos_translation_mat = Mat4::from_translation(anchor.translation_anchor);
-        let rot_translation_mat = Mat4::from_translation(anchor.rotation_anchor);
-        let neg_rot_translation_mat = Mat4::from_translation(-anchor.rotation_anchor);
+        let offset = anchor.rotation_anchor;
+        
+        let rot_translation_mat = Mat4::from_translation(offset);
+        let neg_rot_translation_mat = Mat4::from_translation(-offset);
 
         let rotation_mat = Mat4::from_quat(Quat::from_euler(
             glam::EulerRot::YXZ,
@@ -184,13 +184,13 @@ impl Part {
             rotation.z.to_radians(),
         ));
         
-        if rotation != MinecraftPosition::ZERO {
-            self.markers_mut().push(anchor.rotation_anchor);
-        }
-
         let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
         
-        *self.rotation_matrix_mut() *= model_transform;
+        *self.rotation_matrix_mut() = model_transform * prev_rotation;
+        
+        if rotation != MinecraftPosition::ZERO {
+            self.markers_mut().push(offset);
+        }
     }
 
     pub fn get_size(&self) -> MinecraftPosition {

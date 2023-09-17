@@ -31,8 +31,8 @@ use nmsr_rendering::high_level::camera::{
 use winit::platform::run_return::EventLoopExtRunReturn;
 
 fn get_parts() -> Vec<PlayerBodyPartType> {
-    //PlayerBodyPartType::iter().collect()
-    vec![PlayerBodyPartType::LeftArm]
+    PlayerBodyPartType::iter().collect()
+    //vec![PlayerBodyPartType::LeftArm]
 }
 
 #[tokio::main]

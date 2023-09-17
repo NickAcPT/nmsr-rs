@@ -78,6 +78,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
                     [-8.0, shadow_y_pos, -8.0],
                     [16, 0, 16],
                     uv_from_pos_and_size(0, 0, 128, 128),
+                    Vec3::Y
                 );
 
                 result.push(shadow);

@@ -506,12 +506,14 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             size,
             face_uv,
             texture,
+            normal,
             ..
         } => {
             let x_left = position.x + size.x;
             let x_right = position.x;
 
-            let y = position.y + size.y;
+            let y_bottom = position.y;
+            let y_top = position.y + size.y;
 
             let z_front = position.z + size.z;
             let z_back = position.z;
@@ -524,17 +526,15 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
                 },
                 texture_size,
             );
-            // Assume that the quad is always facing up (This is the case for the shadow)
-            // TODO: Fix normal when we introduce Ears parts
-
+            
             Quad::new_with_normal(
-                model_transform.transform_point3(Vec3::new(x_right, y, z_back)),
-                model_transform.transform_point3(Vec3::new(x_left, y, z_back)),
-                model_transform.transform_point3(Vec3::new(x_right, y, z_front)),
-                model_transform.transform_point3(Vec3::new(x_left, y, z_front)),
+                model_transform.transform_point3(Vec3::new(x_right, y_top, z_back)),
+                model_transform.transform_point3(Vec3::new(x_left, y_top, z_back)),
+                model_transform.transform_point3(Vec3::new(x_right, y_bottom, z_front)),
+                model_transform.transform_point3(Vec3::new(x_left, y_bottom, z_front)),
                 final_face_uv[0],
                 final_face_uv[1],
-                [0.0, 1.0, 0.0].into(),
+                *normal,
             )
             .into()
         }

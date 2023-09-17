@@ -68,6 +68,7 @@ pub enum Part {
         size: MinecraftPosition,
         rotation_matrix: Mat4,
         face_uv: FaceUv,
+        normal: Vec3,
         texture: PlayerPartTextureType,
     },
 }
@@ -104,12 +105,14 @@ impl Part {
         pos: [f32; 3],
         size: [u32; 3],
         uvs: [u16; 4],
+        normal: Vec3
     ) -> Self {
         Quad {
             position: MinecraftPosition::new(pos[0], pos[1], pos[2]),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
             rotation_matrix: Mat4::IDENTITY,
             face_uv: uvs.into(),
+            normal: normal,
             texture,
         }
     }

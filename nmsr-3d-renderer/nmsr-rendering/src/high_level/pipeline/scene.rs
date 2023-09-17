@@ -499,6 +499,7 @@ fn inspect_part(part: Part) -> Vec<Part> {
     let mut result = vec![];
 
     result.append(&mut part.get_markers().iter().flat_map(|p| marker(*p)).collect::<Vec<_>>());
+    //result.append(&mut marker(part.get_position()));
     result.push(part);
 
     result

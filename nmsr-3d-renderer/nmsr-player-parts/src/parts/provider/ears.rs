@@ -24,7 +24,7 @@ fn process_pos(pos: [f32; 3], is_slim_arms: bool) -> [f32; 3] {
 
     for ele in pos.as_mut_slice() {
         if (*ele).abs() == ARM_PIXEL_CANARY {
-            *ele = if is_slim_arms { 3.0 } else { 4.0 };
+            *ele = if is_slim_arms { 3.0 } else { 4.0 } * ARM_PIXEL_CANARY.signum();
         }
     }
 
@@ -37,7 +37,6 @@ macro_rules! declare_ears_parts {
             texture: $texture: ident,
             pos: $pos: expr,
             rot: $rot: expr,
-            rot_anchor: $rot_anchor: expr,
             size: $size: expr,
             uv: [$($uv: tt)*],
             enabled: $($feature: tt)*
@@ -49,6 +48,8 @@ macro_rules! declare_ears_parts {
             $(
                 if $($feature)* {
                     let _ = EarsPlayerBodyPartType::$ears_part;
+                    let pos = process_pos($pos, $is_slim_arms);
+                    
                     let mut part_quad = Part::new_quad(
                         PlayerPartTextureType::$texture,
                         process_pos($pos, $is_slim_arms),
@@ -61,8 +62,12 @@ macro_rules! declare_ears_parts {
                         Some(PartAnchorInfo::new_part_anchor_translate(
                             $part,
                             $is_slim_arms,
-                        ).with_rotation_anchor(glam::Vec3::from(process_pos($rot_anchor, $is_slim_arms)))),
+                        ).with_rotation_anchor(pos.into())),
                     );
+                    
+                    let posuwu = part_quad.get_position();
+                    
+                    part_quad.markers_mut().push(posuwu);
 
                     $parts.push(part_quad);
                 }
@@ -87,7 +92,6 @@ impl EarsPlayerPartsProvider {
                     texture: Skin,
                     pos: [0.0, 0.0, -4.0],
                     rot: [0.0, 0.0, 0.0],
-                    rot_anchor: [0.0, 0.0, 0.0],
                     size: [4, 0, 4],
                     uv: [16, 48, 4, 4],
                     enabled: features.claws
@@ -99,7 +103,6 @@ impl EarsPlayerPartsProvider {
                     texture: Skin,
                     pos: [0.0, 0.0, -4.0],
                     rot: [0.0, 0.0, 0.0],
-                    rot_anchor: [0.0, 0.0, 0.0],
                     size: [4, 0, 4],
                     uv: [0, 16, 4, 4],
                     enabled: features.claws
@@ -109,9 +112,8 @@ impl EarsPlayerPartsProvider {
             declare_ears_parts! { parts, part, is_slim_arms,
                 LeftArmClaw {
                     texture: Skin,
-                    pos: [ARM_PIXEL_CANARY, 0.0, -4.0],
-                    rot: [0.0, 0.0, 90.0],
-                    rot_anchor: [ARM_PIXEL_CANARY, 0.0, 0.0],
+                    pos: [-ARM_PIXEL_CANARY, 0.0, 0.0],
+                    rot: [90.0, 0.0, 90.0],
                     size: [4, 0, 4],
                     uv: [44, 48, 4, 4],
                     enabled: features.claws

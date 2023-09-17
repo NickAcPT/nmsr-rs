@@ -187,17 +187,7 @@ where
         part_provider_context: &PlayerPartProviderContext<C>,
         body_parts: &[PlayerBodyPartType],
     ) -> Vec<Part> {
-        let providers = /* if SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
-            % 2
-            == 0
-        { */
-            vec![PlayerPartsProvider::Minecraft, PlayerPartsProvider::Ears]
-        /* } else {
-            vec![PlayerPartsProvider::Ears]
-        } */;
+        let providers = vec![PlayerPartsProvider::Minecraft, PlayerPartsProvider::Ears];
 
         let mut parts = providers
             .iter()
@@ -206,7 +196,6 @@ where
                     .iter()
                     .flat_map(|part| provider.get_parts(part_provider_context, *part))
             })
-            .flat_map(inspect_part)
             .collect::<Vec<Part>>();
 
         // Sort the parts by texture. This allows us to render all parts with the same texture in one go.
@@ -488,54 +477,6 @@ where
 
         self.parts()
     }
-}
-
-pub const MARKER_TEXTURE: PlayerPartTextureType = PlayerPartTextureType::Custom {
-    key: "marker",
-    size: (3, 1),
-};
-
-fn inspect_part(part: Part) -> Vec<Part> {
-    let mut result = vec![];
-
-    result.append(&mut part.get_markers().iter().flat_map(|p| marker(*p)).collect::<Vec<_>>());
-    //result.append(&mut marker(part.get_position()));
-    result.push(part);
-
-    result
-}
-
-fn marker(center: Vec3) -> Vec<Part> {
-    let size = 4.0;
-    let axes = Vec3::AXES;
-
-    axes.iter()
-        .enumerate()
-        .map(|(index, axis)| {
-            let size = (size * *axis) + 0.25;
-            let uvs =
-                [nmsr_player_parts::parts::uv::uv_from_pos_and_size(index as u16, 0, 1, 1); 6];
-
-            let actual_pos = center - size / 2.0;
-
-            let position = Vec3::ZERO;
-            let position: [i32; 3] = [position.x as i32, position.y as i32, position.z as i32];
-
-            let mut part = Part::new_cube(MARKER_TEXTURE, position, [0; 3], uvs);
-            
-            *part.size_mut() = size;
-            
-            part.rotate(
-                Vec3::ZERO,
-                Some(PartAnchorInfo {
-                    translation_anchor: actual_pos,
-                    ..Default::default()
-                }),
-            );
-            
-            part
-        })
-        .collect()
 }
 
 pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {

@@ -37,6 +37,10 @@ impl RenderRequestMode {
     pub(crate) fn is_custom(&self) -> bool {
         matches!(self, Self::Custom)
     }
+    
+    pub(crate) fn is_full_body(&self) -> bool {
+        matches!(self, Self::FullBody | Self::FullBodyIso)
+    }
 
     pub(crate) fn is_isometric(&self) -> bool {
         matches!(
@@ -63,6 +67,9 @@ impl RenderRequestMode {
 
     pub(crate) fn is_head(&self) -> bool {
         matches!(self, Self::Head)
+    }
+    pub(crate) fn is_head_iso(&self) -> bool {
+        matches!(self, Self::HeadIso)
     }
     
     pub(crate) fn is_face(&self) -> bool {

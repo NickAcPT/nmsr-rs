@@ -252,6 +252,13 @@ impl Part {
             } => unreachable!("Cannot set face UVs on a quad"),
         }
     }
+    
+    pub fn normal_mut(&mut self) -> &mut Vec3 {
+        match self {
+            Cube { .. } => unreachable!("Cannot get normal on a cube"),
+            Quad { normal, .. } => normal,
+        }
+    }
 }
 
 /// A position in 3D space.

@@ -2,7 +2,7 @@ use super::{PartsProvider, PlayerPartProviderContext};
 use crate::{
     model::ArmorMaterial,
     parts::{
-        part::{self, Part, PartAnchorInfo},
+        part::{Part, PartAnchorInfo},
         uv::{uv_from_pos_and_size, FaceUv},
     },
     types::{PlayerBodyPartType, PlayerBodyPartType::*, PlayerPartTextureType},
@@ -148,6 +148,7 @@ impl Default for EarsPlayerPartsProvider {
                     uv: [44, 48, 4, 4],
                     enabled: |f| f.claws,
                     vertical_flip: true,
+                    double_sided: false,
                     normal: Vec3::NEG_X
                 }
             }],
@@ -163,7 +164,8 @@ impl Default for EarsPlayerPartsProvider {
                     uv: [52, 16, 4, 4],
                     enabled: |f| f.claws,
                     normal: Vec3::X,
-                    vertical_flip: true
+                    vertical_flip: true,
+                    double_sided: false
                 }
             }],
         ));
@@ -174,7 +176,7 @@ impl Default for EarsPlayerPartsProvider {
                 WingAsymmetricRight {
                     texture: PlayerPartEarsTextureType::Wings.into(),
                     pos: [8.0 - 2.0, -2.0, 4.0],
-                    rot: [0.0, -90.0, 0.0],
+                    rot: [0.0, -60.0, 0.0],
                     size: [20, 16],
                     uv: [0, 0, 20, 16],
                     normal: Vec3::X,
@@ -266,6 +268,7 @@ impl EarsPlayerPartsProvider {
                 EarAnchor::Back => 8.0,
             };
 
+            // TODO: Make it so cw is separate from back cw
             result.push(declare_ears_part_vertical! {
                 EarMiddleFront {
                     pos: [-4.0, 8.0, anchor_z],
@@ -458,9 +461,9 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     .flat_map(|&p| {
                         if p.double_sided {
                             let mut back = p.clone();
-                            back.normal *= -1.0;
                             back.vertical_flip ^= true;
-
+                            back.normal *= -1.0;
+                            
                             if let Some(uv) = p.back_uv {
                                 back.uv = uv;
                             }
@@ -482,12 +485,17 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         part_definition.vertical_quad,
                     );
 
-                    let pos = process_pos(part_definition.pos, is_slim_arms);
+                    let mut pos = process_pos(part_definition.pos, is_slim_arms);
                     let size = if part_definition.vertical_quad {
                         [size[0], size[1], 0]
                     } else {
                         [size[0], 0, size[1]]
                     };
+                    
+ 
+                    if part_definition.double_sided {
+                        pos = (Vec3::from(pos) + (part_definition.normal * 0.01)).into();
+                    }
 
                     let mut part_quad = Part::new_quad(
                         part_definition.texture,
@@ -504,14 +512,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                                 .with_rotation_anchor(pos.into()),
                         ),
                     );
-
-                    if part_definition.double_sided {
-                        let normalized = part_quad
-                            .get_rotation_matrix()
-                            .transform_vector3(part_definition.normal)
-                            .normalize();
-                        *part_quad.position_mut() -= normalized * 0.01;
-                    }
 
                     result.push(part_quad);
                 }

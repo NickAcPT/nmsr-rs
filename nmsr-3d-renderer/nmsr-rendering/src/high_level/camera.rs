@@ -8,7 +8,7 @@ use crate::low_level::utils::{look_from_yaw_pitch, minecraft_rotation_matrix};
 
 use super::pipeline::scene::Size;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct CameraRotation {
     pub yaw: f32,
     pub pitch: f32,
@@ -53,7 +53,7 @@ impl core::ops::AddAssign for CameraRotation {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum ProjectionParameters {
     Perspective {
         /// The field of view of the camera (in degrees)
@@ -117,7 +117,7 @@ impl ProjectionParameters {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum CameraPositionParameters {
     Absolute(Vec3),
     Orbital {
@@ -198,7 +198,7 @@ impl CameraPositionParameters {
 }
 
 /// The camera used to view the scene
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Camera {
     /// The position of the camera
     position_parameters: CameraPositionParameters,

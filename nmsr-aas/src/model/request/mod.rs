@@ -255,7 +255,7 @@ impl RenderRequest {
 
     pub(crate) fn get_shadow_y_pos(&self) -> Option<f32> {
         if self.features.contains(RenderRequestFeatures::Shadow) {
-            if self.mode.is_head() {
+            if self.mode.is_head() || self.mode.is_head_iso() {
                 Some(24.0)
             } else {
                 Some(0.0)

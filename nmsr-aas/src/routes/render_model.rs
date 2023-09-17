@@ -32,7 +32,7 @@ pub(crate) async fn internal_render_model(
     let scene_context = state.create_scene_context().await?;
 
     let mode = &request.mode;
-    let camera = request.get_camera();
+    let mut camera = request.get_camera();
 
     let size = request.get_size();
 
@@ -97,7 +97,7 @@ pub(crate) async fn internal_render_model(
         has_cape,
         arm_rotation,
         shadow_y_pos,
-        shadow_is_square: mode.is_head(),
+        shadow_is_square: mode.is_head() || mode.is_head_iso(),
         armor_slots: Some(player_armor_slots),
         #[cfg(feature = "ears")]
         ears_features: None,
@@ -106,6 +106,10 @@ pub(crate) async fn internal_render_model(
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
         load_ears_features(&mut part_context, resolved);
+        
+        if let Some(features) = part_context.ears_features.as_ref() {
+            state.apply_ears_camera_settings(features, mode, &mut camera);
+        }
     }
 
     let mut scene = Scene::new(

@@ -201,7 +201,8 @@ impl Default for EarsPlayerPartsProvider {
                     pos: [0.0, 0.0, -4.0],
                     size: [4, 4],
                     uv: [16, 48, 4, 4],
-                    enabled: |f| f.claws
+                    enabled: |f| f.claws,
+                    double_sided: false
                 }
             }],
         ));
@@ -213,7 +214,8 @@ impl Default for EarsPlayerPartsProvider {
                     pos: [0.0, 0.0, -4.0],
                     size: [4, 4],
                     uv: [0, 16, 4, 4],
-                    enabled: |f| f.claws
+                    enabled: |f| f.claws,
+                    double_sided: false
                 }
             }],
         ));
@@ -239,6 +241,73 @@ impl EarsPlayerPartsProvider {
         }
     }
 
+    fn snout(body_part: PlayerBodyPartType, features: &EarsFeatures, result: &mut Vec<EarsPlayerBodyPartDefinition>) {
+        
+        if let Some(snout) = features
+            .snout
+            .filter(|s| s.width > 0 && s.height > 0 && s.depth > 0)
+        {
+            let snout_offset = snout.offset as f32;
+            let snout_width = snout.width;
+            let snout_height = snout.height;
+            let snout_depth = snout.depth as f32;
+
+            let snout_x = snout_width as f32 / 2.0;
+            let snout_y = snout_offset;
+            let snout_z = -snout_depth;
+
+            macro_rules! snout_horizontal {
+                ($y: expr, $normal: expr, $uv_y: expr, $uv_y_2: expr) => {
+                    result.push(declare_ears_part_horizontal! {
+                        SnoutFront {
+                            pos: [snout_x, snout_y + $y as f32, snout_z],
+                            size: [snout_width.into(), 1],
+                            uv: [0, $uv_y, snout_width.into(), 1],
+                            normal: $normal,
+                            double_sided: false
+                        }
+                    });
+
+                    for pos in 0..((snout_depth as i32) - 1) {
+                        result.push(declare_ears_part_horizontal! {
+                            SnoutRest {
+                                pos: [snout_x, snout_y + $y as f32, snout_z + pos as f32 + 1.0],
+                                size: [snout_width.into(), 1],
+                                uv: [0, $uv_y_2, snout_width.into(), 1],
+                                normal: $normal,
+                                double_sided: false
+                            }
+                        });
+                    }   
+                };
+            }
+            
+            result.push(declare_ears_part_vertical! {
+                SnoutFront {
+                    pos: [snout_x, snout_y, snout_z],
+                    size: [snout_width.into(), snout_height.into()],
+                    uv: [0, 2, snout_width.into(), snout_height.into()],
+                    normal: Vec3::NEG_Z,
+                    double_sided: false
+                }
+            });
+            
+            snout_horizontal!(snout_height, Vec3::Y, 1, 0);
+            snout_horizontal!(0.0, Vec3::NEG_Y, 2 + snout_height as u16, 3 + snout_height as u16);
+            
+            result.push(declare_ears_part_vertical! {
+                SnoutTop {
+                    pos: [snout_x + snout_width as f32, snout_y, snout_z + 1.0],
+                    rot: [0.0, 90.0, 0.0],
+                    size: [1, snout_height.into()],
+                    uv: [7, 0, 1, snout_height.into()],
+                    double_sided: false
+                }
+            });
+            
+        }
+    }
+    
     fn get_dynamic_head_parts(
         &self,
         body_part: PlayerBodyPartType,
@@ -246,24 +315,8 @@ impl EarsPlayerPartsProvider {
     ) -> Vec<EarsPlayerBodyPartDefinition> {
         let mut result = Vec::new();
 
-        if let Some(snout) = features.snout {
-            let snout_offset = snout.offset as f32;
-            let snout_width = snout.width;
-            let snout_height = snout.height;
-            let snout_depth = snout.depth as f32;
-
-            let snout_front = declare_ears_part_vertical! {
-                SnoutFront {
-                    pos: [8.0 - snout_offset, 8.0, -snout_depth],
-                    rot: [0.0, 0.0, 0.0],
-                    size: [snout_width.into(), snout_height.into()],
-                    uv: [0, 2, snout_width.into(), snout_height.into()]
-                }
-            };
-
-            result.push(snout_front);
-        }
-
+        Self::snout(body_part, features, &mut result);
+        
         result
     }
 }

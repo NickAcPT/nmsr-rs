@@ -116,4 +116,10 @@ impl From<[UvCoordinate; 4]> for FaceUv {
     }
 }
 
+impl From<FaceUv> for [UvCoordinate; 4] {
+    fn from(uvs: FaceUv) -> Self {
+        [uvs.top_left.x, uvs.top_left.y, uvs.bottom_right.x, uvs.bottom_right.y]
+    }
+}
+
 pub(crate) type UvCoordinate = u16;

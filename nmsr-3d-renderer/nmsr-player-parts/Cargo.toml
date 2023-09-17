@@ -10,7 +10,8 @@ ears-rs = { path = "../../../ears-rs", optional = true }
 thiserror = "1.0.44"
 glam = "0.24.1"
 strum = { version = "0.25", features = ["derive"] }
+itertools = { version = "0.11.0", optional = true }
 
 [features]
 default = []
-ears = ["dep:ears-rs"]
+ears = ["dep:ears-rs",  "dep:itertools"]

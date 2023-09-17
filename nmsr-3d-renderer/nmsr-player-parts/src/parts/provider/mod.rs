@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use ears_rs::features::EarsFeatures;
 
 use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
@@ -43,6 +45,8 @@ pub trait PartsProvider<M: ArmorMaterial> {
     ) -> Vec<Part>;
 }
 
+pub(crate) const EARS_PLAYER_PARTS_PROVIDER: OnceLock<EarsPlayerPartsProvider> = OnceLock::new();
+
 impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
     fn get_parts(
         &self,
@@ -54,7 +58,9 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
                 MinecraftPlayerPartsProvider::default().get_parts(context, body_part)
             }
             #[cfg(feature = "ears")]
-            Self::Ears => EarsPlayerPartsProvider.get_parts(context, body_part),
+            Self::Ears => EARS_PLAYER_PARTS_PROVIDER
+                .get_or_init(|| EarsPlayerPartsProvider::default())
+                .get_parts(context, body_part),
         };
 
         if body_part.is_arm() {

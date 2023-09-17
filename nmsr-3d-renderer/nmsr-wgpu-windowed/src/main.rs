@@ -6,11 +6,14 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 
 use nmsr_player_parts::parts::part::Part;
-use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation, Size};
+use nmsr_player_parts::parts::uv::{uv_from_pos_and_size, CubeFaceUvs};
+use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation, Size, MARKER_TEXTURE};
 use nmsr_rendering::high_level::pipeline::{
     GraphicsContext, GraphicsContextDescriptor, SceneContext, SceneContextWrapper,
 };
-use nmsr_rendering::low_level::Vec3;
+use nmsr_rendering::low_level::{Vec3, Mat4};
+use nmsr_rendering::low_level::primitives::cube::Cube;
+use nmsr_rendering::low_level::primitives::mesh::{Mesh, PrimitiveDispatch};
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use strum::IntoEnumIterator;
 
@@ -21,7 +24,7 @@ use winit::event_loop::EventLoop;
 
 use nmsr_player_parts::parts::provider::PlayerPartProviderContext;
 use nmsr_player_parts::model::PlayerModel;
-use nmsr_player_parts::types::PlayerBodyPartType;
+use nmsr_player_parts::types::{PlayerBodyPartType, PlayerPartTextureType};
 use nmsr_rendering::high_level::camera::{
     Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
 };
@@ -389,6 +392,13 @@ fn build_scene(
         &cape_rgba,
     );
     
+    let marker_lines = load_image!("lines.png");
+    scene.set_texture(
+        graphics,
+        MARKER_TEXTURE,
+        &marker_lines,
+    );
+
     scene
 }
 

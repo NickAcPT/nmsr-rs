@@ -52,7 +52,7 @@ impl Default for PartAnchorInfo {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum Part {
     /// Represents a cube as a part of a player model.
     Cube {
@@ -61,6 +61,7 @@ pub enum Part {
         rotation_matrix: Mat4,
         face_uvs: CubeFaceUvs,
         texture: PlayerPartTextureType,
+        markers: Vec<Vec3>
     },
     /// Represents a quad as a part of a player model.
     Quad {
@@ -69,6 +70,7 @@ pub enum Part {
         rotation_matrix: Mat4,
         face_uv: FaceUv,
         texture: PlayerPartTextureType,
+        markers: Vec<Vec3>
     },
 }
 
@@ -96,6 +98,7 @@ impl Part {
             rotation_matrix: Mat4::IDENTITY,
             face_uvs: uvs.into(),
             texture,
+            markers: Vec::new()
         }
     }
 
@@ -111,6 +114,7 @@ impl Part {
             rotation_matrix: Mat4::IDENTITY,
             face_uv: uvs.into(),
             texture,
+            markers: Vec::new()
         }
     }
 
@@ -183,6 +187,10 @@ impl Part {
         let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
         
         *self.rotation_matrix_mut() = model_transform * prev_rotation;
+        
+        if rotation != MinecraftPosition::ZERO {
+            self.markers_mut().push(offset);
+        }
     }
 
     pub fn get_size(&self) -> MinecraftPosition {
@@ -247,6 +255,20 @@ impl Part {
             Quad {
                 face_uv: ref mut f, ..
             } => unreachable!("Cannot set face UVs on a quad"),
+        }
+    }
+    
+    pub fn get_markers(&self) -> &Vec<Vec3> {
+        match self {
+            Cube { markers, .. } => markers,
+            Quad { markers, .. } => markers,
+        }
+    }
+    
+    pub fn markers_mut(&mut self) -> &mut Vec<Vec3> {
+        match self {
+            Cube { markers, .. } => markers,
+            Quad { markers, .. } => markers,
         }
     }
 }

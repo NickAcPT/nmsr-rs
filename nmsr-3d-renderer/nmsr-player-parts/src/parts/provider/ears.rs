@@ -268,17 +268,41 @@ impl EarsPlayerPartsProvider {
                         }
                     });
 
-                    for pos in 0..((snout_depth as i32) - 1) {
-                        result.push(declare_ears_part_horizontal! {
-                            SnoutRest {
-                                pos: [snout_x, snout_y + $y as f32, snout_z + pos as f32 + 1.0],
-                                size: [snout_width.into(), 1],
-                                uv: [0, $uv_y_2, snout_width.into(), 1],
-                                normal: $normal,
-                                double_sided: false
-                            }
-                        });
-                    }   
+                    result.push(declare_ears_part_horizontal! {
+                        SnoutRest {
+                            pos: [snout_x, snout_y + $y as f32, snout_z as f32 + 1.0],
+                            size: [snout_width.into(), snout_depth as u32],
+                            uv: [0, $uv_y_2, snout_width.into(), 1],
+                            normal: $normal,
+                            double_sided: false
+                        }
+                    });
+                };
+            }
+            
+            macro_rules! snout_vertical {
+                ($x: expr, $normal: expr, $uv_y_1: expr, $uv_y_2: expr) => {
+                    result.push(declare_ears_part_vertical! {
+                        SnoutSideFront {
+                            pos: [snout_x + $x as f32, snout_y, snout_z + 1.0],
+                            rot: [0.0, 90.0, 0.0],
+                            size: [1, snout_height.into()],
+                            uv: [7, $uv_y_1, 1, snout_height.into()],
+                            normal: $normal,
+                            double_sided: false
+                        }
+                    });
+                    
+                    result.push(declare_ears_part_vertical! {
+                        SnoutSideRest {
+                            pos: [snout_x + $x as f32, snout_y, 0.0],
+                            rot: [0.0, 90.0, 0.0],
+                            size: [snout_depth as u32 - 1, snout_height.into()],
+                            uv: [7, $uv_y_2, 1, snout_height.into()],
+                            normal: $normal,
+                            double_sided: false
+                        }
+                    });
                 };
             }
             
@@ -295,16 +319,8 @@ impl EarsPlayerPartsProvider {
             snout_horizontal!(snout_height, Vec3::Y, 1, 0);
             snout_horizontal!(0.0, Vec3::NEG_Y, 2 + snout_height as u16, 3 + snout_height as u16);
             
-            result.push(declare_ears_part_vertical! {
-                SnoutTop {
-                    pos: [snout_x + snout_width as f32, snout_y, snout_z + 1.0],
-                    rot: [0.0, 90.0, 0.0],
-                    size: [1, snout_height.into()],
-                    uv: [7, 0, 1, snout_height.into()],
-                    double_sided: false
-                }
-            });
-            
+            snout_vertical!(snout_width, Vec3::X, 0, 4);
+            snout_vertical!(0.0, Vec3::NEG_X, 0, 4);
         }
     }
     

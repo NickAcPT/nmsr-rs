@@ -10,6 +10,8 @@ use super::request::{
 use crate::error::{MojangRequestError, Result};
 use derive_more::Debug;
 use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParser};
+#[cfg(feature = "ears")]
+use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
 use nmsr_rendering::high_level::types::PlayerPartTextureType;
 use std::{collections::HashMap, sync::Arc};
 use strum::EnumCount;
@@ -51,28 +53,28 @@ pub enum ResolvedRenderEntryEarsTextureType {
 }
 
 #[cfg(feature = "ears")]
+impl From<ResolvedRenderEntryEarsTextureType> for PlayerPartEarsTextureType {
+    fn from(value: ResolvedRenderEntryEarsTextureType) -> Self {
+        match value {
+            ResolvedRenderEntryEarsTextureType::Cape => Self::Cape,
+            ResolvedRenderEntryEarsTextureType::Wings => Self::Wings,
+            ResolvedRenderEntryEarsTextureType::Emissive => Self::Emissive,
+        }
+    }
+}
+
+#[cfg(feature = "ears")]
 impl ResolvedRenderEntryEarsTextureType {
-    fn size(&self) -> (u32, u32) {
-        match self {
-            Self::Cape | Self::Wings => (20, 16),
-            Self::Emissive => (64, 64),
-        }
-    }
-
-    fn key(&self) -> &'static str {
-        match self {
-            Self::Cape => "ears_cape",
-            Self::Wings => "ears_wings",
-            Self::Emissive => "ears_emissive",
-        }
-    }
-
     fn alfalfa_key(&self) -> Option<AlfalfaDataKey> {
         match self {
             Self::Cape => Some(AlfalfaDataKey::Cape),
             Self::Wings => Some(AlfalfaDataKey::Wings),
             _ => None,
         }
+    }
+
+    fn key(&self) -> &'static str {
+        PlayerPartEarsTextureType::from(*self).key()
     }
 }
 
@@ -85,10 +87,9 @@ impl From<ResolvedRenderEntryTextureType> for PlayerPartTextureType {
                 PlayerPartTextureType::Cape
             }
             #[cfg(feature = "ears")]
-            ResolvedRenderEntryTextureType::Ears(ears) => PlayerPartTextureType::Custom {
-                key: ears.key(),
-                size: ears.size(),
-            },
+            ResolvedRenderEntryTextureType::Ears(ears) => {
+                PlayerPartEarsTextureType::from(ears).into()
+            }
         }
     }
 }
@@ -331,7 +332,7 @@ impl RenderRequestResolver {
                             } else {
                                 Cow::Borrowed(data)
                             };
-                            
+
                             textures.insert(
                                 ResolvedRenderEntryTextureType::Ears(*texture_type),
                                 MojangTexture::new_named(hash, data.into_owned()),

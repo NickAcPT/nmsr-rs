@@ -1,7 +1,17 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use glam::Vec3;
-use nmsr_rendering::high_level::parts::uv::{CubeFaceUvs, FaceUv};
+use nmsr_rendering::{
+    high_level::{
+        parts::{
+            part::Part,
+            uv::{CubeFaceUvs, FaceUv},
+        },
+        pipeline::scene::primitive_convert,
+    },
+    low_level::primitives::mesh::PrimitiveDispatch,
+};
 use serde::Serialize;
+use serde_json::{json, Value};
 use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_128;
 
@@ -25,21 +35,11 @@ impl Default for ProjectMeta {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct RawProjectElement {
-    name: String,
-    box_uv: bool,
-    #[serde(rename = "type")]
-    r#type: &'static str,
-    uuid: Uuid,
-    from: Vec3,
-    to: Vec3,
-    origin: Vec3,
-    rotation: Vec3,
-    faces: RawProjectElementFaces,
-}
+#[repr(transparent)]
+pub struct RawProjectElement(Value);
 
 impl RawProjectElement {
-    pub fn new(
+    pub fn new_cube(
         name: String,
         box_uv: bool,
         from: Vec3,
@@ -48,17 +48,102 @@ impl RawProjectElement {
         rotation: Vec3,
         faces: RawProjectElementFaces,
     ) -> Self {
-        Self {
-            uuid: str_to_uuid(&name),
-            name,
-            box_uv,
-            r#type: "cube",
-            from,
-            to,
-            origin,
-            rotation,
-            faces,
+        Self(json!({
+            "uuid": str_to_uuid(&name),
+            "name": name,
+            "box_uv": box_uv,
+            "type": "cube",
+            "from": from,
+            "to": to,
+            "origin": origin,
+            "rotation": rotation,
+            "faces": faces,
+        }))
+    }
+
+    pub fn new_quad(name: String, mut part: Part, texture_size: (f32, f32), texture_id: u32) -> Self {
+        fn random_names(a: &str, b: &str) -> (String, String) {
+            let (a_new,b_new) = Uuid::new_v4().as_u64_pair();
+            
+            (format!("{a}{a_new:x}"), format!("{b}{b_new:x}"))
         }
+        
+        let uv = part.get_face_uv();
+        
+        let converted = primitive_convert(&part);
+
+        let (top_left, top_right) = random_names("top_left", "top_right");
+        let (bottom_left, bottom_right) = random_names("bottom_left", "bottom_right");
+        
+        let (uv_width, uv_height) = texture_size;
+        
+        dbg!(&part);
+        
+        let result = if let PrimitiveDispatch::Quad(quad) = converted {
+            json!({
+                "uuid": str_to_uuid(&name),
+                "name": name,
+                "box_uv": false,
+                "type": "mesh",
+                "origin": Vec3::ZERO,
+                "rotation": Vec3::ZERO,
+                "vertices": {
+                    &top_left: [
+                        quad.top_left.position.x,
+                        quad.top_left.position.y,
+                        quad.top_left.position.z,
+                    ],
+                    &top_right: [
+                        quad.top_right.position.x,
+                        quad.top_right.position.y,
+                        quad.top_right.position.z,
+                    ],
+                    &bottom_right: [
+                        quad.bottom_right.position.x,
+                        quad.bottom_right.position.y,
+                        quad.bottom_right.position.z,
+                    ],
+                    &bottom_left: [
+                        quad.bottom_left.position.x,
+                        quad.bottom_left.position.y,
+                        quad.bottom_left.position.z,
+                    ],
+                },
+                "faces": {
+                    "face": {
+                        "texture": texture_id,
+                        "uv": {
+                            &top_left: [
+                                quad.top_left.uv.x * uv_width,
+                                quad.top_left.uv.y * uv_height,
+                            ],
+                            &top_right: [
+                                quad.top_right.uv.x * uv_width,
+                                quad.top_right.uv.y * uv_height,
+                            ],
+                            &bottom_right: [
+                                quad.bottom_right.uv.x * uv_width,
+                                quad.bottom_right.uv.y * uv_height,
+                            ],
+                            &bottom_left: [
+                                quad.bottom_left.uv.x * uv_width,
+                                quad.bottom_left.uv.y * uv_height,
+                            ],
+                        },
+                        "vertices": [
+                            &top_left,
+                            &top_right,
+                            &bottom_right,
+                            &bottom_left,
+                        ]
+                    }
+                },
+            })
+        } else {
+            unreachable!("Expected a quad primitive, got something else")
+        };
+
+        Self(result)
     }
 }
 
@@ -106,7 +191,7 @@ impl RawProjectElementFace {
         }
 
         let offset = 0.032;
-        
+
         let uv = [
             uv.top_left.x as f32 + offset,
             uv.top_left.y as f32 + offset,
@@ -122,7 +207,7 @@ impl RawProjectElementFace {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct RawProjectElementFaces {
     north: RawProjectElementFace,
     south: RawProjectElementFace,
@@ -139,7 +224,7 @@ impl Default for RawProjectElementFaces {
             rotation: 0,
             uv: [0.0, 0.0, 0.0, 0.0],
         };
-        
+
         Self {
             north: discard,
             south: discard,
@@ -154,29 +239,37 @@ impl Default for RawProjectElementFaces {
 impl RawProjectElementFaces {
     pub fn new(texture: u32, faces: CubeFaceUvs) -> Self {
         let mut result = Self::default();
+        let RawProjectElementFaces {
+            ref mut north,
+            ref mut south,
+            ref mut east,
+            ref mut west,
+            ref mut up,
+            ref mut down,
+        } = result;
 
         if faces.north != ModelGenerationProject::DISCARD_FACE {
-            result.north = RawProjectElementFace::new(Some(texture), faces.north, false);
+            *north = RawProjectElementFace::new(Some(texture), faces.north, false);
         }
 
         if faces.south != ModelGenerationProject::DISCARD_FACE {
-            result.south = RawProjectElementFace::new(Some(texture), faces.south, false);
+            *south = RawProjectElementFace::new(Some(texture), faces.south, false);
         }
 
         if faces.east != ModelGenerationProject::DISCARD_FACE {
-            result.east = RawProjectElementFace::new(Some(texture), faces.east, false);
+            *east = RawProjectElementFace::new(Some(texture), faces.east, false);
         }
 
         if faces.west != ModelGenerationProject::DISCARD_FACE {
-            result.west = RawProjectElementFace::new(Some(texture), faces.west, false);
+            *west = RawProjectElementFace::new(Some(texture), faces.west, false);
         }
 
         if faces.up != ModelGenerationProject::DISCARD_FACE {
-            result.up = RawProjectElementFace::new(Some(texture), faces.up, true);
+            *up = RawProjectElementFace::new(Some(texture), faces.up, true);
         }
 
         if faces.down != ModelGenerationProject::DISCARD_FACE {
-            result.down = RawProjectElementFace::new(Some(texture), faces.down, true);
+            *down = RawProjectElementFace::new(Some(texture), faces.down, true);
         }
 
         result

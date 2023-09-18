@@ -7,7 +7,7 @@ use itertools::Itertools;
 use nmsr_rendering::high_level::{
     model::PlayerModel,
     parts::{
-        part::{Part, PartAnchorInfo},
+        part::Part,
         provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
         uv::{CubeFaceUvs, FaceUv},
     },
@@ -60,7 +60,6 @@ impl ModelGenerationProject {
                 self.providers
                     .iter()
                     .flat_map(move |provider| provider.get_parts(&self.part_context, p))
-                    .flat_map(Self::process_part)
             })
             .collect_vec()
     }
@@ -101,53 +100,6 @@ impl ModelGenerationProject {
         }
 
         faces
-    }
-
-    fn process_part(part: Part) -> Vec<Part> {
-        match part {
-            Part::Cube { .. } => vec![part],
-            Part::Quad {
-                name,
-                position,
-                size,
-                last_rotation,
-                face_uv,
-                texture,
-                normal,
-                rotation_matrix
-            } => {
-                if name.as_ref().is_some_and(|n| n.contains("EarMiddleBack")) {
-                    dbg!(&face_uv);
-                }
-
-                let mut result = vec![];
-                let size = [size.x as u32, size.y as u32, size.z as u32];
-
-                let transformed_normal = rotation_matrix.transform_vector3(normal);
-                let uvs = Self::new_single_face(face_uv, transformed_normal);
-
-                let mut cube = Part::new_cube(texture, [0; 3], size, uvs, name);
-                cube.rotate(
-                    Vec3::ZERO,
-                    Some(PartAnchorInfo {
-                        translation_anchor: position,
-                        ..Default::default()
-                    }),
-                );
-
-                if let Some((rot, mut anchor)) = last_rotation {
-                    // Remove the translation anchor since the part is already translated.
-                    anchor.translation_anchor = Vec3::ZERO;
-
-                    // Apply the previous rotation to the part, this will basically set the last rotation as the
-                    // current rotation.
-                    cube.rotate(rot, Some(anchor));
-                }
-
-                result.push(cube);
-                result
-            }
-        }
     }
 
     pub(crate) fn get_texture(&self, texture_type: PlayerPartTextureType) -> Option<&[u8]> {

@@ -10,7 +10,7 @@ use std::{
 
 use anyhow::{anyhow, Context, Ok, Result};
 use glam::Vec3;
-use image::{RgbaImage, imageops};
+use image::{imageops, RgbaImage};
 use itertools::Itertools;
 use nmsr_rendering::high_level::{parts::part::Part, types::PlayerPartTextureType};
 
@@ -51,7 +51,7 @@ fn convert_to_raw_elements(
         .into_iter()
         .flat_map(|(_, parts)| parts)
         .enumerate()
-        .filter_map(|(index, part)| match part {
+        .map(|(index, part)| match &part {
             Part::Cube {
                 position,
                 size,
@@ -61,33 +61,45 @@ fn convert_to_raw_elements(
                 name,
                 ..
             } => {
-                let from = position;
-                let to = position + size;
+                let from = *position;
+                let to = *position + *size;
 
-                let texture_id = texture_map.get(&texture).cloned().unwrap_or_default();
-                
-                let faces = RawProjectElementFaces::new(texture_id, face_uvs);
-                
+                let texture_id = texture_map.get(texture).cloned().unwrap_or_default();
+
+                let faces = RawProjectElementFaces::new(texture_id, *face_uvs);
+
                 let mut rotation = Vec3::ZERO;
                 let mut rotation_anchor = Vec3::ZERO;
-                
-                if let Some((rot, anchor)) = last_rotation {
+
+                if let Some((rot, anchor)) = *last_rotation {
                     rotation_anchor = anchor.rotation_anchor;
                     rotation = rot;
                 }
 
-                Some(RawProjectElement::new(
-                    name.map_or_else(|| format!("part-{index}"), |s| s.to_string()),
+                RawProjectElement::new_cube(
+                    name.to_owned()
+                        .map_or_else(|| format!("part-{index}"), |s| s.to_string()),
                     false,
                     from,
                     to,
                     rotation_anchor,
                     rotation,
                     faces,
-                ))
+                )
             }
 
-            Part::Quad { .. } => None,
+            Part::Quad { name, texture,  .. } => {
+                let name = name
+                    .to_owned()
+                    .map_or_else(|| format!("part-{index}"), |s| s.to_string());
+                
+                let texture_id = texture_map.get(texture).cloned().unwrap_or_default();
+
+                let texture_size = texture.get_texture_size();
+                let texture_size = (texture_size.0 as f32, texture_size.1 as f32);
+                
+                RawProjectElement::new_quad(name, part, texture_size, texture_id)
+            }
         })
         .collect_vec()
 }
@@ -125,8 +137,8 @@ fn convert_to_raw_project_textures(
                 let (w, h) = k.get_texture_size();
                 image::RgbaImage::new(w, h)
             };
-            
-            let mut image = RgbaImage::new(64,64);
+
+            let mut image = RgbaImage::new(64, 64);
             imageops::overlay(&mut image, &other, 0, 0);
 
             let (w, h) = image.dimensions();
@@ -167,8 +179,7 @@ pub fn write_png(img: &RgbaImage) -> Result<Vec<u8>> {
 
     {
         let mut writer = BufWriter::new(&mut bytes);
-        img
-            .write_to(&mut writer, image::ImageOutputFormat::Png)
+        img.write_to(&mut writer, image::ImageOutputFormat::Png)
             .context(anyhow!("Failed to write empty image to buffer"))
             .unwrap();
     }

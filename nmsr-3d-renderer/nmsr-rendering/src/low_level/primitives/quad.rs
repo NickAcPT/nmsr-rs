@@ -6,10 +6,10 @@ use crate::low_level::primitives::vertex::Vertex;
 use super::vertex::VertexUvCoordinates;
 
 pub struct Quad {
-    top_left: Vertex,
-    top_right: Vertex,
-    bottom_left: Vertex,
-    bottom_right: Vertex,
+    pub top_left: Vertex,
+    pub top_right: Vertex,
+    pub bottom_left: Vertex,
+    pub bottom_right: Vertex,
 }
 
 impl Quad {

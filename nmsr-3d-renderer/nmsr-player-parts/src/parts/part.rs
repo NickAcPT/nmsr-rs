@@ -255,6 +255,24 @@ impl Part {
             } => *t = texture,
         }
     }
+    
+    pub fn get_face_uv(&self) -> FaceUv {
+        match self {
+            Cube { face_uvs, .. } => unimplemented!("Cannot get face UV on a cube"),
+            Quad { face_uv, .. } => *face_uv,
+        }
+    }
+    
+    pub fn set_face_uv(&mut self, face_uv: FaceUv) {
+        match self {
+            Cube {
+                face_uvs: ref mut f, ..
+            } => unreachable!("Cannot set face UV on a cube"),
+            Quad {
+                face_uv: ref mut f, ..
+            } => *f = face_uv,
+        }
+    }
 
     pub fn get_face_uvs(&self) -> CubeFaceUvs {
         match self {

@@ -203,7 +203,9 @@ impl Part {
         let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
         
         #[cfg(feature = "part_tracker")]
-        self.last_rotation_mut().replace((rotation, anchor));
+        if rotation != Vec3::ZERO {
+            self.last_rotation_mut().replace((rotation, anchor));
+        }
         
         *self.rotation_matrix_mut() = model_transform * prev_rotation;
     }

@@ -33,7 +33,7 @@ impl ModelGenerationProject {
             has_hat_layer: layers,
             has_layers: layers,
             has_cape: false,
-            arm_rotation: 10.0,
+            arm_rotation: 0.0,
             shadow_y_pos: None,
             shadow_is_square: false,
             armor_slots: None,
@@ -77,7 +77,7 @@ impl ModelGenerationProject {
             up: Self::DISCARD_FACE,
             down: Self::DISCARD_FACE,
         };
-
+        
         if normal == Vec3::Y {
             faces.up = face;
         } else if normal == Vec3::NEG_Y {
@@ -91,7 +91,13 @@ impl ModelGenerationProject {
         } else if normal == Vec3::NEG_Z {
             faces.south = face;
         } else {
-            panic!("Invalid normal: {:?}", normal);
+            // Normal is not a cardinal direction, so we set all faces to the same value.
+            faces.north = face;
+            faces.south = face;
+            faces.east = face;
+            faces.west = face;
+            faces.up = face;
+            faces.down = face;
         }
 
         faces
@@ -108,7 +114,7 @@ impl ModelGenerationProject {
                 face_uv,
                 texture,
                 normal,
-                ..
+                rotation_matrix
             } => {
                 if name.as_ref().is_some_and(|n| n.contains("EarMiddleBack")) {
                     dbg!(&face_uv);
@@ -117,7 +123,8 @@ impl ModelGenerationProject {
                 let mut result = vec![];
                 let size = [size.x as u32, size.y as u32, size.z as u32];
 
-                let uvs = Self::new_single_face(face_uv, normal);
+                let transformed_normal = rotation_matrix.transform_vector3(normal);
+                let uvs = Self::new_single_face(face_uv, transformed_normal);
 
                 let mut cube = Part::new_cube(texture, [0; 3], size, uvs, name);
                 cube.rotate(

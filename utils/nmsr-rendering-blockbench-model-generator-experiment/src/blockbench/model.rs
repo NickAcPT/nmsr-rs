@@ -97,19 +97,21 @@ impl RawProjectElementFace {
             }
         }
 
-        //if original_uv.flipped_horizontally {
-        //    uv = if original_uv.cw_rotation_count > 0 {
-        //        uv.flip_vertically()
-        //    } else {
-        //        uv.flip_horizontally()
-        //    }
-        //}
+        if original_uv.flipped_horizontally {
+            uv = if original_uv.cw_rotation_count > 0 {
+                uv.flip_vertically()
+            } else {
+                uv.flip_horizontally()
+            }
+        }
 
+        let offset = 0.032;
+        
         let uv = [
-            uv.top_left.x as f32,
-            uv.top_left.y as f32,
-            uv.bottom_right.x as f32,
-            uv.bottom_right.y as f32,
+            uv.top_left.x as f32 + offset,
+            uv.top_left.y as f32 + offset,
+            uv.bottom_right.x as f32 - offset,
+            uv.bottom_right.y as f32 - offset,
         ];
 
         Self {

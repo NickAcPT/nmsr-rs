@@ -9,7 +9,7 @@ use nmsr_rendering::high_level::{
     parts::{
         part::{Part, PartAnchorInfo},
         provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
-        uv::CubeFaceUvs,
+        uv::{CubeFaceUvs, FaceUv},
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
     IntoEnumIterator,
@@ -65,6 +65,38 @@ impl ModelGenerationProject {
             .collect_vec()
     }
 
+    pub const DISCARD_FACE: FaceUv =
+        FaceUv::new(u16::MAX, u16::MAX, u16::MAX, u16::MAX, false, false, 0);
+
+    pub fn new_single_face(face: FaceUv, normal: Vec3) -> CubeFaceUvs {
+        let mut faces = CubeFaceUvs {
+            north: Self::DISCARD_FACE,
+            south: Self::DISCARD_FACE,
+            east: Self::DISCARD_FACE,
+            west: Self::DISCARD_FACE,
+            up: Self::DISCARD_FACE,
+            down: Self::DISCARD_FACE,
+        };
+
+        if normal == Vec3::Y {
+            faces.up = face;
+        } else if normal == Vec3::NEG_Y {
+            faces.down = face;
+        } else if normal == Vec3::X {
+            faces.east = face;
+        } else if normal == Vec3::NEG_X {
+            faces.west = face;
+        } else if normal == Vec3::Z {
+            faces.north = face;
+        } else if normal == Vec3::NEG_Z {
+            faces.south = face;
+        } else {
+            panic!("Invalid normal: {:?}", normal);
+        }
+
+        faces
+    }
+
     fn process_part(part: Part) -> Vec<Part> {
         match part {
             Part::Cube { .. } => vec![part],
@@ -75,22 +107,17 @@ impl ModelGenerationProject {
                 last_rotation,
                 face_uv,
                 texture,
+                normal,
                 ..
             } => {
                 if name.as_ref().is_some_and(|n| n.contains("EarMiddleBack")) {
-                    //dbg!(&face_uv);
+                    dbg!(&face_uv);
                 }
-                
+
                 let mut result = vec![];
                 let size = [size.x as u32, size.y as u32, size.z as u32];
-                let uvs = CubeFaceUvs {
-                    up: face_uv,
-                    down: face_uv,
-                    north: face_uv,
-                    south: face_uv,
-                    east: face_uv,
-                    west: face_uv,
-                };
+
+                let uvs = Self::new_single_face(face_uv, normal);
 
                 let mut cube = Part::new_cube(texture, [0; 3], size, uvs, name);
                 cube.rotate(
@@ -100,11 +127,11 @@ impl ModelGenerationProject {
                         ..Default::default()
                     }),
                 );
-                
+
                 if let Some((rot, mut anchor)) = last_rotation {
                     // Remove the translation anchor since the part is already translated.
                     anchor.translation_anchor = Vec3::ZERO;
-                    
+
                     // Apply the previous rotation to the part, this will basically set the last rotation as the
                     // current rotation.
                     cube.rotate(rot, Some(anchor));

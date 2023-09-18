@@ -2,7 +2,7 @@ use glam::Vec2;
 
 /// Represents a point on a face of a part.
 /// The values are in the range 0-255 since Minecraft skin textures are small.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct FaceUvPoint {
     pub x: UvCoordinate,
     pub y: UvCoordinate,
@@ -19,7 +19,7 @@ impl FaceUvPoint {
 
 /// Represents a face of a part.
 /// The values are in the range 0-255 since Minecraft skin textures are small.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct FaceUv {
     pub top_left: FaceUvPoint,
     pub top_right: FaceUvPoint,
@@ -34,7 +34,7 @@ pub struct FaceUv {
 }
 
 impl FaceUv {
-    pub fn new(
+    pub const fn new(
         top_left_x: UvCoordinate,
         top_left_y: UvCoordinate,
         bottom_right_x: UvCoordinate,
@@ -143,7 +143,7 @@ impl FaceUv {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct CubeFaceUvs {
     pub north: FaceUv,
     pub south: FaceUv,

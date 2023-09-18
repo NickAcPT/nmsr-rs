@@ -5,6 +5,8 @@ use serde::Serialize;
 use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_128;
 
+use crate::generator::ModelGenerationProject;
+
 #[derive(Debug, Copy, Clone, Serialize)]
 pub struct ProjectMeta {
     format_version: &'static str,
@@ -62,39 +64,46 @@ impl RawProjectElement {
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct RawProjectElementFace {
-    texture: u32,
+    texture: Option<u32>,
     rotation: u32,
     uv: [f32; 4],
 }
 
 impl RawProjectElementFace {
-    pub fn new(texture: u32, mut uv: FaceUv, horizontal: bool) -> Self {
+    pub fn new(texture: Option<u32>, mut uv: FaceUv, horizontal: bool) -> Self {
         let original_uv = uv;
         let mut rotation = (uv.cw_rotation_count as u32) * 90;
-        
+
         if original_uv.cw_rotation_count > 0 {
-            rotation = ((original_uv.cw_rotation_count as u32 + 2) % 4) * 90;
             let current_rotation = 4 - uv.cw_rotation_count;
+            if !original_uv.flipped_vertically {
+                rotation = (((uv.cw_rotation_count as u32) + 2) % 4) * 90;
+            }
             for _ in 0..current_rotation {
                 uv = uv.rotate_cw();
             }
         }
 
-        //if horizontal {
-        //    uv = uv.flip_horizontally().flip_vertically();
-        //}
+        if horizontal {
+            uv = uv.flip_horizontally();
+        }
 
         if original_uv.flipped_vertically {
-            uv = uv.flip_vertically();
-        }
-
-        if original_uv.flipped_horizontally {
+            dbg!(original_uv);
             uv = if original_uv.cw_rotation_count > 0 {
-                uv.flip_vertically()
-            } else {
                 uv.flip_horizontally()
+            } else {
+                uv.flip_vertically()
             }
         }
+
+        //if original_uv.flipped_horizontally {
+        //    uv = if original_uv.cw_rotation_count > 0 {
+        //        uv.flip_vertically()
+        //    } else {
+        //        uv.flip_horizontally()
+        //    }
+        //}
 
         let uv = [
             uv.top_left.x as f32,
@@ -121,16 +130,54 @@ pub struct RawProjectElementFaces {
     down: RawProjectElementFace,
 }
 
+impl Default for RawProjectElementFaces {
+    fn default() -> Self {
+        let discard = RawProjectElementFace {
+            texture: None,
+            rotation: 0,
+            uv: [0.0, 0.0, 0.0, 0.0],
+        };
+        
+        Self {
+            north: discard,
+            south: discard,
+            east: discard,
+            west: discard,
+            up: discard,
+            down: discard,
+        }
+    }
+}
+
 impl RawProjectElementFaces {
     pub fn new(texture: u32, faces: CubeFaceUvs) -> Self {
-        Self {
-            north: RawProjectElementFace::new(texture, faces.north, false),
-            south: RawProjectElementFace::new(texture, faces.south, false),
-            east: RawProjectElementFace::new(texture, faces.east, false),
-            west: RawProjectElementFace::new(texture, faces.west, false),
-            up: RawProjectElementFace::new(texture, faces.up, true),
-            down: RawProjectElementFace::new(texture, faces.down, true),
+        let mut result = Self::default();
+
+        if faces.north != ModelGenerationProject::DISCARD_FACE {
+            result.north = RawProjectElementFace::new(Some(texture), faces.north, false);
         }
+
+        if faces.south != ModelGenerationProject::DISCARD_FACE {
+            result.south = RawProjectElementFace::new(Some(texture), faces.south, false);
+        }
+
+        if faces.east != ModelGenerationProject::DISCARD_FACE {
+            result.east = RawProjectElementFace::new(Some(texture), faces.east, false);
+        }
+
+        if faces.west != ModelGenerationProject::DISCARD_FACE {
+            result.west = RawProjectElementFace::new(Some(texture), faces.west, false);
+        }
+
+        if faces.up != ModelGenerationProject::DISCARD_FACE {
+            result.up = RawProjectElementFace::new(Some(texture), faces.up, true);
+        }
+
+        if faces.down != ModelGenerationProject::DISCARD_FACE {
+            result.down = RawProjectElementFace::new(Some(texture), faces.down, true);
+        }
+
+        result
     }
 }
 

@@ -65,16 +65,18 @@ fn main() -> Result<()> {
             .into_rgba8();
 
         let alfalfa = ears_rs::alfalfa::read_alfalfa(&skin_image)?;
-
+        
+        
         if let Some(alfalfa) = alfalfa {
             if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
                 textures.insert(PlayerPartEarsTextureType::Wings.into(), wings.to_vec());
             }
         }
-
-        let features = ears_rs::parser::EarsParser::parse(&skin_image)
-            .context(anyhow!("Failed to parse ears features from skin"));
         
+        let features = ears_rs::parser::EarsParser::parse(&skin_image)
+        .context(anyhow!("Failed to parse ears features from skin"));
+    
+        ears_rs::utils::process_erase_regions(&mut skin_image)?;
         ears_rs::utils::strip_alpha(&mut skin_image);
         
         if let Result::Ok(new_skin_bytes) = write_png(&skin_image) {

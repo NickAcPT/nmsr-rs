@@ -133,14 +133,13 @@ impl VanillaMinecraftArmorManager {
                         .do_request(&url, Method::GET, &Span::current())
                         .await?;
 
-                    fs::write(&layer_path, bytes).await.explain(format!(
-                        "Unable to write armor cache file for trim {}",
-                        layer
-                    ))?;
+                    fs::write(&layer_path, bytes)
+                        .await
+                        .explain(format!("Unable to write armor cache file for trim {layer}"))?;
                 }
             }
         }
-        
+
         Ok(())
     }
     async fn download_materials(&self) -> Result<()> {
@@ -149,8 +148,7 @@ impl VanillaMinecraftArmorManager {
             let material_name = material.to_string().to_lowercase();
 
             fs::create_dir_all(&material_path).await.explain(format!(
-                "Unable to create armor cache folder for material {}",
-                material
+                "Unable to create armor cache folder for material {material}"
             ))?;
 
             let layers = material.get_layer_names();
@@ -263,7 +261,7 @@ impl VanillaMinecraftArmorManager {
 
                 let view = image.view(x, y, width, height);
 
-                image::imageops::overlay(output_image, &*view, x as i64, y as i64)
+                image::imageops::overlay(output_image, &*view, x as i64, y as i64);
             }
         }
 

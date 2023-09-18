@@ -1,3 +1,14 @@
+#![deny(clippy::all)]
+#![deny(clippy::pedantic)]
+#![deny(clippy::nursery)]
+
+#![allow(missing_docs)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::items_after_statements)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::redundant_pub_crate)]
+#![allow(clippy::unused_async)]
+
 pub mod model;
 mod routes;
 mod utils;
@@ -104,10 +115,10 @@ async fn main() -> anyhow::Result<()> {
 
 fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
     let base_filter = "info,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
-    let otel_filter = format!("{},nmsr_aas=trace,nmsr_rendering=trace", base_filter);
+    let otel_filter = format!("{base_filter},nmsr_aas=trace,nmsr_rendering=trace");
 
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or(base_filter.into());
-    let otel_env_filter = EnvFilter::try_from_default_env().unwrap_or(otel_filter.into());
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| base_filter.into());
+    let otel_env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| otel_filter.into());
 
     let fmt_layer = tracing_subscriber::Layer::with_filter(
         tracing_subscriber::fmt::layer()

@@ -24,14 +24,16 @@ pub enum VanillaMinecraftArmorMaterial {
 }
 
 impl VanillaMinecraftArmorMaterial {
-    fn layer_count(&self) -> usize {
+    const fn layer_count() -> usize {
         2
     }
 
-    pub fn has_overlay(&self) -> bool {
+    #[must_use]
+    pub const fn has_overlay(&self) -> bool {
         matches!(self, Self::Leather(_))
     }
 
+    #[must_use]
     pub fn get_layer_name(&self, id: u32, is_overlay: bool) -> String {
         let name = self.to_string().to_lowercase();
 
@@ -42,12 +44,13 @@ impl VanillaMinecraftArmorMaterial {
         }
     }
 
+    #[must_use]
     pub fn get_layer_names(&self) -> Vec<String> {
-        let result = (0..self.layer_count()).map(|i| (i + 1).to_string());
+        let result = (0..Self::layer_count()).map(|i| (i + 1).to_string());
 
         if self.has_overlay() {
             result
-                .flat_map(|layer| vec![layer.to_owned(), format!("{}_overlay", &layer)])
+                .flat_map(|layer| vec![layer.clone(), format!("{}_overlay", &layer)])
                 .collect()
         } else {
             result.collect()
@@ -76,19 +79,21 @@ pub enum VanillaMinecraftArmorTrim {
 }
 
 impl VanillaMinecraftArmorTrim {
+    #[must_use]
     pub fn get_layer_names(&self) -> Vec<String> {
         let name = self.to_string().to_lowercase();
 
         vec![format!("{}.png", name), format!("{}_leggings.png", name)]
     }
 
+    #[must_use]
     pub fn get_layer_name(&self, is_leggings: bool) -> String {
         let name = self.to_string().to_lowercase();
 
         if is_leggings {
-            format!("{}_leggings.png", name)
+            format!("{name}_leggings.png")
         } else {
-            format!("{}.png", name)
+            format!("{name}.png")
         }
     }
 }
@@ -132,7 +137,8 @@ pub struct VanillaMinecraftArmorTrimData {
 }
 
 impl VanillaMinecraftArmorTrimData {
-    pub fn new(
+    #[must_use]
+    pub const fn new(
         trim: VanillaMinecraftArmorTrim,
         material: VanillaMinecraftArmorTrimMaterial,
     ) -> Self {
@@ -157,13 +163,15 @@ impl VanillaMinecraftArmorMaterialData {
         size: (64, 64),
     };
 
-    pub fn new(material: VanillaMinecraftArmorMaterial) -> Self {
+    #[must_use]
+    pub const fn new(material: VanillaMinecraftArmorMaterial) -> Self {
         Self {
             material,
             trims: Vec::new(),
         }
     }
 
+    #[must_use]
     pub fn with_trim(
         mut self,
         trim: VanillaMinecraftArmorTrim,
@@ -202,7 +210,7 @@ impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
 
                     ArmorManagerResult::Ok(VanillaMinecraftArmorTrimData::new(trim, material))
                 })
-                .filter_map(|x| x.ok())
+                .filter_map(std::result::Result::ok)
                 .collect::<Vec<_>>()
         };
 
@@ -228,23 +236,25 @@ where
 impl ArmorMaterial for VanillaMinecraftArmorMaterialData {
     fn get_texture_type(slot: PlayerArmorSlot) -> Option<PlayerPartTextureType> {
         Some(if slot.is_leggings() {
-            VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_TWO
+            Self::ARMOR_TEXTURE_TWO
         } else {
-            VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_ONE
+            Self::ARMOR_TEXTURE_ONE
         })
     }
 }
 
 impl VanillaMinecraftArmorTrimPalette {
+    #[must_use]
     #[rustfmt::skip]
-    fn get_trim_palette() -> [[u8; 3]; 8] {
+    const fn get_trim_palette() -> [[u8; 3]; 8] {
         [
             [0x00, 0x00, 0x00], [0x20, 0x20, 0x20], [0x40, 0x40, 0x40], [0x60, 0x60, 0x60], [0x80, 0x80, 0x80], [0xA0, 0xA0, 0xA0], [0xC0, 0xC0, 0xC0], [0xE0, 0xE0, 0xE0]
         ]
     }
 
+    #[must_use]
     #[rustfmt::skip]
-    pub fn get_palette_colors(&self) -> [[u8; 3]; 8] {
+    pub const fn get_palette_colors(&self) -> [[u8; 3]; 8] {
         // Generated using the nmsr-rendering-palette-extractor crate (in utils folder)
         // and is based on the vanilla textures in `assets\minecraft\textures\trims\`
         match self {
@@ -265,7 +275,7 @@ impl VanillaMinecraftArmorTrimPalette {
         }
     }
 
-    fn get_darker_palette(&self) -> Option<Self> {
+    const fn get_darker_palette(self) -> Option<Self> {
         match self {
             Self::Diamond => Some(Self::DiamondDarker),
             Self::Gold => Some(Self::GoldDarker),
@@ -278,19 +288,19 @@ impl VanillaMinecraftArmorTrimPalette {
 
 impl VanillaMinecraftArmorTrimMaterial {
     fn get_palette_for_trim_armor_material(
-        &self,
+        self,
         armor_material: VanillaMinecraftArmorMaterial,
     ) -> VanillaMinecraftArmorTrimPalette {
         if let (Ok(equivalent_armor_material), Some(darker_palette)) = (
-            VanillaMinecraftArmorTrimMaterial::try_from(armor_material),
-            VanillaMinecraftArmorTrimPalette::from(*self).get_darker_palette(),
+            Self::try_from(armor_material),
+            VanillaMinecraftArmorTrimPalette::from(self).get_darker_palette(),
         ) {
-            if equivalent_armor_material == *self {
+            if equivalent_armor_material == self {
                 return darker_palette;
             }
         }
 
-        VanillaMinecraftArmorTrimPalette::from(*self)
+        VanillaMinecraftArmorTrimPalette::from(self)
     }
 }
 
@@ -316,13 +326,13 @@ impl TryFrom<VanillaMinecraftArmorMaterial> for VanillaMinecraftArmorTrimMateria
 
     fn try_from(value: VanillaMinecraftArmorMaterial) -> Result<Self, Self::Error> {
         match value {
-            VanillaMinecraftArmorMaterial::Chainmail => Err(()),
             VanillaMinecraftArmorMaterial::Diamond => Ok(Self::Diamond),
             VanillaMinecraftArmorMaterial::Gold => Ok(Self::Gold),
             VanillaMinecraftArmorMaterial::Iron => Ok(Self::Iron),
-            VanillaMinecraftArmorMaterial::Leather(_) => Err(()),
             VanillaMinecraftArmorMaterial::Netherite => Ok(Self::Netherite),
-            VanillaMinecraftArmorMaterial::Turtle => Err(()),
+            VanillaMinecraftArmorMaterial::Leather(_)
+            | VanillaMinecraftArmorMaterial::Turtle
+            | VanillaMinecraftArmorMaterial::Chainmail => Err(()),
         }
     }
 }

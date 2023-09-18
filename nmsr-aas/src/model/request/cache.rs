@@ -34,8 +34,8 @@ impl TryFrom<String> for CacheBias {
     type Error = ModelCacheError;
 
     fn try_from(value: String) -> ModelCacheResult<Self> {
-        if value == Into::<&'static str>::into(CacheBias::CacheIndefinitely) {
-            return Ok(CacheBias::CacheIndefinitely);
+        if value == Into::<&'static str>::into(Self::CacheIndefinitely) {
+            return Ok(Self::CacheIndefinitely);
         }
 
         let duration: Duration = humantime_serde::deserialize(Value::String(value.clone()))
@@ -85,7 +85,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         _config: &ModelCacheConfiguration,
         path: &'a Path,
     ) -> Result<Option<Cow<'a, str>>> {
-        Ok(path.file_name().and_then(|s| s.to_str()).map(|s| s.into()))
+        Ok(path.file_name().and_then(std::ffi::OsStr::to_str).map(std::convert::Into::into))
     }
 
     async fn get_marker_path(
@@ -93,7 +93,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         entry: &str,
         config: &ModelCacheConfiguration,
     ) -> Result<String> {
-        Ok("".into())
+        Ok(String::new())
     }
 
     fn is_expired(
@@ -119,7 +119,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
     ) -> Result<()> {
         fs::write(file, value.data())
             .await
-            .explain(format!("Unable to write texture {:?} to cache", entry))?;
+            .explain(format!("Unable to write texture {entry:?} to cache"))?;
 
         Ok(())
     }
@@ -137,7 +137,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
 
         let data = fs::read(file)
             .await
-            .explain(format!("Unable to read texture {:?} from cache", entry))?;
+            .explain(format!("Unable to read texture {entry:?} from cache"))?;
 
         Ok(Some(MojangTexture::new_named(entry.to_string(), data)))
     }

@@ -46,6 +46,18 @@ impl PlayerBodyPartType {
             _ => *self,
         }
     }
+    
+    pub fn get_layer_part(&self) -> Self {
+        match self {
+            Self::Head => Self::HeadLayer,
+            Self::Body => Self::BodyLayer,
+            Self::LeftArm => Self::LeftArmLayer,
+            Self::RightArm => Self::RightArmLayer,
+            Self::LeftLeg => Self::LeftLegLayer,
+            Self::RightLeg => Self::RightLegLayer,
+            _ => *self,
+        }
+    }
 
     pub fn is_arm(&self) -> bool {
         matches!(self.get_non_layer_part(), Self::LeftArm | Self::RightArm)

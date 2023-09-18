@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ears-rs = { path = "../../../ears-rs", optional = true }
+ears-rs = { git = "https://github.com/NickAcPT/ears-rs", optional = true }
 thiserror = "1.0.44"
 glam = "0.24.1"
 strum = { version = "0.25", features = ["derive"] }

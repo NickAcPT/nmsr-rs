@@ -92,6 +92,7 @@ struct EarsPlayerBodyPartDefinition {
     vertical_flip: bool,
     horizontal_flip: bool,
     cw: bool,
+    back_cw: Option<bool>,
     enabled: fn(&EarsFeatures) -> bool,
     vertical_quad: bool,
     double_sided: bool,
@@ -109,6 +110,7 @@ impl Default for EarsPlayerBodyPartDefinition {
             vertical_flip: Default::default(),
             horizontal_flip: Default::default(),
             cw: false,
+            back_cw: None,
             normal: Vec3::Y,
             enabled: |_| true,
             vertical_quad: false,
@@ -261,33 +263,22 @@ impl EarsPlayerPartsProvider {
     ) {
         let anchor = features.ear_anchor.unwrap_or_default();
         let mode = features.ear_mode;
+        
+        let anchor_z = match anchor {
+            EarAnchor::Front => 0.0,
+            EarAnchor::Center => 4.0,
+            EarAnchor::Back => 8.0,
+        };
 
         if mode == EarMode::Above || mode == EarMode::Around {
-            let anchor_z = match anchor {
-                EarAnchor::Front => 0.0,
-                EarAnchor::Center => 4.0,
-                EarAnchor::Back => 8.0,
-            };
-
-            // TODO: Make it so cw is separate from back cw
             result.push(declare_ears_part_vertical! {
-                EarMiddleFront {
+                EarMiddle {
                     pos: [-4.0, 8.0, anchor_z],
                     size: [16, 8],
                     uv: [24, 0, 16, 8],
-                    normal: Vec3::NEG_Z,
-                    double_sided: false
-                }
-            });
-
-            result.push(declare_ears_part_vertical! {
-                EarMiddleBack {
-                    pos: [-4.0, 8.0, anchor_z + 0.01],
-                    size: [16, 8],
-                    uv: [56, 28, 16, 8],
-                    normal: Vec3::Z,
-                    double_sided: false,
-                    cw: true
+                    back_uv: Some([56, 28, 16, 8]),
+                    back_cw: Some(true),
+                    normal: Vec3::NEG_Z
                 }
             });
 
@@ -314,6 +305,8 @@ impl EarsPlayerPartsProvider {
                     }
                 });
             }
+        } else if mode == EarMode::Behind {
+            
         }
     }
 
@@ -465,9 +458,8 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                             back.vertical_flip ^= true;
                             back.normal *= -1.0;
                             
-                            if let Some(uv) = p.back_uv {
-                                back.uv = uv;
-                            }
+                            back.uv = p.back_uv.unwrap_or(p.uv);
+                            back.cw = p.back_cw.unwrap_or(back.cw);
 
                             vec![p, back]
                         } else {

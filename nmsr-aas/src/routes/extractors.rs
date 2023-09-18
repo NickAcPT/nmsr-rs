@@ -59,7 +59,8 @@ where
             {
                 if let Some(name) = field.name().map(ToOwned::to_owned) {
                     let entry_content = if field.content_type().is_none() {
-                        Value::String(field.text().await.map_err(RenderRequestError::from)?)
+                        let str = field.text().await.map_err(RenderRequestError::from)?;
+                        serde_json::from_str(&str).unwrap_or_else(|_| Value::String(str))
                     } else {
                         Value::from(
                             field

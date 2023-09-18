@@ -145,7 +145,7 @@ impl NMSRState {
         self.preload_cache_biases().await?;
 
         info!("Pre-warming model renderer.");
-        //self.prewarm_renderer().await?;
+        self.prewarm_renderer().await?;
 
         info!("Starting cache clean-up task");
         self.start_cache_cleanup_task();

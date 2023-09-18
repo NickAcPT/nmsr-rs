@@ -74,10 +74,13 @@ impl ModelGenerationProject {
                 size,
                 last_rotation,
                 face_uv,
-                normal,
                 texture,
                 ..
             } => {
+                if name.as_ref().is_some_and(|n| n.contains("EarMiddleBack")) {
+                    //dbg!(&face_uv);
+                }
+                
                 let mut result = vec![];
                 let size = [size.x as u32, size.y as u32, size.z as u32];
                 let uvs = CubeFaceUvs {
@@ -102,6 +105,8 @@ impl ModelGenerationProject {
                     // Remove the translation anchor since the part is already translated.
                     anchor.translation_anchor = Vec3::ZERO;
                     
+                    // Apply the previous rotation to the part, this will basically set the last rotation as the
+                    // current rotation.
                     cube.rotate(rot, Some(anchor));
                 }
 

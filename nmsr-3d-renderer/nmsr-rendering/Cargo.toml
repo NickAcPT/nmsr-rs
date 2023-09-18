@@ -22,4 +22,5 @@ smaa = "0.10.1"
 
 [features]
 default = []
+part_tracker = ["nmsr-player-parts/part_tracker"]
 ears = ["nmsr-player-parts/ears"]

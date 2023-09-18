@@ -56,24 +56,24 @@ impl Default for PartAnchorInfo {
 pub enum Part {
     /// Represents a cube as a part of a player model.
     Cube {
-        name: Option<String>,
         position: MinecraftPosition,
         size: MinecraftPosition,
         rotation_matrix: Mat4,
-        last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
         face_uvs: CubeFaceUvs,
         texture: PlayerPartTextureType,
+        #[cfg(feature = "part_tracker")] name: Option<String>,
+        #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
     },
     /// Represents a quad as a part of a player model.
     Quad {
-        name: Option<String>,
         position: MinecraftPosition,
         size: MinecraftPosition,
         rotation_matrix: Mat4,
-        last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
         face_uv: FaceUv,
         normal: Vec3,
         texture: PlayerPartTextureType,
+        #[cfg(feature = "part_tracker")] name: Option<String>,
+        #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
     },
 }
 
@@ -94,16 +94,16 @@ impl Part {
         pos: [i32; 3],
         size: [u32; 3],
         uvs: CubeFaceUvs,
-        name: Option<String>,
+        #[cfg(feature = "part_tracker")] name: Option<String>,
     ) -> Self {
         Cube {
             position: MinecraftPosition::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
             rotation_matrix: Mat4::IDENTITY,
-            last_rotation: None,
             face_uvs: uvs,
             texture,
-            name,
+            #[cfg(feature = "part_tracker")] name,
+            #[cfg(feature = "part_tracker")] last_rotation: None,
         }
     }
 
@@ -113,17 +113,17 @@ impl Part {
         size: [u32; 3],
         uvs: FaceUv,
         normal: Vec3,
-        name: Option<String>,
+        #[cfg(feature = "part_tracker")] name: Option<String>,
     ) -> Self {
         Quad {
             position: MinecraftPosition::new(pos[0], pos[1], pos[2]),
             size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
             rotation_matrix: Mat4::IDENTITY,
-            last_rotation: None,
             face_uv: uvs,
             normal,
             texture,
-            name: name.map(Into::into),
+            #[cfg(feature = "part_tracker")] last_rotation: None,
+            #[cfg(feature = "part_tracker")] name,
         }
     }
 
@@ -174,7 +174,7 @@ impl Part {
             Quad { rotation_matrix, .. } => rotation_matrix,
         }
     }
-    
+    #[cfg(feature = "part_tracker")]
     fn last_rotation_mut(&mut self) -> &mut Option<(MinecraftPosition, PartAnchorInfo)> {
         match self {
             Cube { last_rotation, .. } => last_rotation,
@@ -202,6 +202,7 @@ impl Part {
         
         let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
         
+        #[cfg(feature = "part_tracker")]
         self.last_rotation_mut().replace((rotation, anchor));
         
         *self.rotation_matrix_mut() = model_transform * prev_rotation;

@@ -25,6 +25,7 @@ macro_rules! declare_ears_part_horizontal {
         {
             EarsPlayerBodyPartDefinition {
                 $($body)+,
+                name: stringify!($ears_part),
                 ..Default::default()
             }
         }
@@ -333,9 +334,9 @@ impl EarsPlayerPartsProvider {
             let snout_z = -snout_depth;
 
             macro_rules! snout_horizontal {
-                ($y: expr, $normal: expr, $uv_y: expr, $uv_y_2: expr) => {
+                ($name: ident, $name_2: ident, $y: expr, $normal: expr, $uv_y: expr, $uv_y_2: expr) => {
                     result.push(declare_ears_part_horizontal! {
-                        SnoutFront {
+                        $name {
                             pos: [snout_x, snout_y + $y as f32, snout_z],
                             size: [snout_width.into(), 1],
                             uv: [0, $uv_y, snout_width.into(), 1],
@@ -345,7 +346,7 @@ impl EarsPlayerPartsProvider {
                     });
 
                     result.push(declare_ears_part_horizontal! {
-                        SnoutRest {
+                        $name_2 {
                             pos: [snout_x, snout_y + $y as f32, snout_z as f32 + 1.0],
                             size: [snout_width.into(), snout_depth as u32],
                             uv: [0, $uv_y_2, snout_width.into(), 1],
@@ -357,9 +358,9 @@ impl EarsPlayerPartsProvider {
             }
 
             macro_rules! snout_vertical {
-                ($x: expr, $normal: expr, $uv_y_1: expr, $uv_y_2: expr) => {
+                ($name: ident, $name_2: ident, $x: expr, $normal: expr, $uv_y_1: expr, $uv_y_2: expr) => {
                     result.push(declare_ears_part_vertical! {
-                        SnoutSideFront {
+                        $name {
                             pos: [snout_x + $x as f32, snout_y, snout_z + 1.0],
                             rot: [0.0, 90.0, 0.0],
                             size: [1, snout_height.into()],
@@ -370,7 +371,7 @@ impl EarsPlayerPartsProvider {
                     });
 
                     result.push(declare_ears_part_vertical! {
-                        SnoutSideRest {
+                        $name_2 {
                             pos: [snout_x + $x as f32, snout_y, 0.0],
                             rot: [0.0, 90.0, 0.0],
                             size: [snout_depth as u32 - 1, snout_height.into()],
@@ -392,16 +393,17 @@ impl EarsPlayerPartsProvider {
                 }
             });
 
-            snout_horizontal!(snout_height, Vec3::Y, 1, 0);
+            snout_horizontal!(SnoutTopFront, SnoutTopRest, snout_height, Vec3::Y, 1, 0);
             snout_horizontal!(
+                SnoutBottomFront, SnoutBottomRest,
                 0.0,
                 Vec3::NEG_Y,
                 2 + snout_height as u16,
                 3 + snout_height as u16
             );
 
-            snout_vertical!(snout_width, Vec3::X, 0, 4);
-            snout_vertical!(0.0, Vec3::NEG_X, 0, 4);
+            snout_vertical!(SnoutRightFront, SnoutRightRest, snout_width, Vec3::X, 0, 4);
+            snout_vertical!(SnoutLeftFront, SnoutLeftRest, 0.0, Vec3::NEG_X, 0, 4);
         }
     }
 
@@ -506,7 +508,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         size,
                         uvs,
                         part_definition.normal,
-                        Some(name),
+                        #[cfg(feature = "part_tracker")] Some(name),
                     );
 
                     part_quad.rotate(
@@ -540,10 +542,6 @@ fn process_uvs(
     }
 
     let mut uvs = uv_from_pos_and_size(uv[0], uv[1], uv[2], uv[3]);
-
-    if vertical {
-        //uvs = uvs.flip_vertically();
-    }
 
     if upside_down {
         uvs = uvs.flip_vertically();

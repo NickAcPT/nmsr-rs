@@ -6,7 +6,7 @@ use std::{collections::HashMap, fs, path::PathBuf};
 use anyhow::{anyhow, Context, Ok, Result};
 use clap::{Parser, ValueEnum};
 use derive_more::Deref;
-use ears_rs::alfalfa::{AlfalfaData, AlfalfaDataKey};
+use ears_rs::alfalfa::AlfalfaDataKey;
 use generator::ModelGenerationProject;
 use nmsr_rendering::high_level::{
     model::PlayerModel, parts::provider::ears::PlayerPartEarsTextureType,

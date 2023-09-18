@@ -65,6 +65,7 @@ fn convert_to_raw_elements(
                 let to = position + size;
 
                 let texture_id = texture_map.get(&texture).cloned().unwrap_or_default();
+                
                 let faces = RawProjectElementFaces::new(texture_id, face_uvs);
                 
                 let mut rotation = Vec3::ZERO;

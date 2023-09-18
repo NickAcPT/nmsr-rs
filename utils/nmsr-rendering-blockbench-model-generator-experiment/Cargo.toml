@@ -23,5 +23,5 @@ base64 = "0.21.4"
 xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 
 [features]
-default = []
+default = ["nmsr-rendering/part_tracker"]
 ears = ["nmsr-rendering/ears"]

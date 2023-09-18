@@ -1,6 +1,6 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use glam::Vec3;
-use nmsr_rendering::high_level::parts::uv::{FaceUv, CubeFaceUvs};
+use nmsr_rendering::high_level::parts::uv::{CubeFaceUvs, FaceUv};
 use serde::Serialize;
 use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_128;
@@ -37,7 +37,15 @@ pub struct RawProjectElement {
 }
 
 impl RawProjectElement {
-    pub fn new(name: String, box_uv: bool, from: Vec3, to: Vec3, origin: Vec3, rotation: Vec3, faces: RawProjectElementFaces) -> Self {
+    pub fn new(
+        name: String,
+        box_uv: bool,
+        from: Vec3,
+        to: Vec3,
+        origin: Vec3,
+        rotation: Vec3,
+        faces: RawProjectElementFaces,
+    ) -> Self {
         Self {
             uuid: str_to_uuid(&name),
             name,
@@ -47,7 +55,7 @@ impl RawProjectElement {
             to,
             origin,
             rotation,
-            faces
+            faces,
         }
     }
 }
@@ -55,13 +63,51 @@ impl RawProjectElement {
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct RawProjectElementFace {
     texture: u32,
-    uv: [u16; 4],
+    rotation: u32,
+    uv: [f32; 4],
 }
 
 impl RawProjectElementFace {
-    pub fn new(texture: u32, uv: FaceUv) -> Self {
-        let uv = [uv.top_left.x, uv.top_left.y, uv.bottom_right.x, uv.bottom_right.y];
-        Self { texture, uv }
+    pub fn new(texture: u32, mut uv: FaceUv, horizontal: bool) -> Self {
+        let original_uv = uv;
+        let mut rotation = (uv.cw_rotation_count as u32) * 90;
+        
+        if original_uv.cw_rotation_count > 0 {
+            rotation = ((original_uv.cw_rotation_count as u32 + 2) % 4) * 90;
+            let current_rotation = 4 - uv.cw_rotation_count;
+            for _ in 0..current_rotation {
+                uv = uv.rotate_cw();
+            }
+        }
+
+        //if horizontal {
+        //    uv = uv.flip_horizontally().flip_vertically();
+        //}
+
+        if original_uv.flipped_vertically {
+            uv = uv.flip_vertically();
+        }
+
+        if original_uv.flipped_horizontally {
+            uv = if original_uv.cw_rotation_count > 0 {
+                uv.flip_vertically()
+            } else {
+                uv.flip_horizontally()
+            }
+        }
+
+        let uv = [
+            uv.top_left.x as f32,
+            uv.top_left.y as f32,
+            uv.bottom_right.x as f32,
+            uv.bottom_right.y as f32,
+        ];
+
+        Self {
+            texture,
+            uv,
+            rotation,
+        }
     }
 }
 
@@ -76,17 +122,14 @@ pub struct RawProjectElementFaces {
 }
 
 impl RawProjectElementFaces {
-    pub fn new(
-        texture: u32,
-        faces: CubeFaceUvs
-    ) -> Self {
+    pub fn new(texture: u32, faces: CubeFaceUvs) -> Self {
         Self {
-            north: RawProjectElementFace::new(texture, faces.north),
-            south: RawProjectElementFace::new(texture, faces.south),
-            east: RawProjectElementFace::new(texture, faces.east),
-            west: RawProjectElementFace::new(texture, faces.west),
-            up: RawProjectElementFace::new(texture, faces.up),
-            down: RawProjectElementFace::new(texture, faces.down),
+            north: RawProjectElementFace::new(texture, faces.north, false),
+            south: RawProjectElementFace::new(texture, faces.south, false),
+            east: RawProjectElementFace::new(texture, faces.east, false),
+            west: RawProjectElementFace::new(texture, faces.west, false),
+            up: RawProjectElementFace::new(texture, faces.up, true),
+            down: RawProjectElementFace::new(texture, faces.down, true),
         }
     }
 }
@@ -106,16 +149,22 @@ pub struct ProjectTextureResolution {
 }
 
 impl ProjectTextureResolution {
-    pub fn new(width: u32, height: u32) -> Self { Self { width, height } }
+    pub fn new(width: u32, height: u32) -> Self {
+        Self { width, height }
+    }
 }
 
 impl RawProject {
-    pub fn new(resolution: ProjectTextureResolution, elements: Vec<RawProjectElement>, textures: Vec<RawProjectTexture>) -> Self {
+    pub fn new(
+        resolution: ProjectTextureResolution,
+        elements: Vec<RawProjectElement>,
+        textures: Vec<RawProjectTexture>,
+    ) -> Self {
         Self {
             meta: ProjectMeta::default(),
             elements,
             textures,
-            resolution
+            resolution,
         }
     }
 }

@@ -34,7 +34,7 @@ macro_rules! body_part {
             $pos,
             $size,
             crate::parts::uv::box_uv($uv_x, $uv_y, $size),
-            Some($name.to_string())
+            #[cfg(feature = "part_tracker")] Some($name.to_string())
         )
     };
 }
@@ -81,7 +81,8 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
                     [16, 0, 16],
                     uv_from_pos_and_size(0, 0, 128, 128),
                     Vec3::Y,
-                    Some("Shadow".to_string()),
+                    #[cfg(feature = "part_tracker")]
+                    #[cfg(feature = "part_tracker")] Some("Shadow".to_string()),
                 );
                 // TODO: Expand shadow if there's armor on the feet
 
@@ -237,10 +238,11 @@ fn expand_player_body_part(
         unreachable!("Got quad when expanding body part.")
     } else if let Part::Cube {
         ref mut face_uvs, 
-        ref mut name,
+        #[cfg(feature = "part_tracker")] ref mut name,
         ..
     } = new_part
     {
+        #[cfg(feature = "part_tracker")]
         if let Some(old_name) = name.take() {
             name.replace(format!("{} Layer", old_name));
         }

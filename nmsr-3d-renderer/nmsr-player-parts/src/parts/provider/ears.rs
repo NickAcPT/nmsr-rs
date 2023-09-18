@@ -291,7 +291,7 @@ impl EarsPlayerPartsProvider {
             if mode == EarMode::Around {
                 result.push(declare_ears_part_vertical! {
                     EarAroundRight {
-                        pos: [-4.0, 0.0, anchor_z],
+                        pos: [8.0, 0.0, anchor_z],
                         size: [4, 8],
                         uv: [36, 16, 4, 8],
                         back_uv: Some([12, 16, 4, 8]),
@@ -302,7 +302,7 @@ impl EarsPlayerPartsProvider {
 
                 result.push(declare_ears_part_vertical! {
                     EarAroundLeft {
-                        pos: [8.0, 0.0, anchor_z],
+                        pos: [-4.0, 0.0, anchor_z],
                         size: [4, 8],
                         uv: [36, 32, 4, 8],
                         back_uv: Some([12, 32, 4, 8]),
@@ -554,6 +554,8 @@ fn process_uvs(
     if cw {
         uvs = uvs.rotate_cw();
     }
+    
+    uvs = uvs.flip_horizontally();
 
     uvs
 }

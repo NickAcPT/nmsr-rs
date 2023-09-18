@@ -71,34 +71,34 @@ impl FaceUv {
     }
 
     pub fn flip_vertically(self) -> Self {
-        Self::new(
-            self.top_left.x,
-            self.bottom_right.y,
-            self.bottom_right.x,
-            self.top_left.y,
+        Self{
+            top_left: self.bottom_left,
+            top_right: self.bottom_right,
+            bottom_left: self.top_left,
+            bottom_right: self.top_right,
             #[cfg(feature = "part_tracker")]
-            self.flipped_horizontally,
+            flipped_horizontally: self.flipped_horizontally,
             #[cfg(feature = "part_tracker")]
-            self.flipped_vertically,
+            flipped_vertically: self.flipped_vertically,
             #[cfg(feature = "part_tracker")]
-            self.cw_rotation_count,
-        )
+            cw_rotation_count: self.cw_rotation_count,
+    }
         .flipped_vertically()
     }
 
     pub fn flip_horizontally(self) -> Self {
-        Self::new(
-            self.bottom_right.x,
-            self.top_left.y,
-            self.top_left.x,
-            self.bottom_right.y,
+        Self {
+            top_left: self.top_right,
+            top_right: self.top_left,
+            bottom_left: self.bottom_right,
+            bottom_right: self.bottom_left,
             #[cfg(feature = "part_tracker")]
-            self.flipped_horizontally,
+            flipped_horizontally: self.flipped_horizontally,
             #[cfg(feature = "part_tracker")]
-            self.flipped_vertically,
+            flipped_vertically: self.flipped_vertically,
             #[cfg(feature = "part_tracker")]
-            self.cw_rotation_count,
-        )
+            cw_rotation_count: self.cw_rotation_count,
+        }
         .flipped_horizontally()
     }
 

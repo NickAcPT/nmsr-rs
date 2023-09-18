@@ -15,8 +15,6 @@ use serde_json::{json, Value};
 use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_128;
 
-use crate::generator::ModelGenerationProject;
-
 #[derive(Debug, Copy, Clone, Serialize)]
 pub struct ProjectMeta {
     format_version: &'static str,
@@ -61,14 +59,12 @@ impl RawProjectElement {
         }))
     }
 
-    pub fn new_quad(name: String, mut part: Part, texture_size: (f32, f32), texture_id: u32) -> Self {
+    pub fn new_quad(name: String, part: Part, texture_size: (f32, f32), texture_id: u32) -> Self {
         fn random_names(a: &str, b: &str) -> (String, String) {
-            let (a_new,b_new) = Uuid::new_v4().as_u64_pair();
-            
+            let (a_new, b_new) = Uuid::new_v4().as_u64_pair();
+
             (format!("{a}{a_new:x}"), format!("{b}{b_new:x}"))
         }
-        
-        let uv = part.get_face_uv();
         
         let converted = primitive_convert(&part);
 
@@ -76,8 +72,6 @@ impl RawProjectElement {
         let (bottom_left, bottom_right) = random_names("bottom_left", "bottom_right");
         
         let (uv_width, uv_height) = texture_size;
-        
-        dbg!(&part);
         
         let result = if let PrimitiveDispatch::Quad(quad) = converted {
             json!({
@@ -150,60 +144,21 @@ impl RawProjectElement {
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct RawProjectElementFace {
     texture: Option<u32>,
-    rotation: u32,
     uv: [f32; 4],
 }
 
 impl RawProjectElementFace {
-    pub fn new(texture: Option<u32>, mut uv: FaceUv, horizontal: bool) -> Self {
-        let original_uv = uv;
-        let mut rotation = (uv.cw_rotation_count as u32) * 90;
+    pub const UV_OFFSET: f32 = 0.05;
 
-        if original_uv.cw_rotation_count > 0 {
-            let current_rotation = 4 - uv.cw_rotation_count;
-            if !original_uv.flipped_vertically {
-                rotation = (((uv.cw_rotation_count as u32) + 2) % 4) * 90;
-            }
-            for _ in 0..current_rotation {
-                uv = uv.rotate_cw();
-            }
-        }
-
-        if horizontal {
-            uv = uv.flip_horizontally();
-        }
-
-        if original_uv.flipped_vertically {
-            dbg!(original_uv);
-            uv = if original_uv.cw_rotation_count > 0 {
-                uv.flip_horizontally()
-            } else {
-                uv.flip_vertically()
-            }
-        }
-
-        if original_uv.flipped_horizontally {
-            uv = if original_uv.cw_rotation_count > 0 {
-                uv.flip_vertically()
-            } else {
-                uv.flip_horizontally()
-            }
-        }
-
-        let offset = 0.032;
-
+    pub fn new(texture: Option<u32>, uv: FaceUv) -> Self {
         let uv = [
-            uv.top_left.x as f32 + offset,
-            uv.top_left.y as f32 + offset,
-            uv.bottom_right.x as f32 - offset,
-            uv.bottom_right.y as f32 - offset,
+            uv.top_left.x as f32 + Self::UV_OFFSET,
+            uv.top_left.y as f32 + Self::UV_OFFSET,
+            uv.bottom_right.x as f32 - Self::UV_OFFSET,
+            uv.bottom_right.y as f32 - Self::UV_OFFSET,
         ];
 
-        Self {
-            texture,
-            uv,
-            rotation,
-        }
+        Self { texture, uv }
     }
 }
 
@@ -217,62 +172,16 @@ pub struct RawProjectElementFaces {
     down: RawProjectElementFace,
 }
 
-impl Default for RawProjectElementFaces {
-    fn default() -> Self {
-        let discard = RawProjectElementFace {
-            texture: None,
-            rotation: 0,
-            uv: [0.0, 0.0, 0.0, 0.0],
-        };
-
-        Self {
-            north: discard,
-            south: discard,
-            east: discard,
-            west: discard,
-            up: discard,
-            down: discard,
-        }
-    }
-}
-
 impl RawProjectElementFaces {
     pub fn new(texture: u32, faces: CubeFaceUvs) -> Self {
-        let mut result = Self::default();
-        let RawProjectElementFaces {
-            ref mut north,
-            ref mut south,
-            ref mut east,
-            ref mut west,
-            ref mut up,
-            ref mut down,
-        } = result;
-
-        if faces.north != ModelGenerationProject::DISCARD_FACE {
-            *north = RawProjectElementFace::new(Some(texture), faces.north, false);
+        Self {
+            north: RawProjectElementFace::new(Some(texture), faces.north),
+            south: RawProjectElementFace::new(Some(texture), faces.south),
+            east: RawProjectElementFace::new(Some(texture), faces.east),
+            west: RawProjectElementFace::new(Some(texture), faces.west),
+            up: RawProjectElementFace::new(Some(texture), faces.up),
+            down: RawProjectElementFace::new(Some(texture), faces.down),
         }
-
-        if faces.south != ModelGenerationProject::DISCARD_FACE {
-            *south = RawProjectElementFace::new(Some(texture), faces.south, false);
-        }
-
-        if faces.east != ModelGenerationProject::DISCARD_FACE {
-            *east = RawProjectElementFace::new(Some(texture), faces.east, false);
-        }
-
-        if faces.west != ModelGenerationProject::DISCARD_FACE {
-            *west = RawProjectElementFace::new(Some(texture), faces.west, false);
-        }
-
-        if faces.up != ModelGenerationProject::DISCARD_FACE {
-            *up = RawProjectElementFace::new(Some(texture), faces.up, true);
-        }
-
-        if faces.down != ModelGenerationProject::DISCARD_FACE {
-            *down = RawProjectElementFace::new(Some(texture), faces.down, true);
-        }
-
-        result
     }
 }
 

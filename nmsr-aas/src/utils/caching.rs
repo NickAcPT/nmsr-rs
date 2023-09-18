@@ -158,7 +158,7 @@ where
     async fn get_marker_and_clean_expired_if_needed(
         &self,
         entry: &Key,
-        path: &PathBuf,
+        path: &Path,
     ) -> Result<Option<Marker>> {
         if !path.exists() {
             trace!("Cache entry path doesn't exist.");
@@ -187,20 +187,27 @@ where
 
         if is_expired {
             trace!("Entry is expired, discarding.");
-            if path.is_dir() {
-                fs::remove_dir_all(path)
-                    .await
-                    .explain(format!("Unable to remove expired cache entry {entry:?}"))?;
-            } else {
-                fs::remove_file(path)
-                    .await
-                    .explain(format!("Unable to remove expired cache entry {entry:?}"))?;
-            }
+            Self::invalidate_self(entry, path).await?;
 
             return Ok(None);
         }
 
         Ok(Some(marker))
+    }
+
+    #[inline]
+    pub(crate) async fn invalidate_self<'a>(entry: &'a Key, path: &'a Path) -> Result<()> {
+        if path.is_dir() {
+            fs::remove_dir_all(path)
+                .await
+                .explain(format!("Unable to invalidate cache entry {entry:?}"))?;
+        } else {
+            fs::remove_file(path)
+                .await
+                .explain(format!("Unable to invalidate cache entry {entry:?}"))?;
+        }
+        
+        Ok(())
     }
 
     pub async fn set_cache_entry(

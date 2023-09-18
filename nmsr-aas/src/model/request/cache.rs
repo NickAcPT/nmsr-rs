@@ -357,6 +357,17 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
                 ))?;
 
                 textures.insert(texture, MojangTexture::new_unnamed(read));
+            } else {
+                // One of the textures has gone missing, this means that this cache entry is invalid and should be removed
+                CacheSystem::<
+                    RenderRequestEntry,
+                    ResolvedRenderEntryTextures,
+                    ModelCacheConfiguration,
+                    [u8; 1],
+                    Self,
+                >::invalidate_self(entry, base)
+                .await?;
+                return Ok(None);
             }
         }
 

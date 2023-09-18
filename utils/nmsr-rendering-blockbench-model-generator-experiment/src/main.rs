@@ -6,8 +6,14 @@ use std::{collections::HashMap, fs, path::PathBuf};
 use anyhow::{anyhow, Context, Ok, Result};
 use clap::{Parser, ValueEnum};
 use derive_more::Deref;
+use ears_rs::alfalfa::{AlfalfaData, AlfalfaDataKey};
 use generator::ModelGenerationProject;
-use nmsr_rendering::high_level::{model::PlayerModel, types::PlayerPartTextureType};
+use nmsr_rendering::high_level::{
+    model::PlayerModel, parts::provider::ears::PlayerPartEarsTextureType,
+    types::PlayerPartTextureType,
+};
+
+use crate::blockbench::write_png;
 
 #[derive(Parser, Debug)]
 #[clap(name = env!("CARGO_CRATE_NAME"), version)]
@@ -54,13 +60,29 @@ fn main() -> Result<()> {
 
     #[cfg(feature = "ears")]
     let ears_features = {
-        let skin_image = image::load_from_memory(&skin_bytes)
+        let mut skin_image = image::load_from_memory(&skin_bytes)
             .context(anyhow!("Failed to open input skin"))?
             .into_rgba8();
 
-        ears_rs::parser::EarsParser::parse(&skin_image)
-            .context(anyhow!("Failed to parse ears features from skin"))?
-    };
+        let alfalfa = ears_rs::alfalfa::read_alfalfa(&skin_image)?;
+
+        if let Some(alfalfa) = alfalfa {
+            if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
+                textures.insert(PlayerPartEarsTextureType::Wings.into(), wings.to_vec());
+            }
+        }
+
+        let features = ears_rs::parser::EarsParser::parse(&skin_image)
+            .context(anyhow!("Failed to parse ears features from skin"));
+        
+        ears_rs::utils::strip_alpha(&mut skin_image);
+        
+        if let Result::Ok(new_skin_bytes) = write_png(&skin_image) {
+            textures.insert(PlayerPartTextureType::Skin, new_skin_bytes);
+        }
+
+        features
+    }?;
 
     let project = ModelGenerationProject::new(
         *args.model,
@@ -74,6 +96,6 @@ fn main() -> Result<()> {
         .context(anyhow!("Failed to generate blockbench project"))?;
 
     println!("Done!");
-        
+
     Ok(())
 }

@@ -19,20 +19,22 @@ impl<M> Default for MinecraftPlayerPartsProvider<M> {
 
 macro_rules! body_part {
     // Matcher on many body parts
-    {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr)} => {
+    {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr), name: $name: expr} => {
         body_part! {
             pos: $pos,
             size: $size,
             box_uv_start: ($uv_x, $uv_y),
-            texture_type: Skin
+            texture_type: Skin,
+            name: $name
         }
     };
-    {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr), texture_type: $texture_type: ident} => {
+    {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr), texture_type: $texture_type: ident, name: $name: expr} => {
         Part::new_cube(
             crate::types::PlayerPartTextureType::$texture_type,
             $pos,
             $size,
             crate::parts::uv::box_uv($uv_x, $uv_y, $size),
+            Some($name.to_string())
         )
     };
 }
@@ -78,7 +80,8 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
                     [-8.0, shadow_y_pos, -8.0],
                     [16, 0, 16],
                     uv_from_pos_and_size(0, 0, 128, 128),
-                    Vec3::Y
+                    Vec3::Y,
+                    Some("Shadow".to_string()),
                 );
                 // TODO: Expand shadow if there's armor on the feet
 
@@ -119,12 +122,14 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
         Head => body_part! {
             pos: [-4, 24, -4],
             size: [8, 8, 8],
-            box_uv_start: (8, 8)
+            box_uv_start: (8, 8),
+            name: "Head"
         },
         Body => body_part! {
             pos: [-4, 12, -2],
             size: [8, 12, 4],
-            box_uv_start: (20, 20)
+            box_uv_start: (20, 20),
+            name: "Body"
         },
         LeftArm => {
             if is_slim_arms {
@@ -132,14 +137,16 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
                     //pos: [0, 0, 0],
                     pos: [-7, 12, -2],
                     size: [3, 12, 4],
-                    box_uv_start: (36, 52)
+                    box_uv_start: (36, 52),
+                    name: "Left Arm"
                 }
             } else {
                 body_part! {
                     //pos: [0, 0, 0],
                     pos: [-8, 12, -2],
                     size: [4, 12, 4],
-                    box_uv_start: (36, 52)
+                    box_uv_start: (36, 52),
+                    name: "Left Arm"
                 }
             }
         }
@@ -148,25 +155,29 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
                 body_part! {
                     pos: [4, 12, -2],
                     size: [3, 12, 4],
-                    box_uv_start: (44, 20)
+                    box_uv_start: (44, 20),
+                    name: "Right Arm"
                 }
             } else {
                 body_part! {
                     pos: [4, 12, -2],
                     size: [4, 12, 4],
-                    box_uv_start: (44, 20)
+                    box_uv_start: (44, 20),
+                    name: "Right Arm"
                 }
             }
         }
         LeftLeg => body_part! {
             pos: [-4, 0, -2],
             size: [4, 12, 4],
-            box_uv_start: (20, 52)
+            box_uv_start: (20, 52),
+            name: "Left Leg"
         },
         RightLeg => body_part! {
             pos: [0, 0, -2],
             size: [4, 12, 4],
-            box_uv_start: (4, 20)
+            box_uv_start: (4, 20),
+            name: "Right Leg"
         },
         _ => unreachable!("Got layer body part type when getting non-layer body part type."),
     }
@@ -204,7 +215,8 @@ fn append_cape_part(result: &mut Vec<Part>) {
         pos: [-5, 8, 1],
         size: [10, 16, 1],
         box_uv_start: (1, 1),
-        texture_type: Cape
+        texture_type: Cape,
+        name: "Cape"
     };
 
     cape.rotate([5.0, 180.0, 0.0].into(), Some(PartAnchorInfo::new_rotation_anchor_position(
@@ -224,9 +236,15 @@ fn expand_player_body_part(
     if let Part::Quad { .. } = new_part {
         unreachable!("Got quad when expanding body part.")
     } else if let Part::Cube {
-        ref mut face_uvs, ..
+        ref mut face_uvs, 
+        ref mut name,
+        ..
     } = new_part
     {
+        if let Some(old_name) = name.take() {
+            name.replace(format!("{} Layer", old_name));
+        }
+        
         let current_box_uv = face_uvs.north.top_left;
 
         let size = part.get_size();

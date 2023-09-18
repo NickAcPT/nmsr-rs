@@ -32,11 +32,12 @@ pub struct RawProjectElement {
     from: Vec3,
     to: Vec3,
     origin: Vec3,
+    rotation: Vec3,
     faces: RawProjectElementFaces,
 }
 
 impl RawProjectElement {
-    pub fn new(name: String, box_uv: bool, from: Vec3, to: Vec3, origin: Vec3, faces: RawProjectElementFaces) -> Self {
+    pub fn new(name: String, box_uv: bool, from: Vec3, to: Vec3, origin: Vec3, rotation: Vec3, faces: RawProjectElementFaces) -> Self {
         Self {
             uuid: str_to_uuid(&name),
             name,
@@ -45,6 +46,7 @@ impl RawProjectElement {
             from,
             to,
             origin,
+            rotation,
             faces
         }
     }

@@ -37,6 +37,7 @@ macro_rules! declare_ears_part_vertical {
             EarsPlayerBodyPartDefinition {
                 $($body)+,
                 vertical_quad: true,
+                name: stringify!($ears_part),
                 ..Default::default()
             }
         }
@@ -96,6 +97,8 @@ struct EarsPlayerBodyPartDefinition {
     enabled: fn(&EarsFeatures) -> bool,
     vertical_quad: bool,
     double_sided: bool,
+    is_back: bool,
+    name: &'static str,
 }
 
 impl Default for EarsPlayerBodyPartDefinition {
@@ -115,6 +118,8 @@ impl Default for EarsPlayerBodyPartDefinition {
             enabled: |_| true,
             vertical_quad: false,
             double_sided: true,
+            name: "",
+            is_back: false,
         }
     }
 }
@@ -263,7 +268,7 @@ impl EarsPlayerPartsProvider {
     ) {
         let anchor = features.ear_anchor.unwrap_or_default();
         let mode = features.ear_mode;
-        
+
         let anchor_z = match anchor {
             EarAnchor::Front => 0.0,
             EarAnchor::Center => 4.0,
@@ -306,7 +311,6 @@ impl EarsPlayerPartsProvider {
                 });
             }
         } else if mode == EarMode::Behind {
-            
         }
     }
 
@@ -457,9 +461,11 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                             let mut back = p;
                             back.vertical_flip ^= true;
                             back.normal *= -1.0;
-                            
+
                             back.uv = p.back_uv.unwrap_or(p.uv);
                             back.cw = p.back_cw.unwrap_or(back.cw);
+                            
+                            back.is_back = true;
 
                             vec![p, back]
                         } else {
@@ -484,18 +490,23 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     } else {
                         [size[0], 0, size[1]]
                     };
-                    
- 
+
                     if part_definition.double_sided {
                         pos = (Vec3::from(pos) + (part_definition.normal * 0.01)).into();
                     }
 
+                    let mut name = String::from(part_definition.name);
+                    if part_definition.is_back {
+                        name.push_str("Back");
+                    }
+                    
                     let mut part_quad = Part::new_quad(
                         part_definition.texture,
                         pos,
                         size,
                         uvs,
                         part_definition.normal,
+                        Some(name),
                     );
 
                     part_quad.rotate(

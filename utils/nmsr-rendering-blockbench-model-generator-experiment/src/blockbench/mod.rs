@@ -10,6 +10,7 @@ use std::{
 
 use anyhow::{anyhow, Context, Ok, Result};
 use glam::Vec3;
+use image::{RgbaImage, imageops};
 use itertools::Itertools;
 use nmsr_rendering::high_level::{parts::part::Part, types::PlayerPartTextureType};
 
@@ -18,7 +19,7 @@ use crate::{
     generator::ModelGenerationProject,
 };
 
-use self::model::{ProjectTextureResolution, RawProjectElement, RawProjectElementFace, RawProjectElementFaces};
+use self::model::{ProjectTextureResolution, RawProjectElement, RawProjectElementFaces};
 
 pub(crate) fn generate_project(project: ModelGenerationProject, output: PathBuf) -> Result<()> {
     let parts = project.generate_parts();
@@ -45,36 +46,47 @@ fn convert_to_raw_elements(
         .enumerate()
         .map(|(i, k)| (*k, i as u32))
         .collect::<HashMap<_, _>>();
-    
+
     grouped_parts
         .into_iter()
-        .flat_map(|(texture, parts)| parts)
+        .flat_map(|(_, parts)| parts)
         .enumerate()
         .filter_map(|(index, part)| match part {
             Part::Cube {
                 position,
                 size,
-                rotation_matrix,
+                last_rotation,
                 face_uvs,
                 texture,
+                name,
+                ..
             } => {
                 let from = position;
                 let to = position + size;
-                
+
                 let texture_id = texture_map.get(&texture).cloned().unwrap_or_default();
                 let faces = RawProjectElementFaces::new(texture_id, face_uvs);
                 
-                Some(RawProjectElement::new(format!("part-{index}"), false, from, to, Vec3::ZERO, faces))
-            },
+                let mut rotation = Vec3::ZERO;
+                let mut rotation_anchor = Vec3::ZERO;
+                
+                if let Some((rot, anchor)) = last_rotation {
+                    rotation_anchor = anchor.rotation_anchor;
+                    rotation = rot;
+                }
 
-            Part::Quad {
-                position,
-                size,
-                rotation_matrix,
-                face_uv,
-                normal,
-                texture,
-            } => None,
+                Some(RawProjectElement::new(
+                    name.map_or_else(|| format!("part-{index}"), |s| s.to_string()),
+                    false,
+                    from,
+                    to,
+                    rotation_anchor,
+                    rotation,
+                    faces,
+                ))
+            }
+
+            Part::Quad { .. } => None,
         })
         .collect_vec()
 }
@@ -103,7 +115,7 @@ fn convert_to_raw_project_textures(
         .keys()
         .enumerate()
         .map(|(i, k)| {
-            let image = if let Some(texture_bytes) = project.get_texture(*k) {
+            let other = if let Some(texture_bytes) = project.get_texture(*k) {
                 image::load_from_memory(texture_bytes)
                     .context(anyhow!("Failed to load texture from bytes"))
                     .unwrap()
@@ -112,6 +124,9 @@ fn convert_to_raw_project_textures(
                 let (w, h) = k.get_texture_size();
                 image::RgbaImage::new(w, h)
             };
+            
+            let mut image = RgbaImage::new(64,64);
+            imageops::overlay(&mut image, &other, 0, 0);
 
             let (w, h) = image.dimensions();
             if w > resolution[0] {
@@ -122,21 +137,9 @@ fn convert_to_raw_project_textures(
                 resolution[1] = h;
             }
 
-            let image_bytes = {
-                let mut bytes = Cursor::new(vec![]);
-
-                {
-                    let mut writer = BufWriter::new(&mut bytes);
-                    image
-                        .write_to(&mut writer, image::ImageOutputFormat::Png)
-                        .context(anyhow!("Failed to write empty image to buffer"))
-                        .unwrap();
-                }
-
-                Ok(bytes.into_inner())
-            }
-            .context(anyhow!("Failed to write empty image to buffer"))
-            .unwrap();
+            let image_bytes = write_png(&image)
+                .context(anyhow!("Failed to write image to buffer"))
+                .unwrap();
 
             RawProjectTexture::new(get_texture_name(*k), i as u32, &image_bytes)
         })
@@ -156,4 +159,18 @@ fn get_texture_name(texture: PlayerPartTextureType) -> String {
             _ => texture.to_string(),
         }
     )
+}
+
+pub fn write_png(img: &RgbaImage) -> Result<Vec<u8>> {
+    let mut bytes = Cursor::new(vec![]);
+
+    {
+        let mut writer = BufWriter::new(&mut bytes);
+        img
+            .write_to(&mut writer, image::ImageOutputFormat::Png)
+            .context(anyhow!("Failed to write empty image to buffer"))
+            .unwrap();
+    }
+
+    Ok(bytes.into_inner())
 }

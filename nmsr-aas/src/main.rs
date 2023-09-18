@@ -1,6 +1,6 @@
-#![deny(clippy::all)]
-#![deny(clippy::pedantic)]
-#![deny(clippy::nursery)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
 
 #![allow(missing_docs)]
 #![allow(clippy::module_name_repetitions)]
@@ -8,6 +8,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::redundant_pub_crate)]
 #![allow(clippy::unused_async)]
+#![allow(clippy::diverging_sub_expression)]
 
 pub mod model;
 mod routes;

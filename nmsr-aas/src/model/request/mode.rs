@@ -11,7 +11,7 @@ use tracing::instrument;
 
 use crate::error::{RenderRequestError, Result};
 
-#[derive(EnumString, Debug, PartialEq, Clone, Copy, EnumIter)]
+#[derive(EnumString, Debug, PartialEq, Eq, Clone, Copy, EnumIter)]
 #[strum(serialize_all = "snake_case")]
 pub enum RenderRequestMode {
     #[strum(serialize = "skin", serialize = "texture")]
@@ -35,58 +35,59 @@ pub enum RenderRequestMode {
 
 #[allow(dead_code)]
 impl RenderRequestMode {
-    pub(crate) fn is_custom(&self) -> bool {
+    pub(crate) const fn is_custom(self) -> bool {
         matches!(self, Self::Custom)
     }
     
-    pub(crate) fn is_full_body(&self) -> bool {
+    pub(crate) const fn is_full_body(self) -> bool {
         matches!(self, Self::FullBody | Self::FullBodyIso)
     }
 
-    pub(crate) fn is_isometric(&self) -> bool {
+    pub(crate) const fn is_isometric(self) -> bool {
         matches!(
             self,
             Self::FullBodyIso | Self::HeadIso | Self::FrontBust | Self::FrontFull | Self::Face
         )
     }
 
-    pub(crate) fn is_front(&self) -> bool {
+    pub(crate) const fn is_front(self) -> bool {
         matches!(self, Self::FrontBust | Self::FrontFull | Self::Face)
     }
 
-    pub(crate) fn is_bust(&self) -> bool {
+    pub(crate) const fn is_bust(self) -> bool {
         matches!(self, Self::BodyBust | Self::FrontBust)
     }
 
-    pub(crate) fn is_arms_open(&self) -> bool {
+    pub(crate) const fn is_arms_open(self) -> bool {
         matches!(self, Self::FullBody | Self::BodyBust)
     }
 
-    pub(crate) fn is_head_or_face(&self) -> bool {
+    pub(crate) const fn is_head_or_face(self) -> bool {
         matches!(self, Self::Head | Self::Face | Self::HeadIso)
     }
 
-    pub(crate) fn is_head(&self) -> bool {
+    pub(crate) const fn is_head(self) -> bool {
         matches!(self, Self::Head)
     }
-    pub(crate) fn is_head_iso(&self) -> bool {
+    pub(crate) const fn is_head_iso(self) -> bool {
         matches!(self, Self::HeadIso)
     }
     
-    pub(crate) fn is_face(&self) -> bool {
+    pub(crate) const fn is_face(self) -> bool {
         matches!(self, Self::Face)
     }
 
-    pub(crate) fn is_square(&self) -> bool {
+    pub(crate) const fn is_square(self) -> bool {
         self.is_bust() || self.is_head_or_face()
     }
     
-    pub(crate) fn is_skin(&self) -> bool {
+    pub(crate) const fn is_skin(self) -> bool {
         matches!(self, Self::Skin)
     }
 
     // [min_w, min_h, max_w, max_h]
-    pub fn size_constraints(&self) -> [u32; 4] {
+    #[must_use]
+    pub const fn size_constraints(&self) -> [u32; 4] {
         if self.is_square() {
             [
                 Self::MIN_RENDER_WIDTH,
@@ -108,12 +109,12 @@ impl RenderRequestMode {
     pub fn validate_unit<T: PartialOrd + Debug>(
         unit: &'static str,
         value: Option<T>,
-        min: T,
-        max: T,
+        min: &T,
+        max: &T,
     ) -> Result<()> {
         let check = value
-            .filter(|value| *value < min || *value > max)
-            .map(|_| (unit, format!("between {:?} and {:?}", min, max)));
+            .filter(|value| *value < *min || *value > *max)
+            .map(|_| (unit, format!("between {min:?} and {max:?}")));
 
         if let Some((unit, bounds)) = check {
             return Err(RenderRequestError::InvalidRenderSettingError(unit, bounds).into());
@@ -122,7 +123,7 @@ impl RenderRequestMode {
         Ok(())
     }
 
-    pub(crate) fn get_base_render_mode(&self) -> Option<Self> {
+    pub(crate) const fn get_base_render_mode(self) -> Option<Self> {
         match self {
             Self::BodyBust => Some(Self::FullBody),
             Self::FrontBust => Some(Self::FrontFull),
@@ -141,7 +142,7 @@ impl RenderRequestMode {
     pub const MIN_RENDER_WIDTH: u32 = Self::DEFAULT_RENDER_WIDTH / 32;
     pub const MIN_RENDER_HEIGHT: u32 = Self::DEFAULT_RENDER_HEIGHT / 32;
 
-    pub(crate) fn get_size(&self) -> Size {
+    pub(crate) const fn get_size(self) -> Size {
         if self.is_square() {
             Size {
                 width: Self::DEFAULT_RENDER_WIDTH,
@@ -155,7 +156,7 @@ impl RenderRequestMode {
         }
     }
 
-    pub(crate) fn get_camera(&self) -> Camera {
+    pub(crate) fn get_camera(self) -> Camera {
         if let Some(base_mode) = self.get_base_render_mode() {
             let mut camera = base_mode.get_camera();
             camera.set_size(Some(base_mode.get_size()));
@@ -222,7 +223,7 @@ impl RenderRequestMode {
         Camera::new_orbital(look_at, distance, rotation, projection, None)
     }
 
-    pub(crate) fn get_arm_rotation(&self) -> f32 {
+    pub(crate) const fn get_arm_rotation(self) -> f32 {
         if self.is_arms_open() {
             return 10.0;
         }

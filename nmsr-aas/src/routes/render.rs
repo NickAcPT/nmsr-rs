@@ -33,12 +33,12 @@ pub async fn render(
     }
 
     let result = match request.mode {
-        RenderRequestMode::Skin => internal_render_skin(&request, &state, resolved).await,
+        RenderRequestMode::Skin => internal_render_skin(&request, resolved).await,
         _ => internal_render_model(&request, &state, &resolved).await,
     }?;
 
-    let mut res = create_image_response(result, &state, &request)?;
-    let hash = xxh3_64(format!("{:?}", request).as_bytes());
+    let mut res = create_image_response(result, &state, &request);
+    let hash = xxh3_64(format!("{request:?}").as_bytes());
 
     if let Ok(etag_value) = HeaderValue::from_str(&format!("{hash:x}")) {
         res.headers_mut().insert("Etag", etag_value);
@@ -51,7 +51,7 @@ fn create_image_response<T>(
     skin: T,
     State(state): &State<NMSRState>,
     request: &RenderRequest,
-) -> Result<Response>
+) -> Response
 where
     T: IntoResponse,
 {
@@ -66,5 +66,5 @@ where
         .headers_mut()
         .insert(CONTENT_TYPE, HeaderValue::from_static(IMAGE_PNG_MIME));
 
-    Ok(response)
+    response
 }

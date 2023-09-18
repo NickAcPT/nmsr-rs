@@ -36,6 +36,7 @@ impl NmsrHttpClient {
         create_http_client(rate_limit_per_second)
     }
 
+    #[allow(clippy::significant_drop_tightening)] // Not worth making the code less readable
     #[instrument(skip(self, parent_span), parent = parent_span)]
     pub(crate) async fn do_request(
         &self,

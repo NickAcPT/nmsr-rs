@@ -113,8 +113,7 @@ impl VanillaMinecraftArmorManager {
             let trim_path = self.get_trim_file_path(trim);
 
             fs::create_dir_all(&trim_path).await.explain(format!(
-                "Unable to create armor cache folder for trim {}",
-                trim
+                "Unable to create armor cache folder for trim {trim}"
             ))?;
 
             let layers = trim.get_layer_names();
@@ -169,8 +168,7 @@ impl VanillaMinecraftArmorManager {
                         .await?;
 
                     fs::write(&layer_path, bytes).await.explain(format!(
-                        "Unable to write armor cache file for material {}",
-                        material
+                        "Unable to write armor cache file for material {material}"
                     ))?;
                 }
             }

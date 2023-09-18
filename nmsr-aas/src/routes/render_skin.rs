@@ -12,7 +12,6 @@ use crate::{
 
 pub(crate) async fn internal_render_skin(
     request: &RenderRequest,
-    state: &NMSRState,
     mut resolved: ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
     let skin = resolved
@@ -33,7 +32,7 @@ pub(crate) async fn internal_render_skin(
         .map_err(NMSRRenderingError::ImageFromRawError)?
         .into_rgba8();
 
-    let processed = state.process_skin(skin_image, request.features)?;
+    let processed = NMSRState::process_skin(skin_image, request.features);
 
     let processed_png_bytes =
         create_png_from_bytes((processed.width(), processed.height()), &processed)?;

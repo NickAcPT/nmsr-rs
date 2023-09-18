@@ -56,16 +56,17 @@ pub enum RenderRequestError {
 }
 
 impl RenderRequestError {
-    pub fn is_bad_request(&self) -> bool {
+    #[must_use]
+    pub const fn is_bad_request(&self) -> bool {
         matches!(
             self,
-            RenderRequestError::InvalidUUID(_)
-                | RenderRequestError::InvalidPlayerUuidRequest(_, _)
-                | RenderRequestError::InvalidPlayerRequest(_)
-                | RenderRequestError::InvalidRenderMode(_)
-                | RenderRequestError::InvalidRenderSettingError(_, _)
-                | RenderRequestError::InvalidModeSettingSpecifiedError(_, _)
-                | RenderRequestError::MissingRenderRequestEntry
+            Self::InvalidUUID(_)
+                | Self::InvalidPlayerUuidRequest(_, _)
+                | Self::InvalidPlayerRequest(_)
+                | Self::InvalidRenderMode(_)
+                | Self::InvalidRenderSettingError(_, _)
+                | Self::InvalidModeSettingSpecifiedError(_, _)
+                | Self::MissingRenderRequestEntry
         )
     }
 }

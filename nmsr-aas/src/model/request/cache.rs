@@ -41,7 +41,7 @@ impl TryFrom<String> for CacheBias {
         let duration: Duration = humantime_serde::deserialize(Value::String(value.clone()))
             .map_err(|_| ModelCacheError::InvalidCacheBiasConfiguration(value.clone()))?;
 
-        Ok(CacheBias::KeepCachedFor(duration))
+        Ok(Self::KeepCachedFor(duration))
     }
 }
 
@@ -105,7 +105,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
     ) -> Result<bool> {
         config.is_expired_with_default(
             &RenderRequestEntry::TextureHash(entry.to_string()),
-            marker_metadata,
+            &marker_metadata,
             &config.texture_cache_duration,
         )
     }
@@ -253,7 +253,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             RenderRequestEntry::MojangPlayerUuid(u) | RenderRequestEntry::GeyserPlayerUuid(u) => {
                 Some(u.to_string())
             }
-            RenderRequestEntry::TextureHash(hash) => Some(hash.to_owned()),
+            RenderRequestEntry::TextureHash(hash) => Some(hash.clone()),
             RenderRequestEntry::PlayerSkin(_) => None,
         })
     }
@@ -283,7 +283,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         _marker: &[u8; 1],
         marker_metadata: Metadata,
     ) -> Result<bool> {
-        config.is_expired(entry, marker_metadata)
+        config.is_expired(entry, &marker_metadata)
     }
 
     async fn write_cache(
@@ -311,13 +311,11 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
 
                 if let Some(cache_path) = cache_path {
                     let cache_path = cache_path.canonicalize().explain(format!(
-                        "Unable to canonicalize cache path for texture {:?} for {:?}",
-                        texture_hash, entry
+                        "Unable to canonicalize cache path for texture {texture_hash:?} for {entry:?}"
                     ))?;
 
                     symlink::symlink_file(cache_path, texture_path).explain(format!(
-                        "Unable to create symlink for texture {:?} for {:?}",
-                        texture_hash, entry
+                        "Unable to create symlink for texture {texture_hash:?} for {entry:?}"
                     ))?;
                 }
             }
@@ -372,7 +370,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
     ) -> Result<[u8; 1]> {
         let result = fs::read(marker)
             .await
-            .explain(format!("Unable to read marker file for {:?}", entry))?;
+            .explain(format!("Unable to read marker file for {entry:?}"))?;
 
         if result.len() != 1 {
             return Err(ModelCacheError::MarkerMetadataError(entry.clone()).into());
@@ -390,7 +388,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
     ) -> Result<()> {
         fs::write(marker, value.to_marker_slice())
             .await
-            .explain(format!("Unable to write marker file for {:?}", entry))?;
+            .explain(format!("Unable to write marker file for {entry:?}"))?;
 
         Ok(())
     }

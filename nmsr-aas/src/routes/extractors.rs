@@ -14,7 +14,7 @@ use axum_extra::extract::Multipart;
 use hyper::{body::Bytes, Method, Request};
 use is_empty::IsEmpty;
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::{borrow::ToOwned, collections::HashMap};
 
 #[async_trait]
 impl<S, B> FromRequest<S, B> for RenderRequest
@@ -57,7 +57,7 @@ where
                 .await
                 .map_err(RenderRequestError::from)?
             {
-                if let Some(name) = field.name().map(|n| n.to_owned()) {
+                if let Some(name) = field.name().map(ToOwned::to_owned) {
                     let entry_content = if field.content_type().is_none() {
                         Value::String(field.text().await.map_err(RenderRequestError::from)?)
                     } else {
@@ -70,7 +70,7 @@ where
                         )
                     };
 
-                    data.insert(name.to_owned(), entry_content);
+                    data.insert(name.clone(), entry_content);
                 }
             }
 
@@ -101,12 +101,12 @@ where
             (mode, entry, query)
         };
 
-        query.validate(&mode)?;
+        query.validate(mode)?;
 
         let excluded_features = query.get_excluded_features();
 
         let model = query.get_model();
-        
+
         let extra_settings = Some(RenderRequestExtraSettings {
             width: query.width,
             height: query.height,
@@ -126,9 +126,10 @@ where
             chestplate: query.chestplate,
             leggings: query.leggings,
             boots: query.boots,
-        }).filter(|s| !s.is_empty());
+        })
+        .filter(|s| !s.is_empty());
 
-        Ok(RenderRequest::new_from_excluded_features(
+        Ok(Self::new_from_excluded_features(
             mode,
             entry,
             model,
@@ -142,7 +143,7 @@ where
 mod tests {
     use std::collections::HashMap;
 
-    use axum::{extract::State, routing::get, Router, debug_handler};
+    use axum::{debug_handler, extract::State, routing::get, Router};
     use enumset::{enum_set, EnumSet};
     use hyper::{Body, Request};
     use tokio::sync::mpsc::Sender;
@@ -158,7 +159,7 @@ mod tests {
     async fn test_handler(State(state): State<Sender<RenderRequest>>, request: RenderRequest) {
         state.send(request).await.unwrap();
     }
-    
+
     async fn render_request_from_url(url: &str) -> RenderRequest {
         let (tx, mut rx) = tokio::sync::mpsc::channel::<RenderRequest>(1);
 
@@ -168,10 +169,7 @@ mod tests {
             .expect("Failed to build request");
 
         let app: Router = Router::new()
-            .route(
-                "/:mode/:entry",
-                get(test_handler),
-            )
+            .route("/:mode/:entry", get(test_handler))
             .with_state(tx);
 
         app.oneshot(request).await.expect("Failed to send request");
@@ -191,8 +189,8 @@ mod tests {
                     mode: RenderRequestMode::Skin,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::ALL,
-                    extra_settings: Some(Default::default())
+                    features: EnumSet::only(RenderRequestFeatures::UnProcessedSkin),
+                    extra_settings: None
                 },
             ),
             (
@@ -201,8 +199,8 @@ mod tests {
                     mode: RenderRequestMode::Skin,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::Shadow)),
-                    extra_settings: Some(Default::default())
+                    features: EnumSet::only(RenderRequestFeatures::UnProcessedSkin),
+                    extra_settings: None
                 },
             ),
             (
@@ -211,8 +209,8 @@ mod tests {
                     mode: RenderRequestMode::Skin,
                     entry: entry.clone(),
                     model: Some(RenderRequestEntryModel::Alex),
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::Shading | RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer)),
-                    extra_settings: Some(Default::default())
+                    features: EnumSet::only(RenderRequestFeatures::UnProcessedSkin),
+                    extra_settings: None
                 },
             ),
             (
@@ -221,8 +219,8 @@ mod tests {
                     mode: RenderRequestMode::FullBody,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape)),
-                    extra_settings: Some(Default::default())
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape | RenderRequestFeatures::UnProcessedSkin)),
+                    extra_settings: None
                 },
             ),
         ]);
@@ -230,7 +228,7 @@ mod tests {
         for (url, element) in expected {
             let result = render_request_from_url(url).await;
 
-            assert_eq!(element, result, "Failed to extract for url: {}", url);
+            assert_eq!(element, result, "Failed to extract for url: {url}");
         }
     }
 }

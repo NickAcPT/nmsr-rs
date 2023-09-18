@@ -1,5 +1,5 @@
 use derive_more::Debug;
-use enumset::{EnumSet, EnumSetType, enum_set};
+use enumset::{enum_set, EnumSet, EnumSetType};
 use is_empty::IsEmpty;
 use nmsr_rendering::{
     high_level::{
@@ -64,7 +64,7 @@ pub struct RenderRequestExtraSettings {
 }
 
 impl RenderRequestExtraSettings {
-    pub(crate) fn get_size_for_mode(&self, mode: &RenderRequestMode) -> Size {
+    pub(crate) fn get_size_for_mode(&self, mode: RenderRequestMode) -> Size {
         let mut size = mode.get_size();
 
         if mode.is_custom() {
@@ -105,15 +105,15 @@ pub struct RenderRequest {
 }
 
 impl RenderRequest {
-    /// Create a new RenderRequest from a render request entry and a set of features to exclude.
+    /// Create a new `RenderRequest` from a render request entry and a set of features to exclude.
     ///
     /// # Arguments
     ///
-    /// * `entry`: The entry used to create the RenderRequest.
-    /// * `model`: The entry model used to create the RenderRequest.
-    /// * `excluded_features`: The features to exclude from the RenderRequest.
+    /// * `entry`: The entry used to create the `RenderRequest`.
+    /// * `model`: The entry model used to create the `RenderRequest`.
+    /// * `excluded_features`: The features to exclude from the `RenderRequest`.
     ///
-    /// returns: The [RenderRequest] created from the entry and excluded features.
+    /// returns: The [`RenderRequest`] created from the entry and excluded features.
     ///
     /// # Examples
     ///
@@ -123,6 +123,7 @@ impl RenderRequest {
     /// let excluded_features = enum_set!(RenderRequestFeatures::Shadow);
     /// let request = RenderRequest::new_from_excluded_features(mode, entry, None, excluded_features);
     /// ```
+    #[must_use]
     pub fn new_from_excluded_features(
         mode: RenderRequestMode,
         entry: RenderRequestEntry,
@@ -130,7 +131,7 @@ impl RenderRequest {
         excluded_features: EnumSet<RenderRequestFeatures>,
         extra_settings: Option<RenderRequestExtraSettings>,
     ) -> Self {
-        Self::cleanup_request(RenderRequest {
+        Self::cleanup_request(Self {
             mode,
             entry,
             model,
@@ -146,29 +147,29 @@ impl RenderRequest {
             // Only allow to set the yaw, pitch and roll if we are not in a front mode
             if !self.mode.is_front() {
                 if let Some(yaw) = settings.yaw {
-                    camera.set_yaw(yaw)
+                    camera.set_yaw(yaw);
                 }
 
                 if let Some(pitch) = settings.pitch {
-                    camera.set_pitch(pitch)
+                    camera.set_pitch(pitch);
                 }
 
                 if let Some(roll) = settings.roll {
-                    camera.set_roll(roll)
+                    camera.set_roll(roll);
                 }
             }
 
             if self.mode.is_custom() {
                 if let Some(x_pos) = settings.x_pos {
-                    camera.set_look_at_x(x_pos)
+                    camera.set_look_at_x(x_pos);
                 }
 
                 if let Some(y_pos) = settings.y_pos {
-                    camera.set_look_at_y(y_pos)
+                    camera.set_look_at_y(y_pos);
                 }
 
                 if let Some(z_pos) = settings.z_pos {
-                    camera.set_look_at_z(z_pos)
+                    camera.set_look_at_z(z_pos);
                 }
             }
 
@@ -189,15 +190,15 @@ impl RenderRequest {
             }
 
             if self.mode.is_isometric() {
-                camera.set_aspect(camera.get_aspect() + distance)
+                camera.set_aspect(camera.get_aspect() + distance);
             } else {
-                camera.set_distance(camera.get_distance() + distance)
+                camera.set_distance(camera.get_distance() + distance);
             }
 
             if camera.get_size().is_some() {
                 // Update our camera size based on the user settings if we have one already set
                 let mode = self.mode.get_base_render_mode().unwrap_or(self.mode);
-                let camera_size = settings.get_size_for_mode(&mode);
+                let camera_size = settings.get_size_for_mode(mode);
                 camera.set_size(Some(camera_size));
             }
         }
@@ -206,11 +207,10 @@ impl RenderRequest {
     }
 
     pub(crate) fn get_size(&self) -> Size {
-        if let Some(settings) = &self.extra_settings {
-            settings.get_size_for_mode(&self.mode)
-        } else {
-            self.mode.get_size()
-        }
+        self.extra_settings.as_ref().map_or_else(
+            || self.mode.get_size(),
+            |settings| settings.get_size_for_mode(self.mode),
+        )
     }
 
     pub(crate) fn get_lighting(&self) -> SunInformation {
@@ -243,7 +243,7 @@ impl RenderRequest {
         SunInformation::new(front_lighting, 2.0, 0.621)
     }
 
-    pub(crate) fn get_arm_rotation(&self) -> f32 {
+    pub(crate) const fn get_arm_rotation(&self) -> f32 {
         if let Some(settings) = &self.extra_settings {
             if let Some(rotation) = settings.arm_rotation {
                 return rotation;
@@ -264,15 +264,19 @@ impl RenderRequest {
         }
     }
 
-    fn cleanup_request(mut request: RenderRequest) -> RenderRequest {
-        if !request.mode.is_skin() {
-            // If we're not rendering a skin, remove the unprocessed skin feature
-            request.features.remove(RenderRequestFeatures::UnProcessedSkin);
+    fn cleanup_request(mut request: Self) -> Self {
+        if request.mode.is_skin() {
+            // If we're rendering a skin, keep just the unprocessed skin feature
+            request.features = request
+                .features
+                .intersection(enum_set!(RenderRequestFeatures::UnProcessedSkin));
         } else {
-            // Otherwise, just keep the unprocessed skin feature (if exists)
-            request.features = request.features.intersection(enum_set!(RenderRequestFeatures::UnProcessedSkin));
+            // Otherwise, remove the unprocessed skin feature
+            request
+                .features
+                .remove(RenderRequestFeatures::UnProcessedSkin);
         }
-        
+
         // If we're rendering just the head or face, remove the armor except for the helmet
         // And remove some extra features we know aren't targeting the head
         if request.mode.is_head_or_face() {

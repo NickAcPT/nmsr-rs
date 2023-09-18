@@ -21,15 +21,15 @@ static VALID_TEXTURE_HASH_REGEX: OnceLock<regex::Regex> = OnceLock::new();
 impl TryFrom<String> for RenderRequestEntry {
     type Error = RenderRequestError;
 
-    fn try_from(value: String) -> RenderRequestResult<RenderRequestEntry> {
+    fn try_from(value: String) -> RenderRequestResult<Self> {
         if value.len() == 32 || value.len() == 36 {
             let uuid = Uuid::parse_str(&value).map_err(RenderRequestError::InvalidUUID)?;
             let uuid_version = uuid.get_version_num();
 
             if uuid_version == 4 {
-                Ok(RenderRequestEntry::MojangPlayerUuid(uuid))
+                Ok(Self::MojangPlayerUuid(uuid))
             } else if uuid_version == 0 {
-                Ok(RenderRequestEntry::GeyserPlayerUuid(uuid))
+                Ok(Self::GeyserPlayerUuid(uuid))
             } else {
                 Err(RenderRequestError::InvalidPlayerUuidRequest(
                     value,
@@ -53,7 +53,7 @@ impl TryFrom<String> for RenderRequestEntry {
                 "}));
             }
 
-            Ok(RenderRequestEntry::TextureHash(value))
+            Ok(Self::TextureHash(value))
         } else {
             Err(RenderRequestError::InvalidPlayerRequest(value))
         }
@@ -79,11 +79,11 @@ impl TryFrom<Vec<u8>> for RenderRequestEntry {
     type Error = RenderRequestError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Ok(RenderRequestEntry::PlayerSkin(value))
+        Ok(Self::PlayerSkin(value))
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, FromRepr, Display, EnumString, EnumCount, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, FromRepr, Display, EnumString, EnumCount, PartialEq, Eq)]
 pub enum RenderRequestEntryModel {
     #[default]
     #[strum(serialize = "steve", serialize = "wide")]
@@ -95,8 +95,8 @@ pub enum RenderRequestEntryModel {
 impl From<RenderRequestEntryModel> for PlayerModel {
     fn from(value: RenderRequestEntryModel) -> Self {
         match value {
-            RenderRequestEntryModel::Steve => PlayerModel::Steve,
-            RenderRequestEntryModel::Alex => PlayerModel::Alex,
+            RenderRequestEntryModel::Steve => Self::Steve,
+            RenderRequestEntryModel::Alex => Self::Alex,
         }
     }
 }

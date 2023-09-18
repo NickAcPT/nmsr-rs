@@ -1,3 +1,4 @@
+
 use std::{
     borrow::Cow,
     fs::Metadata,
@@ -126,6 +127,7 @@ where
         Ok(key.map(|k| self.base_path.join(k)))
     }
 
+    #[allow(clippy::missing_panics_doc)] // It doesn't panic, we check for None
     pub async fn get_cached_entry(&self, entry: &Key) -> Result<Option<ResultEntry>> {
         let path = self.get_cache_entry_path(entry).await?;
 
@@ -133,6 +135,7 @@ where
             let marker_expired_result = self
                 .get_marker_and_clean_expired_if_needed(entry, &path)
                 .await?;
+            
             if marker_expired_result.is_none() {
                 return Ok(None);
             }
@@ -188,11 +191,11 @@ where
             if path.is_dir() {
                 fs::remove_dir_all(path)
                     .await
-                    .explain(format!("Unable to remove expired cache entry {:?}", entry))?;
+                    .explain(format!("Unable to remove expired cache entry {entry:?}"))?;
             } else {
                 fs::remove_file(path)
                     .await
-                    .explain(format!("Unable to remove expired cache entry {:?}", entry))?;
+                    .explain(format!("Unable to remove expired cache entry {entry:?}"))?;
             }
 
             return Ok(None);

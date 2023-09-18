@@ -86,10 +86,9 @@ impl NMSRState {
 
     #[allow(unused_variables)]
     pub fn process_skin(
-        &self,
         skin_image: RgbaImage,
         features: EnumSet<RenderRequestFeatures>,
-    ) -> Result<RgbaImage> {
+    ) -> RgbaImage {
         let mut skin_image = ears_rs::utils::upgrade_skin_if_needed(skin_image);
 
         #[cfg(feature = "ears")]
@@ -101,7 +100,7 @@ impl NMSRState {
 
         ears_rs::utils::strip_alpha(&mut skin_image);
 
-        Ok(skin_image)
+        skin_image
     }
 
     #[cfg(feature = "ears")]
@@ -149,12 +148,12 @@ impl NMSRState {
         //self.prewarm_renderer().await?;
 
         info!("Starting cache clean-up task");
-        self.start_cache_cleanup_task()?;
+        self.start_cache_cleanup_task();
 
         Ok(())
     }
 
-    fn start_cache_cleanup_task(&self) -> Result<()> {
+    fn start_cache_cleanup_task(&self) {
         let mut interval = tokio::time::interval(self.cache_config.cleanup_interval);
 
         let resolver = self.resolver.clone();
@@ -168,8 +167,6 @@ impl NMSRState {
                 }
             }
         });
-
-        Ok(())
     }
 
     #[inline]

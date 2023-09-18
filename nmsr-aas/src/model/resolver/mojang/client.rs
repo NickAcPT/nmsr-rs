@@ -16,12 +16,12 @@ pub struct MojangClient {
 
 #[test]
 fn owo() {
-    println!(env!("CARGO_PKG_AUTHORS"))
+    println!(env!("CARGO_PKG_AUTHORS"));
 }
 
 impl MojangClient {
     pub fn new(mojank: Arc<MojankConfiguration>) -> MojangRequestResult<Self> {
-        Ok(MojangClient {
+        Ok(Self {
             client: NmsrHttpClient::new(mojank.session_server_rate_limit),
             mojank_config: mojank,
         })

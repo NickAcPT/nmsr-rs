@@ -82,13 +82,11 @@ impl ResolvedRenderEntryEarsTextureType {
 impl From<ResolvedRenderEntryTextureType> for PlayerPartTextureType {
     fn from(value: ResolvedRenderEntryTextureType) -> Self {
         match value {
-            ResolvedRenderEntryTextureType::Skin => PlayerPartTextureType::Skin,
-            ResolvedRenderEntryTextureType::Cape => {
-                PlayerPartTextureType::Cape
-            }
+            ResolvedRenderEntryTextureType::Skin => Self::Skin,
+            ResolvedRenderEntryTextureType::Cape => Self::Cape,
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape) => {
-                PlayerPartTextureType::Cape
+                Self::Cape
             }
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ears) => {
@@ -114,10 +112,12 @@ impl MojangTexture {
         Self { hash: None, data }
     }
 
-    pub fn hash(&self) -> Option<&String> {
+    #[must_use]
+    pub const fn hash(&self) -> Option<&String> {
         self.hash.as_ref()
     }
 
+    #[must_use]
     pub fn data(&self) -> &[u8] {
         self.data.as_ref()
     }
@@ -134,38 +134,38 @@ pub struct ResolvedRenderEntryTexturesMarker {
 
 impl From<ResolvedRenderEntryTextures> for ResolvedRenderEntryTexturesMarker {
     fn from(value: ResolvedRenderEntryTextures) -> Self {
-        let model = if let Some(value) = value.model {
-            value as u8
-        } else {
-            RenderRequestEntryModel::COUNT as u8
-        };
+        let model = value
+            .model
+            .map_or(RenderRequestEntryModel::COUNT as u8, |value| value as u8);
 
-        ResolvedRenderEntryTexturesMarker { model }
+        Self { model }
     }
 }
 
 impl ResolvedRenderEntryTextures {
-    pub fn new(
+    #[must_use]
+    pub const fn new(
         textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
         model: Option<RenderRequestEntryModel>,
     ) -> Self {
-        Self { textures, model }
+        Self { model, textures }
     }
 
+    #[must_use]
     pub fn new_from_marker_slice(
         textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
         marker: &[u8],
     ) -> Self {
         let model = RenderRequestEntryModel::from_repr(marker[0] as usize);
 
-        Self { textures, model }
+        Self { model, textures }
     }
 
+    #[must_use]
     pub fn to_marker_slice(&self) -> [u8; 1] {
         let model = self
             .model
-            .map(|m| m as u8)
-            .unwrap_or(RenderRequestEntryModel::COUNT as u8);
+            .map_or(RenderRequestEntryModel::COUNT as u8, |m| m as u8);
 
         [model]
     }

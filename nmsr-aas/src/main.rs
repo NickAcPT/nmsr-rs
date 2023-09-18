@@ -1,14 +1,19 @@
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
-
-#![allow(missing_docs)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::items_after_statements)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::redundant_pub_crate)]
-#![allow(clippy::unused_async)]
-#![allow(clippy::diverging_sub_expression)]
+#![allow(
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::module_name_repetitions,
+    clippy::items_after_statements,
+    clippy::missing_errors_doc,
+    clippy::redundant_pub_crate,
+    clippy::unused_async,
+    clippy::diverging_sub_expression,
+    clippy::future_not_send
+)]
 
 pub mod model;
 mod routes;

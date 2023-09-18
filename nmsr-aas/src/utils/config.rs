@@ -99,10 +99,12 @@ pub struct RenderingConfiguration {
 }
 
 impl ModelCacheConfiguration {
+    #[must_use]
     pub fn get_cache_duration(&self, entry: &RenderRequestEntry) -> &Duration {
         self.get_cache_duration_with_default(entry, &self.resolve_cache_duration)
     }
 
+    #[must_use]
     pub fn get_cache_duration_with_default<'a>(
         &'a self,
         entry: &RenderRequestEntry,
@@ -110,22 +112,20 @@ impl ModelCacheConfiguration {
     ) -> &'a Duration {
         let bias = self.cache_biases.get(entry);
 
-        if let Some(bias) = bias {
+        bias.map_or(default_duration, |bias| {
             trace!("Found cache bias for entry: {:?}", bias);
 
             match bias {
                 CacheBias::KeepCachedFor(duration) => duration,
                 CacheBias::CacheIndefinitely => &Duration::MAX,
             }
-        } else {
-            default_duration
-        }
+        })
     }
 
     pub fn is_expired(
         &self,
         entry: &RenderRequestEntry,
-        marker_metadata: Metadata,
+        marker_metadata: &Metadata,
     ) -> crate::error::Result<bool> {
         self.is_expired_with_default(entry, marker_metadata, &self.resolve_cache_duration)
     }
@@ -133,7 +133,7 @@ impl ModelCacheConfiguration {
     pub fn is_expired_with_default(
         &self,
         entry: &RenderRequestEntry,
-        marker_metadata: Metadata,
+        marker_metadata: &Metadata,
         default_duration: &Duration,
     ) -> crate::error::Result<bool> {
         let duration = self.get_cache_duration_with_default(entry, default_duration);
@@ -155,7 +155,7 @@ impl ModelCacheConfiguration {
 }
 
 #[inline]
-fn default_session_server_rate_limit() -> u64 {
+const fn default_session_server_rate_limit() -> u64 {
     10
 }
 

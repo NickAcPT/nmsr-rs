@@ -9,7 +9,7 @@ use opentelemetry::{
     propagation::{Extractor, Injector},
     trace::TraceContextExt,
 };
-use std::net::SocketAddr;
+use std::{net::SocketAddr, string::ToString};
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
     trace::{DefaultOnBodyChunk, MakeSpan, OnFailure, OnRequest, OnResponse, TraceLayer},
@@ -38,13 +38,13 @@ impl<B> NmsrTracing<B> {
         headers
             .get(header)
             .and_then(|v| v.to_str().ok())
-            .map(|s| s.to_string())
+            .map(ToString::to_string)
     }
 }
 
 impl<T> Clone for NmsrTracing<T> {
     fn clone(&self) -> Self {
-        Default::default()
+        Self::default()
     }
 }
 
@@ -68,8 +68,8 @@ type NmsrTraceLayer<B, R> = TraceLayer<
 impl<B> NmsrTracing<B> {
     pub fn new_trace_layer<R>() -> NmsrTraceLayer<B, R> {
         TraceLayer::new_for_http()
-            .make_span_with(NmsrTracing::default())
-            .on_request(NmsrTracing::default())
+            .make_span_with(Self::default())
+            .on_request(Self::default())
             .on_response(NmsrTracing::default())
             .on_failure(NmsrTracing::default())
             .on_eos(())
@@ -85,7 +85,7 @@ impl Extractor for HeaderMapCarrier<'_> {
     }
 
     fn keys(&self) -> Vec<&str> {
-        self.0.keys().map(|k| k.as_str()).collect()
+        self.0.keys().map(HeaderName::as_str).collect()
     }
 }
 
@@ -101,7 +101,7 @@ impl<'a> Injector for MutableHeaderMapCarrier<'a> {
 impl<B> MakeSpan<B> for NmsrTracing<B> {
     fn make_span(&mut self, request: &Request<B>) -> tracing::Span {
         let user_agent = Self::extract_header_as_str(request.headers(), USER_AGENT)
-            .unwrap_or("<unknown>".to_string());
+            .unwrap_or_else(|| "<unknown>".to_string());
 
         let span = info_span!("HTTP request",
             http.path = Empty,
@@ -137,8 +137,7 @@ impl<B> OnRequest<B> for NmsrTracing<B> {
         let path = request
             .extensions()
             .get::<MatchedPath>()
-            .map(|p| p.as_str())
-            .unwrap_or(request.uri().path());
+            .map_or(request.uri().path(), |p| p.as_str());
 
         let client_ip = Self::extract_header_as_str(request.headers(), X_FORWARDED_FOR_HEADER)
             .or_else(|| {
@@ -147,10 +146,10 @@ impl<B> OnRequest<B> for NmsrTracing<B> {
                     .get::<ConnectInfo<SocketAddr>>()
                     .map(|ConnectInfo(c)| c.to_string())
             })
-            .unwrap_or("<unknown>".to_string());
+            .unwrap_or_else(|| "<unknown>".to_string());
 
         let request_id = Self::extract_header_as_str(request.headers(), X_REQUEST_ID)
-            .unwrap_or("<unknown>".to_string());
+            .unwrap_or_else(|| "<unknown>".to_string());
 
         span.record("http.path", path);
         span.record("http.client_ip", &client_ip);

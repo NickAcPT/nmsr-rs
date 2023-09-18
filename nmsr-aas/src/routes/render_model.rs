@@ -28,7 +28,7 @@ pub(crate) async fn internal_render_model(
 ) -> Result<Vec<u8>> {
     let scene_context = state.create_scene_context().await?;
 
-    let mode = &request.mode;
+    let mode = request.mode;
     #[allow(unused_mut)] // We use mut when we have ears feature enabled
     let mut camera = request.get_camera();
 
@@ -106,7 +106,7 @@ pub(crate) async fn internal_render_model(
         load_ears_features(&mut part_context, resolved);
 
         if let Some(features) = part_context.ears_features.as_ref() {
-            state.apply_ears_camera_settings(features, mode, &mut camera);
+            NMSRState::apply_ears_camera_settings(features, mode, &mut camera);
         }
     }
 
@@ -138,7 +138,7 @@ fn load_ears_features(
     resolved: &ResolvedRenderRequest,
 ) {
     if let Some(skin_bytes) = resolved.textures.get(&ResolvedRenderEntryTextureType::Skin) {
-        if let Ok(skin_image) = load_image(&skin_bytes) {
+        if let Ok(skin_image) = load_image(skin_bytes) {
             if let Ok(features) = ears_rs::parser::EarsParser::parse(&skin_image) {
                 part_context.ears_features = features;
             }
@@ -158,7 +158,7 @@ async fn load_textures(
         let mut image_buffer = load_image(texture_bytes)?;
 
         if texture_type == ResolvedRenderEntryTextureType::Skin {
-            image_buffer = NMSRState::process_skin(image_buffer, request.features);
+            image_buffer = NMSRState::process_skin(image_buffer, request.features)?;
         }
 
         scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);

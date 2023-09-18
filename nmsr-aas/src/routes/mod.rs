@@ -85,10 +85,11 @@ impl NMSRState {
     }
 
     #[allow(unused_variables)]
+    #[cfg_attr(not(feature = "ears"), allow(clippy::unnecessary_wraps))]
     pub fn process_skin(
         skin_image: RgbaImage,
         features: EnumSet<RenderRequestFeatures>,
-    ) -> RgbaImage {
+    ) -> Result<RgbaImage> {
         let mut skin_image = ears_rs::utils::upgrade_skin_if_needed(skin_image);
 
         #[cfg(feature = "ears")]
@@ -100,14 +101,13 @@ impl NMSRState {
 
         ears_rs::utils::strip_alpha(&mut skin_image);
 
-        skin_image
+        Ok(skin_image)
     }
 
     #[cfg(feature = "ears")]
     pub fn apply_ears_camera_settings(
-        &self,
         features: &ears_rs::features::EarsFeatures,
-        mode: &RenderRequestMode,
+        mode: RenderRequestMode,
         camera: &mut Camera,
     ) {
         use ears_rs::features::data::ear::EarMode;

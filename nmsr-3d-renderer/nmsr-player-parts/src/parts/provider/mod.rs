@@ -45,7 +45,7 @@ pub trait PartsProvider<M: ArmorMaterial> {
 }
 
 #[cfg(feature = "ears")]
-pub(crate) const EARS_PLAYER_PARTS_PROVIDER: std::sync::OnceLock<EarsPlayerPartsProvider> =
+pub(crate) static EARS_PLAYER_PARTS_PROVIDER: std::sync::OnceLock<EarsPlayerPartsProvider> =
     std::sync::OnceLock::new();
 
 impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
@@ -60,7 +60,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
             }
             #[cfg(feature = "ears")]
             Self::Ears => EARS_PLAYER_PARTS_PROVIDER
-                .get_or_init(|| EarsPlayerPartsProvider::default())
+                .get_or_init(EarsPlayerPartsProvider::default)
                 .get_parts(context, body_part),
         };
 

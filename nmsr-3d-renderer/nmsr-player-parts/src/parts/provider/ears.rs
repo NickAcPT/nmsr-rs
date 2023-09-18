@@ -461,7 +461,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     .filter(|p| (p.enabled)(&features))
                     .flat_map(|&p| {
                         if p.double_sided {
-                            let mut back = p.clone();
+                            let mut back = p;
                             back.vertical_flip ^= true;
                             back.normal *= -1.0;
                             
@@ -502,7 +502,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         part_definition.texture,
                         pos,
                         size,
-                        uvs.into(),
+                        uvs,
                         part_definition.normal,
                     );
 
@@ -536,7 +536,7 @@ fn process_uvs(
         uv.swap(2, 3);
     }
 
-    let mut uvs = FaceUv::from(uv_from_pos_and_size(uv[0], uv[1], uv[2], uv[3]));
+    let mut uvs = uv_from_pos_and_size(uv[0], uv[1], uv[2], uv[3]);
 
     if vertical {
         //uvs = uvs.flip_vertically();

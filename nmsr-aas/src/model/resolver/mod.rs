@@ -66,16 +66,16 @@ impl From<ResolvedRenderEntryEarsTextureType> for PlayerPartEarsTextureType {
 
 #[cfg(feature = "ears")]
 impl ResolvedRenderEntryEarsTextureType {
-    fn alfalfa_key(&self) -> Option<AlfalfaDataKey> {
+    const fn alfalfa_key(self) -> Option<AlfalfaDataKey> {
         match self {
             Self::Cape => Some(AlfalfaDataKey::Cape),
             Self::Wings => Some(AlfalfaDataKey::Wings),
-            _ => None,
+            Self::Emissive => None,
         }
     }
 
-    fn key(&self) -> &'static str {
-        PlayerPartEarsTextureType::from(*self).key()
+    fn key(self) -> &'static str {
+        PlayerPartEarsTextureType::from(self).key()
     }
 }
 
@@ -297,42 +297,35 @@ impl RenderRequestResolver {
         textures: &mut HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
     ) -> Option<EarsFeatures> {
         use std::borrow::Cow;
-
+        use image::DynamicImage;
         use xxhash_rust::xxh3::xxh3_128;
-
         use crate::utils::png::create_png_from_bytes;
 
-        if let Ok(image) = image::load_from_memory(skin_texture.data()) {
+        image::load_from_memory(skin_texture.data()).map_or(None, |image| {
             let image = image.into_rgba8();
 
             let features = EarsParser::parse(&image).ok().flatten();
             let alfalfa = ears_rs::alfalfa::read_alfalfa(&image).ok().flatten();
 
             if let Some(alfalfa) = alfalfa {
-                for texture_type in [
+                for texture_type in &[
                     ResolvedRenderEntryEarsTextureType::Cape,
                     ResolvedRenderEntryEarsTextureType::Wings,
-                ]
-                .iter()
-                {
+                ] {
                     if let Some(alfalfa_key) = texture_type.alfalfa_key() {
                         if let Some(data) = alfalfa.get_data(alfalfa_key) {
-                            let hash = format!("{:x}", xxh3_128(&data));
+                            let hash = format!("{:x}", xxh3_128(data));
 
                             let data = if alfalfa_key == AlfalfaDataKey::Cape {
                                 let image = image::load_from_memory(data)
-                                    .map(|i| i.into_rgba8())
-                                    .map(|i| ears_rs::utils::convert_ears_cape_to_mojang_cape(i))
+                                    .map(DynamicImage::into_rgba8)
+                                    .map(ears_rs::utils::convert_ears_cape_to_mojang_cape)
                                     .ok()
                                     .and_then(|i| {
                                         create_png_from_bytes((i.width(), i.height()), &i).ok()
                                     });
 
-                                if let Some(image) = image {
-                                    Cow::Owned(image)
-                                } else {
-                                    Cow::Borrowed(data)
-                                }
+                                image.map_or(Cow::Borrowed(data), Cow::Owned)
                             } else {
                                 Cow::Borrowed(data)
                             };
@@ -347,9 +340,7 @@ impl RenderRequestResolver {
             }
 
             features
-        } else {
-            None
-        }
+        })
     }
 
     pub async fn resolve(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {

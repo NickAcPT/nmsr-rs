@@ -102,6 +102,10 @@
                 <label for="texture-group">Texture:</label>
                 <input type="text" id="texture" value="ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
             </div>
+            <div class="inner-group">
+                <label for="texture-file-group">File Upload:</label>
+                <input type="file" id="skin-upload">
+            </div>
         </div>
 
 
@@ -261,7 +265,23 @@
         let applyButton = document.getElementById('apply-button');
         let imagePreview = document.getElementById('preview-image');
         let imageError = document.getElementById('image-error');
+        let skinUpload = document.getElementById('skin-upload');
         let resolvedNames = {};
+
+        let uploadedSkin = null;
+
+        skinUpload.addEventListener('change', () => {
+            let file = skinUpload.files[0];
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = async () => {
+                uploadedSkin = new Blob([/** @type {ArrayBuffer} */(reader.result)]);;
+                textureInput.value = '';
+                await updateImage();
+            };
+            reader.readAsArrayBuffer(file);
+        });
 
         if (window.location.search) {
             let params = new URLSearchParams(window.location.search);
@@ -284,6 +304,10 @@
         document.querySelectorAll('input[type="checkbox"]').forEach(input => input.addEventListener('input', updateImage));
         document.querySelectorAll('select').forEach(input => input.addEventListener('input', updateImage));
 
+        window.addEventListener('paste', e => {
+            skinUpload.files = e.clipboardData.files;
+            skinUpload.dispatchEvent(new Event('change'));
+        });
         async function updateImage() {
             recursiveSetEnabled(document.getElementById('camera-position-group'), modeSelect.value == 'custom');
 
@@ -312,29 +336,46 @@
             }
             if (excluded.length > 0) params.append('no', excluded.join(','));
 
-            let resolvedTexture = await tryResolveName(textureInput.value);
-            let imageUrl = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr/${modeSelect.value}/${resolvedTexture}?${params.toString()}`;
+            if (uploadedSkin && !textureInput.value) {
+                // Use POST if a skin was uploaded
 
-            // Request image and set it as the preview, or show an error
-            /* try {
-                const response = await fetch(imageUrl);
-                if (!response.ok) {
-                    throw new Error(await response.text());
+                const formData = new FormData();
+                
+                for (let name of params.keys()) {
+                    formData.append(name, params.get(name));
                 }
-                const imageBlob = await response.blob();
 
-                imagePreview.style.display = 'block';
-                imageError.style.display = 'none';
+                formData.append('skin', uploadedSkin);
 
-                imagePreview.src = URL.createObjectURL(imageBlob);
-            } catch (error) {
-                console.error('Error loading image:', error);
-                imagePreview.style.display = 'none';
-                imageError.style.display = 'block';
+                // Request image and set it as the preview, or show an error
+                try {
+                    const response = await fetch(`https://nickac-pc.werewolf-scala.ts.net/temp/nmsr/${modeSelect.value}`, {
+                        method: 'POST',
+                        body: formData
+                    });
 
-                imageError.textContent = error;
-            } */
-            imagePreview.src = imageUrl;
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    const imageBlob = await response.blob();
+
+                    imagePreview.style.display = 'block';
+                    imageError.style.display = 'none';
+
+                    imagePreview.src = URL.createObjectURL(imageBlob);
+                } catch (error) {
+                    console.error('Error loading image:', error);
+                    imagePreview.style.display = 'none';
+                    imageError.style.display = 'block';
+
+                    imageError.textContent = error;
+                }
+            } else {
+                let resolvedTexture = await tryResolveName(textureInput.value);
+                let imageUrl = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr/${modeSelect.value}/${resolvedTexture}?${params.toString()}`;
+                imagePreview.src = imageUrl;
+            }
+
         }
 
         function recursiveSetEnabled(root, enabled) {

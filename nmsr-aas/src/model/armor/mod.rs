@@ -180,14 +180,14 @@ impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
     type Error = ArmorManagerError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        let mut split_values: VecDeque<_> = value.split("_").collect();
-        let material: VanillaMinecraftArmorMaterial = if split_values.len() == 0 {
+        let mut split_values: VecDeque<_> = value.split('_').collect();
+        let material: VanillaMinecraftArmorMaterial = if split_values.is_empty() {
             return Err(ArmorManagerError::EmptyArmorSlotError);
         } else {
             partial_match(split_values.pop_front().unwrap_or_default())?
         };
 
-        let trims = if split_values.len() == 0 {
+        let trims = if split_values.is_empty() {
             Vec::new()
         } else if split_values.len() % 2 != 0 {
             return Err(ArmorManagerError::InvalidTrimCountError(split_values.len()));
@@ -196,15 +196,13 @@ impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
 
             values
                 .chunks_exact(2)
-                .into_iter()
                 .map(|chunk| {
                     let trim: VanillaMinecraftArmorTrim = partial_match(chunk[0])?;
                     let material: VanillaMinecraftArmorTrimMaterial = partial_match(chunk[1])?;
 
                     ArmorManagerResult::Ok(VanillaMinecraftArmorTrimData::new(trim, material))
                 })
-                .map(|x| x.ok())
-                .flatten()
+                .filter_map(|x| x.ok())
                 .collect::<Vec<_>>()
         };
 

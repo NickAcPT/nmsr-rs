@@ -33,6 +33,7 @@ pub enum RenderRequestMode {
     Custom,
 }
 
+#[allow(dead_code)]
 impl RenderRequestMode {
     pub(crate) fn is_custom(&self) -> bool {
         matches!(self, Self::Custom)
@@ -118,7 +119,7 @@ impl RenderRequestMode {
             return Err(RenderRequestError::InvalidRenderSettingError(unit, bounds).into());
         }
 
-        return Ok(());
+        Ok(())
     }
 
     pub(crate) fn get_base_render_mode(&self) -> Option<Self> {
@@ -142,15 +143,15 @@ impl RenderRequestMode {
 
     pub(crate) fn get_size(&self) -> Size {
         if self.is_square() {
-            return Size {
+            Size {
                 width: Self::DEFAULT_RENDER_WIDTH,
                 height: Self::DEFAULT_RENDER_WIDTH,
-            };
+            }
         } else {
-            return Size {
+            Size {
                 width: Self::DEFAULT_RENDER_WIDTH,
                 height: Self::DEFAULT_RENDER_HEIGHT,
-            };
+            }
         }
     }
 
@@ -225,7 +226,7 @@ impl RenderRequestMode {
         if self.is_arms_open() {
             return 10.0;
         }
-        return 0.0;
+        0.0
     }
 
     #[instrument(level = "trace", skip(self))]
@@ -238,7 +239,7 @@ impl RenderRequestMode {
                 vec![PlayerBodyPartType::Head, PlayerBodyPartType::HeadLayer]
             }
             Self::BodyBust | Self::FrontBust => {
-                let excluded = vec![PlayerBodyPartType::LeftLeg, PlayerBodyPartType::RightLeg];
+                let excluded = [PlayerBodyPartType::LeftLeg, PlayerBodyPartType::RightLeg];
 
                 PlayerBodyPartType::iter()
                     .filter(|m| !excluded.contains(&m.get_non_layer_part()))

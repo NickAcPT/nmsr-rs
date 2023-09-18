@@ -124,7 +124,7 @@ impl<'a> GraphicsContextDescriptor<'a> {
             .and_then(|it| it.parse::<u32>().ok());
 
         let count = sample_count.or(env_sample_count).unwrap_or_else(|| {
-            vec![16, 8, 4, 2, 1]
+            [16, 8, 4, 2, 1]
                 .iter()
                 .find(|&&sample_count| sample_flags.sample_count_supported(sample_count))
                 .copied()

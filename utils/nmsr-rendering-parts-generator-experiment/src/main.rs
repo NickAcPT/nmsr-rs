@@ -219,6 +219,7 @@ async fn process_group(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn process_group_logic(
     parts: Vec<PlayerBodyPartType>,
     slim: bool,
@@ -321,12 +322,10 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
         .group_by(|(x, y, _)| (*x, *y))
         .into_iter()
         .flat_map(|(_, group)| {
-            let pixels = group
+            group
                 .map(|(x, y, pixel)| (Point::from((x, y)), pixel))
                 .sorted_by_key(|(_, pixel)| (get_depth(pixel) as i32))
-                .collect::<Vec<_>>();
-
-            pixels
+                .collect::<Vec<_>>()
         })
         .into_group_map();
 
@@ -339,16 +338,14 @@ fn get_depth(pixel: &Rgba<u8>) -> u16 {
     let b = pixel[2] as u32;
     let a = pixel[3] as u32;
 
-    let rgba: u32 = (r | (g << 8) | (b << 16) | (a << 24)) as u32;
+    let rgba: u32 = r | (g << 8) | (b << 16) | (a << 24);
     // Our Blue channel is composed of the 4 remaining bits of the shading + 4 bits from the depth
     // 1   2   3   4   5   6   7   8
     // [  -- s --  ]   [  -- d --  ]
     // Our Alpha channel is composed of the 8 remaining bits of the depth
     // 1   2   3   4   5   6   7   8
     // [          -- d --          ]
-    let depth = ((rgba >> 20) & 0x1FFF) as u16;
-
-    depth
+    ((rgba >> 20) & 0x1FFF) as u16
 }
 
 struct PartRenderOutput {

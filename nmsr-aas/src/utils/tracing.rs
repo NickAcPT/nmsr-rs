@@ -22,8 +22,11 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::error::NmsrErrorExtension;
 
+#[allow(clippy::declare_interior_mutable_const)]
 const X_FORWARDED_FOR_HEADER: HeaderName = HeaderName::from_static("x-forwarded-for");
+#[allow(clippy::declare_interior_mutable_const)]
 const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
+#[allow(clippy::declare_interior_mutable_const)]
 const REFERER: HeaderName = HeaderName::from_static("referer");
 
 pub struct NmsrTracing<B> {
@@ -52,17 +55,18 @@ impl<B> Default for NmsrTracing<B> {
         }
     }
 }
+type NmsrTraceLayer<B, R> = TraceLayer<
+    SharedClassifier<ServerErrorsAsFailures>,
+    NmsrTracing<B>,
+    NmsrTracing<B>,
+    NmsrTracing<R>,
+    DefaultOnBodyChunk,
+    (),
+    NmsrTracing<R>,
+>;
 
 impl<B> NmsrTracing<B> {
-    pub fn new_trace_layer<R>() -> TraceLayer<
-        SharedClassifier<ServerErrorsAsFailures>,
-        NmsrTracing<B>,
-        NmsrTracing<B>,
-        NmsrTracing<R>,
-        DefaultOnBodyChunk,
-        (),
-        NmsrTracing<R>,
-    > {
+    pub fn new_trace_layer<R>() -> NmsrTraceLayer<B, R> {
         TraceLayer::new_for_http()
             .make_span_with(NmsrTracing::default())
             .on_request(NmsrTracing::default())
@@ -117,7 +121,7 @@ impl<B> MakeSpan<B> for NmsrTracing<B> {
         );
 
         let context = global::get_text_map_propagator(|propagator| {
-            propagator.extract(&HeaderMapCarrier(&request.headers()))
+            propagator.extract(&HeaderMapCarrier(request.headers()))
         });
 
         if context.has_active_span() {
@@ -148,7 +152,7 @@ impl<B> OnRequest<B> for NmsrTracing<B> {
         let request_id = Self::extract_header_as_str(request.headers(), X_REQUEST_ID)
             .unwrap_or("<unknown>".to_string());
 
-        span.record("http.path", &path);
+        span.record("http.path", path);
         span.record("http.client_ip", &client_ip);
         span.record("request_id", &request_id);
 
@@ -172,11 +176,11 @@ impl<B> OnResponse<B> for NmsrTracing<B> {
             {
                 span.record("exception.message", field::display(original_error));
             } else {
-                span.record("exception.message", &"Unknown error");
+                span.record("exception.message", "Unknown error");
             }
         }
 
-        span.record("http.status_code", &response.status().as_u16());
+        span.record("http.status_code", response.status().as_u16());
         span.record("otel.status_code", "OK");
     }
 }

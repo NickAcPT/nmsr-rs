@@ -1,5 +1,4 @@
 use deadpool::managed::Object;
-use ears_rs::parser::EarsParser;
 use image::{ImageFormat, RgbaImage};
 use nmsr_rendering::{
     errors::NMSRRenderingError,
@@ -12,8 +11,6 @@ use nmsr_rendering::{
 use tracing::instrument;
 
 use super::NMSRState;
-#[cfg(feature = "ears")]
-use crate::model::resolver::ResolvedRenderEntryEarsTextureType;
 use crate::{
     error::Result,
     model::{
@@ -32,6 +29,7 @@ pub(crate) async fn internal_render_model(
     let scene_context = state.create_scene_context().await?;
 
     let mode = &request.mode;
+    #[allow(unused_mut)] // We use mut when we have ears feature enabled
     let mut camera = request.get_camera();
 
     let size = request.get_size();
@@ -63,7 +61,7 @@ pub(crate) async fn internal_render_model(
         let has_ears_cape = resolved
             .textures
             .contains_key(&ResolvedRenderEntryTextureType::Ears(
-                ResolvedRenderEntryEarsTextureType::Cape,
+                crate::model::resolver::ResolvedRenderEntryEarsTextureType::Cape,
             ));
 
         has_cape_feature && (has_cape || (has_ears_feature && has_ears_cape))
@@ -71,24 +69,24 @@ pub(crate) async fn internal_render_model(
 
     let shadow_y_pos = request.get_shadow_y_pos();
 
-    let mut player_armor_slots = PlayerArmorSlots::default();
-
-    player_armor_slots.helmet = request
-        .extra_settings
-        .as_ref()
-        .and_then(|x| x.helmet.clone());
-    player_armor_slots.chestplate = request
-        .extra_settings
-        .as_ref()
-        .and_then(|x| x.chestplate.clone());
-    player_armor_slots.leggings = request
-        .extra_settings
-        .as_ref()
-        .and_then(|x| x.leggings.clone());
-    player_armor_slots.boots = request
-        .extra_settings
-        .as_ref()
-        .and_then(|x| x.boots.clone());
+    let player_armor_slots = PlayerArmorSlots::<VanillaMinecraftArmorMaterialData> {
+        helmet: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.helmet.clone()),
+        chestplate: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.chestplate.clone()),
+        leggings: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.leggings.clone()),
+        boots: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.boots.clone()),
+    };
 
     let mut part_context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
         model: PlayerModel::from(final_model),
@@ -106,7 +104,7 @@ pub(crate) async fn internal_render_model(
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
         load_ears_features(&mut part_context, resolved);
-        
+
         if let Some(features) = part_context.ears_features.as_ref() {
             state.apply_ears_camera_settings(features, mode, &mut camera);
         }
@@ -122,7 +120,7 @@ pub(crate) async fn internal_render_model(
         &parts,
     );
 
-    load_textures(resolved, &state, &request, &mut part_context, &mut scene).await?;
+    load_textures(resolved, state, request, &mut part_context, &mut scene).await?;
 
     scene.render(&state.graphics_context)?;
 
@@ -141,7 +139,7 @@ fn load_ears_features(
 ) {
     if let Some(skin_bytes) = resolved.textures.get(&ResolvedRenderEntryTextureType::Skin) {
         if let Ok(skin_image) = load_image(&skin_bytes) {
-            if let Ok(features) = EarsParser::parse(&skin_image) {
+            if let Ok(features) = ears_rs::parser::EarsParser::parse(&skin_image) {
                 part_context.ears_features = features;
             }
         }
@@ -157,7 +155,7 @@ async fn load_textures(
     scene: &mut Scene<Object<SceneContextPoolManager>>,
 ) -> Result<()> {
     for (&texture_type, texture_bytes) in &resolved.textures {
-        let mut image_buffer = load_image(&texture_bytes)?;
+        let mut image_buffer = load_image(texture_bytes)?;
 
         if texture_type == ResolvedRenderEntryTextureType::Skin {
             image_buffer = state.process_skin(image_buffer, request.features)?;
@@ -191,7 +189,7 @@ async fn load_textures(
 }
 
 fn load_image(texture: &[u8]) -> Result<RgbaImage> {
-    let img = image::load_from_memory_with_format(&texture, ImageFormat::Png)
+    let img = image::load_from_memory_with_format(texture, ImageFormat::Png)
         .map_err(NMSRRenderingError::ImageFromRawError)?;
     Ok(img.into_rgba8())
 }

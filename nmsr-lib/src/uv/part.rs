@@ -42,7 +42,7 @@ impl UvImagePixel {
             return None;
         }
 
-        let rgba: u32 = (r | (g << 8) | (b << 16) | (a << 24)) as u32;
+        let rgba: u32 = r | (g << 8) | (b << 16) | (a << 24);
 
         // Our Red channel is composed of the 6 bits of the u coordinate + 2 bits from the v coordinate
         // U is used as-is because our coordinates are 0-63
@@ -83,8 +83,8 @@ impl UvImagePixel {
                     y: y as u16,
                 },
                 uv: Point {
-                    x: u as u8,
-                    y: v as u8,
+                    x: u,
+                    y: v,
                 },
                 depth,
                 shading,

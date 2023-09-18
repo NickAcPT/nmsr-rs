@@ -186,7 +186,7 @@ pub(crate) fn perform_arm_part_rotation(
 
         part.rotate(
             [0.0, 0.0, -arm_rotation_angle].into(),
-            Some(PartAnchorInfo::new_rotation_anchor_position(anchor.into())),
+            Some(PartAnchorInfo::new_rotation_anchor_position(anchor)),
         );
         
     } else if non_layer_body_part_type == RightArm {
@@ -194,7 +194,7 @@ pub(crate) fn perform_arm_part_rotation(
 
         part.rotate(
             [0.0, 0.0, arm_rotation_angle].into(),
-            Some(PartAnchorInfo::new_rotation_anchor_position(anchor.into())),
+            Some(PartAnchorInfo::new_rotation_anchor_position(anchor)),
         );
     }
 }
@@ -235,9 +235,8 @@ fn expand_player_body_part(
             (current_box_uv.y as i32 + box_uv_offset.1) as u16,
             [size.x as u16, size.y as u16, size.z as u16],
         )
-        .into()
     }
-    return new_part;
+    new_part
 }
 
 fn get_body_part_layer_uv_offset(non_layer_body_part_type: PlayerBodyPartType) -> (i32, i32) {

@@ -60,7 +60,7 @@ where
         entry: &Key,
         value: &Value,
         config: &Config,
-        file: &PathBuf,
+        file: &Path,
     ) -> Result<()>;
 
     /// Reads the given entry from the cache.
@@ -68,7 +68,7 @@ where
         &self,
         entry: &Key,
         config: &Config,
-        file: &PathBuf,
+        file: &Path,
         marker: &Marker,
     ) -> Result<Option<Value>>;
 
@@ -81,7 +81,7 @@ where
     ///
     /// The marker file is used to denote when the entry was cached.
     /// It can be empty, but it must exist.
-    async fn read_marker(&self, entry: &Key, config: &Config, marker: &PathBuf) -> Result<Marker>;
+    async fn read_marker(&self, entry: &Key, config: &Config, marker: &Path) -> Result<Marker>;
 
     /// Writes the marker file for the given entry.
     ///
@@ -92,7 +92,7 @@ where
         entry: &Key,
         value: &Value,
         config: &Config,
-        marker: &PathBuf,
+        marker: &Path,
     ) -> Result<()>;
 
     /// Whether to always overwrite the cache entry if it exists.
@@ -217,7 +217,7 @@ where
             let marker_path = path.join(marker_path);
 
             self.handler
-                .write_cache(entry, value, &self.config, &path)
+                .write_cache(entry, value, &self.config, path)
                 .await?;
 
             self.handler

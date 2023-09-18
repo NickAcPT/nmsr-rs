@@ -27,7 +27,7 @@ pub fn create_buffer_and_bind_group<T: Pod>(
 
     let transform_bind_group = device.create_bind_group(&BindGroupDescriptor {
         label: Some((label.to_owned() + " Bind group").as_str()),
-        layout: layout,
+        layout,
         entries: &[BindGroupEntry {
             binding: 0,
             resource: buffer.as_entire_binding(),

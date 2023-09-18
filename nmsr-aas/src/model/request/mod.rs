@@ -235,13 +235,12 @@ impl RenderRequest {
             camera.get_roll().to_radians(),
             0.0,
             aligned_yaw.to_radians(),
-        )
-        .into();
+        );
 
         let light = Vec3::new(0.0, -6.21, 6.21);
         let front_lighting = rot_quat.mul_vec3(light) * Vec3::new(1.0, 1.0, -1.0);
 
-        return SunInformation::new(front_lighting, 2.0, 0.621);
+        SunInformation::new(front_lighting, 2.0, 0.621)
     }
 
     pub(crate) fn get_arm_rotation(&self) -> f32 {

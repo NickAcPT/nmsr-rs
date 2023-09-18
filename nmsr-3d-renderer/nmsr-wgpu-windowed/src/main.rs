@@ -392,6 +392,7 @@ fn build_scene(
     scene
 }
 
+#[allow(clippy::too_many_arguments)]
 fn debug_ui(
     ctx: &Context,
     camera: &mut Camera,
@@ -401,7 +402,7 @@ fn debug_ui(
     part_ctx: &mut PlayerPartProviderContext,
     needs_rebuild: &mut bool,
     needs_skin_rebuild: &mut bool,
-    last_computed_parts: &Vec<Part>
+    last_computed_parts: &[Part]
 ) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
@@ -445,7 +446,7 @@ fn debug_ui(
                     roll: 0.0,
                 });
 
-                camera.set_projection(ProjectionParameters::Perspective { fov: 37.6772850524784 });
+                camera.set_projection(ProjectionParameters::Perspective { fov: 37.677_284 });
             }
             
             if ui.button("NMSR (Head)").clicked() {
@@ -486,18 +487,18 @@ fn debug_ui(
             
             if ui.button("NMSR (Head) (Orbital)").clicked() {
                 camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
-                    10.15629061247147,
-                    33.73435909438063,
-                    -22.408843189323385,
+                    10.156_291,
+                    33.734_36,
+                    -22.408_844,
                 )));
                 
                 camera.set_rotation(CameraRotation {
-                    yaw: 25.264535906746477,
-                    pitch: 14.953989778518544,
+                    yaw: 25.264_536,
+                    pitch: 14.953_99,
                     roll: 0.0,
                 });
                 
-                camera.set_projection(ProjectionParameters::Perspective { fov: 23.444515728494967 });
+                camera.set_projection(ProjectionParameters::Perspective { fov: 23.444_515 });
                 
             }
             

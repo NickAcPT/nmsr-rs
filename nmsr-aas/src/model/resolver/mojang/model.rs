@@ -78,7 +78,7 @@ impl GameProfile {
             .ok_or(MojangRequestError::MissingTexturesPropertyError)?;
 
         serde_json::from_value(textures.clone())
-            .map_err(|e| MojangRequestError::InvalidTexturesPropertyError(e))
+            .map_err(MojangRequestError::InvalidTexturesPropertyError)
     }
 }
 
@@ -91,7 +91,7 @@ fn from_properties<'de, D: Deserializer<'de>>(
     for property in value {
         let decoded = STANDARD
             .decode(property.value)
-            .map_err(|e| serde::de::Error::custom(e))?;
+            .map_err(serde::de::Error::custom)?;
 
         let value = serde_json::from_slice(&decoded).unwrap();
 

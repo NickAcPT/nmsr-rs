@@ -9,6 +9,7 @@ use super::request::{
 };
 use crate::error::{MojangRequestError, Result};
 use derive_more::Debug;
+#[cfg(feature = "ears")]
 use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParser};
 #[cfg(feature = "ears")]
 use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
@@ -82,8 +83,11 @@ impl From<ResolvedRenderEntryTextureType> for PlayerPartTextureType {
     fn from(value: ResolvedRenderEntryTextureType) -> Self {
         match value {
             ResolvedRenderEntryTextureType::Skin => PlayerPartTextureType::Skin,
-            ResolvedRenderEntryTextureType::Cape
-            | ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape) => {
+            ResolvedRenderEntryTextureType::Cape => {
+                PlayerPartTextureType::Cape
+            }
+            #[cfg(feature = "ears")]
+            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape) => {
                 PlayerPartTextureType::Cape
             }
             #[cfg(feature = "ears")]
@@ -197,7 +201,7 @@ impl RenderRequestResolver {
 
         let bytes = self
             .mojang_requests_client
-            .fetch_texture_from_mojang(&texture_id, &Span::current())
+            .fetch_texture_from_mojang(texture_id, &Span::current())
             .await?;
 
         let texture = MojangTexture::new_named(texture_id.to_owned(), bytes);
@@ -212,7 +216,7 @@ impl RenderRequestResolver {
         &self,
         entry: &RenderRequestEntry,
     ) -> Result<ResolvedRenderEntryTextures> {
-        if let Some(result) = self.model_cache.get_cached_resolved_texture(&entry).await? {
+        if let Some(result) = self.model_cache.get_cached_resolved_texture(entry).await? {
             return Ok(result);
         }
 
@@ -230,7 +234,7 @@ impl RenderRequestResolver {
 
                 let skin = textures
                     .skin()
-                    .ok_or_else(|| MojangRequestError::MissingSkinPropertyError(id.clone()))?;
+                    .ok_or_else(|| MojangRequestError::MissingSkinPropertyError(*id))?;
                 let cape = textures.cape();
 
                 model = if skin.is_slim() {
@@ -254,7 +258,7 @@ impl RenderRequestResolver {
             }
             RenderRequestEntry::TextureHash(skin_hash) => {
                 // If the skin is not cached, we'll have to fetch it from Mojang.
-                skin_texture = Some(self.fetch_texture_from_mojang(&skin_hash).await?);
+                skin_texture = Some(self.fetch_texture_from_mojang(skin_hash).await?);
                 cape_texture = None;
                 model = None;
             }
@@ -281,7 +285,7 @@ impl RenderRequestResolver {
         let result = ResolvedRenderEntryTextures::new(textures, model);
 
         self.model_cache
-            .cache_resolved_texture(&entry, &result)
+            .cache_resolved_texture(entry, &result)
             .await?;
 
         Ok(result)

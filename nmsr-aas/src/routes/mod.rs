@@ -18,12 +18,11 @@ use crate::{
 use deadpool::managed::Object;
 use enumset::EnumSet;
 use image::RgbaImage;
-use nmsr_rendering::high_level::{
-    camera::Camera,
-    pipeline::{
-        pools::SceneContextPoolManager, Backends, Features, GraphicsContext,
-        GraphicsContextDescriptor, GraphicsContextPools,
-    },
+#[cfg(feature = "ears")]
+use nmsr_rendering::high_level::camera::Camera;
+use nmsr_rendering::high_level::pipeline::{
+    pools::SceneContextPoolManager, Backends, Features, GraphicsContext, GraphicsContextDescriptor,
+    GraphicsContextPools,
 };
 pub use render::render;
 use std::{borrow::Cow, hint::black_box, sync::Arc, time::Duration};
@@ -68,7 +67,7 @@ impl NMSRState {
 
         let graphics_context = Arc::new(graphics_context);
 
-        let pools = GraphicsContextPools::new((&graphics_context).clone())?;
+        let pools = GraphicsContextPools::new(graphics_context.clone())?;
 
         let armor_manager = VanillaMinecraftArmorManager::new("cache".into()).await?;
 
@@ -106,7 +105,12 @@ impl NMSRState {
     }
 
     #[cfg(feature = "ears")]
-    pub fn apply_ears_camera_settings(&self, features: &ears_rs::features::EarsFeatures, mode: &RenderRequestMode, camera: &mut Camera) {
+    pub fn apply_ears_camera_settings(
+        &self,
+        features: &ears_rs::features::EarsFeatures,
+        mode: &RenderRequestMode,
+        camera: &mut Camera,
+    ) {
         use ears_rs::features::data::ear::EarMode;
         let mut look_at_y_offset: f32 = 0.0;
         let mut distance_offset: f32 = 0.0;
@@ -114,27 +118,26 @@ impl NMSRState {
         if features.ear_mode == EarMode::Around || features.ear_mode == EarMode::Above {
             look_at_y_offset += 2.5;
             distance_offset += 3.5;
-            
+
             if !mode.is_isometric() {
                 distance_offset += 4.0;
             } else if !mode.is_front() {
                 look_at_y_offset += 0.25;
             }
-            
+
             if mode.is_front() && !mode.is_face() {
                 distance_offset -= 1.25;
             }
-            
+
             if mode.is_isometric() && mode.is_full_body() {
                 distance_offset -= 1.0;
             }
-        }        
-        
+        }
+
         camera.set_look_at_y(camera.get_look_at_y() + look_at_y_offset);
-        
+
         camera.set_aspect(camera.get_aspect() + distance_offset);
         camera.set_distance(camera.get_distance() + distance_offset);
-        
     }
 
     #[instrument(skip(self))]
@@ -177,7 +180,7 @@ impl NMSRState {
 
     #[instrument(skip(self))]
     async fn preload_cache_biases(&self) -> Result<()> {
-        for (entry, _) in &self.cache_config.cache_biases {
+        for entry in self.cache_config.cache_biases.keys() {
             let _guard = debug_span!("preload_cache_biases", entry = ?entry).entered();
 
             let request = RenderRequest::new_from_excluded_features(

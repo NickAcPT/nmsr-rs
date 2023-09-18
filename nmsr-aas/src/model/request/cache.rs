@@ -34,7 +34,7 @@ impl TryFrom<String> for CacheBias {
     type Error = ModelCacheError;
 
     fn try_from(value: String) -> ModelCacheResult<Self> {
-        if &value == Into::<&'static str>::into(CacheBias::CacheIndefinitely) {
+        if value == Into::<&'static str>::into(CacheBias::CacheIndefinitely) {
             return Ok(CacheBias::CacheIndefinitely);
         }
 
@@ -115,7 +115,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         entry: &str,
         value: &MojangTexture,
         _config: &ModelCacheConfiguration,
-        file: &PathBuf,
+        file: &Path,
     ) -> Result<()> {
         fs::write(file, value.data())
             .await
@@ -128,7 +128,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         &self,
         entry: &str,
         _config: &ModelCacheConfiguration,
-        file: &PathBuf,
+        file: &Path,
         _marker: &(),
     ) -> Result<Option<MojangTexture>> {
         if !file.exists() {
@@ -146,7 +146,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         &self,
         _entry: &str,
         _config: &ModelCacheConfiguration,
-        _marker: &PathBuf,
+        _marker: &Path,
     ) -> Result<()> {
         Ok(())
     }
@@ -156,7 +156,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         _entry: &str,
         _value: &MojangTexture,
         _config: &ModelCacheConfiguration,
-        _marker: &PathBuf,
+        _marker: &Path,
     ) -> Result<()> {
         Ok(())
     }
@@ -195,14 +195,14 @@ impl ModelCache {
         )
         .await?;
 
-        return Ok(Self {
+        Ok(Self {
             mojang: mojang.clone(),
             resolved_textures: resolved,
-        });
+        })
     }
 
     pub async fn get_cached_texture(&self, texture_id: &str) -> Result<Option<MojangTexture>> {
-        self.mojang.get_cached_entry(&texture_id).await
+        self.mojang.get_cached_entry(texture_id).await
     }
 
     pub async fn cache_texture(&self, texture: &MojangTexture) -> Result<()> {
@@ -291,7 +291,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         entry: &RenderRequestEntry,
         value: &ResolvedRenderEntryTextures,
         _config: &ModelCacheConfiguration,
-        base: &PathBuf,
+        base: &Path,
     ) -> Result<()> {
         if !base.exists() {
             fs::create_dir_all(base)
@@ -306,7 +306,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             if let Some(texture_hash) = texture.hash() {
                 let cache_path = self
                     .mojang_texture_cache
-                    .set_cache_entry(&texture_hash.as_str(), &texture)
+                    .set_cache_entry(texture_hash.as_str(), texture)
                     .await?;
 
                 if let Some(cache_path) = cache_path {
@@ -330,7 +330,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         &self,
         entry: &RenderRequestEntry,
         _config: &ModelCacheConfiguration,
-        base: &PathBuf,
+        base: &Path,
         marker: &[u8; 1],
     ) -> Result<Option<ResolvedRenderEntryTextures>> {
         let mut textures = HashMap::new();
@@ -368,7 +368,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         &self,
         entry: &RenderRequestEntry,
         _config: &ModelCacheConfiguration,
-        marker: &PathBuf,
+        marker: &Path,
     ) -> Result<[u8; 1]> {
         let result = fs::read(marker)
             .await
@@ -386,7 +386,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         entry: &RenderRequestEntry,
         value: &ResolvedRenderEntryTextures,
         _config: &ModelCacheConfiguration,
-        marker: &PathBuf,
+        marker: &Path,
     ) -> Result<()> {
         fs::write(marker, value.to_marker_slice())
             .await

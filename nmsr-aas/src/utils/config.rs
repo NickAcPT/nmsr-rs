@@ -150,7 +150,7 @@ impl ModelCacheConfiguration {
 
         trace!("Entry expires on {}", Into::<DateTime<Local>>::into(expiry));
 
-        return Ok(expiry < SystemTime::now());
+        Ok(expiry < SystemTime::now())
     }
 }
 

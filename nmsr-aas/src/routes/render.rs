@@ -17,7 +17,7 @@ use hyper::{
 use tracing::instrument;
 use xxhash_rust::xxh3::xxh3_64;
 
-const IMAGE_PNG_MIME: &'static str = "image/png";
+const IMAGE_PNG_MIME: &str = "image/png";
 
 #[axum::debug_handler]
 #[instrument(skip(state, method))]

@@ -55,7 +55,7 @@ impl<'a> VanillaArmorApplicable<'a> {
                     continue;
                 }
 
-                if let Some(index) = trim_palette.binary_search(&[pixel[0], pixel[1], pixel[2]]).ok() {
+                if let Ok(index) = trim_palette.binary_search(&[pixel[0], pixel[1], pixel[2]]) {
                     let actual_color = palette[index];
 
                     pixel[0] = actual_color[0];
@@ -114,7 +114,7 @@ impl VanillaMinecraftArmorManager {
 
             fs::create_dir_all(&trim_path).await.explain(format!(
                 "Unable to create armor cache folder for trim {}",
-                trim.to_string()
+                trim
             ))?;
 
             let layers = trim.get_layer_names();
@@ -150,7 +150,7 @@ impl VanillaMinecraftArmorManager {
 
             fs::create_dir_all(&material_path).await.explain(format!(
                 "Unable to create armor cache folder for material {}",
-                material.to_string()
+                material
             ))?;
 
             let layers = material.get_layer_names();
@@ -214,7 +214,7 @@ impl VanillaMinecraftArmorManager {
                 &mut data
                     .trims
                     .iter()
-                    .map(|trim| VanillaArmorApplicable::Trim(data.material, &trim))
+                    .map(|trim| VanillaArmorApplicable::Trim(data.material, trim))
                     .collect(),
             );
 

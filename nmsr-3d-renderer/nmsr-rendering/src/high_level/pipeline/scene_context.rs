@@ -215,17 +215,15 @@ impl SceneContext {
                     texture_output_buffer_dimensions,
                 });
             }
-        } else {
-            if let Some((texture_output_buffer_dimensions, texture_output_buffer)) = output {
-                let textures = self.textures.take();
+        } else if let Some((texture_output_buffer_dimensions, texture_output_buffer)) = output {
+            let textures = self.textures.take();
 
-                if let Some(mut textures) = textures {
-                    textures.texture_output_buffer = texture_output_buffer;
-                    textures.texture_output_buffer_dimensions = texture_output_buffer_dimensions;
-                    textures.viewport_size = viewport_size;
+            if let Some(mut textures) = textures {
+                textures.texture_output_buffer = texture_output_buffer;
+                textures.texture_output_buffer_dimensions = texture_output_buffer_dimensions;
+                textures.viewport_size = viewport_size;
 
-                    self.textures = Some(textures);
-                }
+                self.textures = Some(textures);
             }
         }
     }

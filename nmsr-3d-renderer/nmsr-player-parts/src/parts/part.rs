@@ -12,12 +12,12 @@ pub struct PartAnchorInfo {
 }
 impl PartAnchorInfo {
     pub fn with_rotation_anchor(mut self, rotation_anchor: MinecraftPosition) -> Self {
-        self.rotation_anchor = self.rotation_anchor + rotation_anchor;
+        self.rotation_anchor += rotation_anchor;
         self
     }
 
     pub fn with_translation_anchor(mut self, translation_anchor: MinecraftPosition) -> Self {
-        self.translation_anchor = self.translation_anchor + translation_anchor;
+        self.translation_anchor += translation_anchor;
         self
     }
 
@@ -122,7 +122,7 @@ impl Part {
     }
 
     pub fn expand(&self, amount: Vec3) -> Self {
-        let mut new_part = self.clone();
+        let mut new_part = *self;
         let amount = amount * 2.0;
 
         match new_part {

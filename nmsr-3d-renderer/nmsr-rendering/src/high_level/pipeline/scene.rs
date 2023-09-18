@@ -117,7 +117,7 @@ where
         );
 
         // Compute the body parts we need to render
-        let computed_body_parts = Self::collect_player_parts(part_context, &body_parts);
+        let computed_body_parts = Self::collect_player_parts(part_context, body_parts);
 
         let mut scene = Self {
             camera,
@@ -138,7 +138,6 @@ where
             // We need to render the shadow, so upload the shadow texture already
             let shadow_image =
                 image::load_from_memory_with_format(shadow_bytes, image::ImageFormat::Png)
-                    .ok()
                     .expect("Failed to load shadow texture");
 
             let shadow_image = shadow_image
@@ -148,7 +147,7 @@ where
             scene.set_texture(
                 graphics_context,
                 PlayerPartTextureType::Shadow,
-                &shadow_image,
+                shadow_image,
             );
         }
 
@@ -187,7 +186,11 @@ where
         part_provider_context: &PlayerPartProviderContext<C>,
         body_parts: &[PlayerBodyPartType],
     ) -> Vec<Part> {
-        let providers = vec![PlayerPartsProvider::Minecraft, PlayerPartsProvider::Ears];
+        let providers = [
+            PlayerPartsProvider::Minecraft,
+            #[cfg(feature = "ears")]
+            PlayerPartsProvider::Ears,
+        ];
 
         let mut parts = providers
             .iter()
@@ -305,7 +308,7 @@ where
                 entries: &[
                     BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                        resource: wgpu::BindingResource::TextureView(texture_view),
                     },
                     BindGroupEntry {
                         binding: 1,
@@ -344,7 +347,7 @@ where
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(format!("Render pass for {}", texture).as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &*attachment,
+                    view: attachment,
                     resolve_target,
                     ops: Operations {
                         load: load_op,
@@ -519,11 +522,8 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             let z_back = position.z;
 
             let texture_size = texture.get_texture_size();
-            let final_face_uv = uv(
-                &face_uv,
-                texture_size,
-            );
-            
+            let final_face_uv = uv(face_uv, texture_size);
+
             Quad::new_with_normal(
                 model_transform.transform_point3(Vec3::new(x_right, y_top, z_back)),
                 model_transform.transform_point3(Vec3::new(x_left, y_top, z_back)),
@@ -554,6 +554,6 @@ fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 4] {
     top_right += Vec2::new(-small_offset, small_offset);
     bottom_right -= small_offset;
     bottom_left += Vec2::new(small_offset, -small_offset);
-    
+
     [top_left, top_right, bottom_left, bottom_right]
 }

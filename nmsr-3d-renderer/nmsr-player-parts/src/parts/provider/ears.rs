@@ -7,6 +7,7 @@ use crate::{
     },
     types::{PlayerBodyPartType, PlayerBodyPartType::*, PlayerPartTextureType},
 };
+
 use ears_rs::features::{
     data::{
         ear::{EarAnchor, EarMode},

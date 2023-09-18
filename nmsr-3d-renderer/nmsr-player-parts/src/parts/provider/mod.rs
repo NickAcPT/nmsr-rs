@@ -1,14 +1,13 @@
-use std::sync::OnceLock;
-
-use ears_rs::features::EarsFeatures;
-
+#[cfg(feature = "ears")]
+use self::ears::EarsPlayerPartsProvider;
+use self::minecraft::{perform_arm_part_rotation, MinecraftPlayerPartsProvider};
 use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
 use crate::parts::part::Part;
 use crate::types::PlayerBodyPartType;
+#[cfg(feature = "ears")]
+use ears_rs::features::EarsFeatures;
 
-use self::ears::EarsPlayerPartsProvider;
-use self::minecraft::{perform_arm_part_rotation, MinecraftPlayerPartsProvider};
-
+#[cfg(feature = "ears")]
 pub mod ears;
 pub mod minecraft;
 
@@ -45,7 +44,9 @@ pub trait PartsProvider<M: ArmorMaterial> {
     ) -> Vec<Part>;
 }
 
-pub(crate) const EARS_PLAYER_PARTS_PROVIDER: OnceLock<EarsPlayerPartsProvider> = OnceLock::new();
+#[cfg(feature = "ears")]
+pub(crate) const EARS_PLAYER_PARTS_PROVIDER: std::sync::OnceLock<EarsPlayerPartsProvider> =
+    std::sync::OnceLock::new();
 
 impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
     fn get_parts(
@@ -64,10 +65,10 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
         };
 
         if body_part.is_arm() {
-            for mut part in &mut parts {
+            for part in &mut parts {
                 perform_arm_part_rotation(
                     body_part.get_non_layer_part(),
-                    &mut part,
+                    part,
                     context.model.is_slim_arms(),
                     context.arm_rotation,
                 );

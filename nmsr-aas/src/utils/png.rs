@@ -25,7 +25,7 @@ pub(crate) fn create_png_from_bytes(size: (u32, u32), bytes: &[u8]) -> Result<Ve
         .write_header(&header)
         .explain_closure(|| "Unable to write header for output PNG".to_string())?;
     encoder
-        .write_image_rows(&bytes)
+        .write_image_rows(bytes)
         .explain_closure(|| "Unable to write image rows for output PNG".to_string())?;
 
     encoder

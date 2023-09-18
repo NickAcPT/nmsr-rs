@@ -20,7 +20,7 @@ pub async fn resolve_geyser_uuid_to_texture_and_model(
     uuid: &Uuid,
 ) -> MojangRequestResult<(String, RenderRequestEntryModel)> {
     let xuid = u64::from_str_radix(&uuid.simple().to_string(), 16)
-        .map_err(|_| MojangRequestError::UnableToParseUuidIntoXuid(uuid.clone()))?;
+        .map_err(|_| MojangRequestError::UnableToParseUuidIntoXuid(*uuid))?;
 
     let url = format!(
         "{geysermc_api_server}/v2/skin/{xuid}",

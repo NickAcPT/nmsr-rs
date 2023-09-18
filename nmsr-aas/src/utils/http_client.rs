@@ -17,30 +17,18 @@ use tracing::{instrument, Span};
 
 use crate::error::{MojangRequestError, MojangRequestResult};
 
-const USER_AGENT: &'static str = concat!(
+const USER_AGENT: &str = concat!(
     "NMSR-as-a-Service/",
     env!("VERGEN_GIT_SHA"),
     " (Discord=@nickacpt; +https://nmsr.nickac.dev/)"
 );
 
+type TraceResponseBody =
+    ResponseBody<Body, NeverClassifyEos<ServerErrorsFailureClass>, (), (), DefaultOnFailure>;
+type BoxedTracedResponse = BoxService<Request<Body>, Response<TraceResponseBody>, hyper::Error>;
+
 pub struct NmsrHttpClient {
-    inner: RwLock<
-        SyncWrapper<
-            BoxService<
-                Request<Body>,
-                Response<
-                    ResponseBody<
-                        Body,
-                        NeverClassifyEos<ServerErrorsFailureClass>,
-                        (),
-                        (),
-                        DefaultOnFailure,
-                    >,
-                >,
-                hyper::Error,
-            >,
-        >,
-    >,
+    inner: RwLock<SyncWrapper<BoxedTracedResponse>>,
 }
 
 impl NmsrHttpClient {

@@ -1,4 +1,3 @@
-
 use std::{
     borrow::Cow,
     fs::Metadata,
@@ -135,7 +134,7 @@ where
             let marker_expired_result = self
                 .get_marker_and_clean_expired_if_needed(entry, &path)
                 .await?;
-            
+
             if marker_expired_result.is_none() {
                 return Ok(None);
             }

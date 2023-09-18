@@ -2,10 +2,7 @@ use crate::{
     error::{RenderRequestError, Result},
     model::{
         armor::VanillaMinecraftArmorMaterialData,
-        request::{
-            entry::RenderRequestEntryModel,
-            RenderRequestFeatures, RenderRequestMode,
-        },
+        request::{entry::RenderRequestEntryModel, RenderRequestFeatures, RenderRequestMode},
     },
 };
 use enumset::EnumSet;

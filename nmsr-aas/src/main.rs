@@ -7,7 +7,6 @@
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
     clippy::module_name_repetitions,
-    clippy::items_after_statements,
     clippy::missing_errors_doc,
     clippy::redundant_pub_crate,
     clippy::unused_async,

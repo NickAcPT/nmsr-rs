@@ -1,13 +1,11 @@
+use super::model::GameProfile;
 use crate::{
-    config::MojankConfiguration,
-    error::MojangRequestResult,
-    utils::http_client::NmsrHttpClient,
+    config::MojankConfiguration, error::MojangRequestResult, utils::http_client::NmsrHttpClient,
 };
-use hyper::{Method, body::Bytes};
+use hyper::{body::Bytes, Method};
 use std::sync::Arc;
 use tracing::{instrument, Span};
 use uuid::Uuid;
-use super::model::GameProfile;
 
 pub struct MojangClient {
     client: NmsrHttpClient,

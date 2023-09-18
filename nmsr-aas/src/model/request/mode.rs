@@ -6,7 +6,7 @@ use nmsr_rendering::high_level::{
     pipeline::scene::Size,
     types::PlayerBodyPartType,
 };
-use strum::{EnumString, IntoEnumIterator, EnumIter};
+use strum::{EnumIter, EnumString, IntoEnumIterator};
 use tracing::instrument;
 
 use crate::error::{RenderRequestError, Result};
@@ -38,7 +38,7 @@ impl RenderRequestMode {
     pub(crate) const fn is_custom(self) -> bool {
         matches!(self, Self::Custom)
     }
-    
+
     pub(crate) const fn is_full_body(self) -> bool {
         matches!(self, Self::FullBody | Self::FullBodyIso)
     }
@@ -72,7 +72,7 @@ impl RenderRequestMode {
     pub(crate) const fn is_head_iso(self) -> bool {
         matches!(self, Self::HeadIso)
     }
-    
+
     pub(crate) const fn is_face(self) -> bool {
         matches!(self, Self::Face)
     }
@@ -80,7 +80,7 @@ impl RenderRequestMode {
     pub(crate) const fn is_square(self) -> bool {
         self.is_bust() || self.is_head_or_face()
     }
-    
+
     pub(crate) const fn is_skin(self) -> bool {
         matches!(self, Self::Skin)
     }
@@ -176,18 +176,18 @@ impl RenderRequestMode {
         if self.is_head() {
             distance -= 6.0;
         }
-        
+
         let projection = if self.is_isometric() {
             let mut aspect = 17.0;
-            
+
             if self.is_head_or_face() {
                 aspect -= 9.5;
             }
-            
+
             if self.is_face() {
                 aspect -= 3.0;
             }
-            
+
             ProjectionParameters::Orthographic { aspect }
         } else {
             ProjectionParameters::Perspective { fov: 45.0 }

@@ -22,11 +22,15 @@ pub struct GameProfileTexture {
 }
 
 impl GameProfileTexture {
-    #[must_use] pub fn is_slim(&self) -> bool {
-        self.metadata.as_ref().is_some_and(GameProfileTextureMetadata::is_slim)
+    #[must_use]
+    pub fn is_slim(&self) -> bool {
+        self.metadata
+            .as_ref()
+            .is_some_and(GameProfileTextureMetadata::is_slim)
     }
 
-    #[must_use] pub fn url(&self) -> &str {
+    #[must_use]
+    pub fn url(&self) -> &str {
         &self.url
     }
 
@@ -47,11 +51,13 @@ impl GameProfileTextures {
     const SKIN_KEY: &'static str = "SKIN";
     const CAPE_KEY: &'static str = "CAPE";
 
-    #[must_use] pub fn skin(&self) -> Option<&GameProfileTexture> {
+    #[must_use]
+    pub fn skin(&self) -> Option<&GameProfileTexture> {
         self.textures.get(Self::SKIN_KEY)
     }
 
-    #[must_use] pub fn cape(&self) -> Option<&GameProfileTexture> {
+    #[must_use]
+    pub fn cape(&self) -> Option<&GameProfileTexture> {
         self.textures.get(Self::CAPE_KEY)
     }
 }

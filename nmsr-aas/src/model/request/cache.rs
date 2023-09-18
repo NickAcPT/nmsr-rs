@@ -85,7 +85,10 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         _config: &ModelCacheConfiguration,
         path: &'a Path,
     ) -> Result<Option<Cow<'a, str>>> {
-        Ok(path.file_name().and_then(std::ffi::OsStr::to_str).map(std::convert::Into::into))
+        Ok(path
+            .file_name()
+            .and_then(std::ffi::OsStr::to_str)
+            .map(std::convert::Into::into))
     }
 
     async fn get_marker_path(

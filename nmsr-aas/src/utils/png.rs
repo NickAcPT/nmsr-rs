@@ -1,8 +1,10 @@
-use mtpng::{Header, ColorType, encoder::{Options, Encoder}};
+use mtpng::{
+    encoder::{Encoder, Options},
+    ColorType, Header,
+};
 use tracing::trace_span;
 
 use crate::error::{ExplainableExt, Result};
-
 
 pub(crate) fn create_png_from_bytes(size: (u32, u32), bytes: &[u8]) -> Result<Vec<u8>> {
     let render_bytes = Vec::new();

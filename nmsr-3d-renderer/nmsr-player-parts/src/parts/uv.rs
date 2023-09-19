@@ -118,6 +118,7 @@ impl FaceUv {
         .rotated_cw()
     }
 
+    #[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))]
     fn flipped_horizontally(mut self) -> Self {
         #[cfg(feature = "part_tracker")]
         {
@@ -126,6 +127,7 @@ impl FaceUv {
         self
     }
 
+    #[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))]
     fn flipped_vertically(mut self) -> Self {
         #[cfg(feature = "part_tracker")]
         {
@@ -134,6 +136,7 @@ impl FaceUv {
         self
     }
 
+    #[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))]
     fn rotated_cw(mut self) -> Self {
         #[cfg(feature = "part_tracker")]
         {

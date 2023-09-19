@@ -87,6 +87,7 @@ struct EarsPlayerBodyPartDefinition {
     texture: PlayerPartTextureType,
     pos: [f32; 3],
     rot: [f32; 3],
+    rot_anchor: [f32; 3],
     size: [u32; 2],
     uv: [u16; 4],
     back_uv: Option<[u16; 4]>,
@@ -108,6 +109,7 @@ impl Default for EarsPlayerBodyPartDefinition {
             texture: PlayerPartTextureType::Skin,
             pos: Default::default(),
             rot: Default::default(),
+            rot_anchor: Default::default(),
             size: Default::default(),
             uv: Default::default(),
             back_uv: None,
@@ -267,8 +269,14 @@ impl EarsPlayerPartsProvider {
         features: &EarsFeatures,
         result: &mut Vec<EarsPlayerBodyPartDefinition>,
     ) {
-        let anchor = features.ear_anchor.unwrap_or_default();
-        let mode = features.ear_mode;
+        let mut anchor = features.ear_anchor.unwrap_or_default();
+        let mut mode = features.ear_mode;
+        
+        // Upgrade the old ear mode to the new one
+        if mode == EarMode::Behind {
+            mode = EarMode::Around;
+            anchor = EarAnchor::Back;            
+        }
 
         let anchor_z = match anchor {
             EarAnchor::Front => 0.0,
@@ -311,7 +319,53 @@ impl EarsPlayerPartsProvider {
                     }
                 });
             }
-        } else if mode == EarMode::Behind {
+        } else if mode == EarMode::Sides {
+            result.push(declare_ears_part_vertical! {
+                EarSidesLeft {
+                    pos: [-8.0, 0.0, anchor_z],
+                    size: [8, 8],
+                    uv: [32, 0, 8, 8],
+                    back_uv: Some([56, 36, 8, 8]),
+                    normal: Vec3::NEG_Z,
+                    back_cw: Some(true)
+                }
+            });
+            result.push(declare_ears_part_vertical! {
+                EarSidesRight {
+                    pos: [8.0, 0.0, anchor_z],
+                    size: [8, 8],
+                    uv: [24, 0, 8, 8],
+                    back_uv: Some([56, 28, 8, 8]),
+                    normal: Vec3::NEG_Z,
+                    back_cw: Some(true)
+                }
+            });
+        } else if mode == EarMode::Floppy {
+            result.push(declare_ears_part_vertical! {
+                EarFloppyRight {
+                    pos: [8.0, 0.0, 0.0],
+                    size: [8, 8],
+                    rot: [30.0, -90.0, 0.0],
+                    rot_anchor: [0.0, 7.0, 0.0],
+                    uv: [24, 0, 8, 8],
+                    back_uv: Some([56, 28, 8, 8]),
+                    normal: Vec3::X,
+                    back_cw: Some(true)
+                }
+            });
+            
+            result.push(declare_ears_part_vertical! {
+                EarFloppyLeft {
+                    pos: [0.0, 0.0, 8.0],
+                    size: [8, 8],
+                    rot: [30.0, 90.0, 0.0],
+                    rot_anchor: [0.0, 7.0, 0.0],
+                    uv: [32, 0, 8, 8],
+                    back_uv: Some([56, 36, 8, 8]),
+                    normal: Vec3::NEG_X,
+                    back_cw: Some(true)
+                }
+            });
         }
     }
 
@@ -515,7 +569,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         part_definition.rot.into(),
                         Some(
                             PartAnchorInfo::new_part_anchor_translate(body_part, is_slim_arms)
-                                .with_rotation_anchor(pos.into()),
+                                .with_rotation_anchor(Vec3::from(pos) + Vec3::from(part_definition.rot_anchor)),
                         ),
                     );
 

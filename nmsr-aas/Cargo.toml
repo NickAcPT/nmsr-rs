@@ -11,82 +11,82 @@ homepage.workspace = true
 # NMSR Rendering - Library for rendering using a wgpu backed rendering engine
 nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering" }
 
-ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
+ears-rs = { workspace = true }
 
-anyhow = "1.0.75"
-axum = { version = "0.6.20", features = ["macros"] }
+anyhow = { workspace = true }
+axum = { version = "0.6", features = ["macros"] }
 
 # async-trait - Async trait support because Rust is bad at async
-async-trait = "0.1.73"
+async-trait = { workspace = true }
 
 # Twelf - Configuration library
-twelf = { version = "0.12.0", default-features = false, features = [
+twelf = { version = "0.12", default-features = false, features = [
     "env",
     "toml",
     "default_trait",
 ] }
 
 # Serde - Serialization and Deserialization framework
-serde = "1.0.183"
-serde_json = "1.0.105"
+serde = { workspace = true }
+serde_json = { workspace = true }
 
-base64 = "0.21.2"
+base64 = "0.21"
 
 # Hyper - HTTP client
-hyper = { version = "0.14.27", features = ["client", "runtime"] }
-hyper-tls = "0.5.0"
-url = "2.4.0"
+hyper = { version = "0.14", features = ["client", "runtime"] }
+hyper-tls = "0.5"
+url = "2.4"
 
 # Tokio - Async runtime
-tokio = { version = "1.12.0", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 
 # Tracing - Logging framework
-tracing = "0.1.37"
+tracing = { workspace = true }
 
 # Tracing subscriber - Composing Tracing subscribers
-tracing-subscriber = { version = "0.3.17", features = ["env-filter", "json"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # OpenTelemetry - Tracing framework
-opentelemetry = { version = "0.20.0", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.13.0", default-features = true }
+opentelemetry = { version = "0.20", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.13", default-features = true }
 
 # Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
-tracing-opentelemetry = "0.20.0"
+tracing-opentelemetry = "0.21"
 
 # Strum - Enum helper library
-strum = { version = "0.25.0", features = ["derive"] }
-enumset = { version = "1.1.2", features = ["serde", "alloc", "std"] }
+strum = { workspace = true }
+enumset = { version = "1.1", features = ["serde", "alloc", "std"] }
 
 # Uuid - Uuid library
-uuid = { version = "1.4.1", features = ["serde"] }
+uuid = { workspace = true }
 
 # ThisError - Error library
-thiserror = "1.0.45"
+thiserror = { workspace = true }
 
 # Derive More - More derive macros because Rust's standard library doesn't have enough
-derive_more = { version = "1.0.0-beta.3", features = ["deref", "debug"] }
+derive_more = { workspace = true }
 
 # Tower - Service framework
-tower = { version = "0.4.13", features = ["limit", "retry", "load-shed"] }
-tower-http = { version = "0.4.3", features = ["full"] }
+tower = { version = "0.4", features = ["limit", "retry", "load-shed"] }
+tower-http = { version = "0.4", features = ["full"] }
 
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
-symlink = "0.1.0"
-humantime-serde = "1.1.1"
-serde_with = "3.3.0"
-deadpool = "0.9.5"
-image = { version = "0.24.7", default-features = false, features = ["png"] }
-mtpng = "0.3.5"
+symlink = "0.1"
+humantime-serde = "1.1"
+serde_with = "3.3"
+deadpool = "0.9"
+image = { workspace = true, default-features = false }
+mtpng = "0.3"
 
-chrono = "0.4.26"
-tokio-stream = { version = "0.1.14", features = ["fs"] }
-sync_wrapper = "0.1.2"
-axum-extra = { version = "0.7.7", features = ["multipart"] }
+chrono = "0.4"
+tokio-stream = { version = "0.1", features = ["fs"] }
+sync_wrapper = "0.1"
+axum-extra = { version = "0.8", features = ["multipart"] }
 
-regex = "1.9.5"
+regex = "1.9"
 indoc = "2"
 
-xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
+xxhash-rust = { workspace = true }
 
 is_empty = "0.2"
 

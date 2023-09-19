@@ -4,20 +4,20 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wgpu = "0.17.0"
-bytemuck = { version = "1.13.1", features = ["derive"] }
-glam = { version = "0.24.1", features = ["bytemuck"] }
-paste = "1.0.14"
-thiserror = "1.0.44"
-strum = "0.25.0"
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+glam = { workspace = true }
+paste = { workspace = true }
+thiserror = { workspace = true }
+strum = { workspace = true }
 nmsr-player-parts = { path = "../nmsr-player-parts" }
-image = { version = "0.24.6", default-features = false, features = ["png"] }
-tokio = { version = "1.29.1", features = ["sync"] }
-itertools = "0.11.0"
-tracing = "0.1.37"
+image = { workspace = true, default-features = false }
+tokio = { workspace = true }
+itertools = { workspace = true }
+tracing = { workspace = true }
 deadpool = "0.9.5"
-async-trait = "0.1.73"
-derive_more = { version = "1.0.0-beta.3", features = ["deref", "deref_mut", "from", "debug"], default-features = false }
+async-trait = { workspace = true }
+derive_more = { workspace = true }
 smaa = "0.10.1"
 
 [features]

@@ -21,6 +21,37 @@ members = [
     "nmsr-3d-renderer/nmsr-wgpu-windowed",
 ]
 
+[workspace.dependencies]
+ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
+thiserror = "1.0"
+strum = { version = "0.25", features = ["derive"] }
+itertools = { version = "0.11" }
+paste = "1.0"
+wgpu = "0.17"
+bytemuck = { version = "1.14", features = ["derive"] }
+glam = { version = "0.24", features = ["bytemuck"] }
+image = { version = "0.24", default-features = false, features = ["png"] }
+
+tokio = { version = "1.32", features = ["sync"] }
+
+tracing = "0.1"
+async-trait = "0.1"
+
+derive_more = { version = "1.0.0-beta.3", features = [
+    "deref",
+    "deref_mut",
+    "from",
+    "debug",
+], default-features = false }
+
+anyhow = "1.0"
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
+uuid = { version = "1.4", features = ["serde"] }
+
 [profile.dev.package.image]
 opt-level = 3
 

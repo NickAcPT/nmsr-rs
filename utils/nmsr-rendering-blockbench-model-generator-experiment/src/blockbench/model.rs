@@ -213,7 +213,7 @@ impl RawProjectElementFaces {
             east: RawProjectElementFace::new(Some(texture), faces.east),
             west: RawProjectElementFace::new(Some(texture), faces.west),
             up: RawProjectElementFace::new(Some(texture), faces.up.flip_horizontally().flip_vertically()),
-            down: RawProjectElementFace::new(Some(texture), faces.down.flip_horizontally().flip_vertically()),
+            down: RawProjectElementFace::new(Some(texture), faces.down.flip_horizontally()),
         }
     }
 }

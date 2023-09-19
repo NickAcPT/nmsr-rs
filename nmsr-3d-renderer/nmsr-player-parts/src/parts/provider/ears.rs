@@ -19,6 +19,7 @@ use glam::Vec3;
 use std::collections::HashMap;
 
 const ARM_PIXEL_CANARY: f32 = 0xe621 as f32;
+const PREV_CORNER_CANARY: f32 = 0xe926 as f32;
 
 macro_rules! declare_ears_part_horizontal {
     {$ears_part: ident {$($body:tt)+}} => {
@@ -101,6 +102,7 @@ struct EarsPlayerBodyPartDefinition {
     double_sided: bool,
     is_back: bool,
     name: &'static str,
+    reset_rotation_stack: bool,
 }
 
 impl Default for EarsPlayerBodyPartDefinition {
@@ -123,6 +125,7 @@ impl Default for EarsPlayerBodyPartDefinition {
             double_sided: true,
             name: "",
             is_back: false,
+            reset_rotation_stack: false,
         }
     }
 }
@@ -271,11 +274,11 @@ impl EarsPlayerPartsProvider {
     ) {
         let mut anchor = features.ear_anchor.unwrap_or_default();
         let mut mode = features.ear_mode;
-        
+
         // Upgrade the old ear mode to the new one
         if mode == EarMode::Behind {
             mode = EarMode::Around;
-            anchor = EarAnchor::Back;            
+            anchor = EarAnchor::Back;
         }
 
         let anchor_z = match anchor {
@@ -353,7 +356,7 @@ impl EarsPlayerPartsProvider {
                     back_cw: Some(true)
                 }
             });
-            
+
             result.push(declare_ears_part_vertical! {
                 EarFloppyLeft {
                     pos: [0.0, 0.0, 8.0],
@@ -372,7 +375,7 @@ impl EarsPlayerPartsProvider {
                 EarAnchor::Front => (0.0, -8.0),
                 EarAnchor::Back => (0.0, 8.0),
             };
-            
+
             result.push(declare_ears_part_vertical! {
                 EarOutRight {
                     pos: [8.0, pos_y, pos_z],
@@ -384,7 +387,7 @@ impl EarsPlayerPartsProvider {
                     back_cw: Some(true)
                 }
             });
-            
+
             result.push(declare_ears_part_vertical! {
                 EarOutLeft {
                     pos: [0.0, pos_y, 8.0 + pos_z],
@@ -394,6 +397,73 @@ impl EarsPlayerPartsProvider {
                     back_uv: Some([56, 36, 8, 8]),
                     normal: Vec3::NEG_X,
                     back_cw: Some(true)
+                }
+            });
+        } else if mode == EarMode::Tall {
+            let angle = 6.0;
+
+            let mut current_angle = angle / 3.0;
+
+            result.push(declare_ears_part_vertical! {
+                EarTallOne {
+                    pos: [0.0, 8.0, 0.0],
+                    rot: [current_angle, 0.0, 0.0],
+                    size: [8, 4],
+                    uv: [24, 0, 8, 4],
+                    back_uv: Some([56, 40, 8, 4]),
+                    normal: Vec3::NEG_Z,
+                    cw: true,
+                    back_cw: Some(false),
+                    reset_rotation_stack: true,
+                    double_sided: false
+                }
+            });
+
+            current_angle += angle;
+
+            result.push(declare_ears_part_vertical! {
+                EarTallTwo {
+                    pos: [0.0, 8.0 + 4.0 + PREV_CORNER_CANARY, PREV_CORNER_CANARY],
+                    size: [8, 4],
+                    rot: [current_angle, 0.0, 0.0],
+                    uv: [28, 0, 8, 4],
+                    back_uv: Some([56, 36, 8, 4]),
+                    normal: Vec3::NEG_Z,
+                    cw: true,
+                    back_cw: Some(false),
+                    double_sided: false
+                }
+            });
+
+            current_angle += angle / 2.0;
+
+            result.push(declare_ears_part_vertical! {
+                EarTallThree {
+                    pos: [0.0, 8.0 + 8.0 + PREV_CORNER_CANARY, PREV_CORNER_CANARY],
+                    size: [8, 4],
+                    rot: [current_angle, 0.0, 0.0],
+                    uv: [32, 0, 8, 4],
+                    back_uv: Some([56, 32, 8, 4]),
+                    normal: Vec3::NEG_Z,
+                    cw: true,
+                    back_cw: Some(false),
+                    double_sided: false
+                }
+            });
+
+            current_angle += angle;
+
+            result.push(declare_ears_part_vertical! {
+                EarTallFour {
+                    pos: [0.0, 8.0 + 12.0 + PREV_CORNER_CANARY, PREV_CORNER_CANARY],
+                    size: [8, 4],
+                    rot: [current_angle, 0.0, 0.0],
+                    uv: [36, 0, 8, 4],
+                    back_uv: Some([56, 28, 8, 4]),
+                    normal: Vec3::NEG_Z,
+                    cw: true,
+                    back_cw: Some(false),
+                    double_sided: false
                 }
             });
         }
@@ -479,7 +549,8 @@ impl EarsPlayerPartsProvider {
 
             snout_horizontal!(SnoutTopFront, SnoutTopRest, snout_height, Vec3::Y, 1, 0);
             snout_horizontal!(
-                SnoutBottomFront, SnoutBottomRest,
+                SnoutBottomFront,
+                SnoutBottomRest,
                 0.0,
                 Vec3::NEG_Y,
                 2 + snout_height as u16,
@@ -505,13 +576,25 @@ impl EarsPlayerPartsProvider {
     }
 }
 
-#[inline(always)]
-fn process_pos(pos: [f32; 3], is_slim_arms: bool) -> [f32; 3] {
+#[inline(never)]
+fn process_pos(pos: [f32; 3], is_slim_arms: bool, last_pos: &[f32; 3]) -> [f32; 3] {
     let mut pos = pos;
 
     for element in pos.as_mut_slice() {
         if (*element).abs() == ARM_PIXEL_CANARY {
-            *element = if is_slim_arms { 3.0 } else { 4.0 } * ARM_PIXEL_CANARY.signum();
+            *element = if is_slim_arms { 3.0 } else { 4.0 } * element.signum();
+        }
+    }
+
+    println!("pos: {:?}", pos);
+    println!("last_pos: {:?}", last_pos);
+
+    for (index, element) in pos.iter_mut().enumerate() {
+        if (*element).abs() == PREV_CORNER_CANARY {
+            *element = last_pos[index] * element.signum();
+        } else if (*element) > PREV_CORNER_CANARY {
+            let rest = *element - PREV_CORNER_CANARY;
+            *element = last_pos[index] + rest;
         }
     }
 
@@ -550,7 +633,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
                             back.uv = p.back_uv.unwrap_or(p.uv);
                             back.cw = p.back_cw.unwrap_or(back.cw);
-                            
+
                             back.is_back = true;
 
                             vec![p, back]
@@ -559,7 +642,12 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         }
                     });
 
+                let mut last_pos = Vec3::ZERO;
                 for part_definition in processed_parts {
+                    if part_definition.reset_rotation_stack {
+                        last_pos = Vec3::ZERO;
+                    }
+
                     let size = part_definition.size;
 
                     let uvs = process_uvs(
@@ -570,38 +658,61 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         part_definition.vertical_quad,
                     );
 
-                    let mut pos = process_pos(part_definition.pos, is_slim_arms);
+                    let mut pos = process_pos(part_definition.pos, is_slim_arms, &last_pos.into());
+                    let rot_anchor =
+                        process_pos(part_definition.rot_anchor, is_slim_arms, &last_pos.into());
+
                     let size = if part_definition.vertical_quad {
                         [size[0], size[1], 0]
                     } else {
                         [size[0], 0, size[1]]
                     };
 
-                    if part_definition.double_sided {
-                        pos = (Vec3::from(pos) + (part_definition.normal * 0.01)).into();
-                    }
+                    let normal_offset = if part_definition.double_sided {
+                        part_definition.normal * 0.01
+                    } else {
+                        Vec3::ZERO
+                    };
 
+                    pos = (Vec3::from(pos) + normal_offset).into();
+
+                    #[cfg(feature = "part_tracker")]
                     let mut name = String::from(part_definition.name);
+                    #[cfg(feature = "part_tracker")]
                     if part_definition.is_back {
                         name.push_str("Back");
                     }
-                    
+
                     let mut part_quad = Part::new_quad(
                         part_definition.texture,
                         pos,
                         size,
                         uvs,
                         part_definition.normal,
-                        #[cfg(feature = "part_tracker")] Some(name),
+                        #[cfg(feature = "part_tracker")]
+                        Some(name),
                     );
 
                     part_quad.rotate(
                         part_definition.rot.into(),
                         Some(
                             PartAnchorInfo::new_part_anchor_translate(body_part, is_slim_arms)
-                                .with_rotation_anchor(Vec3::from(pos) + Vec3::from(part_definition.rot_anchor)),
+                                .with_rotation_anchor(Vec3::from(pos) + Vec3::from(rot_anchor)),
                         ),
                     );
+
+                    if !part_definition.is_back {
+                        let pos = part_quad.get_position();
+                        let size = part_quad.get_size();
+
+                        let old =
+                            Vec3::from([pos[0], pos[1] + size[1] as f32, pos[2]]) - normal_offset;
+
+                        println!("Rotating old: {:?}", old);
+
+                        last_pos += part_quad.get_rotation_matrix().transform_point3(old) - old;
+                        println!("last_pos: {:?}", last_pos);
+                    }
 
                     result.push(part_quad);
                 }
@@ -638,7 +749,7 @@ fn process_uvs(
     if cw {
         uvs = uvs.rotate_cw();
     }
-    
+
     uvs = uvs.flip_horizontally();
 
     uvs

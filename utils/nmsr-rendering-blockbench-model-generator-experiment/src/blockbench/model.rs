@@ -161,11 +161,34 @@ impl RawProjectElementFace {
     pub const UV_OFFSET: f32 = 0.05;
 
     pub fn new(texture: Option<u32>, uv: FaceUv) -> Self {
+        let [top_left_uv, _, bottom_right_uv, _] = shrink_rectangle(
+            [
+                [
+                    uv.top_left.x as f32,
+                    uv.top_left.y as f32,
+                ],
+                [
+                    uv.top_right.x as f32,
+                    uv.top_right.y as f32,
+                ],
+                [
+                    uv.bottom_right.x as f32,
+                    uv.bottom_right.y as f32,
+                ],
+                [
+                    uv.bottom_left.x as f32,
+                    uv.bottom_left.y as f32,
+                ],
+            ],
+            RawProjectElementFace::UV_OFFSET,
+        );
+        
+        
         let uv = [
-            uv.top_left.x as f32 + Self::UV_OFFSET,
-            uv.top_left.y as f32 + Self::UV_OFFSET,
-            uv.bottom_right.x as f32 - Self::UV_OFFSET,
-            uv.bottom_right.y as f32 - Self::UV_OFFSET,
+            top_left_uv[0],
+            top_left_uv[1],
+            bottom_right_uv[0],
+            bottom_right_uv[1],
         ];
 
         Self { texture, uv }
@@ -189,8 +212,8 @@ impl RawProjectElementFaces {
             south: RawProjectElementFace::new(Some(texture), faces.south),
             east: RawProjectElementFace::new(Some(texture), faces.east),
             west: RawProjectElementFace::new(Some(texture), faces.west),
-            up: RawProjectElementFace::new(Some(texture), faces.up),
-            down: RawProjectElementFace::new(Some(texture), faces.down),
+            up: RawProjectElementFace::new(Some(texture), faces.up.flip_horizontally().flip_vertically()),
+            down: RawProjectElementFace::new(Some(texture), faces.down.flip_horizontally().flip_vertically()),
         }
     }
 }
@@ -265,7 +288,7 @@ pub(crate) fn str_to_uuid(s: &str) -> Uuid {
     Uuid::from_bytes(bytes)
 }
 
-fn shrink_rectangle(points: [[f32; 2]; 4], factor: f32) -> [[f32; 2]; 4] {
+pub fn shrink_rectangle(points: [[f32; 2]; 4], factor: f32) -> [[f32; 2]; 4] {
     let center = [
         (points[0][0] + points[1][0] + points[2][0] + points[3][0]) / 4.,
         (points[0][1] + points[1][1] + points[2][1] + points[3][1]) / 4.,

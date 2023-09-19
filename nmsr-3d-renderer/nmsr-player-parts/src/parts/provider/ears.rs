@@ -366,6 +366,36 @@ impl EarsPlayerPartsProvider {
                     back_cw: Some(true)
                 }
             });
+        } else if mode == EarMode::Out {
+            let (pos_x, pos_y, pos_z) = match anchor {
+                EarAnchor::Center => (8.0, 8.0, 0.0),
+                EarAnchor::Front => (8.0, 0.0, -8.0),
+                EarAnchor::Back => (8.0, 0.0, 8.0),
+            };
+            
+            result.push(declare_ears_part_vertical! {
+                EarOutRight {
+                    pos: [pos_x, pos_y, pos_z],
+                    size: [8, 8],
+                    rot: [0.0, -90.0, 0.0],
+                    uv: [24, 0, 8, 8],
+                    back_uv: Some([56, 28, 8, 8]),
+                    normal: Vec3::X,
+                    back_cw: Some(true)
+                }
+            });
+            
+            result.push(declare_ears_part_vertical! {
+                EarOutLeft {
+                    pos: [8.0 - pos_x, pos_y, 8.0 + pos_z],
+                    size: [8, 8],
+                    rot: [0.0, 90.0, 0.0],
+                    uv: [32, 0, 8, 8],
+                    back_uv: Some([56, 36, 8, 8]),
+                    normal: Vec3::NEG_X,
+                    back_cw: Some(true)
+                }
+            });
         }
     }
 

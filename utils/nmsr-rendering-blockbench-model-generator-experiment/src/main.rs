@@ -1,7 +1,11 @@
 mod blockbench;
 mod generator;
 
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs,
+    path::PathBuf,
+};
 
 use anyhow::{anyhow, Context, Ok, Result};
 use clap::{Parser, ValueEnum};
@@ -27,6 +31,9 @@ struct Args {
     #[arg(long, default_value = "true")]
     layers: bool,
 
+    #[arg(long)]
+    open: bool,
+
     #[arg(short, long)]
     output: PathBuf,
 }
@@ -51,6 +58,8 @@ impl Deref for PlayerModelArg {
 }
 
 fn main() -> Result<()> {
+    std::env::remove_var("ELECTRON_RUN_AS_NODE");
+    
     let args = Args::parse();
     let skin_bytes = fs::read(args.input).context(anyhow!("Failed to read input skin"))?;
 
@@ -65,20 +74,19 @@ fn main() -> Result<()> {
             .into_rgba8();
 
         let alfalfa = ears_rs::alfalfa::read_alfalfa(&skin_image)?;
-        
-        
+
         if let Some(alfalfa) = alfalfa {
             if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
                 textures.insert(PlayerPartEarsTextureType::Wings.into(), wings.to_vec());
             }
         }
-        
+
         let features = ears_rs::parser::EarsParser::parse(&skin_image)
-        .context(anyhow!("Failed to parse ears features from skin"));
-    
+            .context(anyhow!("Failed to parse ears features from skin"));
+
         ears_rs::utils::process_erase_regions(&mut skin_image)?;
         ears_rs::utils::strip_alpha(&mut skin_image);
-        
+
         if let Result::Ok(new_skin_bytes) = write_png(&skin_image) {
             textures.insert(PlayerPartTextureType::Skin, new_skin_bytes);
         }
@@ -94,8 +102,13 @@ fn main() -> Result<()> {
         ears_features,
     );
 
-    blockbench::generate_project(project, args.output)
+    blockbench::generate_project(project, &args.output)
         .context(anyhow!("Failed to generate blockbench project"))?;
+
+    if args.open {
+        println!("Opening blockbench project...");
+        opener::open(args.output.canonicalize()?)?;
+    }
 
     println!("Done!");
 

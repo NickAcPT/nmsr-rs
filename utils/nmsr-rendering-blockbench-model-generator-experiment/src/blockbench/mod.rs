@@ -4,7 +4,7 @@ use std::{
     collections::HashMap,
     fs,
     io::{BufWriter, Cursor},
-    path::PathBuf,
+    path::Path,
     vec::Vec,
 };
 
@@ -21,7 +21,7 @@ use crate::{
 
 use self::model::{ProjectTextureResolution, RawProjectElement, RawProjectElementFaces};
 
-pub(crate) fn generate_project(project: ModelGenerationProject, output: PathBuf) -> Result<()> {
+pub(crate) fn generate_project(project: ModelGenerationProject, output: &Path) -> Result<()> {
     let parts = project.generate_parts();
     let grouped_parts = group_by_texture(parts);
     let (resolution, raw_textures) = convert_to_raw_project_textures(&project, &grouped_parts);

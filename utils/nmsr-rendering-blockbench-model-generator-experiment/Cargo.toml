@@ -21,6 +21,7 @@ uuid = { version = "1.4.1", features = ["serde", "v4"] }
 glam = { version = "0.24.1", features = ["serde"] }
 base64 = "0.21.4"
 xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
+opener = "0.6.1"
 
 [features]
 default = ["nmsr-rendering/part_tracker"]

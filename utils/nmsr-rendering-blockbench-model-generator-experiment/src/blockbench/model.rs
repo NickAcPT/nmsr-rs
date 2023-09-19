@@ -65,15 +65,37 @@ impl RawProjectElement {
 
             (format!("{a}{a_new:x}"), format!("{b}{b_new:x}"))
         }
-        
+
         let converted = primitive_convert(&part);
 
         let (top_left, top_right) = random_names("top_left", "top_right");
         let (bottom_left, bottom_right) = random_names("bottom_left", "bottom_right");
-        
+
         let (uv_width, uv_height) = texture_size;
-        
+
         let result = if let PrimitiveDispatch::Quad(quad) = converted {
+            let [top_left_uv, top_right_uv, bottom_right_uv, bottom_left_uv] = shrink_rectangle(
+                [
+                    [
+                        quad.top_left.uv.x * uv_width,
+                        quad.top_left.uv.y * uv_height,
+                    ],
+                    [
+                        quad.top_right.uv.x * uv_width,
+                        quad.top_right.uv.y * uv_height,
+                    ],
+                    [
+                        quad.bottom_right.uv.x * uv_width,
+                        quad.bottom_right.uv.y * uv_height,
+                    ],
+                    [
+                        quad.bottom_left.uv.x * uv_width,
+                        quad.bottom_left.uv.y * uv_height,
+                    ],
+                ],
+                RawProjectElementFace::UV_OFFSET,
+            );
+
             json!({
                 "uuid": str_to_uuid(&name),
                 "name": name,
@@ -107,22 +129,10 @@ impl RawProjectElement {
                     "face": {
                         "texture": texture_id,
                         "uv": {
-                            &top_left: [
-                                quad.top_left.uv.x * uv_width,
-                                quad.top_left.uv.y * uv_height,
-                            ],
-                            &top_right: [
-                                quad.top_right.uv.x * uv_width,
-                                quad.top_right.uv.y * uv_height,
-                            ],
-                            &bottom_right: [
-                                quad.bottom_right.uv.x * uv_width,
-                                quad.bottom_right.uv.y * uv_height,
-                            ],
-                            &bottom_left: [
-                                quad.bottom_left.uv.x * uv_width,
-                                quad.bottom_left.uv.y * uv_height,
-                            ],
+                            &top_left: top_left_uv,
+                            &top_right: top_right_uv,
+                            &bottom_right: bottom_right_uv,
+                            &bottom_left: bottom_left_uv,
                         },
                         "vertices": [
                             &top_left,
@@ -253,4 +263,30 @@ pub(crate) fn str_to_uuid(s: &str) -> Uuid {
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
 
     Uuid::from_bytes(bytes)
+}
+
+fn shrink_rectangle(points: [[f32; 2]; 4], factor: f32) -> [[f32; 2]; 4] {
+    let center = [
+        (points[0][0] + points[1][0] + points[2][0] + points[3][0]) / 4.,
+        (points[0][1] + points[1][1] + points[2][1] + points[3][1]) / 4.,
+    ];
+
+    fn distance_to(a: [f32; 2], other: [f32; 2]) -> f32 {
+        ((a[0] - other[0]).powi(2) + (a[1] - other[1]).powi(2)).sqrt()
+    }
+
+    let mut new_points = [[0.0; 2]; 4];
+    for (i, point) in points.iter().enumerate() {
+        let distance_to_center = distance_to(*point, center);
+        let new_distance_to_center = distance_to_center - factor;
+
+        let new_point = [
+            center[0] + (point[0] - center[0]) * new_distance_to_center / distance_to_center,
+            center[1] + (point[1] - center[1]) * new_distance_to_center / distance_to_center,
+        ];
+
+        new_points[i] = new_point;
+    }
+
+    new_points
 }

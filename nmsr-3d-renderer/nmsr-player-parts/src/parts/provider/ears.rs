@@ -16,6 +16,7 @@ use ears_rs::features::{
     EarsFeatures,
 };
 use glam::Vec3;
+use itertools::Itertools;
 use std::collections::HashMap;
 
 const ARM_PIXEL_CANARY: f32 = 0xe621 as f32;
@@ -414,8 +415,7 @@ impl EarsPlayerPartsProvider {
                     normal: Vec3::NEG_Z,
                     cw: true,
                     back_cw: Some(false),
-                    reset_rotation_stack: true,
-                    double_sided: false
+                    reset_rotation_stack: true
                 }
             });
 
@@ -430,8 +430,7 @@ impl EarsPlayerPartsProvider {
                     back_uv: Some([56, 36, 8, 4]),
                     normal: Vec3::NEG_Z,
                     cw: true,
-                    back_cw: Some(false),
-                    double_sided: false
+                    back_cw: Some(false)
                 }
             });
 
@@ -446,8 +445,7 @@ impl EarsPlayerPartsProvider {
                     back_uv: Some([56, 32, 8, 4]),
                     normal: Vec3::NEG_Z,
                     cw: true,
-                    back_cw: Some(false),
-                    double_sided: false
+                    back_cw: Some(false)
                 }
             });
 
@@ -462,8 +460,7 @@ impl EarsPlayerPartsProvider {
                     back_uv: Some([56, 28, 8, 4]),
                     normal: Vec3::NEG_Z,
                     cw: true,
-                    back_cw: Some(false),
-                    double_sided: false
+                    back_cw: Some(false)
                 }
             });
         }
@@ -640,7 +637,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         } else {
                             vec![p]
                         }
-                    });
+                    }).sorted_by_key(|p| p.is_back);
 
                 let mut last_pos = Vec3::ZERO;
                 for part_definition in processed_parts {
@@ -658,7 +655,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         part_definition.vertical_quad,
                     );
 
-                    let mut pos = process_pos(part_definition.pos, is_slim_arms, &last_pos.into());
+                    let pos = process_pos(part_definition.pos, is_slim_arms, &last_pos.into());
                     let rot_anchor =
                         process_pos(part_definition.rot_anchor, is_slim_arms, &last_pos.into());
 
@@ -673,8 +670,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     } else {
                         Vec3::ZERO
                     };
-
-                    pos = (Vec3::from(pos) + normal_offset).into();
 
                     #[cfg(feature = "part_tracker")]
                     let mut name = String::from(part_definition.name);
@@ -701,18 +696,28 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         ),
                     );
 
-                    if !part_definition.is_back {
-                        let pos = part_quad.get_position();
-                        let size = part_quad.get_size();
+                    let new_offset = dbg!(part_quad
+                        .get_rotation_matrix()
+                        .transform_vector3(normal_offset));
 
-                        let old =
-                            Vec3::from([pos[0], pos[1] + size[1] as f32, pos[2]]) - normal_offset;
+                    part_quad.rotate(
+                        Vec3::ZERO,
+                        Some(PartAnchorInfo {
+                            translation_anchor: new_offset,
+                            ..Default::default()
+                        }),
+                    );
 
-                        println!("Rotating old: {:?}", old);
+                    let pos = part_quad.get_position();
+                    let size = part_quad.get_size();
 
-                        last_pos += part_quad.get_rotation_matrix().transform_point3(old) - old;
-                        println!("last_pos: {:?}", last_pos);
-                    }
+                    let old =
+                        Vec3::from([pos[0], pos[1] + size[1] as f32, pos[2]]) - normal_offset;
+
+                    println!("Rotating old: {:?}", old);
+
+                    last_pos += part_quad.get_rotation_matrix().transform_point3(old) - old;
+                    println!("last_pos: {:?}", last_pos);
 
                     result.push(part_quad);
                 }

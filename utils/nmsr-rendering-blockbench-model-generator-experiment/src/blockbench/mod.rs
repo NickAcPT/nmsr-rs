@@ -1,4 +1,4 @@
-mod model;
+pub mod model;
 
 use std::{
     collections::HashMap,
@@ -10,7 +10,7 @@ use std::{
 
 use anyhow::{anyhow, Context, Ok, Result};
 use glam::Vec3;
-use image::{imageops, RgbaImage};
+use image::RgbaImage;
 use itertools::Itertools;
 use nmsr_rendering::high_level::{parts::part::Part, types::PlayerPartTextureType};
 
@@ -25,8 +25,7 @@ pub(crate) fn generate_project(project: ModelGenerationProject, output: &Path) -
     let parts = project.generate_parts();
     let grouped_parts = group_by_texture(parts);
     let (resolution, raw_textures) = convert_to_raw_project_textures(&project, &grouped_parts);
-
-    let elements = convert_to_raw_elements(grouped_parts);
+    let elements = convert_to_raw_elements(&project, grouped_parts);
 
     let project = RawProject::new(resolution, elements, raw_textures);
 
@@ -39,14 +38,9 @@ pub(crate) fn generate_project(project: ModelGenerationProject, output: &Path) -
 }
 
 fn convert_to_raw_elements(
+    project: &ModelGenerationProject,
     grouped_parts: HashMap<PlayerPartTextureType, Vec<Part>>,
 ) -> Vec<RawProjectElement> {
-    let texture_map = grouped_parts
-        .keys()
-        .enumerate()
-        .map(|(i, k)| (*k, i as u32))
-        .collect::<HashMap<_, _>>();
-
     grouped_parts
         .into_iter()
         .flat_map(|(_, parts)| parts)
@@ -64,9 +58,7 @@ fn convert_to_raw_elements(
                 let from = *position;
                 let to = *position + *size;
 
-                let texture_id = texture_map.get(texture).cloned().unwrap_or_default();
-
-                let faces = RawProjectElementFaces::new(texture_id, *face_uvs);
+                let faces = RawProjectElementFaces::new(project, *texture, *face_uvs);
 
                 let mut rotation = Vec3::ZERO;
                 let mut rotation_anchor = Vec3::ZERO;
@@ -88,17 +80,14 @@ fn convert_to_raw_elements(
                 )
             }
 
-            Part::Quad { name, texture,  .. } => {
+            Part::Quad { name, texture, .. } => {
                 let name = name
                     .to_owned()
                     .map_or_else(|| format!("part-{index}"), |s| s.to_string());
-                
-                let texture_id = texture_map.get(texture).cloned().unwrap_or_default();
 
-                let texture_size = texture.get_texture_size();
-                let texture_size = (texture_size.0 as f32, texture_size.1 as f32);
+                let texture = *texture;
                 
-                RawProjectElement::new_quad(name, part, texture_size, texture_id)
+                RawProjectElement::new_quad(name, part, texture, project)
             }
         })
         .collect_vec()
@@ -122,46 +111,20 @@ fn convert_to_raw_project_textures(
     project: &ModelGenerationProject,
     grouped_parts: &HashMap<PlayerPartTextureType, Vec<Part>>,
 ) -> (ProjectTextureResolution, Vec<RawProjectTexture>) {
-    let mut resolution = [0, 0];
-
     let textures = grouped_parts
         .keys()
         .enumerate()
-        .map(|(i, k)| {
-            let other = if let Some(texture_bytes) = project.get_texture(*k) {
-                image::load_from_memory(texture_bytes)
-                    .context(anyhow!("Failed to load texture from bytes"))
-                    .unwrap()
-                    .to_rgba8()
-            } else {
-                let (w, h) = k.get_texture_size();
-                image::RgbaImage::new(w, h)
-            };
-
-            let mut image = RgbaImage::new(64, 64);
-            imageops::overlay(&mut image, &other, 0, 0);
-
-            let (w, h) = image.dimensions();
-            if w > resolution[0] {
-                resolution[0] = w;
-            }
-
-            if h > resolution[1] {
-                resolution[1] = h;
-            }
-
-            let image_bytes = write_png(&image)
-                .context(anyhow!("Failed to write image to buffer"))
-                .unwrap();
-
-            RawProjectTexture::new(get_texture_name(*k), i as u32, &image_bytes)
+        .filter_map(|(i, k)| {
+            project
+                .get_texture(*k)
+                .and_then(|t| write_png(t).ok())
+                .map(|t| RawProjectTexture::new(get_texture_name(*k), i as u32, &t))
         })
         .collect_vec();
 
-    (
-        ProjectTextureResolution::new(resolution[0], resolution[1]),
-        textures,
-    )
+    let res = project.max_resolution();
+
+    (ProjectTextureResolution::new(res.x, res.y), textures)
 }
 
 fn get_texture_name(texture: PlayerPartTextureType) -> String {

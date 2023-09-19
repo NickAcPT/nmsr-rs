@@ -1,5 +1,5 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
-use glam::Vec3;
+use glam::{Vec2, Vec3};
 use nmsr_rendering::{
     high_level::{
         parts::{
@@ -7,6 +7,7 @@ use nmsr_rendering::{
             uv::{CubeFaceUvs, FaceUv},
         },
         pipeline::scene::primitive_convert,
+        types::PlayerPartTextureType,
     },
     low_level::primitives::mesh::PrimitiveDispatch,
 };
@@ -14,6 +15,8 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_128;
+
+use crate::generator::ModelGenerationProject;
 
 #[derive(Debug, Copy, Clone, Serialize)]
 pub struct ProjectMeta {
@@ -59,7 +62,12 @@ impl RawProjectElement {
         }))
     }
 
-    pub fn new_quad(name: String, part: Part, texture_size: (f32, f32), texture_id: u32) -> Self {
+    pub fn new_quad(
+        name: String,
+        part: Part,
+        texture: PlayerPartTextureType,
+        project: &ModelGenerationProject,
+    ) -> Self {
         fn random_names(a: &str, b: &str) -> (String, String) {
             let (a_new, b_new) = Uuid::new_v4().as_u64_pair();
 
@@ -71,27 +79,31 @@ impl RawProjectElement {
         let (top_left, top_right) = random_names("top_left", "top_right");
         let (bottom_left, bottom_right) = random_names("bottom_left", "bottom_right");
 
-        let (uv_width, uv_height) = texture_size;
+        let texture_id = project.get_texture_id(texture);
+
+        let uv_size = texture.get_texture_size();
+        let (uv_width, uv_height) = (uv_size.0 as f32, uv_size.1 as f32);
 
         let result = if let PrimitiveDispatch::Quad(quad) = converted {
+            let uvs = FaceUv::from([
+                (quad.top_left.uv.x * uv_width) as u16,
+                (quad.top_left.uv.y * uv_height) as u16,
+                (quad.top_right.uv.x * uv_width) as u16,
+                (quad.top_right.uv.y * uv_height) as u16,
+                (quad.bottom_left.uv.x * uv_width) as u16,
+                (quad.bottom_left.uv.y * uv_height) as u16,
+                (quad.bottom_right.uv.x * uv_width) as u16,
+                (quad.bottom_right.uv.y * uv_height) as u16,
+            ]);
+
+            let uvs = project.handle_face(texture, uvs);
+
             let [top_left_uv, top_right_uv, bottom_right_uv, bottom_left_uv] = shrink_rectangle(
                 [
-                    [
-                        quad.top_left.uv.x * uv_width,
-                        quad.top_left.uv.y * uv_height,
-                    ],
-                    [
-                        quad.top_right.uv.x * uv_width,
-                        quad.top_right.uv.y * uv_height,
-                    ],
-                    [
-                        quad.bottom_right.uv.x * uv_width,
-                        quad.bottom_right.uv.y * uv_height,
-                    ],
-                    [
-                        quad.bottom_left.uv.x * uv_width,
-                        quad.bottom_left.uv.y * uv_height,
-                    ],
+                    [uvs.top_left.x, uvs.top_left.y],
+                    [uvs.top_right.x, uvs.top_right.y],
+                    [uvs.bottom_right.x, uvs.bottom_right.y],
+                    [uvs.bottom_left.x, uvs.bottom_left.y],
                 ],
                 RawProjectElementFace::UV_OFFSET,
             );
@@ -160,30 +172,24 @@ pub struct RawProjectElementFace {
 impl RawProjectElementFace {
     pub const UV_OFFSET: f32 = 0.05;
 
-    pub fn new(texture: Option<u32>, uv: FaceUv) -> Self {
+    pub fn new(
+        project: &ModelGenerationProject,
+        texture: PlayerPartTextureType,
+        uv: FaceUv,
+    ) -> Self {
+        let uv = project.handle_face(texture, uv);
+        let texture_id = project.get_texture_id(texture);
+
         let [top_left_uv, _, bottom_right_uv, _] = shrink_rectangle(
             [
-                [
-                    uv.top_left.x as f32,
-                    uv.top_left.y as f32,
-                ],
-                [
-                    uv.top_right.x as f32,
-                    uv.top_right.y as f32,
-                ],
-                [
-                    uv.bottom_right.x as f32,
-                    uv.bottom_right.y as f32,
-                ],
-                [
-                    uv.bottom_left.x as f32,
-                    uv.bottom_left.y as f32,
-                ],
+                [uv.top_left.x, uv.top_left.y],
+                [uv.top_right.x, uv.top_right.y],
+                [uv.bottom_right.x, uv.bottom_right.y],
+                [uv.bottom_left.x, uv.bottom_left.y],
             ],
             RawProjectElementFace::UV_OFFSET,
         );
-        
-        
+
         let uv = [
             top_left_uv[0],
             top_left_uv[1],
@@ -191,7 +197,10 @@ impl RawProjectElementFace {
             bottom_right_uv[1],
         ];
 
-        Self { texture, uv }
+        Self {
+            texture: Some(texture_id),
+            uv,
+        }
     }
 }
 
@@ -205,15 +214,31 @@ pub struct RawProjectElementFaces {
     down: RawProjectElementFace,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ModelFaceUv {
+    pub top_left: Vec2,
+    pub top_right: Vec2,
+    pub bottom_right: Vec2,
+    pub bottom_left: Vec2,
+}
+
 impl RawProjectElementFaces {
-    pub fn new(texture: u32, faces: CubeFaceUvs) -> Self {
+    pub fn new(
+        project: &ModelGenerationProject,
+        texture: PlayerPartTextureType,
+        faces: CubeFaceUvs,
+    ) -> Self {
         Self {
-            north: RawProjectElementFace::new(Some(texture), faces.north),
-            south: RawProjectElementFace::new(Some(texture), faces.south),
-            east: RawProjectElementFace::new(Some(texture), faces.east),
-            west: RawProjectElementFace::new(Some(texture), faces.west),
-            up: RawProjectElementFace::new(Some(texture), faces.up.flip_horizontally().flip_vertically()),
-            down: RawProjectElementFace::new(Some(texture), faces.down.flip_horizontally()),
+            north: RawProjectElementFace::new(project, texture, faces.north),
+            south: RawProjectElementFace::new(project, texture, faces.south),
+            east: RawProjectElementFace::new(project, texture, faces.east),
+            west: RawProjectElementFace::new(project, texture, faces.west),
+            up: RawProjectElementFace::new(
+                project,
+                texture,
+                faces.up.flip_horizontally().flip_vertically(),
+            ),
+            down: RawProjectElementFace::new(project, texture, faces.down.flip_horizontally()),
         }
     }
 }
@@ -228,12 +253,12 @@ pub struct RawProject {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProjectTextureResolution {
-    width: u32,
-    height: u32,
+    width: f32,
+    height: f32,
 }
 
 impl ProjectTextureResolution {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: f32, height: f32) -> Self {
         Self { width, height }
     }
 }

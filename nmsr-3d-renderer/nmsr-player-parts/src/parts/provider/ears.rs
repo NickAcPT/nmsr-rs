@@ -50,15 +50,15 @@ macro_rules! declare_ears_part_vertical {
 
 macro_rules! rot {
     {$({$($body:tt)+} $(,)*)* $(,)*} => {
-    {
-        vec![$(
-            EarsPlayerBodyPartRotation {
-                $($body)+,
-                ..Default::default()
-            },
-        )+]
-    }
-};
+        {
+            vec![$(
+                EarsPlayerBodyPartRotation {
+                    $($body)+,
+                    ..Default::default()
+                },
+            )+]
+        }
+    };
 }
 
 #[allow(dead_code)]
@@ -307,6 +307,7 @@ impl EarsPlayerPartsProvider {
         }
     }
 
+    #[allow(clippy::needless_update)]
     fn tails(
         &self,
         body_part: PlayerBodyPartType,
@@ -338,19 +339,20 @@ impl EarsPlayerPartsProvider {
         let z_rotation = if vertical { 90.0 } else { 0.0 };
 
         let mut bends = tail_data.bends;
+        
         if vertical {
             bends[0] = 0.0;
         }
 
+        let vertical_rotation = if vertical {
+            90.0
+        } else {
+            0.0
+        };
+        
         let segments = tail_data.segments.clamp(1, 4) as usize;
         let seg_height = 12.0 / segments as f32;
         let seg_height_u16 = seg_height as u16;
-
-        let (xy_offset, y_rot_offset, z_rot_offset) = if vertical {
-            (-4.0, -90.0, -90.0)
-        } else {
-            (0.0, 0.0, 0.0)
-        };
 
         let mut rot_x_acc = angle;
         for segment in 0..segments {
@@ -358,14 +360,17 @@ impl EarsPlayerPartsProvider {
 
             result.push(declare_ears_part_vertical!(TailSegment {
                 pos: [
-                    8.0 + xy_offset,
+                    8.0,
                     2.0 + PREV_CORNER_CANARY + (seg_height * segment as f32),
                     4.0 + PREV_CORNER_CANARY
                 ],
                 rot_stack: rot! {
                     {
-                        rot: [rot_x_acc - 180.0, 180.0 + y_rot_offset, z_rot_offset],
-                        rot_anchor: [0.0, xy_offset, 0.0]
+                        rot: [rot_x_acc - 180.0, 180.0, 0.0]
+                    },
+                    {
+                        rot: [0.0, vertical_rotation, -vertical_rotation],
+                        rot_anchor: [-4.0, 0.0, 0.0]
                     }
                 },
                 size: [8, seg_height_u16],
@@ -868,31 +873,39 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
                     let mut part_quad = Part::new_quad(
                         part_definition.texture,
-                        pos,
+                        [0.0; 3],
                         size,
                         uvs,
                         part_definition.normal,
                         #[cfg(feature = "part_tracker")]
-                        Some(name),
+                        Some(name.clone()),
                     );
 
-                    for (index, EarsPlayerBodyPartRotation { rot, rot_anchor }) in part_definition.rot_stack.into_iter().enumerate()
+                    println!();
+                    println!(" #### Doing {name} part rotation ####");
+                    println!();
+
+                    for (index, EarsPlayerBodyPartRotation { rot, rot_anchor }) in
+                        part_definition.rot_stack.into_iter().enumerate()
                     {
                         let anchor = if index == 0 {
                             PartAnchorInfo::new_part_anchor_translate(body_part, is_slim_arms)
+                                .with_rotation_anchor(Vec3::from(pos))
                         } else {
-                            PartAnchorInfo::default()
+                            PartAnchorInfo::new_part_anchor_translate(body_part, is_slim_arms)
+                                .with_rotation_anchor(Vec3::from(pos))
+                                .without_translation_anchor()
                         };
-                        
+
                         let rot_anchor = process_pos(rot_anchor, is_slim_arms, &last_pos.into());
 
                         part_quad.rotate(
                             rot.into(),
-                            Some(
-                                anchor.with_rotation_anchor(Vec3::from(pos) + Vec3::from(rot_anchor)),
-                            ),
+                            Some(anchor.with_rotation_anchor(Vec3::from(rot_anchor))),
                         );
                     }
+
+                    part_quad.translate(Vec3::from(pos));
 
                     let new_offset = part_quad
                         .get_rotation_matrix()
@@ -904,17 +917,16 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     let size = part_quad.get_size();
 
                     let old_point = if part_definition.vertical_quad {
-                        [pos[0], pos[1] + size[1] as f32, pos[2]]
+                        [pos[0] + size[0], pos[1] + size[1] as f32, pos[2]]
                     } else {
                         [pos[0], pos[1], pos[2] - size[1] as f32]
                     };
+                    
+                    let old = Vec3::from(dbg!(old_point)) - normal_offset;
 
-                    let old = Vec3::from(old_point) - normal_offset;
-
-                    last_pos +=
-                        dbg!(part_quad.get_rotation_matrix().transform_point3(old)) - dbg!(old);
-
-                    dbg!(last_pos);
+                    dbg!(part_quad.get_rotation_matrix().transform_point3(old_point.into()));
+                    
+                    last_pos += (part_quad.get_rotation_matrix().transform_point3(old)) - (old);
 
                     result.push(part_quad);
                 }

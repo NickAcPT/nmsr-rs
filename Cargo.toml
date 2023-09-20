@@ -32,7 +32,7 @@ bytemuck = { version = "1.14", features = ["derive"] }
 glam = { version = "0.24", features = ["bytemuck"] }
 image = { version = "0.24", default-features = false, features = ["png"] }
 
-tokio = { version = "1.32", features = ["sync"] }
+tokio = { version = "1.32", features = ["sync"], default-features = false }
 
 tracing = "0.1"
 async-trait = "0.1"
@@ -57,3 +57,9 @@ opt-level = 3
 
 [patch.crates-io]
 smaa = { git = "https://github.com/NickAcPT/smaa-rs", branch = "nmsr" }
+
+# Set all libraries to be optimised
+[profile.release.package."*"]
+opt-level = "s"
+codegen-units = 1
+strip = true

@@ -10,6 +10,7 @@ use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation, S
 use nmsr_rendering::high_level::pipeline::{
     GraphicsContext, GraphicsContextDescriptor, SceneContext, SceneContextWrapper,
 };
+use nmsr_rendering::high_level::utils::parts::primitive_convert;
 use nmsr_rendering::low_level::Vec3;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
 use strum::IntoEnumIterator;
@@ -665,7 +666,7 @@ fn debug_ui(
             
             // First thing we do is get our scene parts
             let parts_pos: Vec<_> = last_computed_parts.iter()
-                .map(scene::primitive_convert)
+                .map(primitive_convert)
                 .flat_map(|p| p.get_vertices())
                 .map(|v| v.position)
                 .collect();

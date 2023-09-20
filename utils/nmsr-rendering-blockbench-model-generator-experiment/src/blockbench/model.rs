@@ -6,8 +6,7 @@ use nmsr_rendering::{
             part::Part,
             uv::{CubeFaceUvs, FaceUv},
         },
-        pipeline::scene::primitive_convert,
-        types::PlayerPartTextureType,
+        types::PlayerPartTextureType, utils::parts::primitive_convert,
     },
     low_level::primitives::mesh::PrimitiveDispatch,
 };

@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wgpu = { workspace = true }
+wgpu = { workspace = true, optional = true  }
+wgpu-types = { workspace = true }
 bytemuck = { workspace = true }
 glam = { workspace = true }
 paste = { workspace = true }
@@ -12,15 +13,16 @@ thiserror = { workspace = true }
 strum = { workspace = true }
 nmsr-player-parts = { path = "../nmsr-player-parts" }
 image = { workspace = true, default-features = false }
-tokio = { workspace = true }
+tokio = { workspace = true, default-features = false }
 itertools = { workspace = true }
 tracing = { workspace = true }
-deadpool = "0.9.5"
+deadpool = {version = "0.9.5", optional = true }
 async-trait = { workspace = true }
 derive_more = { workspace = true }
-smaa = "0.10.1"
+smaa = {version = "0.10.1", optional = true }
 
 [features]
-default = []
+default = ["pipeline"]
+pipeline = ["dep:smaa", "dep:deadpool", "dep:wgpu"]
 part_tracker = ["nmsr-player-parts/part_tracker"]
 ears = ["nmsr-player-parts/ears"]

@@ -1,4 +1,6 @@
+#[cfg(feature = "pipeline")]
 pub mod camera;
+#[cfg(feature = "pipeline")]
 pub mod pipeline;
 pub mod utils;
 

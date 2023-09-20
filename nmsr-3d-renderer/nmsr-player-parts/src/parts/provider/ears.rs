@@ -11,7 +11,7 @@ use crate::{
 use ears_rs::features::{
     data::{
         ear::{EarAnchor, EarMode},
-        tail,
+        tail::{self, TailMode},
         wing::WingMode,
     },
     EarsFeatures,
@@ -46,6 +46,19 @@ macro_rules! declare_ears_part_vertical {
             }
         }
     };
+}
+
+macro_rules! rot {
+    {$({$($body:tt)+} $(,)*)* $(,)*} => {
+    {
+        vec![$(
+            EarsPlayerBodyPartRotation {
+                $($body)+,
+                ..Default::default()
+            },
+        )+]
+    }
+};
 }
 
 #[allow(dead_code)]
@@ -85,12 +98,17 @@ impl From<PlayerPartEarsTextureType> for PlayerPartTextureType {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy, Default)]
+struct EarsPlayerBodyPartRotation {
+    rot: [f32; 3],
+    rot_anchor: [f32; 3],
+}
+
+#[derive(Debug, Clone)]
 struct EarsPlayerBodyPartDefinition {
     texture: PlayerPartTextureType,
     pos: [f32; 3],
-    rot: [f32; 3],
-    rot_anchor: [f32; 3],
+    rot_stack: Vec<EarsPlayerBodyPartRotation>,
     size: [u16; 2],
     uv: [u16; 4],
     back_uv: Option<[u16; 4]>,
@@ -113,8 +131,7 @@ impl Default for EarsPlayerBodyPartDefinition {
         Self {
             texture: PlayerPartTextureType::Skin,
             pos: Default::default(),
-            rot: Default::default(),
-            rot_anchor: Default::default(),
+            rot_stack: Default::default(),
             size: Default::default(),
             uv: Default::default(),
             back_uv: None,
@@ -147,7 +164,9 @@ impl Default for EarsPlayerPartsProvider {
             vec![declare_ears_part_vertical! {
                 Horn {
                     pos: [0.0, 8.0, 0.0],
-                    rot: [-25.0, 0.0, 0.0],
+                    rot_stack: rot! {
+                        { rot: [-25.0, 0.0, 0.0] }
+                    },
                     size: [8, 8],
                     uv: [56, 0, 8, 8],
                     enabled: |f| f.horn,
@@ -162,7 +181,9 @@ impl Default for EarsPlayerPartsProvider {
             vec![declare_ears_part_vertical! {
                 LeftArmClaw {
                     pos: [0.0, -4.0, 4.0],
-                    rot: [0.0, 90.0, 0.0],
+                    rot_stack: rot!{
+                        { rot: [0.0, 90.0, 0.0] }
+                    },
                     size: [4, 4],
                     uv: [44, 48, 4, 4],
                     enabled: |f| f.claws,
@@ -178,7 +199,9 @@ impl Default for EarsPlayerPartsProvider {
             vec![declare_ears_part_vertical! {
                 RightArmClaw {
                     pos: [ARM_PIXEL_CANARY, -4.0, 4.0],
-                    rot: [0.0, 90.0, 0.0],
+                    rot_stack: rot! {
+                        { rot: [0.0, 90.0, 0.0] }
+                    },
                     size: [4, 4],
                     uv: [52, 16, 4, 4],
                     enabled: |f| f.claws,
@@ -195,7 +218,9 @@ impl Default for EarsPlayerPartsProvider {
                 WingAsymmetricRight {
                     texture: PlayerPartEarsTextureType::Wings.into(),
                     pos: [8.0 - 2.0, -2.0, 4.0],
-                    rot: [0.0, -60.0, 0.0],
+                    rot_stack: rot!{
+                        { rot: [0.0, -60.0, 0.0] }
+                    },
                     size: [20, 16],
                     uv: [0, 0, 20, 16],
                     normal: Vec3::X,
@@ -207,7 +232,9 @@ impl Default for EarsPlayerPartsProvider {
                 WingAsymmetricLeft {
                     texture: PlayerPartEarsTextureType::Wings.into(),
                     pos: [2.0, -2.0, 4.0],
-                    rot: [0.0, -120.0, 0.0],
+                    rot_stack: rot!{
+                        { rot: [0.0, -120.0, 0.0] }
+                    },
                     size: [20, 16],
                     uv: [0, 0, 20, 16],
                     normal: Vec3::NEG_X,
@@ -218,7 +245,9 @@ impl Default for EarsPlayerPartsProvider {
                 WingSymmetricSingle {
                     texture: PlayerPartEarsTextureType::Wings.into(),
                     pos: [4.0, -2.0, 4.0],
-                    rot: [0.0, -90.0, 0.0],
+                    rot_stack: rot!{
+                        { rot: [0.0, -90.0, 0.0] }
+                    },
                     size: [20, 16],
                     uv: [0, 0, 20, 16],
                     normal: Vec3::NEG_X,
@@ -289,6 +318,8 @@ impl EarsPlayerPartsProvider {
             return result;
         };
 
+        let vertical = tail_data.mode == TailMode::Vertical;
+
         let bend_0 = tail_data.bends[0];
 
         let angle = match tail_data.mode {
@@ -303,25 +334,51 @@ impl EarsPlayerPartsProvider {
             tail::TailMode::Up => 130.0,
             _ => 0.0,
         };
-        
-        // TODO: Vertical tail
+
+        let z_rotation = if vertical { 90.0 } else { 0.0 };
+
+        let mut bends = tail_data.bends;
+        if vertical {
+            bends[0] = 0.0;
+        }
 
         let segments = tail_data.segments.clamp(1, 4) as usize;
         let seg_height = 12.0 / segments as f32;
         let seg_height_u16 = seg_height as u16;
-    
+
+        let (xy_offset, y_rot_offset, z_rot_offset) = if vertical {
+            (-4.0, -90.0, -90.0)
+        } else {
+            (0.0, 0.0, 0.0)
+        };
+
         let mut rot_x_acc = angle;
         for segment in 0..segments {
             rot_x_acc += tail_data.bends[segment];
-            
+
             result.push(declare_ears_part_vertical!(TailSegment {
-                pos: [8.0, 2.0 + PREV_CORNER_CANARY + (seg_height * segment as f32), 4.0 + PREV_CORNER_CANARY],
-                rot: [rot_x_acc - 180.0, 180.0, 0.0],
+                pos: [
+                    8.0 + xy_offset,
+                    2.0 + PREV_CORNER_CANARY + (seg_height * segment as f32),
+                    4.0 + PREV_CORNER_CANARY
+                ],
+                rot_stack: rot! {
+                    {
+                        rot: [rot_x_acc - 180.0, 180.0 + y_rot_offset, z_rot_offset],
+                        rot_anchor: [0.0, xy_offset, 0.0]
+                    }
+                },
                 size: [8, seg_height_u16],
-                uv: [56, 16 + (segment as u16 * seg_height_u16), 8, seg_height_u16],
+                uv: [
+                    56,
+                    16 + (segment as u16 * seg_height_u16),
+                    8,
+                    seg_height_u16
+                ],
                 normal: Vec3::Z,
                 part_count: Some(segment as u32),
                 vertical_flip: true,
+                horizontal_flip: vertical,
                 reset_rotation_stack: segment == 0,
                 double_sided: false
             }));
@@ -411,8 +468,12 @@ impl EarsPlayerPartsProvider {
                 EarFloppyRight {
                     pos: [8.0, 0.0, 0.0],
                     size: [8, 8],
-                    rot: [30.0, -90.0, 0.0],
-                    rot_anchor: [0.0, 7.0, 0.0],
+                    rot_stack: rot!{
+                        {
+                            rot: [30.0, -90.0, 0.0],
+                            rot_anchor: [0.0, 7.0, 0.0]
+                        }
+                    },
                     uv: [24, 0, 8, 8],
                     back_uv: Some([56, 28, 8, 8]),
                     normal: Vec3::X,
@@ -424,8 +485,12 @@ impl EarsPlayerPartsProvider {
                 EarFloppyLeft {
                     pos: [0.0, 0.0, 8.0],
                     size: [8, 8],
-                    rot: [30.0, 90.0, 0.0],
-                    rot_anchor: [0.0, 7.0, 0.0],
+                    rot_stack: rot!{
+                        {
+                            rot: [30.0, 90.0, 0.0],
+                            rot_anchor: [0.0, 7.0, 0.0]
+                        }
+                    },
                     uv: [32, 0, 8, 8],
                     back_uv: Some([56, 36, 8, 8]),
                     normal: Vec3::NEG_X,
@@ -443,7 +508,9 @@ impl EarsPlayerPartsProvider {
                 EarOutRight {
                     pos: [8.0, pos_y, pos_z],
                     size: [8, 8],
-                    rot: [0.0, -90.0, 0.0],
+                    rot_stack: rot!{
+                        { rot: [0.0, -90.0, 0.0] }
+                    },
                     uv: [24, 0, 8, 8],
                     back_uv: Some([56, 28, 8, 8]),
                     normal: Vec3::X,
@@ -455,7 +522,9 @@ impl EarsPlayerPartsProvider {
                 EarOutLeft {
                     pos: [0.0, pos_y, 8.0 + pos_z],
                     size: [8, 8],
-                    rot: [0.0, 90.0, 0.0],
+                    rot_stack: rot!{
+                        { rot: [0.0, 90.0, 0.0] }
+                    },
                     uv: [32, 0, 8, 8],
                     back_uv: Some([56, 36, 8, 8]),
                     normal: Vec3::NEG_X,
@@ -470,7 +539,9 @@ impl EarsPlayerPartsProvider {
             result.push(declare_ears_part_vertical! {
                 EarTallOne {
                     pos: [0.0, 8.0, anchor_z],
-                    rot: [current_angle, 0.0, 0.0],
+                    rot_stack: rot! {
+                        { rot: [current_angle, 0.0, 0.0] }
+                    },
                     size: [8, 4],
                     uv: [24, 0, 8, 4],
                     back_uv: Some([56, 40, 8, 4]),
@@ -487,7 +558,9 @@ impl EarsPlayerPartsProvider {
                 EarTallTwo {
                     pos: [0.0, 8.0 + 4.0 + PREV_CORNER_CANARY, anchor_z + PREV_CORNER_CANARY],
                     size: [8, 4],
-                    rot: [current_angle, 0.0, 0.0],
+                    rot_stack: rot! {
+                        { rot: [current_angle, 0.0, 0.0] }
+                    },
                     uv: [28, 0, 8, 4],
                     back_uv: Some([56, 36, 8, 4]),
                     normal: Vec3::NEG_Z,
@@ -502,7 +575,9 @@ impl EarsPlayerPartsProvider {
                 EarTallThree {
                     pos: [0.0, 8.0 + 8.0 + PREV_CORNER_CANARY, anchor_z + PREV_CORNER_CANARY],
                     size: [8, 4],
-                    rot: [current_angle, 0.0, 0.0],
+                    rot_stack: rot! {
+                        { rot: [current_angle, 0.0, 0.0] }
+                    },
                     uv: [32, 0, 8, 4],
                     back_uv: Some([56, 32, 8, 4]),
                     normal: Vec3::NEG_Z,
@@ -517,7 +592,9 @@ impl EarsPlayerPartsProvider {
                 EarTallFour {
                     pos: [0.0, 8.0 + 12.0 + PREV_CORNER_CANARY, anchor_z + PREV_CORNER_CANARY],
                     size: [8, 4],
-                    rot: [current_angle, 0.0, 0.0],
+                    rot_stack: rot! {
+                        { rot: [current_angle, 0.0, 0.0] }
+                    },
                     uv: [36, 0, 8, 4],
                     back_uv: Some([56, 28, 8, 4]),
                     normal: Vec3::NEG_Z,
@@ -530,7 +607,9 @@ impl EarsPlayerPartsProvider {
                 EarTallLeft {
                     pos: [1.0, 8.0, anchor_z - 3.0],
                     size: [8, 16],
-                    rot: [0.0, -45.0, 0.0],
+                    rot_stack: rot! {
+                        { rot: [0.0, -45.0, 0.0] }
+                    },
                     uv: [24, 0, 8, 16],
                     back_uv: Some([56, 28, 8, 16]),
                     normal: Vec3::NEG_X,
@@ -542,7 +621,9 @@ impl EarsPlayerPartsProvider {
                 EarTallRight {
                     pos: [1.0, 8.0, anchor_z + 3.0],
                     size: [8, 16],
-                    rot: [0.0, 45.0, 0.0],
+                    rot_stack: rot! {
+                        { rot: [0.0, 45.0, 0.0] }
+                    },
                     uv: [24, 0, 8, 16],
                     back_uv: Some([56, 28, 8, 16]),
                     normal: Vec3::X,
@@ -600,7 +681,9 @@ impl EarsPlayerPartsProvider {
                     result.push(declare_ears_part_vertical! {
                         $name {
                             pos: [snout_x + $x as f32, snout_y, snout_z + 1.0],
-                            rot: [0.0, 90.0, 0.0],
+                            rot_stack: rot! {
+                                { rot: [0.0, 90.0, 0.0] }
+                            },
                             size: [1, snout_height.into()],
                             uv: [7, $uv_y_1, 1, snout_height.into()],
                             normal: $normal,
@@ -611,7 +694,9 @@ impl EarsPlayerPartsProvider {
                     result.push(declare_ears_part_vertical! {
                         $name_2 {
                             pos: [snout_x + $x as f32, snout_y, 0.0],
-                            rot: [0.0, 90.0, 0.0],
+                            rot_stack: rot! {
+                                { rot: [0.0, 90.0, 0.0] }
+                            },
                             size: [snout_depth as u16 - 1, snout_height.into()],
                             uv: [7, $uv_y_2, 1, snout_height.into()],
                             normal: $normal,
@@ -676,6 +761,9 @@ fn process_pos(pos: [f32; 3], is_slim_arms: bool, last_pos: &[f32; 3]) -> [f32; 
         } else if (*element) > PREV_CORNER_CANARY {
             let rest = *element - PREV_CORNER_CANARY;
             *element = last_pos[index] + rest;
+        } else if (*element) < -PREV_CORNER_CANARY {
+            let rest = *element + PREV_CORNER_CANARY;
+            *element = last_pos[index] + rest;
         }
     }
 
@@ -699,16 +787,18 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
             let mut result = Vec::new();
 
-            if let Some(parts) = self.0.get(&body_part) {
-                let dynamic_parts = self.get_dynamic_parts(body_part, &features);
+            if let Some(parts) = self.0.get(&body_part).cloned() {
+                let dynamic_parts = self
+                    .get_dynamic_parts(body_part, &features)
+                    .unwrap_or(Vec::with_capacity(0));
 
                 let processed_parts = parts
-                    .iter()
-                    .chain(dynamic_parts.iter().flatten())
+                    .into_iter()
+                    .chain(dynamic_parts)
                     .filter(|p| (p.enabled)(&features))
-                    .flat_map(|&p| {
+                    .flat_map(|p| {
                         if p.double_sided {
-                            let mut back = p;
+                            let mut back = p.clone();
                             back.normal *= -1.0;
 
                             back.uv = p.back_uv.unwrap_or(p.uv);
@@ -749,8 +839,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     );
 
                     let pos = process_pos(part_definition.pos, is_slim_arms, &last_pos.into());
-                    let rot_anchor =
-                        process_pos(part_definition.rot_anchor, is_slim_arms, &last_pos.into());
 
                     let size = if part_definition.vertical_quad {
                         [size[0] as u32, size[1] as u32, 0]
@@ -788,13 +876,23 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         Some(name),
                     );
 
-                    part_quad.rotate(
-                        part_definition.rot.into(),
-                        Some(
+                    for (index, EarsPlayerBodyPartRotation { rot, rot_anchor }) in part_definition.rot_stack.into_iter().enumerate()
+                    {
+                        let anchor = if index == 0 {
                             PartAnchorInfo::new_part_anchor_translate(body_part, is_slim_arms)
-                                .with_rotation_anchor(Vec3::from(pos) + Vec3::from(rot_anchor)),
-                        ),
-                    );
+                        } else {
+                            PartAnchorInfo::default()
+                        };
+                        
+                        let rot_anchor = process_pos(rot_anchor, is_slim_arms, &last_pos.into());
+
+                        part_quad.rotate(
+                            rot.into(),
+                            Some(
+                                anchor.with_rotation_anchor(Vec3::from(pos) + Vec3::from(rot_anchor)),
+                            ),
+                        );
+                    }
 
                     let new_offset = part_quad
                         .get_rotation_matrix()
@@ -810,13 +908,14 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     } else {
                         [pos[0], pos[1], pos[2] - size[1] as f32]
                     };
-                    
+
                     let old = Vec3::from(old_point) - normal_offset;
 
-                    last_pos += dbg!(part_quad.get_rotation_matrix().transform_point3(old)) - dbg!(old);
+                    last_pos +=
+                        dbg!(part_quad.get_rotation_matrix().transform_point3(old)) - dbg!(old);
 
                     dbg!(last_pos);
-                    
+
                     result.push(part_quad);
                 }
             }

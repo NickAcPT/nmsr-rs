@@ -91,11 +91,18 @@ impl ModelGenerationProject {
                 self.part_context.ears_features = features;
 
                 ears_rs::utils::process_erase_regions(&mut texture)?;
+            } else if texture_type == PlayerPartEarsTextureType::Cape.into()
+            && texture_type.get_texture_size() != (texture.width(), texture.height())
+            {
+                texture = ears_rs::utils::convert_ears_cape_to_mojang_cape(texture);
             }
-
-            ears_rs::utils::strip_alpha(&mut texture);
         }
-
+        if texture_type == PlayerPartTextureType::Skin {
+            ears_rs::utils::strip_alpha(&mut texture);
+        } else if texture_type == PlayerPartTextureType::Cape {
+            self.part_context.has_cape = true;
+        }
+        
         self.textures.insert(texture_type, texture);
         self.recompute_max_resolution();
 
@@ -144,13 +151,8 @@ impl ModelGenerationProject {
             let [required_x, required_y]: [f32; 2] = required_resolution.into();
 
             if tex_resolution != required_resolution {
-                println!("{tex_resolution:?} != {required_resolution:?} ({x}, {y})");
-                
                 x = (x / tex_width) * required_x;
                 y = (y / tex_height) * required_y;
-                
-                println!("result: {tex_resolution:?} != {required_resolution:?} ({x}, {y})");
-                println!();
             }
 
             [x, y].into()
@@ -181,6 +183,7 @@ impl ModelGenerationProject {
     pub(crate) fn get_texture_id(&self, texture: PlayerPartTextureType) -> u32 {
         self.textures
             .keys()
+            .sorted_by_key(|&&t| t)
             .enumerate()
             .find(|(_, &t)| t == texture)
             .map(|(i, _)| i as u32)

@@ -113,6 +113,7 @@ fn convert_to_raw_project_textures(
 ) -> (ProjectTextureResolution, Vec<RawProjectTexture>) {
     let textures = grouped_parts
         .keys()
+        .sorted_by_key(|&&t| t)
         .enumerate()
         .filter_map(|(i, k)| {
             project

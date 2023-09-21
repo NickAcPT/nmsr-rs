@@ -83,10 +83,6 @@ impl RawProjectElement {
         let uv_size = texture.get_texture_size();
         let (uv_width, uv_height) = (uv_size.0 as f32, uv_size.1 as f32);
         
-        let (rotation, anchor) = part.last_rotation().unwrap_or_default();
-        
-        let origin = anchor.rotation_anchor;
-
         let result = if let PrimitiveDispatch::Quad(quad) = converted {
             let uvs = FaceUv::from([
                 (quad.top_left.uv.x * uv_width) as u16,
@@ -116,8 +112,7 @@ impl RawProjectElement {
                 "name": name,
                 "box_uv": false,
                 "type": "mesh",
-                "origin": origin,
-                //"origin": Vec3::ZERO,
+                "origin": Vec3::ZERO,
                 "rotation": Vec3::ZERO,
                 "vertices": {
                     &top_left: [

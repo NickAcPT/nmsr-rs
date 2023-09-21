@@ -16,7 +16,7 @@ use ears_rs::features::{
     },
     EarsFeatures,
 };
-use glam::Vec3;
+use glam::{Mat4, Vec3};
 use itertools::Itertools;
 use std::collections::HashMap;
 
@@ -339,17 +339,13 @@ impl EarsPlayerPartsProvider {
         let z_rotation = if vertical { 90.0 } else { 0.0 };
 
         let mut bends = tail_data.bends;
-        
+
         if vertical {
             bends[0] = 0.0;
         }
 
-        let vertical_rotation = if vertical {
-            90.0
-        } else {
-            0.0
-        };
-        
+        let vertical_rotation = if vertical { 90.0 } else { 0.0 };
+
         let segments = tail_data.segments.clamp(1, 4) as usize;
         let seg_height = 12.0 / segments as f32;
         let seg_height_u16 = seg_height as u16;
@@ -825,6 +821,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     .sorted_by_key(|p| p.is_back);
 
                 let mut last_pos = Vec3::ZERO;
+                let mut rot_matrix = Mat4::IDENTITY;
                 for part_definition in processed_parts {
                     if part_definition.reset_rotation_stack {
                         last_pos = Vec3::ZERO;
@@ -899,10 +896,9 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
                         let rot_anchor = process_pos(rot_anchor, is_slim_arms, &last_pos.into());
 
-                        part_quad.rotate(
-                            rot.into(),
-                            Some(anchor.with_rotation_anchor(Vec3::from(rot_anchor))),
-                        );
+                        let anchor = anchor.with_rotation_anchor(Vec3::from(rot_anchor));
+
+                        part_quad.rotate(rot.into(), Some(anchor));
                     }
 
                     part_quad.translate(Vec3::from(pos));

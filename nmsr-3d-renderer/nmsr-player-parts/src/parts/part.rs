@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
@@ -68,6 +70,7 @@ pub enum Part {
         texture: PlayerPartTextureType,
         #[cfg(feature = "part_tracker")] name: Option<String>,
         #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
+        #[cfg(feature = "part_tracker")] group: PathBuf,
     },
     /// Represents a quad as a part of a player model.
     Quad {
@@ -79,6 +82,7 @@ pub enum Part {
         texture: PlayerPartTextureType,
         #[cfg(feature = "part_tracker")] name: Option<String>,
         #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
+        #[cfg(feature = "part_tracker")] group: PathBuf,
     },
 }
 
@@ -109,6 +113,7 @@ impl Part {
             texture,
             #[cfg(feature = "part_tracker")] name,
             #[cfg(feature = "part_tracker")] last_rotation: None,
+            #[cfg(feature = "part_tracker")] group: PathBuf::new(),
         }
     }
 
@@ -129,6 +134,7 @@ impl Part {
             texture,
             #[cfg(feature = "part_tracker")] last_rotation: None,
             #[cfg(feature = "part_tracker")] name,
+            #[cfg(feature = "part_tracker")] group: PathBuf::new(),
         }
     }
 
@@ -326,6 +332,23 @@ impl Part {
             Quad { normal, .. } => normal,
         }
     }
+    
+    #[cfg(feature = "part_tracker")]
+    pub fn get_group(&self) -> &Path {
+        match self {
+            Cube { group, .. } => group.as_path(),
+            Quad { group, .. } => group.as_path(),
+        }
+    }
+    
+    #[cfg(feature = "part_tracker")] 
+    pub fn push_group(&mut self, group: impl AsRef<Path>) {
+        match self {
+            Cube { group: ref mut g, .. } => g.push(group),
+            Quad { group: ref mut g, .. } => g.push(group),
+        }
+    }
+    
 }
 
 /// A position in 3D space.

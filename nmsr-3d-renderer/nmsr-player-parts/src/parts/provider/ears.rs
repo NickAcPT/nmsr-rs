@@ -3,7 +3,6 @@ use crate::{
     model::ArmorMaterial,
     parts::{
         part::{Part, PartAnchorInfo},
-        provider::minecraft::compute_base_part,
         uv::{uv_from_pos_and_size, FaceUv},
     },
     types::{PlayerBodyPartType, PlayerBodyPartType::*, PlayerPartTextureType},
@@ -201,6 +200,7 @@ impl Default for EarsPlayerPartsProvider {
                     uv: [0, 0, 20, 16],
                     normal: Vec3::X,
                     horizontal_flip: true,
+                    double_sided: false,
                     enabled: |f| f.wing.is_some_and(|w| w.mode == WingMode::AsymmetricR || w.mode == WingMode::SymmetricDual)
                 }
             },
@@ -212,6 +212,8 @@ impl Default for EarsPlayerPartsProvider {
                     size: [20, 16],
                     uv: [0, 0, 20, 16],
                     normal: Vec3::NEG_X,
+                    horizontal_flip: true,
+                    double_sided: false,
                     enabled: |f| f.wing.is_some_and(|w| w.mode == WingMode::AsymmetricL || w.mode == WingMode::SymmetricDual)
                 }
             },
@@ -291,7 +293,7 @@ impl EarsPlayerPartsProvider {
             return result;
         };
 
-        let vertical = tail_data.mode == TailMode::Vertical;
+        let vertical = false && tail_data.mode == TailMode::Vertical;
 
         let bend_0 = tail_data.bends[0];
 
@@ -833,13 +835,19 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
                     #[cfg(feature = "part_tracker")]
                     {
-                        part_quad
-                            .push_groups(compute_base_part(body_part, is_slim_arms).get_group());
+                        part_quad.push_groups(
+                            crate::parts::provider::minecraft::compute_base_part(
+                                body_part,
+                                is_slim_arms,
+                            )
+                            .get_group(),
+                        );
 
                         part_quad.push_group(part_definition.name);
                     }
 
                     println!();
+                    #[cfg(feature = "part_tracker")]
                     println!(" #### Doing {name} part rotation ####");
                     println!();
 

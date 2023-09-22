@@ -1,3 +1,6 @@
+[build]
+target = "wasm32-unknown-unknown"
+
 [unstable]
 build-std = ["panic_abort", "std"]
 build-std-features = ["panic_immediate_abort"]

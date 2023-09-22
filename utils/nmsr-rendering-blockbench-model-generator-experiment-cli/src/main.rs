@@ -1,16 +1,12 @@
 use std::ops::Deref;
-use std::{
-    fs,
-    path::PathBuf,
-};
+use std::{fs, path::PathBuf};
 
 use anyhow::{anyhow, Context, Ok, Result};
 use clap::{Parser, ValueEnum};
 use nmsr_rendering_blockbench_model_generator_experiment::blockbench;
 use nmsr_rendering_blockbench_model_generator_experiment::generator::ModelGenerationProject;
 use nmsr_rendering_blockbench_model_generator_experiment::nmsr_rendering::high_level::{
-    model::PlayerModel,
-    types::PlayerPartTextureType,
+    model::PlayerModel, types::PlayerPartTextureType,
 };
 
 #[derive(Parser, Debug)]

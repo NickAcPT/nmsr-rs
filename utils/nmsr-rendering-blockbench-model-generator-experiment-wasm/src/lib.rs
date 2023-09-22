@@ -1,26 +1,37 @@
-use std::{error::Error, ops::Deref};
+use std::ops::Deref;
 
 use nmsr_rendering_blockbench_model_generator_experiment::{
     blockbench,
     generator::ModelGenerationProject,
     nmsr_rendering::high_level::{model::PlayerModel, types::PlayerPartTextureType},
 };
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue, UnwrapThrowExt};
+
+extern crate alloc;
+
+#[cfg(target_arch = "wasm32")]
+use lol_alloc::{AssumeSingleThreaded, FreeListAllocator};
+
+// SAFETY: This application is single threaded, so using AssumeSingleThreaded is allowed.
+#[cfg(target_arch = "wasm32")]
+#[global_allocator]
+static ALLOCATOR: AssumeSingleThreaded<FreeListAllocator> =
+    unsafe { AssumeSingleThreaded::new(FreeListAllocator::new()) };
 
 #[wasm_bindgen]
 pub struct ConversionResult {
-    result: Option<String>,
-    error: Option<String>,
+    value: JsValue,
+    is_error: bool,
 }
 
 #[wasm_bindgen]
 impl ConversionResult {
-    pub fn result(&self) -> Option<String> {
-        self.result.clone()
+    pub fn value(&self) -> JsValue {
+        self.value.clone()
     }
 
-    pub fn error(&self) -> Option<String> {
-        self.error.clone()
+    pub fn is_error(&self) -> bool {
+        self.is_error
     }
 }
 
@@ -51,18 +62,18 @@ pub fn generate_blockbench_model(
 
     let mut project = ModelGenerationProject::new(*model, layers);
 
-    let texture_result = project.load_texture(PlayerPartTextureType::Skin, &skin_bytes);
+    project.load_texture(PlayerPartTextureType::Skin, &skin_bytes).unwrap_throw();
 
-    let result = texture_result.and_then(|_| blockbench::generate_project(project));
+    let result = blockbench::generate_project(project);
 
     match result {
         Ok(result) => ConversionResult {
-            result: Some(result),
-            error: None,
+            value: result,
+            is_error: false,
         },
-        Err(error) => ConversionResult {
-            result: None,
-            error: Some(error.to_string()),
+        Err(e) => ConversionResult {
+            value: e.into(),
+            is_error: true,
         },
     }
 }

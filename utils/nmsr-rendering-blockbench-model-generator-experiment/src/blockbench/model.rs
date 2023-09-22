@@ -58,7 +58,7 @@ impl RawProjectElement {
             "origin": origin,
             "rotation": rotation,
             "faces": faces,
-        }))
+        }).into())
     }
 
     pub fn new_quad(

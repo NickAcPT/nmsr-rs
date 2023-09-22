@@ -205,8 +205,6 @@ impl Part {
     }
 
     pub fn rotate(&mut self, rotation: MinecraftPosition, anchor: Option<PartAnchorInfo>) {
-        println!();
-        println!("$$$ ROTATE START $$$");
         let prev_rotation = *self.rotation_matrix_mut();
         
         let anchor = anchor.unwrap_or_default();
@@ -214,10 +212,6 @@ impl Part {
         
         let offset = anchor.rotation_anchor;
         
-        println!("translation: {:?}", anchor.translation_anchor);
-        println!("current position: {:?}", self.get_position());
-        
-        println!("offset: {:?}", offset);
         let rot_translation_mat = Mat4::from_translation(offset);
         let neg_rot_translation_mat = Mat4::from_translation(-offset);
         
@@ -228,9 +222,7 @@ impl Part {
             rotation.z.to_radians(),
         ));
         
-        println!("rotation: {:?}", rotation);
         let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
-        println!("offset: {:?}", -offset);
         
         #[cfg(feature = "part_tracker")]
         if rotation != Vec3::ZERO {
@@ -238,7 +230,6 @@ impl Part {
         }
         
         *self.rotation_matrix_mut() = model_transform * prev_rotation;
-        println!("$$$ ROTATE END $$$");
     }
 
     pub fn get_size(&self) -> MinecraftPosition {

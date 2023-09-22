@@ -6,7 +6,7 @@ use std::{
     vec::Vec,
 };
 
-use anyhow::{anyhow, Context, Ok, Result};
+use anyhow::{anyhow, Context, Ok};
 use glam::Vec3;
 use image::RgbaImage;
 use itertools::Itertools;
@@ -19,7 +19,19 @@ use crate::{
 
 use self::model::{ProjectTextureResolution, RawProjectElement, RawProjectElementFaces};
 
-pub fn generate_project(project: ModelGenerationProject) -> Result<String> {
+#[cfg(not(feature = "wasm"))]
+pub type ProjectOutput = String;
+
+#[cfg(feature = "wasm")]
+pub type ProjectOutput = wasm_bindgen::JsValue;
+
+#[cfg(not(feature = "wasm"))]
+pub type ProjectOutputResult = anyhow::Result<ProjectOutput>;
+
+#[cfg(feature = "wasm")]
+pub type ProjectOutputResult = std::result::Result<ProjectOutput, serde_wasm_bindgen::Error>;
+
+pub fn generate_project(project: ModelGenerationProject) -> ProjectOutputResult {
     let parts = project.generate_parts();
     let texture_grouped_parts = group_by_texture(parts);
     let outliner_groups = vec![];
@@ -29,10 +41,18 @@ pub fn generate_project(project: ModelGenerationProject) -> Result<String> {
 
     let project = RawProject::new(resolution, elements, raw_textures, outliner_groups);
 
-    let project_json =
-        serde_json::to_string(&project).context(anyhow!("Failed to serialize project"))?;
+    #[cfg(not(feature = "wasm"))]
+    {
+        let project_json =
+            serde_json::to_string(&project).context(anyhow!("Failed to serialize project"))?;
 
-    Ok(project_json)
+        Ok(project_json)
+    }
+
+    #[cfg(feature = "wasm")]
+    {
+        serde_wasm_bindgen::to_value(&project).map_err(|e| e.into())
+    }
 }
 
 fn convert_to_raw_elements(
@@ -135,7 +155,7 @@ fn get_texture_name(texture: PlayerPartTextureType) -> String {
     )
 }
 
-pub fn write_png(img: &RgbaImage) -> Result<Vec<u8>> {
+pub fn write_png(img: &RgbaImage) -> anyhow::Result<Vec<u8>> {
     let mut bytes = Cursor::new(vec![]);
 
     {

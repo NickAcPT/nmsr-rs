@@ -780,9 +780,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                 for part_definition in processed_parts {
                     if part_definition.reset_rotation_stack {
                         last_pos = Vec3::ZERO;
-                        println!();
-                        println!("## Reset rotation stack ##");
-                        println!();
                     }
 
                     let size = part_definition.size;
@@ -846,11 +843,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         part_quad.push_group(part_definition.name);
                     }
 
-                    println!();
-                    #[cfg(feature = "part_tracker")]
-                    println!(" #### Doing {name} part rotation ####");
-                    println!();
-
                     {
                         let rot_anchor =
                             process_pos(part_definition.rot_anchor, is_slim_arms, &last_pos.into());
@@ -877,9 +869,9 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         [pos[0], pos[1], pos[2] - size[1] as f32]
                     };
 
-                    let old = Vec3::from(dbg!(old_point)) - normal_offset;
+                    let old = Vec3::from(old_point) - normal_offset;
 
-                    dbg!(part_quad
+                    (part_quad
                         .get_rotation_matrix()
                         .transform_point3(old_point.into()));
 

@@ -10,8 +10,10 @@ crate-type = ["cdylib", "rlib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+lol_alloc = "0.4.0"
 nmsr-rendering-blockbench-model-generator-experiment = { path = "../nmsr-rendering-blockbench-model-generator-experiment", features = [
     "ears",
+    "wasm",
 ] }
 wasm-bindgen = "0.2.87"
 console_error_panic_hook = "0.1.7"
@@ -21,8 +23,17 @@ getrandom = { version = "0.2", features = ["js"] }
 wasm-opt = [
     '-c',
     '-Oz',
+    '--dce',
+    '--duplicate-import-elimination',
+    '--duplicate-function-elimination',
+    '--generate-global-effects',
+    '--memory-packing',
+    '--directize',
+    '--limit-segments',
     '--once-reduction',
     '--monomorphize',
+    '--const-hoisting',
+    '--abstract-type-refining',
     '--optimize-added-constants-propagate',
     '--optimize-instructions',
     '--type-ssa',
@@ -41,7 +52,6 @@ wasm-opt = [
     '--remove-unused-nonfunction-module-elements',
     '--remove-unused-brs',
     '--vacuum',
-    '--generate-global-effects',
     '--merge-similar-functions',
     '--local-cse',
     '--gufa-optimizing',
@@ -53,11 +63,12 @@ wasm-opt = [
     '--merge-locals',
     '--coalesce-locals-learning',
     '--avoid-reinterprets',
-    '--dce',
     '--untee',
     '--type-merging',
+    '--simplify-locals-notee',
+    '--simplify-locals-nostructure',
     '--simplify-locals-notee-nostructure',
-    '--rse',
+    '--simplify-globals-optimizing',
     '--precompute',
     '--precompute-propagate',
     '--optimize-casts',
@@ -71,5 +82,16 @@ wasm-opt = [
     '--flatten',
     '--dfo',
     '-Oz',
-    "--debug"
+    
+    '-cw',
+    '-uim',
+    '-iit',
+    '-ifwl',
+    '--rse',
+    '--optimize-stack-ir',
+    
+    '--multi-memory-lowering',
+    '--dce',
+    
+    "--debug",
 ]

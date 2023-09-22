@@ -220,3 +220,4 @@ parts/**
 **/.vscode/settings.json
 
 utils/nmsr-rendering-blockbench-model-generator-experiment-wasm/pkg/**
+utils/nmsr-rendering-blockbench-model-generator-experiment-wasm/pkg

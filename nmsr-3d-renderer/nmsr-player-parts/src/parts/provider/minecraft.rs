@@ -29,13 +29,25 @@ macro_rules! body_part {
         }
     };
     {pos: $pos: tt, size: $size: tt, box_uv_start: ($uv_x: expr, $uv_y: expr), texture_type: $texture_type: ident, name: $name: expr} => {
-        Part::new_cube(
-            crate::types::PlayerPartTextureType::$texture_type,
-            $pos,
-            $size,
-            crate::parts::uv::box_uv($uv_x, $uv_y, $size),
-            #[cfg(feature = "part_tracker")] Some($name.to_string())
-        )
+        {
+            let part = Part::new_cube(
+                crate::types::PlayerPartTextureType::$texture_type,
+                $pos,
+                $size,
+                crate::parts::uv::box_uv($uv_x, $uv_y, $size),
+                #[cfg(feature = "part_tracker")] Some($name.to_string()),
+            );
+            
+            
+            #[cfg(feature = "part_tracker")]
+            {
+                part.with_group($name)
+            }
+            #[cfg(not(feature = "part_tracker"))]
+            {
+                part
+            }
+        }
     };
 }
 
@@ -82,7 +94,8 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
                     uv_from_pos_and_size(0, 0, 128, 128),
                     Vec3::Y,
                     #[cfg(feature = "part_tracker")]
-                    #[cfg(feature = "part_tracker")] Some("Shadow".to_string()),
+                    #[cfg(feature = "part_tracker")]
+                    Some("Shadow".to_string()),
                 );
                 // TODO: Expand shadow if there's armor on the feet
 
@@ -200,7 +213,6 @@ pub(crate) fn perform_arm_part_rotation(
             [0.0, 0.0, -arm_rotation_angle].into(),
             Some(PartAnchorInfo::new_rotation_anchor_position(anchor)),
         );
-        
     } else if non_layer_body_part_type == RightArm {
         let anchor = normal_part.get_position() + normal_part_size * Vec3::new(0.0, 1.0, 0.5);
 
@@ -220,9 +232,12 @@ fn append_cape_part(result: &mut Vec<Part>) {
         name: "Cape"
     };
 
-    cape.rotate([5.0, 180.0, 0.0].into(), Some(PartAnchorInfo::new_rotation_anchor_position(
-        [0.0, 24.0, 2.0].into(),
-    )));
+    cape.rotate(
+        [5.0, 180.0, 0.0].into(),
+        Some(PartAnchorInfo::new_rotation_anchor_position(
+            [0.0, 24.0, 2.0].into(),
+        )),
+    );
 
     result.push(cape);
 }
@@ -237,8 +252,9 @@ fn expand_player_body_part(
     if let Part::Quad { .. } = new_part {
         unreachable!("Got quad when expanding body part.")
     } else if let Part::Cube {
-        ref mut face_uvs, 
-        #[cfg(feature = "part_tracker")] ref mut name,
+        ref mut face_uvs,
+        #[cfg(feature = "part_tracker")]
+        ref mut name,
         ..
     } = new_part
     {
@@ -246,7 +262,7 @@ fn expand_player_body_part(
         if let Some(old_name) = name.take() {
             name.replace(format!("{} Layer", old_name));
         }
-        
+
         let current_box_uv = face_uvs.north.top_left;
 
         let size = part.get_size();

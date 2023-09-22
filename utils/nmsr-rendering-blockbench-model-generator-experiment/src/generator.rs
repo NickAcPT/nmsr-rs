@@ -92,7 +92,7 @@ impl ModelGenerationProject {
 
                 ears_rs::utils::process_erase_regions(&mut texture)?;
             } else if texture_type == PlayerPartEarsTextureType::Cape.into()
-            && texture_type.get_texture_size() != (texture.width(), texture.height())
+                && texture_type.get_texture_size() != (texture.width(), texture.height())
             {
                 texture = ears_rs::utils::convert_ears_cape_to_mojang_cape(texture);
             }
@@ -102,7 +102,7 @@ impl ModelGenerationProject {
         } else if texture_type == PlayerPartTextureType::Cape {
             self.part_context.has_cape = true;
         }
-        
+
         self.textures.insert(texture_type, texture);
         self.recompute_max_resolution();
 
@@ -189,5 +189,10 @@ impl ModelGenerationProject {
             .map(|(i, _)| i as u32)
             .ok_or(anyhow!("Failed to find texture id for {:?}", texture))
             .unwrap()
+    }
+
+    pub(crate) fn get_part_name(&self, name: Option<&str>, index: usize) -> String {
+        name.to_owned()
+            .map_or_else(|| format!("part-{index}"), |s| s.to_string())
     }
 }

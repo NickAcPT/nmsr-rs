@@ -1,5 +1,3 @@
-use std::path::{Path, PathBuf};
-
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
@@ -70,7 +68,7 @@ pub enum Part {
         texture: PlayerPartTextureType,
         #[cfg(feature = "part_tracker")] name: Option<String>,
         #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
-        #[cfg(feature = "part_tracker")] group: PathBuf,
+        #[cfg(feature = "part_tracker")] group: Vec<String>,
     },
     /// Represents a quad as a part of a player model.
     Quad {
@@ -82,7 +80,7 @@ pub enum Part {
         texture: PlayerPartTextureType,
         #[cfg(feature = "part_tracker")] name: Option<String>,
         #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
-        #[cfg(feature = "part_tracker")] group: PathBuf,
+        #[cfg(feature = "part_tracker")] group: Vec<String>,
     },
 }
 
@@ -113,7 +111,7 @@ impl Part {
             texture,
             #[cfg(feature = "part_tracker")] name,
             #[cfg(feature = "part_tracker")] last_rotation: None,
-            #[cfg(feature = "part_tracker")] group: PathBuf::new(),
+            #[cfg(feature = "part_tracker")] group: Vec::new(),
         }
     }
 
@@ -134,7 +132,7 @@ impl Part {
             texture,
             #[cfg(feature = "part_tracker")] last_rotation: None,
             #[cfg(feature = "part_tracker")] name,
-            #[cfg(feature = "part_tracker")] group: PathBuf::new(),
+            #[cfg(feature = "part_tracker")] group: Vec::new(),
         }
     }
 
@@ -334,19 +332,42 @@ impl Part {
     }
     
     #[cfg(feature = "part_tracker")]
-    pub fn get_group(&self) -> &Path {
+    pub fn get_name(&self) -> Option<&str> {
         match self {
-            Cube { group, .. } => group.as_path(),
-            Quad { group, .. } => group.as_path(),
+            Cube { name, .. } => name.as_deref(),
+            Quad { name, .. } => name.as_deref(),
         }
     }
     
-    #[cfg(feature = "part_tracker")] 
-    pub fn push_group(&mut self, group: impl AsRef<Path>) {
+    #[cfg(feature = "part_tracker")]
+    pub fn get_group(&self) -> &[String] {
         match self {
-            Cube { group: ref mut g, .. } => g.push(group),
-            Quad { group: ref mut g, .. } => g.push(group),
+            Cube { group, .. } => group,
+            Quad { group, .. } => group,
         }
+    }
+    
+    #[cfg(feature = "part_tracker")]
+    pub fn push_group(&mut self, group: impl Into<String>) {
+        match self {
+            Cube { group: ref mut g, .. } => g.push(group.into()),
+            Quad { group: ref mut g, .. } => g.push(group.into()),
+        }
+    }
+    
+    #[cfg(feature = "part_tracker")]
+    pub fn push_groups(&mut self, group: &[String]) {
+        match self {
+            Cube { group: ref mut g, .. } => g.extend_from_slice(group),
+            Quad { group: ref mut g, .. } => g.extend_from_slice(group),
+        }
+    }
+    
+    #[cfg(feature = "part_tracker")]
+    pub fn with_group(mut self, group: impl Into<String>) -> Self {
+        self.push_group(group);
+        
+        self
     }
     
 }

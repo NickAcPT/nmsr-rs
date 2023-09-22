@@ -218,3 +218,5 @@ parts/**
 
 **/.vscode/launch.json
 **/.vscode/settings.json
+
+utils/nmsr-rendering-blockbench-model-generator-experiment-wasm/pkg/**

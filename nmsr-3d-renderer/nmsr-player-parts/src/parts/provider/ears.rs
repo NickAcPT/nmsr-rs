@@ -609,7 +609,7 @@ impl EarsPlayerPartsProvider {
             let snout_height = snout.height;
             let snout_depth = snout.depth as f32;
 
-            let snout_x = snout_width as f32 / 2.0;
+            let snout_x = (8 - snout_width) as f32 / 2.0;
             let snout_y = snout_offset;
             let snout_z = -snout_depth;
 
@@ -643,7 +643,7 @@ impl EarsPlayerPartsProvider {
                         $name {
                             pos: [snout_x + $x as f32, snout_y, snout_z + 1.0],
                             rot: [0.0, 90.0, 0.0],
-                            size: [1, snout_height.into()],
+                            size: [snout_depth as u16 - 1, snout_height.into()],
                             uv: [7, $uv_y_1, 1, snout_height.into()],
                             normal: $normal,
                             double_sided: false

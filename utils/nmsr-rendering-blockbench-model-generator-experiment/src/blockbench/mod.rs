@@ -1,12 +1,9 @@
 pub mod model;
-mod tree;
 
 use std::{
     collections::HashMap,
-    fs,
     io::{BufWriter, Cursor},
-    path::Path,
-    vec::Vec, borrow::Cow,
+    vec::Vec,
 };
 
 use anyhow::{anyhow, Context, Ok, Result};
@@ -14,20 +11,18 @@ use glam::Vec3;
 use image::RgbaImage;
 use itertools::Itertools;
 use nmsr_rendering::high_level::{parts::part::Part, types::PlayerPartTextureType};
-use serde_json::{json, Value};
-use uuid::Uuid;
 
 use crate::{
-    blockbench::model::{str_to_uuid, RawProject, RawProjectTexture},
+    blockbench::model::{RawProject, RawProjectTexture},
     generator::ModelGenerationProject,
 };
 
 use self::model::{ProjectTextureResolution, RawProjectElement, RawProjectElementFaces};
 
-pub(crate) fn generate_project(project: ModelGenerationProject, output: &Path) -> Result<()> {
+pub fn generate_project(project: ModelGenerationProject) -> Result<String> {
     let parts = project.generate_parts();
     let texture_grouped_parts = group_by_texture(parts);
-    let outliner_groups = convert_to_outliner(&project, texture_grouped_parts.values().flatten());
+    let outliner_groups = vec![];
     let (resolution, raw_textures) =
         convert_to_raw_project_textures(&project, &texture_grouped_parts);
     let elements = convert_to_raw_elements(&project, texture_grouped_parts);
@@ -37,88 +32,7 @@ pub(crate) fn generate_project(project: ModelGenerationProject, output: &Path) -
     let project_json =
         serde_json::to_string(&project).context(anyhow!("Failed to serialize project"))?;
 
-    fs::write(output, project_json).context(anyhow!("Failed to write project to file"))?;
-
-    Ok(())
-}
-
-fn convert_to_outliner<'a>(
-    project: &ModelGenerationProject,
-    parts: impl Iterator<Item = &'a Part>,
-) -> Vec<serde_json::Value> {
-    // Group into a tree structure
-    #[derive(Debug)]
-    enum Tree {
-        Group { name: String, children: Vec<Tree> },
-        Part { name: Uuid, group: String },
-    }
-    impl Tree {
-        fn name(&self) -> Cow<'_, str> {
-            match self {
-                Tree::Group { name, .. } => name.into(),
-                Tree::Part { name, .. } => Cow::Owned(name.to_string()),
-            }
-        }
-    }
-
-    fn get_group_name(part: &Part) -> String {
-        part.get_group().iter().join("/")
-    }
-
-    let root = parts
-        .enumerate()
-        .sorted_by_key(|p| p.1.get_group())
-        .rev()
-        .map(|(index, part)| Tree::Part {
-            name: str_to_uuid(&project.get_part_name(part.get_name(), index)),
-            group: get_group_name(part),
-        })
-        .inspect(|p| println!("{p:?}"))
-        .fold(None, |acc, element| {
-            let mut parent_group = acc.unwrap_or_else(|| Tree::Group {
-                name: match &element {
-                    Tree::Part { group, .. } => group.clone(),
-                    _ => unreachable!("We only have parts so far"),
-                },
-                children: vec![],
-            });
-
-            if let Tree::Part { group, .. } = &element {
-                if !group.starts_with(&*parent_group.name()) {
-                    parent_group = Tree::Group {
-                        name: group.clone(),
-                        children: vec![parent_group],
-                    }
-                }
-            }
-
-            if let Tree::Group { children, .. } = &mut parent_group {
-                children.push(element)
-            }
-
-            Some(parent_group)
-        });
-
-    let groups = dbg!(root)
-        .map(|t| match t {
-            Tree::Group { name, children } => children,
-            Tree::Part { name, group } => unreachable!("Expected a group, got a part"),
-        })
-        .unwrap_or(vec![]);
-
-    // Convert to outliner format
-    fn to_outliner(element: Tree) -> Value {
-        match element {
-            Tree::Group { name, children } => json!({
-                "name": name,
-                "uuid": Uuid::new_v4(),
-                "children": children.into_iter().map(to_outliner).collect::<Vec<_>>(),
-            }),
-            Tree::Part { name, .. } => Value::String(name.to_string()),
-        }
-    }
-
-    groups.into_iter().map(to_outliner).collect_vec()
+    Ok(project_json)
 }
 
 fn convert_to_raw_elements(

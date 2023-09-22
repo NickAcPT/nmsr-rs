@@ -1,0 +1,75 @@
+[package]
+name = "nmsr-rendering-blockbench-model-generator-experiment-wasm"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+homepage.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nmsr-rendering-blockbench-model-generator-experiment = { path = "../nmsr-rendering-blockbench-model-generator-experiment", features = [
+    "ears",
+] }
+wasm-bindgen = "0.2.87"
+console_error_panic_hook = "0.1.7"
+getrandom = { version = "0.2", features = ["js"] }
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = [
+    '-c',
+    '-Oz',
+    '--once-reduction',
+    '--monomorphize',
+    '--optimize-added-constants-propagate',
+    '--optimize-instructions',
+    '--type-ssa',
+    '--strip-eh',
+    '--strip-debug',
+    '--strip-dwarf',
+    '--strip-producers',
+    '--signature-pruning',
+    '--rse',
+    '--flatten',
+    '--rereloop',
+    '--gto',
+    '--remove-unused-names',
+    '--remove-unused-types',
+    '--remove-unused-module-elements',
+    '--remove-unused-nonfunction-module-elements',
+    '--remove-unused-brs',
+    '--vacuum',
+    '--generate-global-effects',
+    '--merge-similar-functions',
+    '--local-cse',
+    '--gufa-optimizing',
+    '-tnh',
+    '-uim',
+    '-iit',
+    '--dae-optimizing',
+    '--code-pushing',
+    '--merge-locals',
+    '--coalesce-locals-learning',
+    '--avoid-reinterprets',
+    '--dce',
+    '--untee',
+    '--type-merging',
+    '--simplify-locals-notee-nostructure',
+    '--rse',
+    '--precompute',
+    '--precompute-propagate',
+    '--optimize-casts',
+    '--multi-memory-lowering',
+    '--merge-blocks',
+    '--licm',
+    '--inlining-optimizing',
+    '--flatten',
+    '--duplicate-function-elimination',
+    '--code-folding',
+    '--flatten',
+    '--dfo',
+    '-Oz',
+    "--debug"
+]

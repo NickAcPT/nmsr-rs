@@ -1,0 +1,19 @@
+[package]
+name = "nmsr-rendering-blockbench-model-generator-experiment-cli"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+homepage.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.75"
+clap = { version = "4", features = ["derive"] }
+nmsr-rendering-blockbench-model-generator-experiment = { path = "../nmsr-rendering-blockbench-model-generator-experiment", features = [
+    "ears",
+] }
+opener = "0.6.1"
+
+[features]
+default = []

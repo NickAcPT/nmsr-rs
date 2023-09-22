@@ -1,6 +1,4 @@
-mod blockbench;
-mod generator;
-
+use std::ops::Deref;
 use std::{
     fs,
     path::PathBuf,
@@ -8,9 +6,9 @@ use std::{
 
 use anyhow::{anyhow, Context, Ok, Result};
 use clap::{Parser, ValueEnum};
-use derive_more::Deref;
-use generator::ModelGenerationProject;
-use nmsr_rendering::high_level::{
+use nmsr_rendering_blockbench_model_generator_experiment::blockbench;
+use nmsr_rendering_blockbench_model_generator_experiment::generator::ModelGenerationProject;
+use nmsr_rendering_blockbench_model_generator_experiment::nmsr_rendering::high_level::{
     model::PlayerModel,
     types::PlayerPartTextureType,
 };
@@ -66,9 +64,11 @@ fn main() -> Result<()> {
     
     project.load_texture(PlayerPartTextureType::Skin, &skin_bytes)?;
 
-    blockbench::generate_project(project, &args.output)
+    let result = blockbench::generate_project(project)
         .context(anyhow!("Failed to generate blockbench project"))?;
 
+    fs::write(&args.output, result).context(anyhow!("Failed to write project to file"))?;
+        
     if args.open {
         println!("Opening blockbench project...");
         opener::open(args.output.canonicalize()?)?;

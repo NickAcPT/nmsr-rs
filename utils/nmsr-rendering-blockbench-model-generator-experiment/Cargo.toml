@@ -26,3 +26,4 @@ xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
 default = ["nmsr-rendering/part_tracker"]
 wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen"]
 ears = ["nmsr-rendering/ears"]
+markers = ["nmsr-rendering/markers"]

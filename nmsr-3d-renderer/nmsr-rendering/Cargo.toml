@@ -25,4 +25,5 @@ smaa = {version = "0.10.1", optional = true }
 default = ["pipeline"]
 pipeline = ["dep:smaa", "dep:deadpool", "dep:wgpu"]
 part_tracker = ["nmsr-player-parts/part_tracker"]
+markers = ["nmsr-player-parts/markers"]
 ears = ["nmsr-player-parts/ears"]

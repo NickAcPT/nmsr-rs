@@ -16,4 +16,5 @@ paste = { workspace = true }
 [features]
 default = []
 part_tracker = []
+markers = ["part_tracker"]
 ears = ["dep:ears-rs", "dep:itertools"]

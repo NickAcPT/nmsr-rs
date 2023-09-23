@@ -69,7 +69,7 @@ pub enum Part {
         #[cfg(feature = "part_tracker")] name: Option<String>,
         #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
         #[cfg(feature = "part_tracker")] group: Vec<String>,
-        #[cfg(feature = "part_tracker")] markers: Vec<Marker>,
+        #[cfg(feature = "markers")] markers: Vec<Marker>,
     },
     /// Represents a quad as a part of a player model.
     Quad {
@@ -82,7 +82,7 @@ pub enum Part {
         #[cfg(feature = "part_tracker")] name: Option<String>,
         #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
         #[cfg(feature = "part_tracker")] group: Vec<String>,
-        #[cfg(feature = "part_tracker")] markers: Vec<Marker>,
+        #[cfg(feature = "markers")] markers: Vec<Marker>,
     },
 }
 
@@ -114,7 +114,7 @@ impl Part {
             #[cfg(feature = "part_tracker")] name,
             #[cfg(feature = "part_tracker")] last_rotation: None,
             #[cfg(feature = "part_tracker")] group: Vec::new(),
-            #[cfg(feature = "part_tracker")] markers: Vec::new(),
+            #[cfg(feature = "markers")] markers: Vec::new(),
         }
     }
 
@@ -136,7 +136,7 @@ impl Part {
             #[cfg(feature = "part_tracker")] last_rotation: None,
             #[cfg(feature = "part_tracker")] name,
             #[cfg(feature = "part_tracker")] group: Vec::new(),
-            #[cfg(feature = "part_tracker")] markers: Vec::new(),
+            #[cfg(feature = "markers")] markers: Vec::new(),
         }
     }
 
@@ -365,7 +365,7 @@ impl Part {
         self
     }
     
-    #[cfg(feature = "part_tracker")]
+    #[cfg(feature = "markers")]
     pub fn add_marker(&mut self, marker: Marker) {
         match self {
             Cube { markers: ref mut m, .. } => m.push(marker),
@@ -373,6 +373,7 @@ impl Part {
         }
     }
     
+    #[cfg(feature = "markers")]
     pub fn add_markers(&mut self, markers: &[Marker]) {
         match self {
             Cube { markers: ref mut m, .. } => m.extend_from_slice(markers),
@@ -380,7 +381,7 @@ impl Part {
         }
     }
     
-    #[cfg(feature = "part_tracker")]
+    #[cfg(feature = "markers")]
     pub fn markers(&self) -> &[Marker] {
         match self {
             Cube { markers: m, .. } => m,

@@ -1,8 +1,10 @@
 use super::{PartsProvider, PlayerPartProviderContext};
+#[cfg(feature = "markers")]
+use crate::parts::part::Marker;
 use crate::{
     model::ArmorMaterial,
     parts::{
-        part::{Marker, Part, PartAnchorInfo},
+        part::{Part, PartAnchorInfo},
         uv::{uv_from_pos_and_size, FaceUv},
     },
     types::{PlayerBodyPartType, PlayerBodyPartType::*, PlayerPartTextureType},
@@ -504,7 +506,7 @@ impl EarsPlayerPartsProvider {
                             cw: true
                         }
                     });
-    
+
                     result.push(declare_ears_part_vertical! {
                         EarAroundLeft {
                             pos: pos![-4.0, 0.0, anchor_z],
@@ -716,7 +718,7 @@ impl EarsPlayerPartsProvider {
                     }
                 });
             }
-            EarMode::Behind | EarMode::None => {},
+            EarMode::Behind | EarMode::None => {}
         }
     }
 
@@ -862,7 +864,9 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
         context: &PlayerPartProviderContext<M>,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
+        #[cfg(feature = "markers")]
         let mut markers = Vec::new();
+
         let empty = Vec::with_capacity(0);
 
         if body_part.is_layer() || body_part.is_hat_layer() {
@@ -986,15 +990,17 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                         let anchor =
                             anchor.with_rotation_anchor(Vec3::from(pos) + Vec3::from(rot_anchor));
 
-                        markers.push(Marker::new(
-                            format!("{name} (Translation anchor)"),
-                            anchor.translation_anchor,
-                        ));
-                        markers.push(Marker::new(
-                            format!("{name} (Rotation anchor)"),
-                            anchor.rotation_anchor,
-                        ));
-
+                        #[cfg(feature = "markers")]
+                        {
+                            markers.push(Marker::new(
+                                format!("{name} (Translation anchor)"),
+                                anchor.translation_anchor,
+                            ));
+                            markers.push(Marker::new(
+                                format!("{name} (Rotation anchor)"),
+                                anchor.rotation_anchor,
+                            ));
+                        }
                         part_quad.rotate(part_definition.rot.into(), Some(anchor));
                     }
 
@@ -1004,13 +1010,17 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
                     *part_quad.position_mut() += new_offset;
 
+                    #[cfg(feature = "markers")]
                     markers.push(Marker::new(format!("{name} (Pos [f32; 3])"), pos.into()));
 
                     let pos = part_quad.get_position();
                     let size = part_quad.get_size();
 
-                    markers.push(Marker::new(format!("{name} (Pos Vec3)"), pos));
-                    markers.push(Marker::new(format!("{name} (Pos + Size)"), pos + size));
+                    #[cfg(feature = "markers")]
+                    {
+                        markers.push(Marker::new(format!("{name} (Pos Vec3)"), pos));
+                        markers.push(Marker::new(format!("{name} (Pos + Size)"), pos + size));
+                    }
 
                     let old_point = if part_definition.vertical_quad {
                         [pos[0] + size[0], pos[1] + size[1] as f32, pos[2]]
@@ -1022,14 +1032,17 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
                     last_pos = part_quad.get_rotation_matrix().transform_point3(old);
 
-                    markers.push(Marker::new(format!("{name} (Old point)"), old_point.into()));
-                    markers.push(Marker::new(
-                        format!("{name} (Rotated Old point)"),
-                        part_quad.get_rotation_matrix().transform_point3(old),
-                    ));
-                    markers.push(Marker::new(format!("{name} (lastpos)"), last_pos));
+                    #[cfg(feature = "markers")]
+                    {
+                        markers.push(Marker::new(format!("{name} (Old point)"), old_point.into()));
+                        markers.push(Marker::new(
+                            format!("{name} (Rotated Old point)"),
+                            part_quad.get_rotation_matrix().transform_point3(old),
+                        ));
+                        markers.push(Marker::new(format!("{name} (lastpos)"), last_pos));
+                    }
 
-                    #[cfg(feature = "part_tracker")]
+                    #[cfg(feature = "markers")]
                     {
                         part_quad.add_markers(markers.drain(..).as_slice());
                     }

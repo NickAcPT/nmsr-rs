@@ -892,16 +892,16 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     markers.push(Marker::new(format!("{name} (rotated old)"), part_quad.get_rotation_matrix().transform_point3(old)));
                     markers.push(Marker::new(format!("{name} (lastpos)"), last_pos));
 
+                    #[cfg(feature = "part_tracker")]
+                    {
+                        part_quad.add_markers(markers.drain(..).as_slice());
+                    }
+                    
                     result.push(part_quad);
                 }
             }
 
-            #[cfg(feature = "part_tracker")]
-            {
-                if let Some(first) = result.first_mut() {
-                    first.add_markers(&markers);
-                }
-            }
+            
             
             result
         } else {

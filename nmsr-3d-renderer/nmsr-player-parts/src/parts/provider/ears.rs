@@ -383,6 +383,7 @@ impl EarsPlayerPartsProvider {
         let mut bends = tail_data.bends;
 
         if vertical {
+            // TODO: Fix this one of these days
             bends[0] = 0.0;
         }
 
@@ -394,71 +395,65 @@ impl EarsPlayerPartsProvider {
 
         let mut rot_x_acc = angle;
         for segment in 0..segments {
-            rot_x_acc += tail_data.bends[segment];
+            rot_x_acc += bends[segment];
 
-            let tail = if vertical {
-                let four = 4.0.into();
-
-                let tail_x = if segment == 0 {
-                    four
-                } else {
-                    PREV_CORNER_CANARY
-                };
-                let tail_y = if segment == 0 {
-                    four
-                } else {
-                    PREV_CORNER_CANARY + 8.0
-                };
-
-                let tail_z = if segment == 0 {
-                    four
-                } else {
-                    PREV_CORNER_CANARY
-                };
-
-                declare_ears_part_vertical!(TailSegment {
-                    pos: pos![
-                        tail_x, tail_y,
-                        tail_z
-                    ],
-                    rot: [0.0, 90.0 - rot_x_acc, -180.0],
-                    size: [seg_height_u16, 8],
-                    uv: [
-                        56,
-                        16 + (segment as u16 * seg_height_u16),
-                        seg_height_u16,
-                        8,
-                    ],
-                    normal: Vec3::Z,
-                    part_count: Some(segment as u32),
-                    vertical_flip: true,
-                    horizontal_flip: true,
-                    cw: true,
-                    reset_rotation_stack: segment == 0,
-                    double_sided: false
-                })
+            let tail_pos = if vertical {
+                [4.0, 4.0, 4.0]
             } else {
-                declare_ears_part_vertical!(TailSegment {
-                    pos: pos![
-                        8.0,
-                        2.0 + PREV_CORNER_CANARY + (seg_height * segment as f32),
-                        4.0 + PREV_CORNER_CANARY
-                    ],
-                    rot: [rot_x_acc - 180.0, 180.0, 0.0],
-                    size: [8, seg_height_u16],
-                    uv: [
-                        56,
-                        16 + (segment as u16 * seg_height_u16),
-                        8,
-                        seg_height_u16
-                    ],
-                    normal: Vec3::Z,
-                    part_count: Some(segment as u32),
-                    vertical_flip: true,
-                    reset_rotation_stack: segment == 0,
-                    double_sided: false
-                })
+                [8.0, 2.0 + (seg_height * segment as f32), 4.0]
             };
+
+            let tail_x = if segment == 0 {
+                tail_pos[0].into()
+            } else {
+                PREV_CORNER_CANARY + if vertical { 0.0 } else { 8.0 }
+            };
+            let tail_y = if segment == 0 {
+                tail_pos[1].into()
+            } else {
+                PREV_CORNER_CANARY + if vertical { 8.0 } else { 0.0 }
+            };
+
+            let tail_z = if segment == 0 {
+                tail_pos[2].into()
+            } else {
+                PREV_CORNER_CANARY
+            };
+
+            let pos = [tail_x, tail_y, tail_z];
+
+            let rot = if vertical {
+                [0.0, 90.0 - rot_x_acc, -180.0]
+            } else {
+                [rot_x_acc - 180.0, 180.0, 0.0]
+            };
+
+            let mut size = [8, seg_height_u16];
+            let mut uv = [
+                56,
+                16 + (segment as u16 * seg_height_u16),
+                8,
+                seg_height_u16,
+            ];
+
+            if vertical {
+                size.swap(0, 1);
+                uv.swap(2, 3);
+            }
+
+            let tail = declare_ears_part_vertical!(TailSegment {
+                pos,
+                rot,
+                size,
+                uv,
+                normal: Vec3::Z,
+                part_count: Some(segment as u32),
+                vertical_flip: true,
+                horizontal_flip: vertical,
+                cw: vertical,
+                reset_rotation_stack: segment == 0,
+                double_sided: false
+            });
 
             result.push(tail);
         }
@@ -476,7 +471,7 @@ impl EarsPlayerPartsProvider {
 
         // Upgrade the old ear mode to the new one
         if mode == EarMode::Behind {
-            mode = EarMode::Around;
+            mode = EarMode::Out;
             anchor = EarAnchor::Back;
         }
 
@@ -486,206 +481,242 @@ impl EarsPlayerPartsProvider {
             EarAnchor::Back => 8.0,
         };
 
-        if mode == EarMode::Above || mode == EarMode::Around {
-            result.push(declare_ears_part_vertical! {
-                EarMiddle {
-                    pos: pos![-4.0, 8.0, anchor_z],
-                    size: [16, 8],
-                    uv: [24, 0, 16, 8],
-                    back_uv: Some([56, 28, 16, 8]),
-                    back_cw: Some(true),
-                    normal: Vec3::NEG_Z
-                }
-            });
-
-            if mode == EarMode::Around {
+        match mode {
+            EarMode::Above | EarMode::Around => {
                 result.push(declare_ears_part_vertical! {
-                    EarAroundRight {
-                        pos: pos![8.0, 0.0, anchor_z],
-                        size: [4, 8],
-                        uv: [36, 16, 4, 8],
-                        back_uv: Some([12, 16, 4, 8]),
-                        normal: Vec3::NEG_Z,
-                        cw: true
+                    EarMiddle {
+                        pos: pos![-4.0, 8.0, anchor_z],
+                        size: [16, 8],
+                        uv: [24, 0, 16, 8],
+                        back_uv: Some([56, 28, 16, 8]),
+                        back_cw: Some(true),
+                        normal: Vec3::NEG_Z
                     }
                 });
-
+                if mode == EarMode::Around {
+                    result.push(declare_ears_part_vertical! {
+                        EarAroundRight {
+                            pos: pos![8.0, 0.0, anchor_z],
+                            size: [4, 8],
+                            uv: [36, 16, 4, 8],
+                            back_uv: Some([12, 16, 4, 8]),
+                            normal: Vec3::NEG_Z,
+                            cw: true
+                        }
+                    });
+    
+                    result.push(declare_ears_part_vertical! {
+                        EarAroundLeft {
+                            pos: pos![-4.0, 0.0, anchor_z],
+                            size: [4, 8],
+                            uv: [36, 32, 4, 8],
+                            back_uv: Some([12, 32, 4, 8]),
+                            normal: Vec3::NEG_Z,
+                            cw: true
+                        }
+                    });
+                }
+            }
+            EarMode::Sides => {
                 result.push(declare_ears_part_vertical! {
-                    EarAroundLeft {
-                        pos: pos![-4.0, 0.0, anchor_z],
-                        size: [4, 8],
-                        uv: [36, 32, 4, 8],
-                        back_uv: Some([12, 32, 4, 8]),
+                    EarSidesLeft {
+                        pos: pos![-8.0, 0.0, anchor_z],
+                        size: [8, 8],
+                        uv: [32, 0, 8, 8],
+                        back_uv: Some([56, 36, 8, 8]),
                         normal: Vec3::NEG_Z,
-                        cw: true
+                        back_cw: Some(true)
+                    }
+                });
+                result.push(declare_ears_part_vertical! {
+                    EarSidesRight {
+                        pos: pos![8.0, 0.0, anchor_z],
+                        size: [8, 8],
+                        uv: [24, 0, 8, 8],
+                        back_uv: Some([56, 28, 8, 8]),
+                        normal: Vec3::NEG_Z,
+                        back_cw: Some(true)
                     }
                 });
             }
-        } else if mode == EarMode::Sides {
-            result.push(declare_ears_part_vertical! {
-                EarSidesLeft {
-                    pos: pos![-8.0, 0.0, anchor_z],
-                    size: [8, 8],
-                    uv: [32, 0, 8, 8],
-                    back_uv: Some([56, 36, 8, 8]),
-                    normal: Vec3::NEG_Z,
-                    back_cw: Some(true)
-                }
-            });
-            result.push(declare_ears_part_vertical! {
-                EarSidesRight {
-                    pos: pos![8.0, 0.0, anchor_z],
-                    size: [8, 8],
-                    uv: [24, 0, 8, 8],
-                    back_uv: Some([56, 28, 8, 8]),
-                    normal: Vec3::NEG_Z,
-                    back_cw: Some(true)
-                }
-            });
-        } else if mode == EarMode::Floppy {
-            result.push(declare_ears_part_vertical! {
-                EarFloppyRight {
-                    pos: pos![8.0, 0.0, 0.0],
-                    size: [8, 8],
-                    rot: [30.0, -90.0, 0.0],
-                    rot_anchor: pos![0.0, 7.0, 0.0],
-                    uv: [24, 0, 8, 8],
-                    back_uv: Some([56, 28, 8, 8]),
-                    normal: Vec3::X,
-                    back_cw: Some(true)
-                }
-            });
+            EarMode::Floppy => {
+                result.push(declare_ears_part_vertical! {
+                    EarFloppyRight {
+                        pos: pos![8.0, 0.0, 0.0],
+                        size: [8, 8],
+                        rot: [30.0, -90.0, 0.0],
+                        rot_anchor: pos![0.0, 7.0, 0.0],
+                        uv: [24, 0, 8, 8],
+                        back_uv: Some([56, 28, 8, 8]),
+                        normal: Vec3::X,
+                        back_cw: Some(true)
+                    }
+                });
 
-            result.push(declare_ears_part_vertical! {
-                EarFloppyLeft {
-                    pos: pos![0.0, 0.0, 8.0],
-                    size: [8, 8],
-                    rot: [30.0, 90.0, 0.0],
-                    rot_anchor: pos![0.0, 7.0, 0.0],
-                    uv: [32, 0, 8, 8],
-                    back_uv: Some([56, 36, 8, 8]),
-                    normal: Vec3::NEG_X,
-                    back_cw: Some(true)
-                }
-            });
-        } else if mode == EarMode::Out {
-            let (pos_y, pos_z) = match anchor {
-                EarAnchor::Center => (8.0, 0.0),
-                EarAnchor::Front => (0.0, -8.0),
-                EarAnchor::Back => (0.0, 8.0),
-            };
+                result.push(declare_ears_part_vertical! {
+                    EarFloppyLeft {
+                        pos: pos![0.0, 0.0, 8.0],
+                        size: [8, 8],
+                        rot: [30.0, 90.0, 0.0],
+                        rot_anchor: pos![0.0, 7.0, 0.0],
+                        uv: [32, 0, 8, 8],
+                        back_uv: Some([56, 36, 8, 8]),
+                        normal: Vec3::NEG_X,
+                        back_cw: Some(true)
+                    }
+                });
+            }
+            EarMode::Out => {
+                let (pos_y, pos_z) = match anchor {
+                    EarAnchor::Center => (8.0, 0.0),
+                    EarAnchor::Front => (0.0, -8.0),
+                    EarAnchor::Back => (0.0, 8.0),
+                };
 
-            result.push(declare_ears_part_vertical! {
-                EarOutRight {
-                    pos: pos![8.0, pos_y, pos_z],
-                    size: [8, 8],
-                    rot: [0.0, -90.0, 0.0],
-                    uv: [24, 0, 8, 8],
-                    back_uv: Some([56, 28, 8, 8]),
-                    normal: Vec3::X,
-                    back_cw: Some(true)
-                }
-            });
+                result.push(declare_ears_part_vertical! {
+                    EarOutRight {
+                        pos: pos![8.0, pos_y, pos_z],
+                        size: [8, 8],
+                        rot: [0.0, -90.0, 0.0],
+                        uv: [24, 0, 8, 8],
+                        back_uv: Some([56, 28, 8, 8]),
+                        normal: Vec3::X,
+                        back_cw: Some(true)
+                    }
+                });
 
-            result.push(declare_ears_part_vertical! {
-                EarOutLeft {
-                    pos: pos![0.0, pos_y, 8.0 + pos_z],
-                    size: [8, 8],
-                    rot: [0.0, 90.0, 0.0],
-                    uv: [32, 0, 8, 8],
-                    back_uv: Some([56, 36, 8, 8]),
-                    normal: Vec3::NEG_X,
-                    back_cw: Some(true)
-                }
-            });
-        } else if mode == EarMode::Tall {
-            let angle = 6.0;
+                result.push(declare_ears_part_vertical! {
+                    EarOutLeft {
+                        pos: pos![0.0, pos_y, 8.0 + pos_z],
+                        size: [8, 8],
+                        rot: [0.0, 90.0, 0.0],
+                        uv: [32, 0, 8, 8],
+                        back_uv: Some([56, 36, 8, 8]),
+                        normal: Vec3::NEG_X,
+                        back_cw: Some(true)
+                    }
+                });
+            }
+            EarMode::Tall => {
+                let angle = 6.0;
 
-            let mut current_angle = angle / 3.0;
+                let mut current_angle = angle / 3.0;
+                let pos = pos![
+                    -8.0 + PREV_CORNER_CANARY,
+                    PREV_CORNER_CANARY,
+                    PREV_CORNER_CANARY
+                ];
 
-            result.push(declare_ears_part_vertical! {
-                EarTallOne {
-                    pos: pos![0.0, 8.0, anchor_z],
-                    rot: [current_angle, 0.0, 0.0],
-                    size: [8, 4],
-                    uv: [24, 0, 8, 4],
-                    back_uv: Some([56, 40, 8, 4]),
-                    normal: Vec3::NEG_Z,
-                    cw: true,
-                    back_cw: Some(false),
-                    reset_rotation_stack: true
-                }
-            });
+                result.push(declare_ears_part_vertical! {
+                    EarTallOne {
+                        pos: pos![0.0, 8.0, anchor_z],
+                        rot: [current_angle, 0.0, 0.0],
+                        size: [8, 4],
+                        uv: [24, 0, 8, 4],
+                        back_uv: Some([56, 40, 8, 4]),
+                        normal: Vec3::NEG_Z,
+                        cw: true,
+                        back_cw: Some(false),
+                        reset_rotation_stack: true
+                    }
+                });
 
-            current_angle += angle;
+                current_angle += angle;
 
-            result.push(declare_ears_part_vertical! {
-                EarTallTwo {
-                    pos: pos![0.0, 8.0 + 4.0 + PREV_CORNER_CANARY, anchor_z + PREV_CORNER_CANARY],
-                    size: [8, 4],
-                    rot: [current_angle, 0.0, 0.0],
-                    uv: [28, 0, 8, 4],
-                    back_uv: Some([56, 36, 8, 4]),
-                    normal: Vec3::NEG_Z,
-                    cw: true,
-                    back_cw: Some(false)
-                }
-            });
+                result.push(declare_ears_part_vertical! {
+                    EarTallTwo {
+                        pos,
+                        size: [8, 4],
+                        rot: [current_angle, 0.0, 0.0],
+                        uv: [28, 0, 8, 4],
+                        back_uv: Some([56, 36, 8, 4]),
+                        normal: Vec3::NEG_Z,
+                        cw: true,
+                        back_cw: Some(false)
+                    }
+                });
 
-            current_angle += angle / 2.0;
+                current_angle += angle / 2.0;
 
-            result.push(declare_ears_part_vertical! {
-                EarTallThree {
-                    pos: pos![0.0, 8.0 + 8.0 + PREV_CORNER_CANARY, anchor_z + PREV_CORNER_CANARY],
-                    size: [8, 4],
-                    rot: [current_angle, 0.0, 0.0],
-                    uv: [32, 0, 8, 4],
-                    back_uv: Some([56, 32, 8, 4]),
-                    normal: Vec3::NEG_Z,
-                    cw: true,
-                    back_cw: Some(false)
-                }
-            });
+                result.push(declare_ears_part_vertical! {
+                    EarTallThree {
+                        pos,
+                        size: [8, 4],
+                        rot: [current_angle, 0.0, 0.0],
+                        uv: [32, 0, 8, 4],
+                        back_uv: Some([56, 32, 8, 4]),
+                        normal: Vec3::NEG_Z,
+                        cw: true,
+                        back_cw: Some(false)
+                    }
+                });
 
-            current_angle += angle;
+                current_angle += angle;
 
-            result.push(declare_ears_part_vertical! {
-                EarTallFour {
-                    pos: pos![0.0, 8.0 + 12.0 + PREV_CORNER_CANARY, anchor_z + PREV_CORNER_CANARY],
-                    size: [8, 4],
-                    rot: [current_angle, 0.0, 0.0],
-                    uv: [36, 0, 8, 4],
-                    back_uv: Some([56, 28, 8, 4]),
-                    normal: Vec3::NEG_Z,
-                    cw: true,
-                    back_cw: Some(false)
-                }
-            });
-        } else if mode == EarMode::TallCross {
-            result.push(declare_ears_part_vertical! {
-                EarTallLeft {
-                    pos: pos![1.0, 8.0, anchor_z - 3.0],
-                    size: [8, 16],
-                    rot: [0.0, -45.0, 0.0],
-                    uv: [24, 0, 8, 16],
-                    back_uv: Some([56, 28, 8, 16]),
-                    normal: Vec3::NEG_X,
-                    cw: true,
-                    back_cw: Some(false)
-                }
-            });
-            result.push(declare_ears_part_vertical! {
-                EarTallRight {
-                    pos: pos![1.0, 8.0, anchor_z + 3.0],
-                    size: [8, 16],
-                    rot: [0.0, 45.0, 0.0],
-                    uv: [24, 0, 8, 16],
-                    back_uv: Some([56, 28, 8, 16]),
-                    normal: Vec3::X,
-                    cw: true,
-                    back_cw: Some(false)
-                }
-            });
+                result.push(declare_ears_part_vertical! {
+                    EarTallFour {
+                        pos,
+                        size: [8, 4],
+                        rot: [current_angle, 0.0, 0.0],
+                        uv: [36, 0, 8, 4],
+                        back_uv: Some([56, 28, 8, 4]),
+                        normal: Vec3::NEG_Z,
+                        cw: true,
+                        back_cw: Some(false)
+                    }
+                });
+            }
+            EarMode::TallCross => {
+                result.push(declare_ears_part_vertical! {
+                    EarTallLeft {
+                        pos: pos![1.0, 8.0, anchor_z - 3.0],
+                        size: [8, 16],
+                        rot: [0.0, -45.0, 0.0],
+                        uv: [24, 0, 8, 16],
+                        back_uv: Some([56, 28, 8, 16]),
+                        normal: Vec3::NEG_X,
+                        cw: true,
+                        back_cw: Some(false)
+                    }
+                });
+                result.push(declare_ears_part_vertical! {
+                    EarTallRight {
+                        pos: pos![1.0, 8.0, anchor_z + 3.0],
+                        size: [8, 16],
+                        rot: [0.0, 45.0, 0.0],
+                        uv: [24, 0, 8, 16],
+                        back_uv: Some([56, 28, 8, 16]),
+                        normal: Vec3::X,
+                        cw: true,
+                        back_cw: Some(false)
+                    }
+                });
+            }
+            EarMode::Cross => {
+                result.push(declare_ears_part_vertical! {
+                    EarTallLeft {
+                        pos: pos![1.0, 8.0, anchor_z - 3.0],
+                        size: [8, 8],
+                        rot: [0.0, -45.0, 0.0],
+                        uv: [24, 0, 8, 8],
+                        back_uv: Some([56, 28, 8, 8]),
+                        normal: Vec3::NEG_X,
+                        back_cw: Some(true)
+                    }
+                });
+                result.push(declare_ears_part_vertical! {
+                    EarTallRight {
+                        pos: pos![1.0, 8.0, anchor_z + 3.0],
+                        size: [8, 8],
+                        rot: [0.0, 45.0, 0.0],
+                        uv: [32, 0, 8, 8],
+                        back_uv: Some([56, 36, 8, 8]),
+                        normal: Vec3::X,
+                        back_cw: Some(true)
+                    }
+                });
+            }
+            EarMode::Behind | EarMode::None => {},
         }
     }
 
@@ -732,12 +763,12 @@ impl EarsPlayerPartsProvider {
             }
 
             macro_rules! snout_vertical {
-                ($name: ident, $name_2: ident, $x: expr, $normal: expr, $uv_y_1: expr, $uv_y_2: expr) => {
+                ($name: ident, $name_2: ident, $depth: expr, $depth_2: expr, $x: expr, $normal: expr, $uv_y_1: expr, $uv_y_2: expr) => {
                     result.push(declare_ears_part_vertical! {
                         $name {
                             pos: pos![snout_x + $x as f32, snout_y, snout_z + 1.0],
                             rot: [0.0, 90.0, 0.0],
-                            size: [snout_depth as u16 - 1, snout_height.into()],
+                            size: [$depth, snout_height.into()],
                             uv: [7, $uv_y_1, 1, snout_height.into()],
                             normal: $normal,
                             double_sided: false
@@ -748,7 +779,7 @@ impl EarsPlayerPartsProvider {
                         $name_2 {
                             pos: pos![snout_x + $x as f32, snout_y, 0.0],
                             rot: [0.0, 90.0, 0.0],
-                            size: [snout_depth as u16 - 1, snout_height.into()],
+                            size: [$depth_2, snout_height.into()],
                             uv: [7, $uv_y_2, 1, snout_height.into()],
                             normal: $normal,
                             double_sided: false
@@ -777,8 +808,26 @@ impl EarsPlayerPartsProvider {
                 3 + snout_height as u16
             );
 
-            snout_vertical!(SnoutRightFront, SnoutRightRest, snout_width, Vec3::X, 0, 4);
-            snout_vertical!(SnoutLeftFront, SnoutLeftRest, 0.0, Vec3::NEG_X, 0, 4);
+            snout_vertical!(
+                SnoutRightFront,
+                SnoutRightRest,
+                1,
+                snout_depth as u16 - 1,
+                snout_width,
+                Vec3::X,
+                0,
+                4
+            );
+            snout_vertical!(
+                SnoutLeftFront,
+                SnoutLeftRest,
+                1,
+                snout_depth as u16 - 1,
+                0.0,
+                Vec3::NEG_X,
+                0,
+                4
+            );
         }
     }
 

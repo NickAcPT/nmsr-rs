@@ -293,7 +293,7 @@ impl EarsPlayerPartsProvider {
             return result;
         };
 
-        let vertical = false && tail_data.mode == TailMode::Vertical;
+        let vertical = tail_data.mode == TailMode::Vertical;
 
         let bend_0 = tail_data.bends[0];
 
@@ -326,22 +326,30 @@ impl EarsPlayerPartsProvider {
 
         let mut rot_x_acc = angle;
         for segment in 0..segments {
-            rot_x_acc += tail_data.bends[segment];
+            rot_x_acc = 0.0;//+= tail_data.bends[segment];
 
             let tail = if vertical {
                 declare_ears_part_vertical!(TailSegment {
-                    pos: [8.0, 2.0, 4.0 + (seg_height * segment as f32)],
+                    pos: [
+                        8.0,
+                        2.0,// + (seg_height * segment as f32),
+                        4.0 + PREV_CORNER_CANARY
+                    ],
+                    rot: [0.0, 90.0, rot_x_acc - 180.0],
                     size: [seg_height_u16, 8],
-                    rot: [rot_x_acc - 180.0, 180.0, 0.0],
                     uv: [
                         56,
                         16 + (segment as u16 * seg_height_u16),
-                        8,
                         seg_height_u16,
+                        8,
                     ],
-                    double_sided: false,
+                    normal: Vec3::Z,
+                    part_count: Some(segment as u32),
+                    vertical_flip: true,
+                    horizontal_flip: true,
                     cw: true,
-                    part_count: Some(segment as u32)
+                    reset_rotation_stack: segment == 0,
+                    double_sided: false
                 })
             } else {
                 declare_ears_part_vertical!(TailSegment {

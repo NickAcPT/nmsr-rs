@@ -69,6 +69,7 @@ pub enum Part {
         #[cfg(feature = "part_tracker")] name: Option<String>,
         #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
         #[cfg(feature = "part_tracker")] group: Vec<String>,
+        #[cfg(feature = "part_tracker")] markers: Vec<Marker>,
     },
     /// Represents a quad as a part of a player model.
     Quad {
@@ -81,6 +82,7 @@ pub enum Part {
         #[cfg(feature = "part_tracker")] name: Option<String>,
         #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
         #[cfg(feature = "part_tracker")] group: Vec<String>,
+        #[cfg(feature = "part_tracker")] markers: Vec<Marker>,
     },
 }
 
@@ -112,6 +114,7 @@ impl Part {
             #[cfg(feature = "part_tracker")] name,
             #[cfg(feature = "part_tracker")] last_rotation: None,
             #[cfg(feature = "part_tracker")] group: Vec::new(),
+            #[cfg(feature = "part_tracker")] markers: Vec::new(),
         }
     }
 
@@ -133,6 +136,7 @@ impl Part {
             #[cfg(feature = "part_tracker")] last_rotation: None,
             #[cfg(feature = "part_tracker")] name,
             #[cfg(feature = "part_tracker")] group: Vec::new(),
+            #[cfg(feature = "part_tracker")] markers: Vec::new(),
         }
     }
 
@@ -361,6 +365,28 @@ impl Part {
         self
     }
     
+    #[cfg(feature = "part_tracker")]
+    pub fn add_marker(&mut self, marker: Marker) {
+        match self {
+            Cube { markers: ref mut m, .. } => m.push(marker),
+            Quad { markers: ref mut m, .. } => m.push(marker),
+        }
+    }
+    
+    pub fn add_markers(&mut self, markers: &[Marker]) {
+        match self {
+            Cube { markers: ref mut m, .. } => m.extend_from_slice(markers),
+            Quad { markers: ref mut m, .. } => m.extend_from_slice(markers),
+        }
+    }
+    
+    #[cfg(feature = "part_tracker")]
+    pub fn markers(&self) -> &[Marker] {
+        match self {
+            Cube { markers: m, .. } => m,
+            Quad { markers: m, .. } => m,
+        }
+    }
 }
 
 /// A position in 3D space.
@@ -370,3 +396,15 @@ impl Part {
 /// - +Y is up / -Y is down
 /// - +Z is south / -Z is north
 pub(crate) type MinecraftPosition = Vec3;
+
+#[cfg(feature = "part_tracker")]
+#[derive(Debug, Clone)]
+pub struct Marker {
+    pub name: String,
+    pub position: MinecraftPosition,
+}
+
+#[cfg(feature = "part_tracker")]
+impl Marker {
+    pub fn new(name: String, position: MinecraftPosition) -> Self { Self { name, position } }
+}

@@ -2,7 +2,7 @@ use super::{PartsProvider, PlayerPartProviderContext};
 use crate::{
     model::ArmorMaterial,
     parts::{
-        part::{Part, PartAnchorInfo},
+        part::{Part, PartAnchorInfo, Marker},
         uv::{uv_from_pos_and_size, FaceUv},
     },
     types::{PlayerBodyPartType, PlayerBodyPartType::*, PlayerPartTextureType},
@@ -326,16 +326,21 @@ impl EarsPlayerPartsProvider {
 
         let mut rot_x_acc = angle;
         for segment in 0..segments {
-            rot_x_acc = 0.0;//+= tail_data.bends[segment];
+            rot_x_acc += tail_data.bends[segment];
 
             let tail = if vertical {
+                let tail_x = if segment == 0 {
+                    4.0
+                } else {
+                    0.0
+                };
                 declare_ears_part_vertical!(TailSegment {
                     pos: [
-                        8.0,
+                        tail_x - PREV_CORNER_CANARY,
                         2.0,// + (seg_height * segment as f32),
                         4.0 + PREV_CORNER_CANARY
                     ],
-                    rot: [0.0, 90.0, rot_x_acc - 180.0],
+                    rot: [0.0, 90.0 - rot_x_acc, -180.0],
                     size: [seg_height_u16, 8],
                     uv: [
                         56,
@@ -726,7 +731,7 @@ fn process_pos(pos: [f32; 3], is_slim_arms: bool, last_pos: &[f32; 3]) -> [f32; 
         } else if (*element) > PREV_CORNER_CANARY {
             let rest = *element - PREV_CORNER_CANARY;
             *element = last_pos[index] + rest;
-        } else if (*element) < -PREV_CORNER_CANARY {
+        } else if (*element) < 0.0 && (*element) < PREV_CORNER_CANARY {
             let rest = *element + PREV_CORNER_CANARY;
             *element = last_pos[index] + rest;
         }
@@ -741,6 +746,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
         context: &PlayerPartProviderContext<M>,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
+        let mut markers = Vec::new();
         let empty = Vec::with_capacity(0);
 
         if body_part.is_layer() || body_part.is_hat_layer() {
@@ -876,19 +882,27 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
                     } else {
                         [pos[0], pos[1], pos[2] - size[1] as f32]
                     };
-
+                    
                     let old = Vec3::from(old_point) - normal_offset;
 
-                    (part_quad
-                        .get_rotation_matrix()
-                        .transform_point3(old_point.into()));
-
                     last_pos += (part_quad.get_rotation_matrix().transform_point3(old)) - (old);
+                    
+                    markers.push(Marker::new(format!("{name} (Old point)"), old_point.into()));
+                    markers.push(Marker::new(format!("{name} (old)"), old));
+                    markers.push(Marker::new(format!("{name} (rotated old)"), part_quad.get_rotation_matrix().transform_point3(old)));
+                    markers.push(Marker::new(format!("{name} (lastpos)"), last_pos));
 
                     result.push(part_quad);
                 }
             }
 
+            #[cfg(feature = "part_tracker")]
+            {
+                if let Some(first) = result.first_mut() {
+                    first.add_markers(&markers);
+                }
+            }
+            
             result
         } else {
             empty

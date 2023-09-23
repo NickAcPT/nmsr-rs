@@ -63,49 +63,61 @@ fn convert_to_raw_elements(
         .into_iter()
         .flat_map(|(_, parts)| parts)
         .enumerate()
-        .map(|(index, part)| match &part {
-            Part::Cube {
-                position,
-                size,
-                last_rotation,
-                face_uvs,
-                texture,
-                name,
-                ..
-            } => {
-                let from = *position;
-                let to = *position + *size;
+        .map(|(index, part)| {
+            (
+                part.markers().to_vec(),
+                match &part {
+                    Part::Cube {
+                        position,
+                        size,
+                        last_rotation,
+                        face_uvs,
+                        texture,
+                        name,
+                        ..
+                    } => {
+                        let from = *position;
+                        let to = *position + *size;
 
-                let faces = RawProjectElementFaces::new(project, *texture, *face_uvs);
+                        let faces = RawProjectElementFaces::new(project, *texture, *face_uvs);
 
-                let mut rotation = Vec3::ZERO;
-                let mut rotation_anchor = Vec3::ZERO;
+                        let mut rotation = Vec3::ZERO;
+                        let mut rotation_anchor = Vec3::ZERO;
 
-                if let Some((rot, anchor)) = *last_rotation {
-                    rotation_anchor = anchor.rotation_anchor;
-                    rotation = rot;
-                }
+                        if let Some((rot, anchor)) = *last_rotation {
+                            rotation_anchor = anchor.rotation_anchor;
+                            rotation = rot;
+                        }
 
-                RawProjectElement::new_cube(
-                    project.get_part_name(name.as_deref(), index),
-                    false,
-                    from,
-                    to,
-                    rotation_anchor,
-                    rotation,
-                    faces,
-                )
-            }
+                        RawProjectElement::new_cube(
+                            project.get_part_name(name.as_deref(), index),
+                            false,
+                            from,
+                            to,
+                            rotation_anchor,
+                            rotation,
+                            faces,
+                        )
+                    }
 
-            Part::Quad { name, texture, .. } => {
-                let name = name
-                    .to_owned()
-                    .map_or_else(|| format!("part-{index}"), |s| s.to_string());
+                    Part::Quad { name, texture, .. } => {
+                        let name = name
+                            .to_owned()
+                            .map_or_else(|| format!("part-{index}"), |s| s.to_string());
 
-                let texture = *texture;
+                        let texture = *texture;
 
-                RawProjectElement::new_quad(name, part, texture, project)
-            }
+                        RawProjectElement::new_quad(name, part, texture, project)
+                    }
+                },
+            )
+        })
+        .flat_map(|(markers, element)| {
+            vec![element].into_iter().chain(
+                markers
+                    .into_iter()
+                    .map(|m| RawProjectElement::new_null(m.name, m.position)),
+            )
         })
         .collect_vec()
 }

@@ -60,6 +60,18 @@ impl RawProjectElement {
             "faces": faces,
         }).into())
     }
+    
+    pub fn new_null(
+        name: String,
+        origin: Vec3,
+    ) -> Self {
+        Self(json!({
+            "uuid": str_to_uuid(&name),
+            "name": name,
+            "type": "null_object",
+            "position": origin,
+        }).into())
+    }
 
     pub fn new_quad(
         name: String,
@@ -96,7 +108,7 @@ impl RawProjectElement {
             ]);
 
             let uvs = project.handle_face(texture, uvs);
-
+            
             let [top_left_uv, top_right_uv, bottom_right_uv, bottom_left_uv] = shrink_rectangle(
                 [
                     [uvs.top_left.x, uvs.top_left.y],
@@ -106,34 +118,36 @@ impl RawProjectElement {
                 ],
                 RawProjectElementFace::UV_OFFSET,
             );
+            
+            let owo = part.get_position();
 
             json!({
                 "uuid": str_to_uuid(&name),
                 "name": name,
                 "box_uv": false,
                 "type": "mesh",
-                "origin": Vec3::ZERO,
+                "origin": owo,
                 "rotation": Vec3::ZERO,
                 "vertices": {
                     &top_left: [
-                        quad.top_left.position.x,
-                        quad.top_left.position.y,
-                        quad.top_left.position.z,
+                        quad.top_left.position.x - owo.x,
+                        quad.top_left.position.y - owo.y,
+                        quad.top_left.position.z - owo.z,
                     ],
                     &top_right: [
-                        quad.top_right.position.x,
-                        quad.top_right.position.y,
-                        quad.top_right.position.z,
+                        quad.top_right.position.x - owo.x,
+                        quad.top_right.position.y - owo.y,
+                        quad.top_right.position.z - owo.z,
                     ],
                     &bottom_right: [
-                        quad.bottom_right.position.x,
-                        quad.bottom_right.position.y,
-                        quad.bottom_right.position.z,
+                        quad.bottom_right.position.x - owo.x,
+                        quad.bottom_right.position.y - owo.y,
+                        quad.bottom_right.position.z - owo.z,
                     ],
                     &bottom_left: [
-                        quad.bottom_left.position.x,
-                        quad.bottom_left.position.y,
-                        quad.bottom_left.position.z,
+                        quad.bottom_left.position.x - owo.x,
+                        quad.bottom_left.position.y - owo.y,
+                        quad.bottom_left.position.z - owo.z,
                     ],
                 },
                 "faces": {

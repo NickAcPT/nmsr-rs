@@ -19,7 +19,7 @@ pub enum PlayerPartsProvider {
 }
 
 /// Context for player parts.
-#[derive(Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct PlayerPartProviderContext<M = ()>
 where
     M: ArmorMaterial,

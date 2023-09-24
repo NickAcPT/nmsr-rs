@@ -94,6 +94,14 @@ where
 {
     const RECTANGLE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_rectangle.png");
     const SQUARE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_square.png");
+    
+    pub fn get_shadow_bytes(is_square: bool) -> &'static [u8] {
+        if is_square {
+            Self::SQUARE_SHADOW_BYTES
+        } else {
+            Self::RECTANGLE_SHADOW_BYTES
+        }
+    }
 
     pub fn new<M: ArmorMaterial>(
         graphics_context: &GraphicsContext,
@@ -126,11 +134,7 @@ where
         };
 
         if part_context.shadow_y_pos.is_some() {
-            let shadow_bytes = if part_context.shadow_is_square {
-                Self::SQUARE_SHADOW_BYTES
-            } else {
-                Self::RECTANGLE_SHADOW_BYTES
-            };
+            let shadow_bytes = Self::get_shadow_bytes(part_context.shadow_is_square);
 
             // We need to render the shadow, so upload the shadow texture already
             let shadow_image =

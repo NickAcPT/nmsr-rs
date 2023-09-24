@@ -6,7 +6,7 @@ use nmsr_rendering::{
             part::Part,
             uv::{CubeFaceUvs, FaceUv},
         },
-        types::PlayerPartTextureType, utils::parts::primitive_convert,
+        types::PlayerPartTextureType, utils::parts::primitive_convert, model::ArmorMaterial,
     },
     low_level::primitives::mesh::PrimitiveDispatch,
 };
@@ -15,7 +15,7 @@ use serde_json::{json, Value};
 use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_128;
 
-use crate::generator::ModelGenerationProject;
+use crate::{generator::{ModelGenerationProject, ModelProjectImageIO}, error::Result};
 
 #[derive(Debug, Copy, Clone, Serialize)]
 pub struct ProjectMeta {
@@ -73,12 +73,12 @@ impl RawProjectElement {
         }).into())
     }
 
-    pub fn new_quad(
+    pub fn new_quad<M: ArmorMaterial, I: ModelProjectImageIO>(
         name: String,
         part: Part,
         texture: PlayerPartTextureType,
-        project: &ModelGenerationProject,
-    ) -> Self {
+        project: &ModelGenerationProject<M, I>,
+    ) -> Result<Self> {
         fn random_names(a: &str, b: &str) -> (String, String) {
             let (a_new, b_new) = Uuid::new_v4().as_u64_pair();
 
@@ -90,7 +90,7 @@ impl RawProjectElement {
         let (top_left, top_right) = random_names("top_left", "top_right");
         let (bottom_left, bottom_right) = random_names("bottom_left", "bottom_right");
 
-        let texture_id = project.get_texture_id(texture);
+        let texture_id = project.get_texture_id(texture)?;
 
         let uv_size = texture.get_texture_size();
         let (uv_width, uv_height) = (uv_size.0 as f32, uv_size.1 as f32);
@@ -172,7 +172,7 @@ impl RawProjectElement {
             unreachable!("Expected a quad primitive, got something else")
         };
 
-        Self(result)
+        Ok(Self(result))
     }
 }
 
@@ -185,13 +185,13 @@ pub struct RawProjectElementFace {
 impl RawProjectElementFace {
     pub const UV_OFFSET: f32 = 0.05;
 
-    pub fn new(
-        project: &ModelGenerationProject,
+    pub fn new<M: ArmorMaterial, I: ModelProjectImageIO>(
+        project: &ModelGenerationProject<M, I>,
         texture: PlayerPartTextureType,
         uv: FaceUv,
-    ) -> Self {
+    ) -> Result<Self> {
         let uv = project.handle_face(texture, uv);
-        let texture_id = project.get_texture_id(texture);
+        let texture_id = project.get_texture_id(texture)?;
 
         let [top_left_uv, _, bottom_right_uv, _] = shrink_rectangle(
             [
@@ -210,10 +210,10 @@ impl RawProjectElementFace {
             bottom_right_uv[1],
         ];
 
-        Self {
+        Ok(Self {
             texture: Some(texture_id),
             uv,
-        }
+        })
     }
 }
 
@@ -236,23 +236,23 @@ pub struct ModelFaceUv {
 }
 
 impl RawProjectElementFaces {
-    pub fn new(
-        project: &ModelGenerationProject,
+    pub fn new<M: ArmorMaterial, I: ModelProjectImageIO>(
+        project: &ModelGenerationProject<M, I>,
         texture: PlayerPartTextureType,
         faces: CubeFaceUvs,
-    ) -> Self {
-        Self {
-            north: RawProjectElementFace::new(project, texture, faces.north),
-            south: RawProjectElementFace::new(project, texture, faces.south),
-            east: RawProjectElementFace::new(project, texture, faces.east),
-            west: RawProjectElementFace::new(project, texture, faces.west),
+    ) -> Result<Self> {
+        Ok(Self {
+            north: RawProjectElementFace::new(project, texture, faces.north)?,
+            south: RawProjectElementFace::new(project, texture, faces.south)?,
+            east: RawProjectElementFace::new(project, texture, faces.east)?,
+            west: RawProjectElementFace::new(project, texture, faces.west)?,
             up: RawProjectElementFace::new(
                 project,
                 texture,
                 faces.up.flip_horizontally().flip_vertically(),
-            ),
-            down: RawProjectElementFace::new(project, texture, faces.down.flip_horizontally()),
-        }
+            )?,
+            down: RawProjectElementFace::new(project, texture, faces.down.flip_horizontally())?,
+        })
     }
 }
 

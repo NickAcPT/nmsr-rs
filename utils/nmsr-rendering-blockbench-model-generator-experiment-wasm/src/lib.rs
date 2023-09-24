@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use nmsr_rendering_blockbench_model_generator_experiment::{
     blockbench,
-    generator::ModelGenerationProject,
+    generator::{DefaultImageIO, new_model_generator_without_part_context},
     nmsr_rendering::high_level::{model::PlayerModel, types::PlayerPartTextureType},
 };
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue, UnwrapThrowExt};
@@ -60,7 +60,7 @@ pub fn generate_blockbench_model(
 ) -> ConversionResult {
     console_error_panic_hook::set_once();
 
-    let mut project = ModelGenerationProject::new(*model, layers);
+    let mut project = new_model_generator_without_part_context(*model, layers, DefaultImageIO);
 
     project.load_texture(PlayerPartTextureType::Skin, &skin_bytes).unwrap_throw();
 

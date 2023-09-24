@@ -4,7 +4,7 @@ use std::{fs, path::PathBuf};
 use anyhow::{anyhow, Context, Ok, Result};
 use clap::{Parser, ValueEnum};
 use nmsr_rendering_blockbench_model_generator_experiment::blockbench;
-use nmsr_rendering_blockbench_model_generator_experiment::generator::ModelGenerationProject;
+use nmsr_rendering_blockbench_model_generator_experiment::generator::{DefaultImageIO, new_model_generator_without_part_context};
 use nmsr_rendering_blockbench_model_generator_experiment::nmsr_rendering::high_level::{
     model::PlayerModel, types::PlayerPartTextureType,
 };
@@ -53,12 +53,13 @@ fn main() -> Result<()> {
     let args = Args::parse();
     let skin_bytes = fs::read(args.input).context(anyhow!("Failed to read input skin"))?;
 
-    let mut project = ModelGenerationProject::new(
+    let mut project = new_model_generator_without_part_context(
         *args.model,
         args.layers,
+        DefaultImageIO
     );
     
-    project.load_texture(PlayerPartTextureType::Skin, &skin_bytes)?;
+    project.load_texture(PlayerPartTextureType::Skin, &skin_bytes, cfg!(feature = "ears"))?;
 
     let result = blockbench::generate_project(project)
         .context(anyhow!("Failed to generate blockbench project"))?;

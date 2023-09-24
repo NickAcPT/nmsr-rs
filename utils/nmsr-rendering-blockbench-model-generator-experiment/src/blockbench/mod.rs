@@ -1,20 +1,17 @@
 pub mod model;
 
-use std::{
-    collections::HashMap,
-    io::{BufWriter, Cursor},
-    vec::Vec,
-};
+use std::{collections::HashMap, vec::Vec};
 
-use anyhow::{anyhow, Context, Ok};
 use glam::Vec3;
-use image::RgbaImage;
 use itertools::Itertools;
-use nmsr_rendering::high_level::{parts::part::Part, types::PlayerPartTextureType};
+use nmsr_rendering::high_level::{
+    model::ArmorMaterial, parts::part::Part, types::PlayerPartTextureType,
+};
 
 use crate::{
     blockbench::model::{RawProject, RawProjectTexture},
-    generator::ModelGenerationProject,
+    error::Result,
+    generator::{ModelGenerationProject, ModelProjectImageIO},
 };
 
 use self::model::{ProjectTextureResolution, RawProjectElement, RawProjectElementFaces};
@@ -25,26 +22,26 @@ pub type ProjectOutput = String;
 #[cfg(feature = "wasm")]
 pub type ProjectOutput = wasm_bindgen::JsValue;
 
-#[cfg(not(feature = "wasm"))]
-pub type ProjectOutputResult = anyhow::Result<ProjectOutput>;
+pub type ProjectOutputResult = Result<ProjectOutput>;
 
-#[cfg(feature = "wasm")]
-pub type ProjectOutputResult = std::result::Result<ProjectOutput, serde_wasm_bindgen::Error>;
-
-pub fn generate_project(project: ModelGenerationProject) -> ProjectOutputResult {
+pub fn generate_project<M: ArmorMaterial, I: ModelProjectImageIO>(
+    mut project: ModelGenerationProject<M, I>,
+) -> ProjectOutputResult {
     let parts = project.generate_parts();
+    
     let texture_grouped_parts = group_by_texture(parts);
+    project.filter_textures(&texture_grouped_parts.keys().copied().collect_vec());
+
     let outliner_groups = vec![];
     let (resolution, raw_textures) =
         convert_to_raw_project_textures(&project, &texture_grouped_parts);
-    let elements = convert_to_raw_elements(&project, texture_grouped_parts);
+    let elements = convert_to_raw_elements(&project, texture_grouped_parts)?;
 
     let project = RawProject::new(resolution, elements, raw_textures, outliner_groups);
 
     #[cfg(not(feature = "wasm"))]
     {
-        let project_json =
-            serde_json::to_string(&project).context(anyhow!("Failed to serialize project"))?;
+        let project_json = serde_json::to_string(&project)?;
 
         Ok(project_json)
     }
@@ -55,21 +52,21 @@ pub fn generate_project(project: ModelGenerationProject) -> ProjectOutputResult 
     }
 }
 
-fn convert_to_raw_elements(
-    project: &ModelGenerationProject,
+fn convert_to_raw_elements<M: ArmorMaterial, I: ModelProjectImageIO>(
+    project: &ModelGenerationProject<M, I>,
     grouped_parts: HashMap<PlayerPartTextureType, Vec<Part>>,
-) -> Vec<RawProjectElement> {
+) -> Result<Vec<RawProjectElement>> {
     let parts = grouped_parts
         .into_iter()
         .flat_map(|(_, parts)| parts)
         .enumerate()
-        .map(|(index, part)| {
+        .map(|(index, part)| -> Result<_> {
             #[cfg(feature = "markers")]
             let markers = part.part_tracking_data().markers().to_vec();
-            
+
             let name = part.part_tracking_data().name().map(|s| s.as_str());
             let last_rotation = part.part_tracking_data().last_rotation().copied();
-            
+
             let element = match &part {
                 Part::Cube {
                     position,
@@ -81,7 +78,7 @@ fn convert_to_raw_elements(
                     let from = *position;
                     let to = *position + *size;
 
-                    let faces = RawProjectElementFaces::new(project, *texture, *face_uvs);
+                    let faces = RawProjectElementFaces::new(project, *texture, *face_uvs)?;
 
                     let mut rotation = Vec3::ZERO;
                     let mut rotation_anchor = Vec3::ZERO;
@@ -109,18 +106,18 @@ fn convert_to_raw_elements(
 
                     let texture = *texture;
 
-                    RawProjectElement::new_quad(name, part, texture, project)
+                    RawProjectElement::new_quad(name, part, texture, project)?
                 }
             };
 
             #[cfg(feature = "markers")]
             {
-                (markers, element)
+                Ok((markers, element))
             }
 
             #[cfg(not(feature = "markers"))]
             {
-                element
+                Ok(element)
             }
         });
 
@@ -133,7 +130,13 @@ fn convert_to_raw_elements(
         )
     });
 
-    parts.collect_vec()
+    let mut result = Vec::new();
+
+    for part in parts {
+        result.push(part?);
+    }
+
+    Ok(result)
 }
 
 fn group_by_texture(parts: Vec<Part>) -> HashMap<PlayerPartTextureType, Vec<Part>> {
@@ -150,8 +153,8 @@ fn group_by_texture(parts: Vec<Part>) -> HashMap<PlayerPartTextureType, Vec<Part
     result
 }
 
-fn convert_to_raw_project_textures(
-    project: &ModelGenerationProject,
+fn convert_to_raw_project_textures<M: ArmorMaterial, I: ModelProjectImageIO>(
+    project: &ModelGenerationProject<M, I>,
     grouped_parts: &HashMap<PlayerPartTextureType, Vec<Part>>,
 ) -> (ProjectTextureResolution, Vec<RawProjectTexture>) {
     let textures = grouped_parts
@@ -161,7 +164,7 @@ fn convert_to_raw_project_textures(
         .filter_map(|(i, k)| {
             project
                 .get_texture(*k)
-                .and_then(|t| write_png(t).ok())
+                .and_then(|t| project.image_io().write_png(t).ok())
                 .map(|t| RawProjectTexture::new(get_texture_name(*k), i as u32, &t))
         })
         .collect_vec();
@@ -179,17 +182,4 @@ fn get_texture_name(texture: PlayerPartTextureType) -> String {
             _ => texture.to_string(),
         }
     )
-}
-
-pub fn write_png(img: &RgbaImage) -> anyhow::Result<Vec<u8>> {
-    let mut bytes = Cursor::new(vec![]);
-
-    {
-        let mut writer = BufWriter::new(&mut bytes);
-        img.write_to(&mut writer, image::ImageOutputFormat::Png)
-            .context(anyhow!("Failed to write empty image to buffer"))
-            .unwrap();
-    }
-
-    Ok(bytes.into_inner())
 }

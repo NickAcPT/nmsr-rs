@@ -1,12 +1,14 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    io::{BufWriter, Cursor},
+};
 
-use anyhow::{anyhow, Context, Result};
 use ears_rs::{alfalfa::AlfalfaDataKey, parser::EarsParser};
 use glam::Vec2;
 use image::RgbaImage;
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
-    model::PlayerModel,
+    model::{ArmorMaterial, PlayerModel},
     parts::{
         part::Part,
         provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
@@ -16,30 +18,70 @@ use nmsr_rendering::high_level::{
     IntoEnumIterator,
 };
 
-use crate::blockbench::model::ModelFaceUv;
+use crate::{
+    blockbench::model::ModelFaceUv,
+    error::{BlockbenchGeneratorError, Contextualizable, Result},
+};
 
-pub struct ModelGenerationProject {
-    providers: Vec<PlayerPartsProvider>,
-    part_context: PlayerPartProviderContext<()>,
-    textures: HashMap<PlayerPartTextureType, RgbaImage>,
-    max_resolution: Vec2,
+pub trait ModelProjectImageIO {
+    fn read_png(&self, image: &[u8]) -> Result<RgbaImage>;
+    fn write_png(&self, image: &RgbaImage) -> Result<Vec<u8>>;
 }
 
-impl ModelGenerationProject {
-    pub fn new(model: PlayerModel, layers: bool) -> Self {
-        let context = PlayerPartProviderContext::<()> {
-            model,
-            has_hat_layer: layers,
-            has_layers: layers,
-            has_cape: false,
-            arm_rotation: 10.0,
-            shadow_y_pos: None,
-            shadow_is_square: false,
-            armor_slots: None,
-            #[cfg(feature = "ears")]
-            ears_features: None,
-        };
+pub struct DefaultImageIO;
 
+impl ModelProjectImageIO for DefaultImageIO {
+    fn read_png(&self, image: &[u8]) -> Result<RgbaImage> {
+        Ok(image::load_from_memory(image)
+            .context("Failed to load image")?
+            .to_rgba8())
+    }
+
+    fn write_png(&self, image: &RgbaImage) -> Result<Vec<u8>> {
+        let mut bytes = Cursor::new(vec![]);
+
+        {
+            let mut writer = BufWriter::new(&mut bytes);
+            image
+                .write_to(&mut writer, image::ImageOutputFormat::Png)
+                .context("Failed to write empty image to buffer")?;
+        }
+
+        Ok(bytes.into_inner())
+    }
+}
+
+pub struct ModelGenerationProject<M: ArmorMaterial, I: ModelProjectImageIO> {
+    providers: Vec<PlayerPartsProvider>,
+    part_context: PlayerPartProviderContext<M>,
+    textures: HashMap<PlayerPartTextureType, RgbaImage>,
+    max_resolution: Vec2,
+    image_io: I,
+}
+
+pub fn new_model_generator_without_part_context<I: ModelProjectImageIO>(
+    model: PlayerModel,
+    layers: bool,
+    image_io: I,
+) -> ModelGenerationProject<(), I> {
+    let context = PlayerPartProviderContext::<()> {
+        model,
+        has_hat_layer: layers,
+        has_layers: layers,
+        has_cape: false,
+        arm_rotation: 10.0,
+        shadow_y_pos: None,
+        shadow_is_square: false,
+        armor_slots: None,
+        #[cfg(feature = "ears")]
+        ears_features: None,
+    };
+
+    ModelGenerationProject::new_with_part_context(image_io, context)
+}
+
+impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
+    pub fn new_with_part_context(image_io: I, context: PlayerPartProviderContext<M>) -> Self {
         Self {
             providers: [
                 PlayerPartsProvider::Minecraft,
@@ -50,6 +92,7 @@ impl ModelGenerationProject {
             part_context: context,
             textures: HashMap::new(),
             max_resolution: Vec2::ZERO,
+            image_io,
         }
     }
 
@@ -57,36 +100,48 @@ impl ModelGenerationProject {
         &mut self,
         texture_type: PlayerPartTextureType,
         texture: &[u8],
+        #[cfg(feature = "ears")] load_ears_features: bool,
     ) -> Result<()> {
-        let texture = image::load_from_memory(texture)
-            .context("Failed to load texture")?
-            .into_rgba8();
+        let texture = self.image_io().read_png(texture)?;
 
-        self.add_texture(texture_type, texture)
+        self.add_texture(
+            texture_type,
+            texture,
+            #[cfg(feature = "ears")]
+            load_ears_features,
+        )
     }
 
     pub fn add_texture(
         &mut self,
         texture_type: PlayerPartTextureType,
         mut texture: RgbaImage,
+        #[cfg(feature = "ears")] do_ears_processing: bool,
     ) -> Result<()> {
         #[cfg(feature = "ears")]
-        {
+        if do_ears_processing {
             use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
 
             if texture_type == PlayerPartTextureType::Skin {
                 if let Ok(Some(alfalfa)) = ears_rs::alfalfa::read_alfalfa(&texture) {
                     if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
-                        self.load_texture(PlayerPartEarsTextureType::Wings.into(), wings)?;
+                        self.load_texture(
+                            PlayerPartEarsTextureType::Wings.into(),
+                            wings,
+                            do_ears_processing,
+                        )?;
                     }
 
                     if let Some(cape) = alfalfa.get_data(AlfalfaDataKey::Cape) {
-                        self.load_texture(PlayerPartEarsTextureType::Cape.into(), cape)?;
+                        self.load_texture(
+                            PlayerPartEarsTextureType::Cape.into(),
+                            cape,
+                            do_ears_processing,
+                        )?;
                     }
                 }
 
-                let features = EarsParser::parse(&texture)
-                    .context(anyhow!("Failed to parse ears features from skin"))?;
+                let features = EarsParser::parse(&texture)?;
 
                 self.part_context.ears_features = features;
 
@@ -96,11 +151,12 @@ impl ModelGenerationProject {
             {
                 texture = ears_rs::utils::convert_ears_cape_to_mojang_cape(texture);
             }
-        }
-        if texture_type == PlayerPartTextureType::Skin {
-            ears_rs::utils::strip_alpha(&mut texture);
-        } else if texture_type == PlayerPartTextureType::Cape {
-            self.part_context.has_cape = true;
+
+            if texture_type == PlayerPartTextureType::Skin {
+                ears_rs::utils::strip_alpha(&mut texture);
+            } else if texture_type == PlayerPartTextureType::Cape {
+                self.part_context.has_cape = true;
+            }
         }
 
         self.textures.insert(texture_type, texture);
@@ -180,19 +236,29 @@ impl ModelGenerationProject {
         }
     }
 
-    pub(crate) fn get_texture_id(&self, texture: PlayerPartTextureType) -> u32 {
+    pub(crate) fn get_texture_id(&self, texture: PlayerPartTextureType) -> Result<u32> {
         self.textures
             .keys()
             .sorted_by_key(|&&t| t)
             .enumerate()
             .find(|(_, &t)| t == texture)
             .map(|(i, _)| i as u32)
-            .ok_or(anyhow!("Failed to find texture id for {:?}", texture))
-            .unwrap()
+            .ok_or(BlockbenchGeneratorError::TextureNotFound(texture))
     }
 
     pub(crate) fn get_part_name(&self, name: Option<&str>, index: usize) -> String {
         name.to_owned()
             .map_or_else(|| format!("part-{index}"), |s| s.to_string())
+    }
+
+    pub(crate) fn image_io(&self) -> &I {
+        &self.image_io
+    }
+
+    pub(crate) fn filter_textures(
+        &mut self,
+        keys: &[PlayerPartTextureType],
+    ) {
+        self.textures.retain(|k, _| keys.contains(k));
     }
 }

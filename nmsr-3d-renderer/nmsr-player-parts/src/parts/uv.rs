@@ -25,12 +25,6 @@ pub struct FaceUv {
     pub top_right: FaceUvPoint,
     pub bottom_left: FaceUvPoint,
     pub bottom_right: FaceUvPoint,
-    #[cfg(feature = "part_tracker")]
-    pub flipped_horizontally: bool,
-    #[cfg(feature = "part_tracker")]
-    pub flipped_vertically: bool,
-    #[cfg(feature = "part_tracker")]
-    pub cw_rotation_count: u8,
 }
 
 impl FaceUv {
@@ -39,9 +33,6 @@ impl FaceUv {
         top_left_y: UvCoordinate,
         bottom_right_x: UvCoordinate,
         bottom_right_y: UvCoordinate,
-        #[cfg(feature = "part_tracker")] flipped_horizontally: bool,
-        #[cfg(feature = "part_tracker")] flipped_vertically: bool,
-        #[cfg(feature = "part_tracker")] cw_rotation_count: u8,
     ) -> Self {
         Self {
             top_left: FaceUvPoint {
@@ -60,30 +51,16 @@ impl FaceUv {
                 x: bottom_right_x,
                 y: bottom_right_y,
             },
-
-            #[cfg(feature = "part_tracker")]
-            flipped_horizontally,
-            #[cfg(feature = "part_tracker")]
-            flipped_vertically,
-            #[cfg(feature = "part_tracker")]
-            cw_rotation_count,
         }
     }
 
     pub fn flip_vertically(self) -> Self {
-        Self{
+        Self {
             top_left: self.bottom_left,
             top_right: self.bottom_right,
             bottom_left: self.top_left,
             bottom_right: self.top_right,
-            #[cfg(feature = "part_tracker")]
-            flipped_horizontally: self.flipped_horizontally,
-            #[cfg(feature = "part_tracker")]
-            flipped_vertically: self.flipped_vertically,
-            #[cfg(feature = "part_tracker")]
-            cw_rotation_count: self.cw_rotation_count,
-    }
-        .flipped_vertically()
+        }
     }
 
     pub fn flip_horizontally(self) -> Self {
@@ -92,14 +69,7 @@ impl FaceUv {
             top_right: self.top_left,
             bottom_left: self.bottom_right,
             bottom_right: self.bottom_left,
-            #[cfg(feature = "part_tracker")]
-            flipped_horizontally: self.flipped_horizontally,
-            #[cfg(feature = "part_tracker")]
-            flipped_vertically: self.flipped_vertically,
-            #[cfg(feature = "part_tracker")]
-            cw_rotation_count: self.cw_rotation_count,
         }
-        .flipped_horizontally()
     }
 
     pub fn rotate_cw(self) -> Self {
@@ -108,41 +78,7 @@ impl FaceUv {
             top_right: self.bottom_right,
             bottom_right: self.bottom_left,
             bottom_left: self.top_left,
-            #[cfg(feature = "part_tracker")]
-            flipped_horizontally: self.flipped_horizontally,
-            #[cfg(feature = "part_tracker")]
-            flipped_vertically: self.flipped_vertically,
-            #[cfg(feature = "part_tracker")]
-            cw_rotation_count: self.cw_rotation_count,
         }
-        .rotated_cw()
-    }
-
-    #[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))]
-    fn flipped_horizontally(mut self) -> Self {
-        #[cfg(feature = "part_tracker")]
-        {
-            self.flipped_horizontally ^= true;
-        }
-        self
-    }
-
-    #[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))]
-    fn flipped_vertically(mut self) -> Self {
-        #[cfg(feature = "part_tracker")]
-        {
-            self.flipped_vertically ^= true;
-        }
-        self
-    }
-
-    #[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))]
-    fn rotated_cw(mut self) -> Self {
-        #[cfg(feature = "part_tracker")]
-        {
-            self.cw_rotation_count = (self.cw_rotation_count + 1) % 4;
-        }
-        self
     }
 }
 
@@ -157,18 +93,7 @@ pub struct CubeFaceUvs {
 }
 
 pub fn uv_from_pos_and_size(x: u16, y: u16, size_x: u16, size_y: u16) -> FaceUv {
-    FaceUv::new(
-        x,
-        y,
-        x + size_x,
-        y + size_y,
-        #[cfg(feature = "part_tracker")]
-        false,
-        #[cfg(feature = "part_tracker")]
-        false,
-        #[cfg(feature = "part_tracker")]
-        0,
-    )
+    FaceUv::new(x, y, x + size_x, y + size_y)
 }
 
 pub fn box_uv(x: u16, y: u16, size: [u16; 3]) -> CubeFaceUvs {
@@ -210,18 +135,7 @@ impl From<[[UvCoordinate; 4]; 6]> for CubeFaceUvs {
 
 impl From<[UvCoordinate; 4]> for FaceUv {
     fn from(uvs: [UvCoordinate; 4]) -> Self {
-        Self::new(
-            uvs[0],
-            uvs[1],
-            uvs[2],
-            uvs[3],
-            #[cfg(feature = "part_tracker")]
-            false,
-            #[cfg(feature = "part_tracker")]
-            false,
-            #[cfg(feature = "part_tracker")]
-            0,
-        )
+        Self::new(uvs[0], uvs[1], uvs[2], uvs[3])
     }
 }
 
@@ -244,13 +158,6 @@ impl From<[UvCoordinate; 8]> for FaceUv {
                 x: uvs[6],
                 y: uvs[7],
             },
-
-            #[cfg(feature = "part_tracker")]
-            flipped_horizontally: false,
-            #[cfg(feature = "part_tracker")]
-            flipped_vertically: false,
-            #[cfg(feature = "part_tracker")]
-            cw_rotation_count: 0,
         }
     }
 }

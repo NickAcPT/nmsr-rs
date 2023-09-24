@@ -65,16 +65,17 @@ fn convert_to_raw_elements(
         .enumerate()
         .map(|(index, part)| {
             #[cfg(feature = "markers")]
-            let markers = part.markers().to_vec();
+            let markers = part.part_tracking_data().markers().to_vec();
+            
+            let name = part.part_tracking_data().name().map(|s| s.as_str());
+            let last_rotation = part.part_tracking_data().last_rotation().copied();
             
             let element = match &part {
                 Part::Cube {
                     position,
                     size,
-                    last_rotation,
                     face_uvs,
                     texture,
-                    name,
                     ..
                 } => {
                     let from = *position;
@@ -85,7 +86,7 @@ fn convert_to_raw_elements(
                     let mut rotation = Vec3::ZERO;
                     let mut rotation_anchor = Vec3::ZERO;
 
-                    if let Some((rot, anchor)) = *last_rotation {
+                    if let Some((rot, anchor)) = last_rotation {
                         rotation_anchor = anchor.rotation_anchor;
                         rotation = rot;
                     }
@@ -101,7 +102,7 @@ fn convert_to_raw_elements(
                     )
                 }
 
-                Part::Quad { name, texture, .. } => {
+                Part::Quad { texture, .. } => {
                     let name = name
                         .to_owned()
                         .map_or_else(|| format!("part-{index}"), |s| s.to_string());

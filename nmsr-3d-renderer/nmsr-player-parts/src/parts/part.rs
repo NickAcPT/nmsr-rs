@@ -1,9 +1,11 @@
+use super::provider::minecraft::compute_base_part;
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
-use glam::{Vec3, Mat4, Quat};
+use glam::{Mat4, Quat, Vec3};
 
-use super::provider::minecraft::compute_base_part;
+#[cfg(feature = "part_tracker")]
+use super::tracking::PartTrackingData;
 
 #[derive(Debug, Copy, Clone)]
 pub struct PartAnchorInfo {
@@ -20,7 +22,7 @@ impl PartAnchorInfo {
         self.translation_anchor += translation_anchor;
         self
     }
-    
+
     pub fn without_translation_anchor(mut self) -> Self {
         self.translation_anchor = MinecraftPosition::ZERO;
         self
@@ -66,10 +68,8 @@ pub enum Part {
         rotation_matrix: Mat4,
         face_uvs: CubeFaceUvs,
         texture: PlayerPartTextureType,
-        #[cfg(feature = "part_tracker")] name: Option<String>,
-        #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
-        #[cfg(feature = "part_tracker")] group: Vec<String>,
-        #[cfg(feature = "markers")] markers: Vec<Marker>,
+        #[cfg(feature = "part_tracker")]
+        part_tracking_data: PartTrackingData,
     },
     /// Represents a quad as a part of a player model.
     Quad {
@@ -79,10 +79,8 @@ pub enum Part {
         face_uv: FaceUv,
         normal: Vec3,
         texture: PlayerPartTextureType,
-        #[cfg(feature = "part_tracker")] name: Option<String>,
-        #[cfg(feature = "part_tracker")] last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
-        #[cfg(feature = "part_tracker")] group: Vec<String>,
-        #[cfg(feature = "markers")] markers: Vec<Marker>,
+        #[cfg(feature = "part_tracker")]
+        part_tracking_data: PartTrackingData,
     },
 }
 
@@ -111,10 +109,8 @@ impl Part {
             rotation_matrix: Mat4::IDENTITY,
             face_uvs: uvs,
             texture,
-            #[cfg(feature = "part_tracker")] name,
-            #[cfg(feature = "part_tracker")] last_rotation: None,
-            #[cfg(feature = "part_tracker")] group: Vec::new(),
-            #[cfg(feature = "markers")] markers: Vec::new(),
+            #[cfg(feature = "part_tracker")]
+            part_tracking_data: PartTrackingData::new(name),
         }
     }
 
@@ -133,10 +129,8 @@ impl Part {
             face_uv: uvs,
             normal,
             texture,
-            #[cfg(feature = "part_tracker")] last_rotation: None,
-            #[cfg(feature = "part_tracker")] name,
-            #[cfg(feature = "part_tracker")] group: Vec::new(),
-            #[cfg(feature = "markers")] markers: Vec::new(),
+            #[cfg(feature = "part_tracker")]
+            part_tracking_data: PartTrackingData::new(name),
         }
     }
 
@@ -173,66 +167,81 @@ impl Part {
         new_part
     }
 
-
     pub fn get_rotation_matrix(&self) -> Mat4 {
         match self {
-            Cube { rotation_matrix, .. } => *rotation_matrix,
-            Quad { rotation_matrix, .. } => *rotation_matrix,
+            Cube {
+                rotation_matrix, ..
+            } => *rotation_matrix,
+            Quad {
+                rotation_matrix, ..
+            } => *rotation_matrix,
         }
     }
 
     fn rotation_matrix_mut(&mut self) -> &mut Mat4 {
         match self {
-            Cube { rotation_matrix, .. } => rotation_matrix,
-            Quad { rotation_matrix, .. } => rotation_matrix,
+            Cube {
+                rotation_matrix, ..
+            } => rotation_matrix,
+            Quad {
+                rotation_matrix, ..
+            } => rotation_matrix,
         }
     }
-    
+
     #[cfg(feature = "part_tracker")]
     pub fn last_rotation(&self) -> Option<(MinecraftPosition, PartAnchorInfo)> {
         match self {
-            Cube { last_rotation, .. } => *last_rotation,
-            Quad { last_rotation, .. } => *last_rotation,
+            Cube {
+                part_tracking_data, ..
+            } => part_tracking_data.last_rotation().copied(),
+            Quad {
+                part_tracking_data, ..
+            } => part_tracking_data.last_rotation().copied(),
         }
     }
-    
+
     #[cfg(feature = "part_tracker")]
     fn last_rotation_mut(&mut self) -> &mut Option<(MinecraftPosition, PartAnchorInfo)> {
         match self {
-            Cube { last_rotation, .. } => last_rotation,
-            Quad { last_rotation, .. } => last_rotation,
+            Cube {
+                part_tracking_data, ..
+            } => part_tracking_data.last_rotation_mut(),
+            Quad {
+                part_tracking_data, ..
+            } => part_tracking_data.last_rotation_mut(),
         }
     }
-    
+
     pub fn translate(&mut self, translation: MinecraftPosition) {
         *self.position_mut() += translation;
     }
 
     pub fn rotate(&mut self, rotation: MinecraftPosition, anchor: Option<PartAnchorInfo>) {
         let prev_rotation = *self.rotation_matrix_mut();
-        
+
         let anchor = anchor.unwrap_or_default();
         *self.position_mut() += anchor.translation_anchor;
-        
+
         let offset = anchor.rotation_anchor;
-        
+
         let rot_translation_mat = Mat4::from_translation(offset);
         let neg_rot_translation_mat = Mat4::from_translation(-offset);
-        
+
         let rotation_mat = Mat4::from_quat(Quat::from_euler(
             glam::EulerRot::YXZ,
             rotation.y.to_radians(),
             rotation.x.to_radians(),
             rotation.z.to_radians(),
         ));
-        
+
         let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
-        
+
         #[cfg(feature = "part_tracker")]
         if rotation != Vec3::ZERO {
             self.last_rotation_mut().replace((rotation, anchor));
         }
-        
+
         *self.rotation_matrix_mut() = model_transform * prev_rotation;
     }
 
@@ -249,7 +258,7 @@ impl Part {
             Quad { size, .. } => size,
         }
     }
-    
+
     pub fn get_position(&self) -> MinecraftPosition {
         match self {
             Cube { position, .. } => *position,
@@ -281,18 +290,19 @@ impl Part {
             } => *t = texture,
         }
     }
-    
+
     pub fn get_face_uv(&self) -> FaceUv {
         match self {
             Cube { face_uvs, .. } => unimplemented!("Cannot get face UV on a cube"),
             Quad { face_uv, .. } => *face_uv,
         }
     }
-    
+
     pub fn set_face_uv(&mut self, face_uv: FaceUv) {
         match self {
             Cube {
-                face_uvs: ref mut f, ..
+                face_uvs: ref mut f,
+                ..
             } => unreachable!("Cannot set face UV on a cube"),
             Quad {
                 face_uv: ref mut f, ..
@@ -318,75 +328,79 @@ impl Part {
             } => unreachable!("Cannot set face UVs on a quad"),
         }
     }
-    
+
     pub fn normal_mut(&mut self) -> &mut Vec3 {
         match self {
             Cube { .. } => unreachable!("Cannot get normal on a cube"),
             Quad { normal, .. } => normal,
         }
     }
+
+    #[cfg(feature = "part_tracker")]
+    pub fn part_tracking_data(&self) -> &PartTrackingData {
+        match self {
+            Cube {
+                part_tracking_data, ..
+            } => part_tracking_data,
+            Quad {
+                part_tracking_data, ..
+            } => part_tracking_data,
+        }
+    }
     
+    #[cfg(feature = "part_tracker")]
+    pub fn part_tracking_data_mut(&mut self) -> &mut PartTrackingData {
+        match self {
+            Cube {
+                part_tracking_data, ..
+            } => part_tracking_data,
+            Quad {
+                part_tracking_data, ..
+            } => part_tracking_data,
+        }
+    }
+    
+
     #[cfg(feature = "part_tracker")]
     pub fn get_name(&self) -> Option<&str> {
-        match self {
-            Cube { name, .. } => name.as_deref(),
-            Quad { name, .. } => name.as_deref(),
-        }
+        self.part_tracking_data().name().map(String::as_str)
     }
-    
+
     #[cfg(feature = "part_tracker")]
     pub fn get_group(&self) -> &[String] {
-        match self {
-            Cube { group, .. } => group,
-            Quad { group, .. } => group,
-        }
+        self.part_tracking_data().group()
     }
-    
+
     #[cfg(feature = "part_tracker")]
     pub fn push_group(&mut self, group: impl Into<String>) {
-        match self {
-            Cube { group: ref mut g, .. } => g.push(group.into()),
-            Quad { group: ref mut g, .. } => g.push(group.into()),
-        }
+        self.part_tracking_data_mut().push_group(group.into());
     }
-    
+
     #[cfg(feature = "part_tracker")]
     pub fn push_groups(&mut self, group: &[String]) {
-        match self {
-            Cube { group: ref mut g, .. } => g.extend_from_slice(group),
-            Quad { group: ref mut g, .. } => g.extend_from_slice(group),
-        }
+        self.part_tracking_data_mut().push_groups(group.into());
     }
-    
+
     #[cfg(feature = "part_tracker")]
     pub fn with_group(mut self, group: impl Into<String>) -> Self {
         self.push_group(group);
-        
+
         self
     }
-    
+
     #[cfg(feature = "markers")]
-    pub fn add_marker(&mut self, marker: Marker) {
-        match self {
-            Cube { markers: ref mut m, .. } => m.push(marker),
-            Quad { markers: ref mut m, .. } => m.push(marker),
-        }
+    pub fn add_marker(&mut self, marker: super::tracking::Marker) {
+        self.part_tracking_data_mut().push_marker(marker);
     }
-    
+
     #[cfg(feature = "markers")]
-    pub fn add_markers(&mut self, markers: &[Marker]) {
-        match self {
-            Cube { markers: ref mut m, .. } => m.extend_from_slice(markers),
-            Quad { markers: ref mut m, .. } => m.extend_from_slice(markers),
-        }
+    pub fn add_markers(&mut self, markers: &[super::tracking::Marker]) {
+        self.part_tracking_data_mut().push_markers(markers.into());
     }
-    
+
     #[cfg(feature = "markers")]
-    pub fn markers(&self) -> &[Marker] {
-        match self {
-            Cube { markers: m, .. } => m,
-            Quad { markers: m, .. } => m,
-        }
+    pub fn markers(&self) -> &[super::tracking::Marker] {
+        self.part_tracking_data().markers()
     }
 }
 
@@ -397,15 +411,3 @@ impl Part {
 /// - +Y is up / -Y is down
 /// - +Z is south / -Z is north
 pub(crate) type MinecraftPosition = Vec3;
-
-#[cfg(feature = "part_tracker")]
-#[derive(Debug, Clone)]
-pub struct Marker {
-    pub name: String,
-    pub position: MinecraftPosition,
-}
-
-#[cfg(feature = "part_tracker")]
-impl Marker {
-    pub fn new(name: String, position: MinecraftPosition) -> Self { Self { name, position } }
-}

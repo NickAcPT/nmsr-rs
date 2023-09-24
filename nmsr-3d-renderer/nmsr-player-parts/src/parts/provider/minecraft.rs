@@ -37,8 +37,8 @@ macro_rules! body_part {
                 crate::parts::uv::box_uv($uv_x, $uv_y, $size),
                 #[cfg(feature = "part_tracker")] Some($name.to_string()),
             );
-            
-            
+
+
             #[cfg(feature = "part_tracker")]
             {
                 part.with_group($name)
@@ -254,13 +254,17 @@ fn expand_player_body_part(
     } else if let Part::Cube {
         ref mut face_uvs,
         #[cfg(feature = "part_tracker")]
-        ref mut name,
+        ref mut part_tracking_data,
         ..
     } = new_part
     {
         #[cfg(feature = "part_tracker")]
-        if let Some(old_name) = name.take() {
-            name.replace(format!("{} Layer", old_name));
+        {
+            let name_mut = part_tracking_data.name_mut();
+
+            if let Some(old_name) = name_mut.take() {
+                name_mut.replace(format!("{} Layer", old_name));
+            }
         }
 
         let current_box_uv = face_uvs.north.top_left;

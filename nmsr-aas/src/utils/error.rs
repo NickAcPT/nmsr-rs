@@ -21,6 +21,9 @@ pub enum NMSRaaSError {
     #[cfg(feature = "ears")]
     #[error("Ears error: {0}")]
     EarsError(#[from] ears_rs::utils::errors::EarsError),
+    
+    #[error("Unable to generate blockbench project: {0}")]
+    BlockbenchGeneratorError(#[from] nmsr_rendering_blockbench_model_generator_experiment::error::BlockbenchGeneratorError),
 }
 
 #[derive(Error, Debug)]

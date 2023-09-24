@@ -16,6 +16,8 @@ use crate::error::{RenderRequestError, Result};
 pub enum RenderRequestMode {
     #[strum(serialize = "skin", serialize = "texture")]
     Skin,
+    #[strum(serialize = "export", serialize = "bbmodel")]
+    BlockbenchExport,
     #[strum(serialize = "fullbody", serialize = "full", serialize = "full_body")]
     FullBody,
     #[strum(serialize = "bodybust", serialize = "bust", serialize = "body_bust")]
@@ -59,7 +61,7 @@ impl RenderRequestMode {
     }
 
     pub(crate) const fn is_arms_open(self) -> bool {
-        matches!(self, Self::FullBody | Self::BodyBust)
+        matches!(self, Self::FullBody | Self::BodyBust | RenderRequestMode::BlockbenchExport)
     }
 
     pub(crate) const fn is_head_or_face(self) -> bool {
@@ -83,6 +85,14 @@ impl RenderRequestMode {
 
     pub(crate) const fn is_skin(self) -> bool {
         matches!(self, Self::Skin)
+    }
+    
+    pub(crate) const fn is_blockbench_export(self) -> bool {
+        matches!(self, Self::BlockbenchExport)
+    }
+    
+    pub(crate) const fn uses_rendering_pipeline(self) -> bool {
+        !self.is_skin() && !self.is_blockbench_export()
     }
 
     // [min_w, min_h, max_w, max_h]
@@ -246,7 +256,7 @@ impl RenderRequestMode {
                     .filter(|m| !excluded.contains(&m.get_non_layer_part()))
                     .collect()
             }
-            Self::Skin => unreachable!(),
+            Self::Skin | Self::BlockbenchExport => unreachable!(),
         }
     }
 }

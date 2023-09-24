@@ -9,7 +9,11 @@ homepage.workspace = true
 
 [dependencies]
 # NMSR Rendering - Library for rendering using a wgpu backed rendering engine
-nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering" }
+nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering", features = [
+    "part_tracker",
+] }
+
+nmsr-rendering-blockbench-model-generator-experiment = { path = "../utils/nmsr-rendering-blockbench-model-generator-experiment" }
 
 ears-rs = { workspace = true }
 
@@ -92,7 +96,7 @@ is_empty = "0.2"
 
 [features]
 default = []
-ears = ["nmsr-rendering/ears"]
+ears = ["nmsr-rendering/ears", "nmsr-rendering-blockbench-model-generator-experiment/ears"]
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

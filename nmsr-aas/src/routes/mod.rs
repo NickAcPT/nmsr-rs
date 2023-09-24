@@ -1,3 +1,4 @@
+pub mod bbmodel_export;
 pub mod extractors;
 pub mod query;
 mod render;
@@ -211,7 +212,7 @@ impl NMSRState {
         let resolved = self.resolver.resolve(&request).await?;
 
         for mode in RenderRequestMode::iter() {
-            if mode == RenderRequestMode::Skin {
+            if !mode.uses_rendering_pipeline() {
                 continue;
             }
 

@@ -1,4 +1,4 @@
-use super::NMSRState;
+use super::{NMSRState, bbmodel_export::internal_bbmodel_export};
 use crate::{
     error::Result,
     model::request::{RenderRequest, RenderRequestMode},
@@ -28,6 +28,10 @@ pub async fn render(
 ) -> Result<Response> {
     let resolved = state.resolver.resolve(&request).await?;
 
+    if request.mode.is_blockbench_export() {
+        return internal_bbmodel_export(state, method, request).await;
+    }
+    
     if method == Method::HEAD {
         return Ok(([(CONTENT_TYPE, HeaderValue::from_static(IMAGE_PNG_MIME))]).into_response());
     }

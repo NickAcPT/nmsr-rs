@@ -33,78 +33,14 @@ pub(crate) async fn internal_render_model(
     let mut camera = request.get_camera();
 
     let size = request.get_size();
-
-    let arm_rotation = request.get_arm_rotation();
     let lighting = request.get_lighting();
 
     let parts = mode.get_body_parts();
 
-    let final_model = request.model.unwrap_or(resolved.model);
-
-    let has_layers = request.features.contains(RenderRequestFeatures::BodyLayers);
-    let has_hat_layer = request.features.contains(RenderRequestFeatures::HatLayer);
-
-    #[allow(unused_variables)]
-    let has_cape = {
-        let has_cape_feature = request.features.contains(RenderRequestFeatures::Cape);
-        let has_cape = resolved
-            .textures
-            .contains_key(&ResolvedRenderEntryTextureType::Cape);
-
-        let has_ears_feature = false;
-        let has_ears_cape = false;
-
-        #[cfg(feature = "ears")]
-        let has_ears_feature = request.features.contains(RenderRequestFeatures::Ears);
-
-        #[cfg(feature = "ears")]
-        let has_ears_cape = resolved
-            .textures
-            .contains_key(&ResolvedRenderEntryTextureType::Ears(
-                crate::model::resolver::ResolvedRenderEntryEarsTextureType::Cape,
-            ));
-
-        has_cape_feature && (has_cape || (has_ears_feature && has_ears_cape))
-    };
-
-    let shadow_y_pos = request.get_shadow_y_pos();
-
-    let player_armor_slots = PlayerArmorSlots::<VanillaMinecraftArmorMaterialData> {
-        helmet: request
-            .extra_settings
-            .as_ref()
-            .and_then(|x| x.helmet.clone()),
-        chestplate: request
-            .extra_settings
-            .as_ref()
-            .and_then(|x| x.chestplate.clone()),
-        leggings: request
-            .extra_settings
-            .as_ref()
-            .and_then(|x| x.leggings.clone()),
-        boots: request
-            .extra_settings
-            .as_ref()
-            .and_then(|x| x.boots.clone()),
-    };
-
-    let mut part_context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
-        model: PlayerModel::from(final_model),
-        has_layers,
-        has_hat_layer,
-        has_cape,
-        arm_rotation,
-        shadow_y_pos,
-        shadow_is_square: mode.is_head() || mode.is_head_iso(),
-        armor_slots: Some(player_armor_slots),
-        #[cfg(feature = "ears")]
-        ears_features: None,
-    };
+    let mut part_context = create_part_context(request, resolved);
 
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
-        load_ears_features(&mut part_context, resolved);
-
         if let Some(features) = part_context.ears_features.as_ref() {
             NMSRState::apply_ears_camera_settings(features, mode, &mut camera);
         }
@@ -188,8 +124,85 @@ async fn load_textures(
     Ok(())
 }
 
-fn load_image(texture: &[u8]) -> Result<RgbaImage> {
+pub(crate) fn load_image(texture: &[u8]) -> Result<RgbaImage> {
     let img = image::load_from_memory_with_format(texture, ImageFormat::Png)
         .map_err(NMSRRenderingError::ImageFromRawError)?;
     Ok(img.into_rgba8())
+}
+
+pub(crate) fn create_part_context(
+    request: &RenderRequest,
+    resolved: &ResolvedRenderRequest,
+) -> PlayerPartProviderContext<VanillaMinecraftArmorMaterialData> {
+    let arm_rotation = request.get_arm_rotation();
+
+    let final_model = request.model.unwrap_or(resolved.model);
+
+    let has_layers = request.features.contains(RenderRequestFeatures::BodyLayers);
+    let has_hat_layer = request.features.contains(RenderRequestFeatures::HatLayer);
+
+    #[allow(unused_variables)]
+    let has_cape = {
+        let has_cape_feature = request.features.contains(RenderRequestFeatures::Cape);
+        let has_cape = resolved
+            .textures
+            .contains_key(&ResolvedRenderEntryTextureType::Cape);
+
+        let has_ears_feature = false;
+        let has_ears_cape = false;
+
+        #[cfg(feature = "ears")]
+        let has_ears_feature = request.features.contains(RenderRequestFeatures::Ears);
+
+        #[cfg(feature = "ears")]
+        let has_ears_cape = resolved
+            .textures
+            .contains_key(&ResolvedRenderEntryTextureType::Ears(
+                crate::model::resolver::ResolvedRenderEntryEarsTextureType::Cape,
+            ));
+
+        has_cape_feature && (has_cape || (has_ears_feature && has_ears_cape))
+    };
+
+    let shadow_y_pos = request.get_shadow_y_pos();
+
+    let player_armor_slots = PlayerArmorSlots::<VanillaMinecraftArmorMaterialData> {
+        helmet: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.helmet.clone()),
+        chestplate: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.chestplate.clone()),
+        leggings: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.leggings.clone()),
+        boots: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.boots.clone()),
+    };
+
+    let mut context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
+        model: PlayerModel::from(final_model),
+        has_layers,
+        has_hat_layer,
+        has_cape,
+        arm_rotation,
+        shadow_y_pos,
+        shadow_is_square: request.mode.is_head() || request.mode.is_head_iso(),
+        armor_slots: Some(player_armor_slots),
+        #[cfg(feature = "ears")]
+        ears_features: None,
+    };
+    
+    
+    #[cfg(feature = "ears")]
+    if request.features.contains(RenderRequestFeatures::Ears) {
+        load_ears_features(&mut context, resolved);
+    }
+    
+    context
 }

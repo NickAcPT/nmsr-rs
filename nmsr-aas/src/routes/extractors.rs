@@ -1,4 +1,7 @@
-use super::query::{RenderRequestMultipartParams, RenderRequestQueryParams};
+use super::{
+    query::{RenderRequestMultipartParams, RenderRequestQueryParams},
+    RenderRequestValidator,
+};
 use crate::{
     error::{NMSRaaSError, RenderRequestError, Result},
     model::request::{
@@ -22,7 +25,7 @@ where
     B: axum::body::HttpBody + Send + 'static,
     B::Data: Into<Bytes>,
     B::Error: Into<BoxError>,
-    S: Send + Sync,
+    S: Send + Sync + RenderRequestValidator,
 {
     type Rejection = NMSRaaSError;
 
@@ -44,7 +47,9 @@ where
                 .map_err(RenderRequestError::from)?;
 
             let mode = RenderRequestMode::try_from(mode_str.as_str())
-                .map_err(|_| RenderRequestError::InvalidRenderMode(mode_str))?;
+                .ok()
+                .filter(|r| state.validate_mode(r))
+                .ok_or_else(|| RenderRequestError::InvalidRenderMode(mode_str))?;
 
             let mut multipart = Multipart::from_request(request, state)
                 .await
@@ -90,7 +95,9 @@ where
                 .map_err(RenderRequestError::from)?;
 
             let mode = RenderRequestMode::try_from(mode_str.as_str())
-                .map_err(|_| RenderRequestError::InvalidRenderMode(mode_str))?;
+                .ok()
+                .filter(|r| state.validate_mode(r))
+                .ok_or_else(|| RenderRequestError::InvalidRenderMode(mode_str))?;
 
             let entry = RenderRequestEntry::try_from(entry_str)?;
 
@@ -151,10 +158,19 @@ mod tests {
     use tower::ServiceExt;
     use uuid::uuid;
 
-    use crate::model::request::{
-        entry::{RenderRequestEntry, RenderRequestEntryModel},
-        RenderRequest, RenderRequestFeatures, RenderRequestMode,
+    use crate::{
+        model::request::{
+            entry::{RenderRequestEntry, RenderRequestEntryModel},
+            RenderRequest, RenderRequestFeatures, RenderRequestMode,
+        },
+        routes::RenderRequestValidator,
     };
+
+    impl RenderRequestValidator for Sender<RenderRequest> {
+        fn validate_mode(&self, _mode: &RenderRequestMode) -> bool {
+            true
+        }
+    }
 
     #[debug_handler]
     async fn test_handler(State(state): State<Sender<RenderRequest>>, request: RenderRequest) {

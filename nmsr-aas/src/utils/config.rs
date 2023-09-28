@@ -7,13 +7,13 @@ use std::{
 use chrono::{DateTime, Local};
 use derive_more::Debug;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, TryFromInto};
+use serde_with::{serde_as, TryFromInto, DisplayFromStr};
 use tracing::trace;
 use twelf::config;
 
 use crate::{
     error::ExplainableExt,
-    model::request::{cache::CacheBias, entry::RenderRequestEntry},
+    model::request::{cache::CacheBias, entry::RenderRequestEntry, RenderRequestFeatures, RenderRequestMode},
 };
 
 #[config]
@@ -24,6 +24,7 @@ pub struct NmsrConfiguration {
     pub caching: ModelCacheConfiguration,
     pub mojank: MojankConfiguration,
     pub rendering: Option<RenderingConfiguration>,
+    pub features: Option<FeaturesConfiguration>,
 }
 
 #[serde_as]
@@ -90,12 +91,22 @@ pub struct TracingConfiguration {
     pub service_name: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct RenderingConfiguration {
     /// The number of MSAA samples to use when rendering.
     pub sample_count: u32,
     /// Whether to use SMAA.
     pub use_smaa: bool,
+}
+
+#[serde_as]
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct FeaturesConfiguration {
+    #[serde_as(as = "Vec<DisplayFromStr>")]
+    pub disabled_features: Vec<RenderRequestFeatures>,
+    
+    #[serde_as(as = "Vec<DisplayFromStr>")]
+    pub disabled_modes: Vec<RenderRequestMode>,
 }
 
 impl ModelCacheConfiguration {

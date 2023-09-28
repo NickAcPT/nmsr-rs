@@ -5,7 +5,7 @@ mod render;
 mod render_model;
 mod render_skin;
 use crate::{
-    config::{ModelCacheConfiguration, NmsrConfiguration},
+    config::{ModelCacheConfiguration, NmsrConfiguration, FeaturesConfiguration},
     error::Result,
     model::{
         armor::manager::VanillaMinecraftArmorManager,
@@ -31,6 +31,10 @@ use strum::IntoEnumIterator;
 use tracing::{debug_span, info, info_span, instrument, Instrument};
 use uuid::uuid;
 
+pub trait RenderRequestValidator {
+    fn validate_mode(&self, mode: &RenderRequestMode) -> bool;
+}
+
 #[derive(Clone)]
 pub struct NMSRState {
     pub resolver: Arc<RenderRequestResolver>,
@@ -38,6 +42,14 @@ pub struct NMSRState {
     pub graphics_context: Arc<GraphicsContext>,
     pools: Arc<GraphicsContextPools>,
     cache_config: ModelCacheConfiguration,
+    features_config: FeaturesConfiguration,
+    
+}
+
+impl RenderRequestValidator for NMSRState {
+    fn validate_mode(&self, mode: &RenderRequestMode) -> bool {
+        !self.features_config.disabled_modes.contains(mode)
+    }
 }
 
 impl NMSRState {
@@ -78,6 +90,7 @@ impl NMSRState {
             pools: Arc::new(pools),
             cache_config: config.caching.clone(),
             armor_manager: Arc::new(armor_manager),
+            features_config: config.features.clone().unwrap_or_default(),
         })
     }
 

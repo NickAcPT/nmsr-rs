@@ -37,6 +37,7 @@ pub enum RenderRequestFeatures {
     Shading,
     Cape,
     UnProcessedSkin,
+    Custom,
     #[cfg(feature = "ears")]
     Ears,
 }
@@ -288,6 +289,13 @@ impl RenderRequest {
 
             request.features.remove(RenderRequestFeatures::BodyLayers);
             request.features.remove(RenderRequestFeatures::Cape);
+        }
+        
+        // If the request is custom, we add the custom feature, otherwise we remove it
+        if request.mode.is_custom() {
+            request.features.insert(RenderRequestFeatures::Custom);
+        } else {
+            request.features.remove(RenderRequestFeatures::Custom);
         }
 
         request

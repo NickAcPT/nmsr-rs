@@ -28,7 +28,7 @@ impl UvImagePixel {
         y: u32,
         original_pixel: &Rgba<u8>,
         store_raw_pixels: bool,
-    ) -> Option<Self> {
+    ) -> Self {
         let channels = original_pixel.channels();
 
         let (r, g, b, a) = (
@@ -37,10 +37,6 @@ impl UvImagePixel {
             channels[2] as u32,
             channels[3] as u32,
         );
-
-        if a == 0 {
-            return None;
-        }
 
         let rgba: u32 = r | (g << 8) | (b << 16) | (a << 24);
 
@@ -60,24 +56,13 @@ impl UvImagePixel {
         // [          -- d --          ]
         // let final_number = ((final_depth & 0x1FFF) << 19) | ((shading & 0xFF) << 11) | ((v & 0x3F) << 5) | (u & 0x3F);
 
-        println!("{:#034b}", rgba);
-        println!("{:#034b}", ((rgba >> 20) & 0x1FFF));
-        
-        let u = (rgba & 0x3F) as u8;
-        let v = ((rgba >> 6) & 0x3F) as u8;
-        let shading = ((rgba >> 12) & 0xFF) as u8;
-        let depth = ((rgba >> 20) & 0x1FFF) as u16;
-
-        if store_raw_pixels {
-            Some(RawPixel {
-                position: Point {
-                    x: x as u16,
-                    y: y as u16,
-                },
-                rgba: [channels[0], channels[1], channels[2], channels[3]],
-            })
-        } else {
-            Some(UvPixel {
+        if !store_raw_pixels {
+            let u = (rgba & 0x3F) as u8;
+            let v = ((rgba >> 6) & 0x3F) as u8;
+            let shading = ((rgba >> 12) & 0xFF) as u8;
+            let depth = ((rgba >> 20) & 0x1FFF) as u16;
+            
+            UvPixel {
                 position: Point {
                     x: x as u16,
                     y: y as u16,
@@ -88,7 +73,15 @@ impl UvImagePixel {
                 },
                 depth,
                 shading,
-            })
+            }
+        } else {
+            RawPixel {
+                position: Point {
+                    x: x as u16,
+                    y: y as u16,
+                },
+                rgba: [channels[0], channels[1], channels[2], channels[3]],
+            }
         }
     }
 }
@@ -123,17 +116,17 @@ fn test_uv_pixel() {
         channels: [u8; 4],
     }
     
-    let pixels = U { rgba: 0xe0f55fe2 };
+    let pixels = U { rgba: final_number };
     let mut channels = unsafe { pixels.channels };
     channels.reverse();
     
-    println!("{:#10x}", final_number);
+    //println!("{:#10x}", final_number);
 
     let pixel = UvImagePixel::new(1, 1, &Rgba(channels), false);
 
     assert_eq!(
         pixel,
-        Some(UvPixel {
+        (UvPixel {
             position: Point { x: 1, y: 1 },
             uv: Point { x: u as u8, y: v as u8 },
             depth: final_depth as u16,

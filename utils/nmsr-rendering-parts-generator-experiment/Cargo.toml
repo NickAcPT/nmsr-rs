@@ -10,10 +10,11 @@ homepage.workspace = true
 [dependencies]
 anyhow = "1.0.75"
 bytemuck = "1.13.1"
-image = { version = "0.24.7", default-features = false, features = ["png"] }
+image = { version = "0.24.7", default-features = false }
+qoi = "0.4"
 itertools = "0.11.0"
 nmsr-rendering = { version = "0.1.0", path = "../../nmsr-3d-renderer/nmsr-rendering" }
-tokio = { version = "1.32.0", features = ["full"] }
+pollster = {version = "0.3.0", features = ["macro"] }
 
 [features]
 default = []

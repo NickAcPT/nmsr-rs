@@ -114,7 +114,7 @@ impl PartsManager {
         }
 
         let loaded_parts: Vec<_> = into_par_iter_if_enabled!(part_entries)
-            .map(|(name, entry)| Ok((name, open_image_from_vfs(&entry)?.into_rgba8())))
+            .map(|(name, entry)| Ok((name, open_image_from_vfs(&entry)?)))
             .map(|result: Result<(String, RgbaImage)>| -> Result<UvImage> {
                 let (name, image) = result?;
                 let uv_image = UvImage::new(name, image, store_raw_pixels);
@@ -139,7 +139,7 @@ impl PartsManager {
 
             Ok(Some(UvImage::new(
                 Self::ENVIRONMENT_BACKGROUND_NAME.to_string(),
-                image.into_rgba8(),
+                image,
                 true,
             )))
         } else {

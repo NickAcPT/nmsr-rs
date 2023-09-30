@@ -17,7 +17,8 @@ impl UvImage {
     pub fn new(name: String, uv_image: RgbaImage, store_raw_pixels: bool) -> UvImage {
         let uv_pixels = uv_image
             .enumerate_pixels()
-            .flat_map(|(x, y, p)| UvImagePixel::new(x, y, p, store_raw_pixels))
+            .filter(|(_, _, p)| p.0[3] != 0)
+            .map(|(x, y, p)| UvImagePixel::new(x, y, p, store_raw_pixels))
             .collect();
 
         UvImage {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::{PathBuf, Path}, fs};
 
 use anyhow::{anyhow, Ok, Result};
 use image::{GenericImage, ImageBuffer, Rgba, RgbaImage};
@@ -14,9 +14,8 @@ use nmsr_rendering::high_level::{
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
-use tokio::fs;
 
-#[tokio::main]
+#[pollster::main]
 async fn main() -> Result<()> {
     let rotation = CameraRotation {
         yaw: 20.0,
@@ -39,7 +38,7 @@ async fn main() -> Result<()> {
         height: 832,
     };
 
-    fs::create_dir_all("renders").await?;
+    fs::create_dir_all("renders")?;
 
     let groups = vec![
         (
@@ -95,7 +94,7 @@ async fn main() -> Result<()> {
     .await?;
 
     if let Some(PartRenderOutput { image }) = env_shadow.first() {
-        image.save("renders/environment_background.png")?;
+        save(image, "renders/environment_background.png")?;
     }
 
     Ok(())
@@ -143,10 +142,10 @@ async fn save_group(
         }
 
         if let Some(parent) = file.parent() {
-            fs::create_dir_all(parent).await?;
+            fs::create_dir_all(parent)?;
         }
 
-        img.save(file)?;
+        save(img, file)?;
     }
 
     Ok(())
@@ -346,6 +345,13 @@ fn get_depth(pixel: &Rgba<u8>) -> u16 {
     // 1   2   3   4   5   6   7   8
     // [          -- d --          ]
     ((rgba >> 20) & 0x1FFF) as u16
+}
+
+fn save<P: AsRef<Path>>(img: &RgbaImage, name: P) -> Result<()> {
+    let encoded = qoi::encode_to_vec(&img.as_raw(), img.width(), img.height())?;
+    fs::write(name, encoded)?;
+    
+    Ok(())
 }
 
 struct PartRenderOutput {

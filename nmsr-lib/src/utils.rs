@@ -1,16 +1,23 @@
-use std::io::BufReader;
-
-use image::DynamicImage;
+use image::RgbaImage;
 use vfs::VfsPath;
 
 use crate::errors::NMSRError;
 use crate::errors::Result;
 
-pub(crate) fn open_image_from_vfs(path: &VfsPath) -> Result<DynamicImage> {
-    let reader = BufReader::new(path.open_file()?);
-    let image = image::load(reader, image::ImageFormat::Png).map_err(NMSRError::ImageError)?;
+pub(crate) fn open_image_from_vfs(path: &VfsPath) -> Result<RgbaImage> {
+    let len = path.metadata()?.len;
+    let mut buf = Vec::with_capacity(len as usize);
 
-    Ok(image)
+    let _ = path
+        .open_file()?
+        .read_to_end(&mut buf)
+        .map_err(|_| NMSRError::UnspecifiedIoError("Failed to read file".to_string()))?;
+
+    let (header, pixels) = qoi::decode_to_vec(buf)
+        .map_err(|_| NMSRError::UnspecifiedIoError("Failed to decode image".to_string()))?;
+
+    RgbaImage::from_raw(header.width, header.height, pixels)
+        .ok_or_else(|| NMSRError::UnspecifiedIoError("Failed to create image".to_string()))
 }
 
 #[cfg(feature = "parallel_iters")]

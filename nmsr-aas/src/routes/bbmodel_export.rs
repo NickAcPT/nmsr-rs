@@ -113,7 +113,7 @@ pub(crate) async fn internal_bbmodel_export(
             texture = NMSRState::process_skin(texture, request.features)?;
         }
         
-        blockbench_project.add_texture(texture_type, texture, false)?;
+        blockbench_project.add_texture(texture_type, texture, #[cfg(feature = "ears")] false)?;
     }
 
     let result = generate_project(blockbench_project)?;

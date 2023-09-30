@@ -336,6 +336,8 @@
             }
             if (excluded.length > 0) params.append('no', excluded.join(','));
 
+            const url = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr`;
+            
             if (uploadedSkin && !textureInput.value) {
                 // Use POST if a skin was uploaded
 
@@ -349,7 +351,7 @@
 
                 // Request image and set it as the preview, or show an error
                 try {
-                    const response = await fetch(`https://nickac-pc.werewolf-scala.ts.net/temp/nmsr/${modeSelect.value}`, {
+                    const response = await fetch(`${url}/${modeSelect.value}`, {
                         method: 'POST',
                         body: formData
                     });
@@ -372,8 +374,10 @@
                 }
             } else {
                 let resolvedTexture = await tryResolveName(textureInput.value);
-                let imageUrl = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr/${modeSelect.value}/${resolvedTexture}?${params.toString()}`;
+                let imageUrl = `${url}/${modeSelect.value}/${resolvedTexture}?${params.toString()}`;
                 imagePreview.src = imageUrl;
+                imagePreview.style.display = 'block';
+                imageError.style.display = 'none';
             }
 
         }

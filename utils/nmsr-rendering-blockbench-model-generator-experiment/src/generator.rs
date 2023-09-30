@@ -100,56 +100,53 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
         &mut self,
         texture_type: PlayerPartTextureType,
         texture: &[u8],
-        #[cfg(feature = "ears")] load_ears_features: bool,
+        do_ears_processing: bool,
     ) -> Result<()> {
         let texture = self.image_io().read_png(texture)?;
 
-        self.add_texture(
-            texture_type,
-            texture,
-            #[cfg(feature = "ears")]
-            load_ears_features,
-        )
+        self.add_texture(texture_type, texture, do_ears_processing)
     }
 
     pub fn add_texture(
         &mut self,
         texture_type: PlayerPartTextureType,
         mut texture: RgbaImage,
-        #[cfg(feature = "ears")] do_ears_processing: bool,
+        do_ears_processing: bool,
     ) -> Result<()> {
-        #[cfg(feature = "ears")]
         if do_ears_processing {
-            use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
-
-            if texture_type == PlayerPartTextureType::Skin {
-                if let Ok(Some(alfalfa)) = ears_rs::alfalfa::read_alfalfa(&texture) {
-                    if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
-                        self.load_texture(
-                            PlayerPartEarsTextureType::Wings.into(),
-                            wings,
-                            do_ears_processing,
-                        )?;
-                    }
-
-                    if let Some(cape) = alfalfa.get_data(AlfalfaDataKey::Cape) {
-                        self.load_texture(
-                            PlayerPartEarsTextureType::Cape.into(),
-                            cape,
-                            do_ears_processing,
-                        )?;
-                    }
-                }
-
-                let features = EarsParser::parse(&texture)?;
-
-                self.part_context.ears_features = features;
-
-                ears_rs::utils::process_erase_regions(&mut texture)?;
-            } else if texture_type == PlayerPartEarsTextureType::Cape.into()
-                && texture_type.get_texture_size() != (texture.width(), texture.height())
+            #[cfg(feature = "ears")]
             {
-                texture = ears_rs::utils::convert_ears_cape_to_mojang_cape(texture);
+                use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
+                
+                if texture_type == PlayerPartTextureType::Skin {
+                    if let Ok(Some(alfalfa)) = ears_rs::alfalfa::read_alfalfa(&texture) {
+                        if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
+                            self.load_texture(
+                                PlayerPartEarsTextureType::Wings.into(),
+                                wings,
+                                do_ears_processing,
+                            )?;
+                        }
+
+                        if let Some(cape) = alfalfa.get_data(AlfalfaDataKey::Cape) {
+                            self.load_texture(
+                                PlayerPartEarsTextureType::Cape.into(),
+                                cape,
+                                do_ears_processing,
+                            )?;
+                        }
+                    }
+
+                    let features = EarsParser::parse(&texture)?;
+
+                    self.part_context.ears_features = features;
+
+                    ears_rs::utils::process_erase_regions(&mut texture)?;
+                } else if texture_type == PlayerPartEarsTextureType::Cape.into()
+                    && texture_type.get_texture_size() != (texture.width(), texture.height())
+                {
+                    texture = ears_rs::utils::convert_ears_cape_to_mojang_cape(texture);
+                }
             }
 
             if texture_type == PlayerPartTextureType::Skin {
@@ -255,10 +252,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
         &self.image_io
     }
 
-    pub(crate) fn filter_textures(
-        &mut self,
-        keys: &[PlayerPartTextureType],
-    ) {
+    pub(crate) fn filter_textures(&mut self, keys: &[PlayerPartTextureType]) {
         self.textures.retain(|k, _| keys.contains(k));
     }
 }

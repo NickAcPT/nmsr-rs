@@ -59,7 +59,7 @@ fn main() -> Result<()> {
         DefaultImageIO
     );
     
-    project.load_texture(PlayerPartTextureType::Skin, &skin_bytes, cfg!(feature = "ears"))?;
+    project.load_texture(PlayerPartTextureType::Skin, &skin_bytes, true)?;
 
     let result = blockbench::generate_project(project)
         .context(anyhow!("Failed to generate blockbench project"))?;

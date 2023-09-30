@@ -5,7 +5,7 @@ mod render;
 mod render_model;
 mod render_skin;
 use crate::{
-    config::{ModelCacheConfiguration, NmsrConfiguration, FeaturesConfiguration},
+    config::{FeaturesConfiguration, ModelCacheConfiguration, NmsrConfiguration},
     error::Result,
     model::{
         armor::manager::VanillaMinecraftArmorManager,
@@ -33,6 +33,9 @@ use uuid::uuid;
 
 pub trait RenderRequestValidator {
     fn validate_mode(&self, mode: &RenderRequestMode) -> bool;
+
+    #[allow(unused_variables)]
+    fn cleanup_request(&self, request: &mut RenderRequest) {}
 }
 
 #[derive(Clone)]
@@ -43,12 +46,24 @@ pub struct NMSRState {
     pools: Arc<GraphicsContextPools>,
     cache_config: ModelCacheConfiguration,
     features_config: FeaturesConfiguration,
-    
 }
 
 impl RenderRequestValidator for NMSRState {
     fn validate_mode(&self, mode: &RenderRequestMode) -> bool {
         !self.features_config.disabled_modes.contains(mode)
+    }
+
+    fn cleanup_request(&self, request: &mut RenderRequest) {
+        let mut disabled_features: EnumSet<RenderRequestFeatures> = EnumSet::new();
+        for feature in self.features_config.disabled_features.iter() {
+            disabled_features.insert(*feature);
+        }
+
+        if disabled_features.contains(RenderRequestFeatures::ExtraSettings) {
+            request.extra_settings = None;
+        }
+
+        request.features.remove_all(disabled_features);
     }
 }
 

@@ -37,6 +37,7 @@ pub enum RenderRequestFeatures {
     Shading,
     Cape,
     UnProcessedSkin,
+    ExtraSettings,
     Custom,
     #[cfg(feature = "ears")]
     Ears,
@@ -296,6 +297,13 @@ impl RenderRequest {
             request.features.insert(RenderRequestFeatures::Custom);
         } else {
             request.features.remove(RenderRequestFeatures::Custom);
+        }
+        
+        // If the request has extra settings, we add the ExtraSettings feature, otherwise we remove it
+        if request.extra_settings.is_some() {
+            request.features.insert(RenderRequestFeatures::ExtraSettings);
+        } else {
+            request.features.remove(RenderRequestFeatures::ExtraSettings);
         }
 
         request

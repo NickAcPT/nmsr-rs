@@ -137,13 +137,17 @@ where
         })
         .filter(|s| !s.is_empty());
 
-        Ok(Self::new_from_excluded_features(
+        let mut request = Self::new_from_excluded_features(
             mode,
             entry,
             model,
             excluded_features,
             extra_settings,
-        ))
+        );
+        
+        state.cleanup_request(&mut request);
+        
+        Ok(request)
     }
 }
 

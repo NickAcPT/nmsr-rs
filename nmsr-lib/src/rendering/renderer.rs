@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use image::{GenericImage, ImageBuffer, Pixel, Rgba, RgbaImage};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
@@ -58,19 +60,33 @@ impl RenderingEntry {
         let mut pixels = applied_uvs
             .iter()
             .flat_map(|(uv, applied)| {
-                uv.uv_pixels.iter().flat_map(move |pixel| match pixel {
-                    UvImagePixel::RawPixel { .. } => None,
-                    UvImagePixel::UvPixel {
-                        depth, position, ..
-                    } => {
-                        applied
-                            .as_ref()
-                            .map(|a| a.get_pixel(position.x as u32, position.y as u32))
-                            .ok()
-                            .filter(|pixel| /* alpha > 0 */ pixel.0[3] > 0)
-                            .map(|pixel| (*depth, position.x, position.y, pixel))
-                    }
-                })
+                uv.uv_pixels
+                    .iter()
+                    .filter(|p| matches!(p, UvImagePixel::UvPixel { .. }))
+                    .filter_map(move |pixel| match pixel {
+                        UvImagePixel::UvPixel {
+                            depth,
+                            position,
+                            ..
+                        } => {
+                            applied
+                                .as_ref()
+                                .map(|a| {
+                                    (
+                                        *depth,
+                                        position.x,
+                                        position.y,
+                                        a.get_pixel(position.x as u32, position.y as u32),
+                                    )
+                                })
+                                .ok()
+                                .filter(|(_, _, _, pixel)| /* alpha > 0 */ pixel.0[3] > 0)
+                        }
+                        // SAFETY: This is never hit since it's being guarded by the filter call before the filter_map
+                        UvImagePixel::RawPixel { .. } => unsafe {
+                            std::hint::unreachable_unchecked();
+                        },
+                    })
             })
             .collect::<Vec<_>>();
 

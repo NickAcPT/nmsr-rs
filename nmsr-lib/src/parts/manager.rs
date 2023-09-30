@@ -24,7 +24,7 @@ pub struct PartsManager {
 }
 
 impl PartsManager {
-    const ENVIRONMENT_BACKGROUND_NAME: &'static str = "environment_background.png";
+    const ENVIRONMENT_BACKGROUND_NAME: &'static str = "environment_background.qoi";
 
     fn is_part_file(path: &VfsPath) -> Result<bool> {
         let name = path.filename();

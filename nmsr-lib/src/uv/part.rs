@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::geometry::Point;
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
 pub(crate) enum UvImagePixel {
     RawPixel {
@@ -27,19 +27,10 @@ impl UvImagePixel {
         x: u32,
         y: u32,
         original_pixel: &Rgba<u8>,
-        store_raw_pixels: bool,
+        store_raw_pixels: bool
     ) -> Self {
         let channels = original_pixel.channels();
-
-        let (r, g, b, a) = (
-            channels[0] as u32,
-            channels[1] as u32,
-            channels[2] as u32,
-            channels[3] as u32,
-        );
-
-        let rgba: u32 = r | (g << 8) | (b << 16) | (a << 24);
-
+        
         // Our Red channel is composed of the 6 bits of the u coordinate + 2 bits from the v coordinate
         // U is used as-is because our coordinates are 0-63
         // 1   2   3   4   5   6   7   8
@@ -57,6 +48,15 @@ impl UvImagePixel {
         // let final_number = ((final_depth & 0x1FFF) << 19) | ((shading & 0xFF) << 11) | ((v & 0x3F) << 5) | (u & 0x3F);
 
         if !store_raw_pixels {
+            let (r, g, b, a) = (
+                channels[0] as u32,
+                channels[1] as u32,
+                channels[2] as u32,
+                channels[3] as u32,
+            );
+
+            let rgba: u32 = r | (g << 8) | (b << 16) | (a << 24);
+            
             let u = (rgba & 0x3F) as u8;
             let v = ((rgba >> 6) & 0x3F) as u8;
             let shading = ((rgba >> 12) & 0xFF) as u8;

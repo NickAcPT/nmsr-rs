@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
 use tokio::fs;
+use tracing::trace;
 
 use crate::{
     caching::{CacheHandler, CacheSystem},
@@ -348,8 +349,10 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         ];
 
         for texture in textures_to_read {
+            let is_important_texture = matches!(texture, ResolvedRenderEntryTextureType::Skin);
+            
             let texture_path = base.join(format!("{}{}", Into::<&str>::into(texture), ".png"));
-
+            
             if texture_path.exists() {
                 let read = fs::read(texture_path).await.explain(format!(
                     "Unable to read texture {:?} for {:?}",
@@ -357,7 +360,12 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
                 ))?;
 
                 textures.insert(texture, MojangTexture::new_unnamed(read));
+            } else if !is_important_texture {
+                // If we haven't found a cached texture for an important texture, then we just skip
+                continue;
             } else {
+                trace!("Unable to find texture path for important texture {}", texture_path.display());
+                
                 // One of the textures has gone missing, this means that this cache entry is invalid and should be removed
                 CacheSystem::<
                     RenderRequestEntry,

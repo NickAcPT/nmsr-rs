@@ -136,6 +136,7 @@ where
                 .await?;
 
             if marker_expired_result.is_none() {
+                trace!("Haven't found marker or entry is expired for key {entry:?}");
                 return Ok(None);
             }
 
@@ -146,7 +147,11 @@ where
                 .read_cache(entry, &self.config, &path, &marker)
                 .await?;
 
-            trace!("Cache entry found.");
+            if result.is_some() {
+                trace!("Cache entry found.");
+            } else {
+                trace!("Cache entry missing at path {}.", path.display());
+            }
 
             Ok(result)
         } else {
@@ -166,7 +171,12 @@ where
         }
 
         let marker_path = self.handler.get_marker_path(entry, &self.config).await?;
-        let marker_path = path.join(marker_path);
+        let marker_path = if marker_path.is_empty() {
+            path.to_owned()
+        } else {
+            path.join(marker_path)
+        };
+
         if !marker_path.exists() {
             trace!("Cache entry path {} doesn't exist.", marker_path.display());
             return Ok(None);
@@ -197,6 +207,11 @@ where
 
     #[inline]
     pub(crate) async fn invalidate_self<'a>(entry: &'a Key, path: &'a Path) -> Result<()> {
+        trace!(
+            "Invalidating entry {entry:?} for path {p}",
+            p = path.display()
+        );
+
         if path.is_dir() {
             fs::remove_dir_all(path)
                 .await
@@ -206,7 +221,7 @@ where
                 .await
                 .explain(format!("Unable to invalidate cache entry {entry:?}"))?;
         }
-        
+
         Ok(())
     }
 
@@ -223,7 +238,11 @@ where
             }
 
             let marker_path = self.handler.get_marker_path(entry, &self.config).await?;
-            let marker_path = path.join(marker_path);
+            let marker_path = if marker_path.is_empty() {
+                path.to_owned()
+            } else {
+                path.join(marker_path)
+            };
 
             self.handler
                 .write_cache(entry, value, &self.config, path)

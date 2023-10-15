@@ -31,7 +31,7 @@ impl RenderingEntry {
         let all_parts = parts_manager.get_parts(self);
 
         // Apply all the UVs
-        let mut applied_uvs: Vec<_> = trace_span!("apply_uvs").in_scope(|| {
+        let applied_uvs: Vec<_> = trace_span!("apply_uvs").in_scope(|| {
             let current = tracing::Span::current();
 
             par_iterator_if_enabled!(all_parts)

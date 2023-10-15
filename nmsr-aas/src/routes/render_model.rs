@@ -185,6 +185,7 @@ pub(crate) fn create_part_context(
             .and_then(|x| x.boots.clone()),
     };
 
+    #[cfg_attr(not(feature = "ears"), allow(unused_mut))]
     let mut context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
         model: PlayerModel::from(final_model),
         has_layers,

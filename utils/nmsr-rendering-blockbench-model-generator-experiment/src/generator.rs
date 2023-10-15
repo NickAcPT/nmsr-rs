@@ -3,7 +3,6 @@ use std::{
     io::{BufWriter, Cursor},
 };
 
-use ears_rs::{alfalfa::AlfalfaDataKey, parser::EarsParser};
 use glam::Vec2;
 use image::RgbaImage;
 use itertools::Itertools;
@@ -116,6 +115,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
         if do_ears_processing {
             #[cfg(feature = "ears")]
             {
+                use ears_rs::{alfalfa::AlfalfaDataKey, parser::EarsParser};
                 use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
                 
                 if texture_type == PlayerPartTextureType::Skin {

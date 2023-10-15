@@ -39,15 +39,13 @@ impl RenderingEntry {
                 .collect()
         });
 
-        // Sort by UV name first to make sure it's deterministic
-
         // Get the image size
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;
         let first_uv = first_uv.as_ref()?;
 
         let _span = trace_span!("collect_pixels").entered();
 
-        let mut pixels = applied_uvs
+        let pixels = applied_uvs
             .iter()
             .flat_map(|(uv, applied)| {
                 uv.uv_pixels
@@ -82,7 +80,7 @@ impl RenderingEntry {
 
         drop(_span);
 
-        #[cfg(feature = "parallel_iters")]
+        /* #[cfg(feature = "parallel_iters")]
         {
             let _guard = trace_span!("parallel_sort_pixels").entered();
             pixels.par_sort_by_key(|(depth, _, _, _)| *depth);
@@ -91,7 +89,7 @@ impl RenderingEntry {
         {
             let _guard = trace_span!("sort_pixels").entered();
             pixels.sort_by_key(|(depth, _, _, _)| *depth);
-        }
+        } */
 
         // Merge final image
         let (width, height) = (first_uv.width(), first_uv.height());

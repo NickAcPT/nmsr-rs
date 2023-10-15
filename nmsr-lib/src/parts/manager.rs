@@ -121,12 +121,14 @@ impl PartsManager {
                 Ok(uv_image)
             })
             .collect();
-
+        
         for part in loaded_parts {
             let part = part?;
             parts_map.push(part);
         }
-
+        
+        parts_map.sort_by(|a, b| a.name.cmp(&b.name));
+        
         Ok(())
     }
 

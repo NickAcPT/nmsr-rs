@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::{PathBuf, Path}, fs};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{anyhow, Ok, Result};
 use image::{GenericImage, ImageBuffer, Rgba, RgbaImage};
@@ -9,60 +13,153 @@ use nmsr_rendering::high_level::{
     parts::provider::PlayerPartProviderContext,
     pipeline::{
         scene::{Scene, Size, SunInformation},
-        Backends, Features, GraphicsContext, GraphicsContextDescriptor, SceneContext,
-        SceneContextWrapper, ShaderSource, BlendState,
+        Backends, BlendState, Features, GraphicsContext, GraphicsContextDescriptor, SceneContext,
+        SceneContextWrapper, ShaderSource,
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
 
 pub use nmsr_rendering;
 
+pub enum PartsGroupLogic {
+    SplitArmsFromBody,
+    MergeArmsWithBody,
+    MergeEverything,
+}
+
+struct PartGroupSpec {
+    pub(crate) parts: Vec<PlayerBodyPartType>,
+    pub(crate) toggle_slim: bool,
+    name: &'static str,
+}
+
+impl PartGroupSpec {
+    fn new(parts: Vec<PlayerBodyPartType>, toggle_slim: bool, name: &'static str) -> Self {
+        Self {
+            parts,
+            toggle_slim,
+            name,
+        }
+    }
+}
+
+impl PartsGroupLogic {
+    pub(crate) fn get_groups(&self) -> Vec<PartGroupSpec> {
+        match self {
+            PartsGroupLogic::SplitArmsFromBody => {
+                vec![
+                    PartGroupSpec::new(
+                        vec![
+                            PlayerBodyPartType::Head,
+                            PlayerBodyPartType::Body,
+                            PlayerBodyPartType::LeftLeg,
+                            PlayerBodyPartType::RightLeg,
+                        ],
+                        /* toggle slim */ false,
+                        /* name */ "Body.qoi",
+                    ),
+                    PartGroupSpec::new(
+                        vec![
+                            PlayerBodyPartType::HeadLayer,
+                            PlayerBodyPartType::BodyLayer,
+                            PlayerBodyPartType::LeftLegLayer,
+                            PlayerBodyPartType::RightLegLayer,
+                        ],
+                        /* toggle slim */ false,
+                        /* name */ "Body Layer.qoi",
+                    ),
+                    PartGroupSpec::new(
+                        vec![PlayerBodyPartType::LeftArm, PlayerBodyPartType::RightArm],
+                        /* toggle slim */ true,
+                        /* name */ "{model}/Arms.qoi",
+                    ),
+                    PartGroupSpec::new(
+                        vec![
+                            PlayerBodyPartType::LeftArmLayer,
+                            PlayerBodyPartType::RightArmLayer,
+                        ],
+                        /* toggle slim */ true,
+                        /* name */ "{model}/Arms Layer.qoi",
+                    ),
+                ]
+            }
+            PartsGroupLogic::MergeArmsWithBody => {
+                vec![
+                    PartGroupSpec::new(
+                        vec![
+                            PlayerBodyPartType::Head,
+                            PlayerBodyPartType::Body,
+                            PlayerBodyPartType::LeftLeg,
+                            PlayerBodyPartType::RightLeg,
+                            PlayerBodyPartType::LeftArm,
+                            PlayerBodyPartType::RightArm,
+                        ],
+                        /* toggle slim */ true,
+                        /* name */ "{model}/Body.qoi",
+                    ),
+                    PartGroupSpec::new(
+                        vec![
+                            PlayerBodyPartType::HeadLayer,
+                            PlayerBodyPartType::BodyLayer,
+                            PlayerBodyPartType::LeftLegLayer,
+                            PlayerBodyPartType::RightLegLayer,
+                            PlayerBodyPartType::LeftArmLayer,
+                            PlayerBodyPartType::RightArmLayer,
+                        ],
+                        /* toggle slim */ true,
+                        /* name */ "{model}/Body Layer.qoi",
+                    ),
+                ]
+            },
+            PartsGroupLogic::MergeEverything => vec![
+                PartGroupSpec::new(
+                    vec![
+                        PlayerBodyPartType::Head,
+                        PlayerBodyPartType::Body,
+                        PlayerBodyPartType::LeftLeg,
+                        PlayerBodyPartType::RightLeg,
+                        PlayerBodyPartType::LeftArm,
+                        PlayerBodyPartType::RightArm,
+                    ],
+                    /* toggle slim */ true,
+                    /* name */ "{model}/Body.qoi",
+                ),
+                PartGroupSpec::new(
+                    vec![
+                        PlayerBodyPartType::Head,
+                        PlayerBodyPartType::Body,
+                        PlayerBodyPartType::LeftLeg,
+                        PlayerBodyPartType::RightLeg,
+                        PlayerBodyPartType::LeftArm,
+                        PlayerBodyPartType::RightArm,
+                        PlayerBodyPartType::HeadLayer,
+                        PlayerBodyPartType::BodyLayer,
+                        PlayerBodyPartType::LeftLegLayer,
+                        PlayerBodyPartType::RightLegLayer,
+                        PlayerBodyPartType::LeftArmLayer,
+                        PlayerBodyPartType::RightArmLayer,
+                    ],
+                    /* toggle slim */ true,
+                    /* name */ "{model}/Body Layer.qoi",
+                ),
+            ],
+        }
+    }
+}
+
 pub async fn generate_parts(
     camera: Camera,
     sun: SunInformation,
     viewport_size: Size,
+    parts_group_logic: PartsGroupLogic,
+    shadow_y_pos: Option<f32>,
     root: PathBuf,
 ) -> Result<()> {
-    
     fs::create_dir_all(&root)?;
 
-    let groups = vec![
-        (
-            vec![
-                PlayerBodyPartType::Head,
-                PlayerBodyPartType::Body,
-                PlayerBodyPartType::LeftLeg,
-                PlayerBodyPartType::RightLeg,
-            ],
-            /* toggle slim */ false,
-            /* name */ "Body.qoi",
-        ),
-        (
-            vec![
-                PlayerBodyPartType::HeadLayer,
-                PlayerBodyPartType::BodyLayer,
-                PlayerBodyPartType::LeftLegLayer,
-                PlayerBodyPartType::RightLegLayer,
-            ],
-            /* toggle slim */ false,
-            /* name */ "Body Layer.qoi",
-        ),
-        (
-            vec![PlayerBodyPartType::LeftArm, PlayerBodyPartType::RightArm],
-            /* toggle slim */ true,
-            /* name */ "{model}/Arms.qoi",
-        ),
-        (
-            vec![
-                PlayerBodyPartType::LeftArmLayer,
-                PlayerBodyPartType::RightArmLayer,
-            ],
-            /* toggle slim */ true,
-            /* name */ "{model}/Arms Layer.qoi",
-        ),
-    ];
+    let groups = parts_group_logic.get_groups();
 
-    for (parts, toggle_slim, name) in groups {
+    for PartGroupSpec { parts, toggle_slim, name } in groups {
         process_group(parts, toggle_slim, camera, sun, viewport_size, name, &root).await?;
     }
 
@@ -75,7 +172,7 @@ pub async fn generate_parts(
         camera,
         sun,
         viewport_size,
-        Some(0.0),
+        shadow_y_pos.or(Some(0.0)),
     )
     .await?;
 
@@ -86,12 +183,11 @@ pub async fn generate_parts(
     Ok(())
 }
 
-
 async fn save_group(
     to_process: Vec<PartRenderOutput>,
     viewport_size: Size,
     name: String,
-    renders_path: &Path
+    renders_path: &Path,
 ) -> Result<()> {
     let processed = process_render_outputs(to_process);
 
@@ -148,7 +244,7 @@ async fn process_group(
     name: &'static str,
     renders_path: &Path,
 ) -> Result<()> {
-    let toggle_backface = parts.iter().all(|p| p.is_hat_layer() || p.is_layer());
+    let toggle_backface = parts.iter().any(|p| p.is_hat_layer() || p.is_layer());
 
     let backface = if toggle_backface {
         vec![false, true]
@@ -201,7 +297,13 @@ async fn process_group(
         }
 
         let model_name = if slim { "Alex" } else { "Steve" };
-        save_group(result, viewport_size, name.replace("{model}", model_name), &renders_path).await?;
+        save_group(
+            result,
+            viewport_size,
+            name.replace("{model}", model_name),
+            &renders_path,
+        )
+        .await?;
     }
 
     Ok(())
@@ -231,7 +333,8 @@ async fn process_group_logic(
         shadow_y_pos,
         shadow_is_square: false,
         armor_slots: None,
-        #[cfg(feature = "ears")] ears_features: None
+        #[cfg(feature = "ears")]
+        ears_features: None,
     };
 
     let mut shader: String = include_str!("nmsr-new-uvmap-shader.wgsl").into();
@@ -240,7 +343,7 @@ async fn process_group_logic(
     } else {
         shader = shader.replace("//frontface:", "")
     }
-    
+
     let descriptor = GraphicsContextDescriptor {
         backends: Some(Backends::all()),
         surface_provider: Box::new(|_| None),
@@ -248,15 +351,12 @@ async fn process_group_logic(
         texture_format: None,
         features: Features::empty(),
         blend_state: Some(BlendState::REPLACE),
-        sample_count: None,
-        use_smaa: None,
+        sample_count: Some(1),
+        use_smaa: Some(false),
     };
 
     let graphics_context = if shadow_y_pos.is_none() {
-        GraphicsContext::new_with_shader(
-            descriptor,
-            ShaderSource::Wgsl(shader.into()),
-        ).await?
+        GraphicsContext::new_with_shader(descriptor, ShaderSource::Wgsl(shader.into())).await?
     } else {
         GraphicsContext::new(descriptor).await?
     };
@@ -339,7 +439,7 @@ fn get_depth(pixel: &Rgba<u8>) -> u16 {
 fn save<P: AsRef<Path>>(img: &RgbaImage, name: P) -> Result<()> {
     let encoded = qoi::encode_to_vec(&img.as_raw(), img.width(), img.height())?;
     fs::write(name, encoded)?;
-    
+
     Ok(())
 }
 

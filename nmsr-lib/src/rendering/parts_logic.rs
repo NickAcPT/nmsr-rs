@@ -16,7 +16,7 @@ impl PartsManager {
 
         let iterator = required_parts
             .chain(model_parts)
-            .filter(|uv| !uv.name.contains("Layer") || entry.render_layers);
+            .filter(|uv| uv.name.contains("Layer") == entry.render_layers);
 
         #[cfg(feature = "ears")]
         {

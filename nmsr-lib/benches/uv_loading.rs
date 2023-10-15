@@ -11,16 +11,16 @@ struct FullBodyParts;
 
 fn bench(c: &mut Criterion) {
     let fs: VfsPath = EmbeddedFS::<FullBodyParts>::new().into();
-    c.bench_function("uv_parts", |b| b.iter(|| black_box(load_parts(&fs))));
+    
+    let mut group = c.benchmark_group("nmsr-rs");
+    group.sampling_mode(criterion::SamplingMode::Flat);
+    group.bench_function("uv_loading", |b| b.iter(|| black_box(load_parts(&fs))));
+    group.finish();
 }
 
 fn load_parts(root: &VfsPath) -> PartsManager {
     PartsManager::new(root).unwrap()
 }
 
-criterion_group!(
-    name = benches;
-    config = Criterion::default().measurement_time(Duration::from_secs(100));
-    targets = bench
-);
+criterion_group!(benches, bench);
 criterion_main!(benches);

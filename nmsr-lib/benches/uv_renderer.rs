@@ -1,6 +1,4 @@
-use std::time::Duration;
-
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, SamplingMode};
 use nmsr_lib::{parts::manager::PartsManager, rendering::entry::RenderingEntry};
 use rust_embed::RustEmbed;
 use vfs::{EmbeddedFS, VfsPath};
@@ -15,18 +13,16 @@ fn bench(c: &mut Criterion) {
     let skin = image::load_from_memory(include_bytes!("skin.png"))
         .unwrap()
         .into_rgba8();
-    
-    let request = RenderingEntry::new(skin, true, true, true).unwrap();
 
-    c.bench_function("render_entry", |b| b.iter(|| {
-        request.render(black_box(&manager))
-    }));
+    let request = RenderingEntry::new(skin, true, true, true).unwrap();
+    
+    let mut group = c.benchmark_group("nmsr-rs");
+    group.sampling_mode(SamplingMode::Flat);
+    group.bench_function("render_entry", |b| b.iter(|| request.render(black_box(&manager))));
+    group.finish();
+    
+    request.render(black_box(&manager)).unwrap().save("bench.png").unwrap();
 }
 
-criterion_group!(
-    name = benches;
-    config = Criterion::default().measurement_time(Duration::from_secs(100));
-    targets = bench
-);
-
+criterion_group!(benches, bench);
 criterion_main!(benches);

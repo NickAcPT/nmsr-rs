@@ -27,13 +27,13 @@ serializable_parts = ["dep:serde"]
 ears = []
 
 [dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports"] }
+criterion = { version = "0.5", features = ["html_reports"] }
 rust-embed = "6"
 vfs = { version = "0.9.0", features = ["embedded-fs"] }
 
-# [[bench]]
-# name = "uv_loading"
-# harness = false
+[[bench]]
+name = "uv_loading"
+harness = false
 
 [[bench]]
 name = "uv_renderer"

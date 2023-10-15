@@ -9,7 +9,7 @@ use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
-pub(crate) enum UvImagePixel {
+pub enum UvImagePixel {
     RawPixel {
         position: Point<u16>,
         rgba: [u8; 4],

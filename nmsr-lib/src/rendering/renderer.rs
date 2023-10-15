@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use image::{GenericImage, ImageBuffer, Pixel, Rgba, RgbaImage};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
@@ -42,14 +40,6 @@ impl RenderingEntry {
         });
 
         // Sort by UV name first to make sure it's deterministic
-        #[cfg(feature = "parallel_iters")]
-        {
-            applied_uvs.par_sort_by_key(|(uv, _)| &uv.name);
-        }
-        #[cfg(not(feature = "parallel_iters"))]
-        {
-            applied_uvs.sort_by_key(|(uv, _)| &uv.name);
-        }
 
         // Get the image size
         let (_, first_uv) = applied_uvs.first().ok_or(NMSRError::NoPartsFound)?;

@@ -11,7 +11,7 @@ pub(crate) fn open_image_from_vfs(path: &VfsPath) -> Result<RgbaImage> {
     let _ = path
         .open_file()?
         .read_to_end(&mut buf)
-        .map_err(|_| NMSRError::UnspecifiedIoError("Failed to read file".to_string()))?;
+        .map_err(|e| NMSRError::UnspecifiedIoError(format!("Failed to read file: {}", e)))?;
 
     let (header, pixels) = qoi::decode_to_vec(buf)
         .map_err(|_| NMSRError::UnspecifiedIoError("Failed to decode image".to_string()))?;

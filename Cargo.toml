@@ -15,6 +15,7 @@ members = [
     "utils/nmsr-rendering-blockbench-model-generator-experiment-cli",
     #"utils/nmsr-rendering-blockbench-model-generator-experiment-wasm",
     "utils/nmsr-rendering-parts-generator-experiment",
+    "utils/nmsr-rendering-parts-generator-experiment-cli",
     "utils/nmsr-rendering-palette-extractor",
     "utils/nmsr-multi-parts-organizer",
     "utils/nmsr-backfaces-optimizer",

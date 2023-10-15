@@ -4,7 +4,7 @@ use anyhow::{anyhow, Ok, Result};
 use image::{GenericImage, ImageBuffer, Rgba, RgbaImage};
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
-    camera::{Camera, CameraRotation, ProjectionParameters},
+    camera::Camera,
     model::PlayerModel,
     parts::provider::PlayerPartProviderContext,
     pipeline::{
@@ -15,30 +15,16 @@ use nmsr_rendering::high_level::{
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
 
-#[pollster::main]
-async fn main() -> Result<()> {
-    let rotation = CameraRotation {
-        yaw: 20.0,
-        pitch: 10.0,
-        roll: 0.0,
-    };
+pub use nmsr_rendering;
 
-    let camera = Camera::new_orbital(
-        [0.0, 16.5, 0.0].into(),
-        45.0,
-        rotation,
-        ProjectionParameters::Perspective { fov: 45.0 },
-        None,
-    );
-
-    let sun = SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.621);
-
-    let viewport_size = Size {
-        width: 512,
-        height: 832,
-    };
-
-    fs::create_dir_all("renders")?;
+pub async fn generate_parts(
+    camera: Camera,
+    sun: SunInformation,
+    viewport_size: Size,
+    root: PathBuf,
+) -> Result<()> {
+    
+    fs::create_dir_all(&root)?;
 
     let groups = vec![
         (
@@ -49,7 +35,7 @@ async fn main() -> Result<()> {
                 PlayerBodyPartType::RightLeg,
             ],
             /* toggle slim */ false,
-            /* name */ "Body.png",
+            /* name */ "Body.qoi",
         ),
         (
             vec![
@@ -59,12 +45,12 @@ async fn main() -> Result<()> {
                 PlayerBodyPartType::RightLegLayer,
             ],
             /* toggle slim */ false,
-            /* name */ "Body Layer.png",
+            /* name */ "Body Layer.qoi",
         ),
         (
             vec![PlayerBodyPartType::LeftArm, PlayerBodyPartType::RightArm],
             /* toggle slim */ true,
-            /* name */ "{model}/Arms.png",
+            /* name */ "{model}/Arms.qoi",
         ),
         (
             vec![
@@ -72,12 +58,12 @@ async fn main() -> Result<()> {
                 PlayerBodyPartType::RightArmLayer,
             ],
             /* toggle slim */ true,
-            /* name */ "{model}/Arms Layer.png",
+            /* name */ "{model}/Arms Layer.qoi",
         ),
     ];
 
     for (parts, toggle_slim, name) in groups {
-        process_group(parts, toggle_slim, camera, sun, viewport_size, name).await?;
+        process_group(parts, toggle_slim, camera, sun, viewport_size, name, &root).await?;
     }
 
     let mut env_shadow = Vec::with_capacity(1);
@@ -94,16 +80,18 @@ async fn main() -> Result<()> {
     .await?;
 
     if let Some(PartRenderOutput { image }) = env_shadow.first() {
-        save(image, "renders/environment_background.png")?;
+        save(image, "renders/environment_background.qoi")?;
     }
 
     Ok(())
 }
 
+
 async fn save_group(
     to_process: Vec<PartRenderOutput>,
     viewport_size: Size,
     name: String,
+    renders_path: &Path
 ) -> Result<()> {
     let processed = process_render_outputs(to_process);
 
@@ -130,7 +118,7 @@ async fn save_group(
     }
 
     for (index, img) in &layers {
-        let mut file = PathBuf::from("renders/").join::<PathBuf>(name.clone().into());
+        let mut file = renders_path.join::<PathBuf>(name.clone().into());
         if layer_count > 1 {
             file = file
                 .with_file_name(format!(
@@ -138,7 +126,7 @@ async fn save_group(
                     file.file_stem().unwrap().to_str().unwrap(),
                     index
                 ))
-                .with_extension("png");
+                .with_extension("qoi");
         }
 
         if let Some(parent) = file.parent() {
@@ -158,6 +146,7 @@ async fn process_group(
     sun: SunInformation,
     viewport_size: Size,
     name: &'static str,
+    renders_path: &Path,
 ) -> Result<()> {
     let toggle_backface = parts.iter().all(|p| p.is_hat_layer() || p.is_layer());
 
@@ -212,7 +201,7 @@ async fn process_group(
         }
 
         let model_name = if slim { "Alex" } else { "Steve" };
-        save_group(result, viewport_size, name.replace("{model}", model_name)).await?;
+        save_group(result, viewport_size, name.replace("{model}", model_name), &renders_path).await?;
     }
 
     Ok(())

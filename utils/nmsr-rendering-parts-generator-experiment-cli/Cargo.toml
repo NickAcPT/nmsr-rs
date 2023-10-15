@@ -1,0 +1,15 @@
+[package]
+name = "nmsr-rendering-parts-generator-experiment-cli"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+homepage.workspace = true
+
+[dependencies]
+anyhow = "1.0.75"
+nmsr-rendering-parts-generator-experiment = { path = "../nmsr-rendering-parts-generator-experiment" }
+pollster = {version = "0.3.0", features = ["macro"] }
+
+[features]
+default = []
+ears = ["nmsr-rendering-parts-generator-experiment/ears"]

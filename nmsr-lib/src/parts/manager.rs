@@ -104,7 +104,7 @@ impl PartsManager {
                 .filename()
                 .chars()
                 .take_while(|p| {
-                    (!char::is_ascii_digit(p) && !char::is_ascii_punctuation(p)) || *p == '-'
+                    *p != '.'
                 })
                 .collect();
 
@@ -118,7 +118,6 @@ impl PartsManager {
             .map(|result: Result<(String, RgbaImage)>| -> Result<UvImage> {
                 let (name, image) = result?;
                 let uv_image = UvImage::new(name, image, store_raw_pixels);
-
                 Ok(uv_image)
             })
             .collect();

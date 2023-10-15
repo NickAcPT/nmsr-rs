@@ -269,6 +269,10 @@ async fn process_group(
 
             if toggle_backface {
                 for part in &parts {
+                    if *is_back_face && !(part.is_layer() || part.is_hat_layer()) {
+                        continue;
+                    }
+                    
                     process_group_logic(
                         vec![*part],
                         slim,
@@ -320,6 +324,8 @@ async fn process_group_logic(
     viewport_size: Size,
     shadow_y_pos: Option<f32>,
 ) -> Result<()> {
+    println!("  // Processing group logic with parts {:?} (slim: {}, backface: {})", &parts, slim, back_face);
+    
     let part_provider: PlayerPartProviderContext<()> = PlayerPartProviderContext {
         model: if slim {
             PlayerModel::Alex

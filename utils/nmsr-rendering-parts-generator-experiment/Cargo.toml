@@ -17,6 +17,7 @@ qoi = "0.4"
 itertools = "0.11.0"
 nmsr-rendering = { version = "0.1.0", path = "../../nmsr-3d-renderer/nmsr-rendering" }
 pollster = {version = "0.3.0", features = ["macro"] }
+async-recursion = "1.0.5"
 
 [features]
 default = []

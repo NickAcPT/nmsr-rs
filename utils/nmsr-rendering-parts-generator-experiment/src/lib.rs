@@ -176,7 +176,7 @@ pub async fn generate_parts(
     )
     .await?;
 
-    if let Some(PartRenderOutput { image }) = env_shadow.first() {
+    if let Some(PartRenderOutput { image, .. }) = env_shadow.first() {
         save(image, "renders/environment_background.qoi")?;
     }
 
@@ -324,6 +324,8 @@ async fn process_group_logic(
     viewport_size: Size,
     shadow_y_pos: Option<f32>,
 ) -> Result<()> {
+    let opaque = parts.iter().all(|p| !(p.is_layer() || p.is_hat_layer()));
+    
     println!("  // Processing group logic with parts {:?} (slim: {}, backface: {})", &parts, slim, back_face);
     
     let part_provider: PlayerPartProviderContext<()> = PlayerPartProviderContext {
@@ -397,6 +399,7 @@ async fn process_group_logic(
 
     to_process.push(PartRenderOutput {
         image: render_image,
+        is_opaque: opaque,
     });
 
     Ok(())
@@ -405,21 +408,35 @@ async fn process_group_logic(
 fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, Vec<Rgba<u8>>> {
     let pixels: HashMap<_, Vec<_>> = to_process
         .into_iter()
-        .flat_map(|PartRenderOutput { image }| {
+        .flat_map(|PartRenderOutput { image, is_opaque }| {
             image
                 .enumerate_pixels()
-                .map(move |(x, y, pixel)| (x, y, *pixel))
-                .filter(|(_, _, pixel)| pixel[3] != 0)
+                .map(move |(x, y, pixel)| (x, y, *pixel, is_opaque))
+                .filter(|(_, _, pixel, _)| pixel[3] != 0)
                 .collect::<Vec<_>>()
         })
-        .sorted_by_cached_key(|(x, y, _)| (*x, *y))
-        .group_by(|(x, y, _)| (*x, *y))
+        .sorted_by_cached_key(|(x, y, _, _)| (*x, *y))
+        .group_by(|(x, y, _, _)| (*x, *y))
         .into_iter()
         .flat_map(|(_, group)| {
-            group
-                .map(|(x, y, pixel)| (Point::from((x, y)), pixel))
-                .sorted_by_key(|(_, pixel)| (get_depth(pixel) as i32))
-                .collect::<Vec<_>>()
+            let pixels = group
+                .map(|(x, y, pixel, is_opaque)| (Point::from((x, y)), pixel, is_opaque))
+                .sorted_by_key(|(_, pixel, _)| (get_depth(pixel) as i32))
+                .collect::<Vec<_>>();
+            
+            let has_opaque = pixels.iter().any(|(_, _, is_opaque)| *is_opaque);
+            
+            // Drop all transparent pixels before the first opaque one
+            let mut pixels = if has_opaque {
+                pixels
+                    .into_iter()
+                    .skip_while(|(_, _, is_opaque)| !*is_opaque)
+                    .collect::<Vec<_>>()
+            } else {
+                pixels
+            };
+            
+            pixels.into_iter().map(|(point, pixel, _)| (point, pixel))
         })
         .into_group_map();
 
@@ -451,6 +468,7 @@ fn save<P: AsRef<Path>>(img: &RgbaImage, name: P) -> Result<()> {
 
 struct PartRenderOutput {
     image: RgbaImage,
+    is_opaque: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

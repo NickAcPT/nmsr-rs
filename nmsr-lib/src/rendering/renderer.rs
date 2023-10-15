@@ -22,6 +22,8 @@ impl RenderingEntry {
         let applied_uv =
             trace_span!("apply_uv").in_scope(|| uv_image.apply(skin, self.render_shading))?;
 
+        applied_uv.save(format!("{}-applied.png", uv_image.name)).unwrap();
+            
         Ok(applied_uv)
     }
 

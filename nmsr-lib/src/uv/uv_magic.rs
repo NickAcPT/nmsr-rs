@@ -15,14 +15,14 @@ pub struct UvImage {
 
 impl UvImage {
     pub fn new(name: String, uv_image: RgbaImage, store_raw_pixels: bool) -> UvImage {
-        let mut uv_pixels: Vec<_> = uv_image
+        let uv_pixels: Vec<_> = uv_image
             .enumerate_pixels()
             .filter(|(_, _, p)| p.0[3] != 0)
             .map(|(x, y, p)| UvImagePixel::new(x, y, p, store_raw_pixels))
             .collect();
 
         // Pre-sorting the pixels here by depth takes a bit more time on load, but saves time when rendering
-        if !store_raw_pixels {
+        /* if !store_raw_pixels {
             #[cfg(feature = "parallel_iters")]
             {
                 uv_pixels.par_sort_by_key(|p| match p {
@@ -37,7 +37,7 @@ impl UvImage {
                     UvImagePixel::UvPixel { depth, .. } => *depth,
                 });
             }
-        }
+        } */
 
         UvImage {
             name,

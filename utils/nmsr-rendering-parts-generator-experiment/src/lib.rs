@@ -273,22 +273,45 @@ async fn process_group(
             );
 
             if toggle_backface {
-                for part in &parts {
-                    if *is_back_face && !(part.is_layer() || part.is_hat_layer()) {
+                let part_split = parts
+                    .clone()
+                    .into_iter()
+                    .sorted_by_key(|part| part.is_layer() || part.is_hat_layer())
+                    .into_group_map_by(|part| part.is_layer() || part.is_hat_layer());
+
+                for (is_transparent, parts) in part_split {
+                    if !is_transparent && *is_back_face {
                         continue;
                     }
-
-                    process_group_logic(
-                        vec![*part],
-                        slim,
-                        *is_back_face,
-                        &mut result,
-                        camera,
-                        sun,
-                        viewport_size,
-                        None,
-                    )
-                    .await?;
+                    
+                    if is_transparent {
+                        for part in &parts {
+                            process_group_logic(
+                                vec![*part],
+                                slim,
+                                *is_back_face,
+                                &mut result,
+                                camera,
+                                sun,
+                                viewport_size,
+                                None,
+                            )
+                            .await?;
+                        }
+                    } else {
+                        process_group_logic(
+                            parts,
+                            slim,
+                            *is_back_face,
+                            &mut result,
+                            camera,
+                            sun,
+                            viewport_size,
+                            None,
+                        )
+                        .await?;
+                    }
+                    
                 }
             } else {
                 process_group_logic(
@@ -461,7 +484,7 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
                     })
                     .collect_vec();
             }
-            
+
             pixels.into_iter().map(|(point, pixel, _)| (point, pixel))
         })
         .into_group_map();

@@ -4,7 +4,7 @@ use rust_embed::RustEmbed;
 use vfs::{EmbeddedFS, VfsPath};
 
 #[derive(RustEmbed, Debug)]
-#[folder = "benches/renders-qoi/"]
+#[folder = "benches/renders/"]
 struct FullBodyParts;
 
 fn bench(c: &mut Criterion) {

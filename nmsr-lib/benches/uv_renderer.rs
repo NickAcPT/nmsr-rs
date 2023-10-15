@@ -4,22 +4,22 @@ use rust_embed::RustEmbed;
 use vfs::{EmbeddedFS, VfsPath};
 
 #[derive(RustEmbed, Debug)]
-#[folder = "benches/renders-sorted/"]
+#[folder = "benches/renders/"]
 struct FullBodyParts;
 
 fn bench(c: &mut Criterion) {
     let fs: VfsPath = EmbeddedFS::<FullBodyParts>::new().into();
     let manager = PartsManager::new(&fs).unwrap();
-    let skin = image::load_from_memory(include_bytes!("skin.png"))
+    let skin = image::load_from_memory(include_bytes!("aaaa.png"))
         .unwrap()
         .into_rgba8();
 
     let request = RenderingEntry::new(skin, true, true, true).unwrap();
     
-    //let mut group = c.benchmark_group("nmsr-rs");
-    //group.sampling_mode(SamplingMode::Flat);
-    //group.bench_function("render_entry", |b| b.iter(|| request.render(black_box(&manager))));
-    //group.finish();
+    let mut group = c.benchmark_group("nmsr-rs");
+    group.sampling_mode(SamplingMode::Flat);
+    group.bench_function("render_entry", |b| b.iter(|| request.render(black_box(&manager))));
+    group.finish();
     
     request.render(black_box(&manager)).unwrap().save("bench.png").unwrap();
 }

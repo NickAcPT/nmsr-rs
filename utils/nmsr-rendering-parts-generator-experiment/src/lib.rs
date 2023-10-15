@@ -110,7 +110,7 @@ impl PartsGroupLogic {
                         /* name */ "{model}/Body Layer.qoi",
                     ),
                 ]
-            },
+            }
             PartsGroupLogic::MergeEverything => vec![
                 PartGroupSpec::new(
                     vec![
@@ -159,7 +159,12 @@ pub async fn generate_parts(
 
     let groups = parts_group_logic.get_groups();
 
-    for PartGroupSpec { parts, toggle_slim, name } in groups {
+    for PartGroupSpec {
+        parts,
+        toggle_slim,
+        name,
+    } in groups
+    {
         process_group(parts, toggle_slim, camera, sun, viewport_size, name, &root).await?;
     }
 
@@ -272,7 +277,7 @@ async fn process_group(
                     if *is_back_face && !(part.is_layer() || part.is_hat_layer()) {
                         continue;
                     }
-                    
+
                     process_group_logic(
                         vec![*part],
                         slim,
@@ -325,9 +330,12 @@ async fn process_group_logic(
     shadow_y_pos: Option<f32>,
 ) -> Result<()> {
     let opaque = parts.iter().all(|p| !(p.is_layer() || p.is_hat_layer()));
-    
-    println!("  // Processing group logic with parts {:?} (slim: {}, backface: {})", &parts, slim, back_face);
-    
+
+    println!(
+        "  // Processing group logic with parts {:?} (slim: {}, backface: {})",
+        &parts, slim, back_face
+    );
+
     let part_provider: PlayerPartProviderContext<()> = PlayerPartProviderContext {
         model: if slim {
             PlayerModel::Alex
@@ -418,14 +426,15 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
         .sorted_by_cached_key(|(x, y, _, _)| (*x, *y))
         .group_by(|(x, y, _, _)| (*x, *y))
         .into_iter()
-        .flat_map(|(_, group)| {
+        .flat_map(|((x, y), group)| {
             let pixels = group
                 .map(|(x, y, pixel, is_opaque)| (Point::from((x, y)), pixel, is_opaque))
                 .sorted_by_key(|(_, pixel, _)| (get_depth(pixel) as i32))
                 .collect::<Vec<_>>();
-            
-            let has_opaque = pixels.iter().any(|(_, _, is_opaque)| *is_opaque);
-            
+
+            let opaque_count = pixels.iter().filter(|(_, _, is_opaque)| *is_opaque).count();
+            let has_opaque = opaque_count > 0;
+
             // Drop all transparent pixels before the first opaque one
             let mut pixels = if has_opaque {
                 pixels
@@ -435,6 +444,23 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
             } else {
                 pixels
             };
+
+            if opaque_count > 1 {
+                // Find groups of opaque pixels and drop all but the last one
+                pixels = pixels
+                    .into_iter()
+                    .group_by(|(_, _, is_opaque)| *is_opaque)
+                    .into_iter()
+                    .flat_map(|(is_opaque, group)| {
+                        let group_pixels = group.collect::<Vec<_>>();
+                        if is_opaque {
+                            group_pixels[group_pixels.len() - 1..].to_vec()
+                        } else {
+                            group_pixels
+                        }
+                    })
+                    .collect_vec();
+            }
             
             pixels.into_iter().map(|(point, pixel, _)| (point, pixel))
         })

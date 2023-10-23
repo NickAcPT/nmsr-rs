@@ -21,6 +21,21 @@ use nmsr_rendering::high_level::{
 
 pub use nmsr_rendering;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PartOutputFormat {
+    Qoi,
+    Png,
+}
+
+impl PartOutputFormat {
+    pub(crate) fn get_extension(&self) -> &'static str {
+        match self {
+            PartOutputFormat::Qoi => "qoi",
+            PartOutputFormat::Png => "png",
+        }
+    }
+}
+
 pub enum PartsGroupLogic {
     SplitArmsFromBody,
     MergeArmsWithBody,
@@ -153,7 +168,8 @@ pub async fn generate_parts(
     viewport_size: Size,
     parts_group_logic: PartsGroupLogic,
     shadow_y_pos: Option<f32>,
-    root: PathBuf,
+    root: &Path,
+    format: PartOutputFormat
 ) -> Result<()> {
     fs::create_dir_all(&root)?;
 
@@ -165,7 +181,7 @@ pub async fn generate_parts(
         name,
     } in groups
     {
-        process_group(parts, toggle_slim, camera, sun, viewport_size, name, &root).await?;
+        process_group(parts, toggle_slim, camera, sun, viewport_size, name, &root, format).await?;
     }
 
     let mut env_shadow = Vec::with_capacity(1);
@@ -182,7 +198,7 @@ pub async fn generate_parts(
     .await?;
 
     if let Some(PartRenderOutput { image, .. }) = env_shadow.first() {
-        save(image, "renders/environment_background.qoi")?;
+        save(image, format, root.join("environment_background.qoi"))?;
     }
 
     Ok(())
@@ -193,6 +209,7 @@ async fn save_group(
     viewport_size: Size,
     name: String,
     renders_path: &Path,
+    format: PartOutputFormat
 ) -> Result<()> {
     let processed = process_render_outputs(to_process);
 
@@ -234,7 +251,7 @@ async fn save_group(
             fs::create_dir_all(parent)?;
         }
 
-        save(img, file)?;
+        save(img, format, file)?;
     }
 
     Ok(())
@@ -248,6 +265,7 @@ async fn process_group(
     viewport_size: Size,
     name: &'static str,
     renders_path: &Path,
+    format: PartOutputFormat
 ) -> Result<()> {
     let toggle_backface = parts.iter().any(|p| p.is_hat_layer() || p.is_layer());
 
@@ -334,6 +352,7 @@ async fn process_group(
             viewport_size,
             name.replace("{model}", model_name),
             &renders_path,
+            format
         )
         .await?;
     }
@@ -449,7 +468,7 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
         .sorted_by_cached_key(|(x, y, _, _)| (*x, *y))
         .group_by(|(x, y, _, _)| (*x, *y))
         .into_iter()
-        .flat_map(|((x, y), group)| {
+        .flat_map(|(_, group)| {
             let pixels = group
                 .map(|(x, y, pixel, is_opaque)| (Point::from((x, y)), pixel, is_opaque))
                 .sorted_by_key(|(_, pixel, _)| (get_depth(pixel) as i32))
@@ -508,9 +527,16 @@ fn get_depth(pixel: &Rgba<u8>) -> u16 {
     ((rgba >> 20) & 0x1FFF) as u16
 }
 
-fn save<P: AsRef<Path>>(img: &RgbaImage, name: P) -> Result<()> {
+fn save<P: AsRef<Path>>(img: &RgbaImage, format: PartOutputFormat, name: P) -> Result<()> {
+    let fixed_name = name.as_ref().with_extension(format.get_extension());
+    
+    if format == PartOutputFormat::Png {
+        img.save(fixed_name)?;
+        return Ok(());
+    }
+    
     let encoded = qoi::encode_to_vec(&img.as_raw(), img.width(), img.height())?;
-    fs::write(name, encoded)?;
+    fs::write(fixed_name, encoded)?;
 
     Ok(())
 }

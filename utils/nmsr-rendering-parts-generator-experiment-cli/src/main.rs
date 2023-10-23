@@ -6,7 +6,7 @@ use nmsr_rendering_parts_generator_experiment::{
         camera::{Camera, CameraRotation, ProjectionParameters},
         pipeline::scene::{Size, SunInformation},
     },
-    PartsGroupLogic,
+    PartsGroupLogic, PartOutputFormat,
 };
 
 use nmsr_rendering_parts_generator_experiment::generate_parts;
@@ -34,13 +34,16 @@ async fn main() -> Result<()> {
         height: 832,
     };
 
+    let renders = PathBuf::from("renders");
+    
     generate_parts(
         camera,
         sun,
         viewport_size,
         PartsGroupLogic::MergeEverything,
         None,
-        PathBuf::from("renders"),
+        &renders,
+        PartOutputFormat::Qoi
     )
     .await?;
 

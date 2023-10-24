@@ -74,12 +74,12 @@ fn fs_main(vertex: VertexOutput, @builtin(front_facing) front_facing: bool) -> @
     var u = u32(floor(vertex.tex_coord.x * MAX_VALUE_PER_UV));
     var v = u32(floor(vertex.tex_coord.y * MAX_VALUE_PER_UV));
     var shading = u32(compute_sun_lighting(vertex.normal) * MAX_VALUE_PER_SHADING);
-    var camera_distance = vertex.position.z / vertex.position.w;
+    var camera_distance = 2.0 * vertex.position.z / vertex.position.w;
 
-    var near = 0.1;
+    var near = -100.0;
     var far = 100.0;
 
-    var depth = 1.0 - ((camera_distance - near) / (far - near));
+    var depth = 1.0 + ((2.0 * vertex.position.z * near) / (far - near));
     
     var final_depth = u32(depth * MAX_VALUE_PER_DEPTH);
 
@@ -106,4 +106,5 @@ fn fs_main(vertex: VertexOutput, @builtin(front_facing) front_facing: bool) -> @
     var a = (final_number >> 24u) & 0xFFu;
     
     return vec4<f32>(f32(r) / 255.0, f32(g) / 255.0, f32(b) / 255.0, f32(a) / 255.0);
+    //return vec4<f32>(depth, depth, depth, f32(a) / 255.0);
 }

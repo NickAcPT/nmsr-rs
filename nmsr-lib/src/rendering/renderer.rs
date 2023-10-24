@@ -9,22 +9,8 @@ use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
 use crate::utils::par_iterator_if_enabled;
 use crate::uv::part::UvImagePixel;
-use crate::uv::uv_magic::UvImage;
 
 impl RenderingEntry {
-    #[instrument(level = "trace", skip(self, uv_image, skin, _span), parent = _span, fields(part = uv_image.name.as_str()))]
-    fn apply_uv_and_overlay(
-        &self,
-        uv_image: &UvImage,
-        skin: &RgbaImage,
-        _span: &tracing::Span,
-    ) -> Result<RgbaImage> {
-        let applied_uv =
-            trace_span!("apply_uv").in_scope(|| uv_image.apply(skin, self.render_shading))?;
-
-        Ok(applied_uv)
-    }
-
     #[instrument(level = "trace", skip(parts_manager))]
     pub fn render(&self, parts_manager: &PartsManager) -> Result<RgbaImage> {
         // Compute all the parts needed to be rendered
@@ -32,10 +18,8 @@ impl RenderingEntry {
 
         // Apply all the UVs
         let applied_uvs: Vec<_> = trace_span!("apply_uvs").in_scope(|| {
-            let current = tracing::Span::current();
-
             par_iterator_if_enabled!(all_parts)
-                .map(|&p| (p, self.apply_uv_and_overlay(p, &self.skin, &current)))
+                .map(|&p| (p, p.apply(&self.skin, self.render_shading)))
                 .collect()
         });
 
@@ -53,9 +37,7 @@ impl RenderingEntry {
                     .filter(|p| matches!(p, UvImagePixel::UvPixel { .. }))
                     .filter_map(move |pixel| match pixel {
                         UvImagePixel::UvPixel {
-                            depth,
-                            position,
-                            ..
+                            depth, position, ..
                         } => {
                             applied
                                 .as_ref()
@@ -79,17 +61,6 @@ impl RenderingEntry {
             .collect::<Vec<_>>();
 
         drop(_span);
-
-        /* #[cfg(feature = "parallel_iters")]
-        {
-            let _guard = trace_span!("parallel_sort_pixels").entered();
-            pixels.par_sort_by_key(|(depth, _, _, _)| *depth);
-        }
-        #[cfg(not(feature = "parallel_iters"))]
-        {
-            let _guard = trace_span!("sort_pixels").entered();
-            pixels.sort_by_key(|(depth, _, _, _)| *depth);
-        } */
 
         // Merge final image
         let (width, height) = (first_uv.width(), first_uv.height());

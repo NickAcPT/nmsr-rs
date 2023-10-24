@@ -51,7 +51,10 @@ async fn main() -> anyhow::Result<()> {
 
     let size = window.inner_size();
 
-    let graphics = GraphicsContext::new(GraphicsContextDescriptor {
+    let mut shader: String = include_str!("../../../utils/nmsr-rendering-parts-generator-experiment/src/nmsr-new-uvmap-shader.wgsl").into();
+    shader = shader.replace("//frontface:", "");
+    
+    let graphics = GraphicsContext::new_with_shader(GraphicsContextDescriptor {
         backends: Some(wgpu::Backends::all()),
         surface_provider: Box::new(|i: &Instance| unsafe {
             Some(i.create_surface(&window).unwrap())
@@ -59,10 +62,10 @@ async fn main() -> anyhow::Result<()> {
         default_size: (size.width, size.height),
         texture_format: None,
         features: Features::empty(),
-        blend_state: None,
+        blend_state: Some(nmsr_rendering::high_level::pipeline::BlendState::REPLACE),
         sample_count: None,
         use_smaa: None,
-    })
+    }, nmsr_rendering::high_level::pipeline::ShaderSource::Wgsl(shader.into()))
     .await
     .expect("Expected Nmsr Pipeline");
 

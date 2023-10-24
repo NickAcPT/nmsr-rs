@@ -94,7 +94,7 @@ impl GraphicsContext {
     }
 }
 
-pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface> + 'a;
+pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface> + 'a + Send;
 
 pub struct GraphicsContextDescriptor<'a> {
     pub backends: Option<Backends>,

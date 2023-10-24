@@ -1,14 +1,13 @@
 use std::fmt::Debug;
 
 use image::{Pixel, Rgba};
-#[cfg(feature = "serializable_parts")]
-use serde::{Deserialize, Serialize};
 
 use crate::geometry::Point;
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable_parts", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serializable_parts_rkyv", derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize))]
 pub enum UvImagePixel {
     RawPixel {
         position: Point<u16>,

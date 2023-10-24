@@ -2,11 +2,10 @@ use crate::errors::Result;
 use crate::uv::part::UvImagePixel;
 use crate::uv::utils::apply_uv_map;
 use image::RgbaImage;
-#[cfg(feature = "serializable_parts")]
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable_parts", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serializable_parts_rkyv", derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize))]
 pub struct UvImage {
     pub name: String,
     pub size: (u32, u32),
@@ -20,24 +19,6 @@ impl UvImage {
             .filter(|(_, _, p)| p.0[3] != 0)
             .map(|(x, y, p)| UvImagePixel::new(x, y, p, store_raw_pixels))
             .collect();
-
-        // Pre-sorting the pixels here by depth takes a bit more time on load, but saves time when rendering
-        /* if !store_raw_pixels {
-            #[cfg(feature = "parallel_iters")]
-            {
-                uv_pixels.par_sort_by_key(|p| match p {
-                    UvImagePixel::RawPixel { .. } => unreachable!("Guarded by condition"),
-                    UvImagePixel::UvPixel { depth, .. } => *depth,
-                });
-            }
-            #[cfg(not(feature = "parallel_iters"))]
-            {
-                uv_pixels.sort_by_key(|p| match p {
-                    UvImagePixel::RawPixel { .. } => unreachable!("Guarded by condition"),
-                    UvImagePixel::UvPixel { depth, .. } => *depth,
-                });
-            }
-        } */
 
         UvImage {
             name,

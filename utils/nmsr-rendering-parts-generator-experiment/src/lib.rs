@@ -166,10 +166,12 @@ pub async fn generate_parts(
     camera: Camera,
     sun: SunInformation,
     viewport_size: Size,
+    actual_parts: Vec<PlayerBodyPartType>,
     parts_group_logic: PartsGroupLogic,
     shadow_y_pos: Option<f32>,
+    arm_rotation: f32,
     root: &Path,
-    format: PartOutputFormat
+    format: PartOutputFormat,
 ) -> Result<()> {
     fs::create_dir_all(&root)?;
 
@@ -181,7 +183,21 @@ pub async fn generate_parts(
         name,
     } in groups
     {
-        process_group(parts, toggle_slim, camera, sun, viewport_size, name, &root, format).await?;
+        process_group(
+            parts
+                .into_iter()
+                .filter(|p| actual_parts.contains(p))
+                .collect_vec(),
+            toggle_slim,
+            camera,
+            sun,
+            arm_rotation,
+            viewport_size,
+            name,
+            &root,
+            format,
+        )
+        .await?;
     }
 
     let mut env_shadow = Vec::with_capacity(1);
@@ -193,6 +209,7 @@ pub async fn generate_parts(
         camera,
         sun,
         viewport_size,
+        arm_rotation,
         shadow_y_pos.or(Some(0.0)),
     )
     .await?;
@@ -209,7 +226,7 @@ async fn save_group(
     viewport_size: Size,
     name: String,
     renders_path: &Path,
-    format: PartOutputFormat
+    format: PartOutputFormat,
 ) -> Result<()> {
     let processed = process_render_outputs(to_process);
 
@@ -262,10 +279,11 @@ async fn process_group(
     toggle_slim: bool,
     camera: Camera,
     sun: SunInformation,
+    arm_rotation: f32,
     viewport_size: Size,
     name: &'static str,
     renders_path: &Path,
-    format: PartOutputFormat
+    format: PartOutputFormat,
 ) -> Result<()> {
     let toggle_backface = parts.iter().any(|p| p.is_hat_layer() || p.is_layer());
 
@@ -301,7 +319,7 @@ async fn process_group(
                     if !is_transparent && *is_back_face {
                         continue;
                     }
-                    
+
                     if is_transparent {
                         for part in &parts {
                             process_group_logic(
@@ -312,6 +330,7 @@ async fn process_group(
                                 camera,
                                 sun,
                                 viewport_size,
+                                arm_rotation,
                                 None,
                             )
                             .await?;
@@ -325,11 +344,11 @@ async fn process_group(
                             camera,
                             sun,
                             viewport_size,
+                            arm_rotation,
                             None,
                         )
                         .await?;
                     }
-                    
                 }
             } else {
                 process_group_logic(
@@ -340,6 +359,7 @@ async fn process_group(
                     camera,
                     sun,
                     viewport_size,
+                    arm_rotation,
                     None,
                 )
                 .await?;
@@ -352,7 +372,7 @@ async fn process_group(
             viewport_size,
             name.replace("{model}", model_name),
             &renders_path,
-            format
+            format,
         )
         .await?;
     }
@@ -369,6 +389,7 @@ async fn process_group_logic(
     camera: Camera,
     sun: SunInformation,
     viewport_size: Size,
+    arm_rotation: f32,
     shadow_y_pos: Option<f32>,
 ) -> Result<()> {
     let opaque = parts.iter().all(|p| !(p.is_layer() || p.is_hat_layer()));
@@ -387,7 +408,7 @@ async fn process_group_logic(
         has_hat_layer: parts.iter().any(|p| p.is_hat_layer()),
         has_layers: parts.iter().any(|p| p.is_layer()),
         has_cape: false,
-        arm_rotation: 10.0,
+        arm_rotation,
         shadow_y_pos,
         shadow_is_square: false,
         armor_slots: None,
@@ -474,7 +495,7 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
                 .sorted_by_key(|(_, pixel, _)| (get_depth(pixel) as i32))
                 .collect::<Vec<_>>();
 
-            let opaque_count = pixels.iter().filter(|(_, _, is_opaque)| *is_opaque).count();
+            let opaque_count = 0;//pixels.iter().filter(|(_, _, is_opaque)| *is_opaque).count();
             let has_opaque = opaque_count > 0;
 
             // Drop all transparent pixels before the first opaque one
@@ -529,12 +550,12 @@ fn get_depth(pixel: &Rgba<u8>) -> u16 {
 
 fn save<P: AsRef<Path>>(img: &RgbaImage, format: PartOutputFormat, name: P) -> Result<()> {
     let fixed_name = name.as_ref().with_extension(format.get_extension());
-    
+
     if format == PartOutputFormat::Png {
         img.save(fixed_name)?;
         return Ok(());
     }
-    
+
     let encoded = qoi::encode_to_vec(&img.as_raw(), img.width(), img.height())?;
     fs::write(fixed_name, encoded)?;
 

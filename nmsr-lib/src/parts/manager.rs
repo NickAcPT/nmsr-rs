@@ -1,6 +1,4 @@
 use image::RgbaImage;
-#[cfg(feature = "serializable_parts")]
-use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
@@ -13,7 +11,8 @@ use crate::utils::{into_par_iter_if_enabled, open_image_from_vfs};
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage};
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serializable_parts", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable_parts", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serializable_parts_rkyv", derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize))]
 pub struct PartsManager {
     pub all_parts: Vec<UvImage>,
     pub model_parts: Vec<UvImage>,

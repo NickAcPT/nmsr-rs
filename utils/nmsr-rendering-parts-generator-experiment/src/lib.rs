@@ -8,7 +8,7 @@ use anyhow::{anyhow, Ok, Result};
 use image::{GenericImage, ImageBuffer, Rgba, RgbaImage};
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
-    camera::Camera,
+    camera::{Camera, ProjectionParameters},
     model::PlayerModel,
     parts::provider::PlayerPartProviderContext,
     pipeline::{
@@ -422,7 +422,11 @@ async fn process_group_logic(
     } else {
         shader = shader.replace("//frontface:", "")
     }
-
+    
+    if let ProjectionParameters::Orthographic { .. } = camera.get_projection() {
+        shader = shader.replace("//iso:", "")
+    }
+    
     let descriptor = GraphicsContextDescriptor {
         backends: Some(Backends::all()),
         surface_provider: Box::new(|_| None),
@@ -495,7 +499,7 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
                 .sorted_by_key(|(_, pixel, _)| (get_depth(pixel) as i32))
                 .collect::<Vec<_>>();
 
-            let opaque_count = 0;//pixels.iter().filter(|(_, _, is_opaque)| *is_opaque).count();
+            let opaque_count = pixels.iter().filter(|(_, _, is_opaque)| *is_opaque).count();
             let has_opaque = opaque_count > 0;
 
             // Drop all transparent pixels before the first opaque one

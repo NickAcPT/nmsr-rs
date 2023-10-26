@@ -37,20 +37,20 @@ impl RenderingEntry {
                     .filter(|p| matches!(p, UvImagePixel::UvPixel { .. }))
                     .filter_map(move |pixel| match pixel {
                         UvImagePixel::UvPixel {
-                            depth, position, ..
+                            /* depth, */ position, ..
                         } => {
                             applied
                                 .as_ref()
                                 .map(|a| {
                                     (
-                                        *depth,
+                                        /* *depth, */
                                         position.x,
                                         position.y,
                                         a.get_pixel(position.x as u32, position.y as u32),
                                     )
                                 })
                                 .ok()
-                                .filter(|(_, _, _, pixel)| /* alpha > 0 */ pixel.0[3] > 0)
+                                .filter(|(/* _, */ _, _, pixel)| /* alpha > 0 */ pixel.0[3] > 0)
                         }
                         // SAFETY: This is never hit since it's being guarded by the filter call before the filter_map
                         UvImagePixel::RawPixel { .. } => unsafe {
@@ -85,7 +85,7 @@ impl RenderingEntry {
         {
             let _span = trace_span!("blend_pixels").entered();
 
-            for (_, x, y, pixel) in pixels {
+            for (x, y, pixel) in pixels {
                 final_image.get_pixel_mut(x as u32, y as u32).blend(pixel);
             }
         }

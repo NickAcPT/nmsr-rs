@@ -16,7 +16,7 @@ pub enum UvImagePixel {
     UvPixel {
         position: Point<u16>,
         uv: Point<u8>,
-        depth: u16,
+        /* depth: u16, */
         shading: u8,
     },
 }
@@ -59,7 +59,7 @@ impl UvImagePixel {
             let u = (rgba & 0x3F) as u8;
             let v = ((rgba >> 6) & 0x3F) as u8;
             let shading = ((rgba >> 12) & 0xFF) as u8;
-            let depth = ((rgba >> 20) & 0x1FFF) as u16;
+            //let depth = ((rgba >> 20) & 0x1FFF) as u16;
             
             UvPixel {
                 position: Point {
@@ -70,7 +70,7 @@ impl UvImagePixel {
                     x: u,
                     y: v,
                 },
-                depth,
+                /* depth, */
                 shading,
             }
         } else {
@@ -128,7 +128,7 @@ fn test_uv_pixel() {
         (UvPixel {
             position: Point { x: 1, y: 1 },
             uv: Point { x: u as u8, y: v as u8 },
-            depth: final_depth as u16,
+            /* depth: final_depth as u16, */
             shading: shading as u8,
         })
     );

@@ -94,7 +94,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
                     uv_from_pos_and_size(0, 0, 128, 128),
                     Vec3::Y,
                     #[cfg(feature = "part_tracker")]
-                    #[cfg(feature = "part_tracker")]
                     Some("Shadow".to_string()),
                 );
                 // TODO: Expand shadow if there's armor on the feet

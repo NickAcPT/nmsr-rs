@@ -4,7 +4,7 @@ use anyhow::{Ok, Result};
 use nmsr_rendering_parts_generator_experiment::{
     nmsr_rendering::high_level::{
         camera::{Camera, CameraRotation, ProjectionParameters},
-        pipeline::scene::{Size, SunInformation},
+        pipeline::scene::{Size, SunInformation}, types::PlayerBodyPartType, IntoEnumIterator,
     },
     PartsGroupLogic, PartOutputFormat,
 };
@@ -40,8 +40,10 @@ async fn main() -> Result<()> {
         camera,
         sun,
         viewport_size,
+        PlayerBodyPartType::iter().collect(),
         PartsGroupLogic::MergeEverything,
         None,
+        10f32,
         &renders,
         PartOutputFormat::Qoi
     )

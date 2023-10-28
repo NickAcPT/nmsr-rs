@@ -65,11 +65,11 @@ modes, native Ears mod support and Minecraft capes.
             <td><img src=".assets/NickAc-face.png" width="100"></td>
         </tr>
         <tr>
+            <td rowspan="2">Extra</td>
             <td>Skin</td>
             <td colspan="3">Player skin</td>
         </tr>
         <tr>
-            <td rowspan="2">Extra</td>
             <td>Custom</td>
             <td colspan="3">Custom render settings</td>
         </tr>

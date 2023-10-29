@@ -19,6 +19,7 @@ modes, native Ears mod support and Minecraft capes.
             <th>Render Mode</th>
             <th>Description</th>
             <th>Example</th>
+            <th>Example (Back)</th>
         </tr>
     </thead>
     <tbody>
@@ -27,51 +28,59 @@ modes, native Ears mod support and Minecraft capes.
             <td>FullBody</td>
             <td>Full body render</td>
             <td><img src=".assets/NickAc-fullbody.png" width="100"></td>
+            <td><img src=".assets/NickAc-fullbody-back.png" width="100"></td>
         </tr>
         <tr>
             <td>FullBodyIso</td>
             <td>Full body isometric render</td>
             <td><img src=".assets/NickAc-fullbodyiso.png" width="100"></td>
+            <td><img src=".assets/NickAc-fullbodyiso-back.png" width="100"></td>
         </tr>
         <tr>
             <td>BodyBust</td>
             <td>Body bust render</td>
             <td><img src=".assets/NickAc-bodybust.png" width="100"></td>
+            <td><img src=".assets/NickAc-bodybust-back.png" width="100"></td>
         </tr>
         <tr>
             <td>FrontBust</td>
             <td>Bust isometric front render</td>
             <td><img src=".assets/NickAc-frontbust.png" width="100"></td>
+            <td></td>
         </tr>
         <tr>
             <td>FrontFull</td>
             <td>Full isometric front render</td>
             <td><img src=".assets/NickAc-frontfull.png" width="100"></td>
+            <td></td>
         </tr>
         <tr>
             <td rowspan="3">Head</td>
             <td>Head</td>
             <td>Head render</td>
             <td><img src=".assets/NickAc-head.png" width="100"></td>
+            <td><img src=".assets/NickAc-head-back.png" width="100"></td>
         </tr>
         <tr>
             <td>HeadIso</td>
             <td>Head isometric render</td>
             <td><img src=".assets/NickAc-headiso.png" width="100"></td>
+            <td><img src=".assets/NickAc-headiso-back.png" width="100"></td>
         </tr>
         <tr>
             <td>Face</td>
             <td>Face render</td>
             <td><img src=".assets/NickAc-face.png" width="100"></td>
+            <td></td>
         </tr>
         <tr>
             <td rowspan="2">Extra</td>
             <td>Skin</td>
-            <td colspan="3">Player skin</td>
+            <td colspan="4">Player skin</td>
         </tr>
         <tr>
             <td>Custom</td>
-            <td colspan="3">Custom render settings</td>
+            <td colspan="4">Custom render settings</td>
         </tr>
     </tbody>
 </table>

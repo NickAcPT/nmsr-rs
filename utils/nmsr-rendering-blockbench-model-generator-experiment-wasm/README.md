@@ -1,0 +1,1 @@
+This crate moved to [here](https://github.com/NickAcPT/ears-tools-rs).

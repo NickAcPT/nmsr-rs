@@ -159,6 +159,10 @@ where
         &mut self.camera
     }
 
+    pub fn sun_information_mut(&mut self) -> &mut SunInformation {
+        &mut self.sun_information
+    }
+    
     pub fn viewport_size_mut(&mut self) -> &mut Size {
         &mut self.viewport_size
     }

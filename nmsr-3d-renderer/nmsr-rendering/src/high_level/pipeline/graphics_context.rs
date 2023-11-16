@@ -12,7 +12,7 @@ use wgpu::{
 };
 pub use wgpu::{
     Adapter, Backends, BlendState, Device, Features, Instance, Queue, ShaderSource, Surface,
-    SurfaceConfiguration, TextureFormat,
+    SurfaceConfiguration, TextureFormat, Limits,
 };
 
 use crate::{
@@ -102,6 +102,7 @@ pub struct GraphicsContextDescriptor<'a> {
     pub default_size: (u32, u32),
     pub texture_format: Option<TextureFormat>,
     pub features: Features,
+    pub limits: Option<Limits>,
     pub blend_state: Option<BlendState>,
     pub sample_count: Option<u32>,
     pub use_smaa: Option<bool>,
@@ -183,8 +184,7 @@ impl GraphicsContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
-                        | descriptor.features,
+                    features: descriptor.features,
                     limits: wgpu::Limits::default(),
                 },
                 None,

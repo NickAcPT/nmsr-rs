@@ -86,7 +86,8 @@ impl NMSRState {
             surface_provider: Box::new(|_| None),
             default_size: (0, 0), // can be zero since we don't provide any surface
             texture_format: None,
-            features: Features::empty(),
+            features: Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+            limits: None,
             blend_state: None,
             sample_count: rendering_config.as_ref().map(|c| c.sample_count),
             use_smaa: rendering_config.as_ref().map(|c| c.use_smaa),

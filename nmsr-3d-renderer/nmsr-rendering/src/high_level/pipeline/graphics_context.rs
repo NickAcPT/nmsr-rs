@@ -171,6 +171,7 @@ impl GraphicsContext {
         let instance = Instance::new(wgpu::InstanceDescriptor {
             backends,
             dx12_shader_compiler,
+            ..Default::default()
         });
 
         let mut surface = (descriptor.surface_provider)(&instance);

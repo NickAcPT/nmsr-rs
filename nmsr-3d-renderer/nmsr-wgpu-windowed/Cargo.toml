@@ -11,9 +11,9 @@ winit = "0.28.6"
 wgpu = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 renderdoc = { version = "0.11.0",features = ["ci"] }
-egui = { version = "0.22.0", features = ["bytemuck"] }
-egui_wgpu_backend = "0.25.0"
-egui_winit_platform = "0.19.0"
+egui = { version = "0.23.0", features = ["bytemuck"] }
+egui_wgpu_backend = "0.27.0"
+egui_winit_platform = "0.20.0"
 
 strum = { workspace = true }
 image = { workspace = true, default-features = false }

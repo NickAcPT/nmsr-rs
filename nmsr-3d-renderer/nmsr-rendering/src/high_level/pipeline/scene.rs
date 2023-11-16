@@ -2,10 +2,7 @@ use super::{textures::SceneTexture, GraphicsContext, SceneContextWrapper};
 use crate::{
     errors::{NMSRRenderingError, Result},
     high_level::{camera::Camera, pipeline::SceneContext, utils::parts::primitive_convert},
-    low_level::primitives::{
-        mesh::Mesh,
-        part_primitive::PartPrimitive,
-    },
+    low_level::primitives::{mesh::Mesh, part_primitive::PartPrimitive},
 };
 use bytemuck::{Pod, Zeroable};
 use glam::Vec3;
@@ -29,7 +26,7 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     AddressMode, BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, Extent3d, FilterMode,
     IndexFormat, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    SamplerDescriptor, TextureView,
+    SamplerDescriptor, StoreOp, TextureView,
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
@@ -94,7 +91,7 @@ where
 {
     const RECTANGLE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_rectangle.png");
     const SQUARE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_square.png");
-    
+
     pub fn get_shadow_bytes(is_square: bool) -> &'static [u8] {
         if is_square {
             Self::SQUARE_SHADOW_BYTES
@@ -162,7 +159,7 @@ where
     pub fn sun_information_mut(&mut self) -> &mut SunInformation {
         &mut self.sun_information
     }
-    
+
     pub fn viewport_size_mut(&mut self) -> &mut Size {
         &mut self.viewport_size
     }
@@ -348,7 +345,12 @@ where
                 })
             });
 
-            let store_depth = !texture.is_shadow();
+            let store_depth = if !texture.is_shadow() {
+                StoreOp::Store
+            } else {
+                StoreOp::Discard
+            };
+
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(format!("Render pass for {}", texture).as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
@@ -356,7 +358,7 @@ where
                     resolve_target,
                     ops: Operations {
                         load: load_op,
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
@@ -367,6 +369,8 @@ where
                     }),
                     stencil_ops: None,
                 }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
 
             rpass.set_pipeline(pipeline);
@@ -378,7 +382,7 @@ where
             rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
 
             load_op = LoadOp::Load;
-            if store_depth {
+            if store_depth == StoreOp::Store {
                 depth_load_opt = LoadOp::Load;
             }
         }

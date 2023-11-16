@@ -186,7 +186,7 @@ impl GraphicsContext {
                 &wgpu::DeviceDescriptor {
                     label: None,
                     features: descriptor.features,
-                    limits: wgpu::Limits::default(),
+                    limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default())
                 },
                 None,
             )

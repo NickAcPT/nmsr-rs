@@ -130,7 +130,7 @@ where
             scene_context,
             textures: HashMap::new(),
             computed_body_parts,
-            sun_information: Default::default(),
+            sun_information: sun,
         };
 
         if part_context.shadow_y_pos.is_some() {

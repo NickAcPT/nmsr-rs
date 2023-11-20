@@ -26,7 +26,11 @@ use crate::{
 use anyhow::Context;
 use axum::routing::post;
 use opentelemetry::StringValue;
-use tower_http::{cors::{AllowMethods, Any, CorsLayer}, normalize_path::NormalizePathLayer};
+use tower_http::{
+    cors::{AllowMethods, Any, CorsLayer},
+    normalize_path::NormalizePathLayer,
+    services::ServeDir,
+};
 use tracing::info_span;
 use tracing_subscriber::EnvFilter;
 use twelf::Layer;
@@ -85,11 +89,23 @@ async fn main() -> anyhow::Result<()> {
 
     // build our application with a route
     let router = Router::new()
-        .route("/", get(root))
         .route("/:mode/:texture", get(render))
         .route("/:mode/:texture", post(render_post_warning))
         .route("/:mode", post(render))
-        .with_state(state);
+        .with_state(state)
+        .layer(NormalizePathLayer::trim_trailing_slash());
+
+    let router = if let Some(path) = config.server.static_files_directory {
+        let serve_dir = ServeDir::new(path)
+            .precompressed_br()
+            .precompressed_gzip()
+            .call_fallback_on_method_not_allowed(true)
+            .fallback(router);
+        
+        Router::new().nest_service("/", serve_dir)
+    } else {
+        router.route("/", get(root))
+    };
 
     let trace_layer = NmsrTracing::new_trace_layer();
 
@@ -102,7 +118,6 @@ async fn main() -> anyhow::Result<()> {
                 .allow_origin(Any)
                 .allow_methods(AllowMethods::any()),
         )
-        .layer(NormalizePathLayer::trim_trailing_slash())
         .service(router);
 
     let addr = (config.server.address + ":" + &config.server.port.to_string()).parse()?;

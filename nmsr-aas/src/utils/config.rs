@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     fs::Metadata,
-    time::{Duration, SystemTime},
+    time::{Duration, SystemTime}, path::PathBuf,
 };
 
 use chrono::{DateTime, Local};
@@ -82,6 +82,8 @@ pub struct ServerConfiguration {
     pub address: String,
     /// The port to bind the server to.
     pub port: u16,
+    /// The static files directory to serve.
+    pub static_files_directory: Option<PathBuf>,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]

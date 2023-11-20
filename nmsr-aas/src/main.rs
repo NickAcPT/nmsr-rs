@@ -93,15 +93,14 @@ async fn main() -> anyhow::Result<()> {
         .route("/:mode/:texture", post(render_post_warning))
         .route("/:mode", get(render_get_warning))
         .route("/:mode", post(render))
-        .with_state(state)
-        .layer(NormalizePathLayer::trim_trailing_slash());
+        .with_state(state);
 
     let router = if let Some(path) = config.server.static_files_directory {
         let serve_dir = ServeDir::new(path)
             .precompressed_br()
             .precompressed_gzip()
             .call_fallback_on_method_not_allowed(true)
-            .fallback(router);
+            .fallback(router.layer(NormalizePathLayer::trim_trailing_slash()));
         
         Router::new().nest_service("/", serve_dir)
     } else {

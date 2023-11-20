@@ -59,7 +59,7 @@ pub enum RenderRequestError {
     InvalidModeSettingSpecifiedError(&'static str, &'static str),
     #[error("Missing render request texture. Did you forget to specify a texture?")]
     MissingRenderRequestEntry,
-    #[error("Invalid HTTP Method. Did you mean to use \"{0}\" instead of \"{1}\"? This endpoint only supports \"{0}\".")]
+    #[error("Invalid HTTP Method. Did you mean to use \"{1}\" instead of \"{0}\"? This endpoint only supports \"{0}\".")]
     WrongHttpMethodError(&'static str, &'static str),
 }
 

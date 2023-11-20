@@ -18,16 +18,15 @@ pub mod model;
 mod routes;
 mod utils;
 
-use crate::routes::render;
-use crate::routes::NMSRState;
-use crate::utils::tracing::NmsrTracing;
+use crate::{
+    routes::{render, render_post_warning, NMSRState},
+    utils::tracing::NmsrTracing,
+};
 
 use anyhow::Context;
 use axum::routing::post;
 use opentelemetry::StringValue;
-use tower_http::cors::AllowMethods;
-use tower_http::cors::Any;
-use tower_http::cors::CorsLayer;
+use tower_http::{cors::{AllowMethods, Any, CorsLayer}, normalize_path::NormalizePathLayer};
 use tracing::info_span;
 use tracing_subscriber::EnvFilter;
 use twelf::Layer;
@@ -88,6 +87,7 @@ async fn main() -> anyhow::Result<()> {
     let router = Router::new()
         .route("/", get(root))
         .route("/:mode/:texture", get(render))
+        .route("/:mode/:texture", post(render_post_warning))
         .route("/:mode", post(render))
         .with_state(state);
 
@@ -102,6 +102,7 @@ async fn main() -> anyhow::Result<()> {
                 .allow_origin(Any)
                 .allow_methods(AllowMethods::any()),
         )
+        .layer(NormalizePathLayer::trim_trailing_slash())
         .service(router);
 
     let addr = (config.server.address + ":" + &config.server.port.to_string()).parse()?;

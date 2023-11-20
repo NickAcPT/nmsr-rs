@@ -21,9 +21,12 @@ pub enum NMSRaaSError {
     #[cfg(feature = "ears")]
     #[error("Ears error: {0}")]
     EarsError(#[from] ears_rs::utils::errors::EarsError),
-    
+
     #[error("Unable to generate blockbench project: {0}")]
-    BlockbenchGeneratorError(#[from] nmsr_rendering_blockbench_model_generator_experiment::error::BlockbenchGeneratorError),
+    BlockbenchGeneratorError(
+        #[from]
+        nmsr_rendering_blockbench_model_generator_experiment::error::BlockbenchGeneratorError,
+    ),
 }
 
 #[derive(Error, Debug)]
@@ -56,6 +59,8 @@ pub enum RenderRequestError {
     InvalidModeSettingSpecifiedError(&'static str, &'static str),
     #[error("Missing render request texture. Did you forget to specify a texture?")]
     MissingRenderRequestEntry,
+    #[error("Invalid HTTP Method. Did you mean to use \"{0}\" instead of \"{1}\"? This endpoint only supports \"{0}\".")]
+    WrongHttpMethodError(&'static str, &'static str),
 }
 
 impl RenderRequestError {
@@ -70,6 +75,7 @@ impl RenderRequestError {
                 | Self::InvalidRenderSettingError(_, _)
                 | Self::InvalidModeSettingSpecifiedError(_, _)
                 | Self::MissingRenderRequestEntry
+                | Self::WrongHttpMethodError(_, _)
         )
     }
 }
@@ -78,8 +84,6 @@ impl RenderRequestError {
 pub enum ModelCacheError {
     #[error("Unable to read marker for entry {0:?}")]
     MarkerMetadataError(crate::model::request::entry::RenderRequestEntry),
-    #[error("Invalid player request attempt: {0}")]
-    InvalidRequestCacheAttempt(String),
     #[error("Invalid cache entry marker request: {0}")]
     InvalidCacheEntryMarkerRequest(String),
     #[error("Invalid cache bias configuration: {0}")]
@@ -119,6 +123,10 @@ pub enum MojangRequestError {
     ),
     #[error("Unable to parse uuid {0} into xuid")]
     UnableToParseUuidIntoXuid(Uuid),
+    #[error("The texture hash you provided ({0}) is invalid. Are you sure this texture hash comes from Mojang? You can't hash a skin and expect it to work.")]
+    InvalidTextureHashError(String),
+    #[error("Unable to find a player with the UUID {0}")]
+    GameProfileNotFound(Uuid),
 }
 
 #[derive(Error, Debug)]

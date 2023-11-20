@@ -129,7 +129,7 @@ impl VanillaMinecraftArmorManager {
 
                     let bytes = self
                         .client
-                        .do_request(&url, Method::GET, &Span::current())
+                        .do_request(&url, Method::GET, &Span::current(), || None)
                         .await?;
 
                     fs::write(&layer_path, bytes)
@@ -164,7 +164,7 @@ impl VanillaMinecraftArmorManager {
 
                     let bytes = self
                         .client
-                        .do_request(&url, Method::GET, &Span::current())
+                        .do_request(&url, Method::GET, &Span::current(), || None)
                         .await?;
 
                     fs::write(&layer_path, bytes).await.explain(format!(

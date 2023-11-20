@@ -131,7 +131,7 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
     async fn read_cache(
         &self,
         entry: &str,
-        _config: &ModelCacheConfiguration,
+        config: &ModelCacheConfiguration,
         file: &Path,
         _marker: &(),
     ) -> Result<Option<MojangTexture>> {
@@ -142,6 +142,15 @@ impl CacheHandler<str, MojangTexture, ModelCacheConfiguration, ()> for MojangTex
         let data = fs::read(file)
             .await
             .explain(format!("Unable to read texture {entry:?} from cache"))?;
+
+        if !config.validate_png_data(&data) {
+            trace!("Texture {entry:?} is invalid, discarding.");
+            CacheSystem::<str, MojangTexture, ModelCacheConfiguration, (), Self>::invalidate_self(
+                entry, file,
+            )
+            .await?;
+            return Ok(None);
+        }
 
         Ok(Some(MojangTexture::new_named(entry.to_string(), data)))
     }
@@ -331,7 +340,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
     async fn read_cache(
         &self,
         entry: &RenderRequestEntry,
-        _config: &ModelCacheConfiguration,
+        config: &ModelCacheConfiguration,
         base: &Path,
         marker: &[u8; 1],
     ) -> Result<Option<ResolvedRenderEntryTextures>> {
@@ -350,22 +359,39 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
 
         for texture in textures_to_read {
             let is_important_texture = matches!(texture, ResolvedRenderEntryTextureType::Skin);
-            
+
             let texture_path = base.join(format!("{}{}", Into::<&str>::into(texture), ".png"));
-            
+
             if texture_path.exists() {
                 let read = fs::read(texture_path).await.explain(format!(
                     "Unable to read texture {:?} for {:?}",
                     &texture, &entry
                 ))?;
 
+                if is_important_texture && !config.validate_png_data(&read) {
+                    trace!("Texture {texture:?} for {entry:?} is invalid, discarding.");
+                    CacheSystem::<
+                        RenderRequestEntry,
+                        ResolvedRenderEntryTextures,
+                        ModelCacheConfiguration,
+                        [u8; 1],
+                        Self,
+                    >::invalidate_self(entry, base)
+                    .await?;
+                
+                    return Ok(None);
+                }
+
                 textures.insert(texture, MojangTexture::new_unnamed(read));
             } else if !is_important_texture {
                 // If we haven't found a cached texture for an important texture, then we just skip
                 continue;
             } else {
-                trace!("Unable to find texture path for important texture {}", texture_path.display());
-                
+                trace!(
+                    "Unable to find texture path for important texture {}",
+                    texture_path.display()
+                );
+
                 // One of the textures has gone missing, this means that this cache entry is invalid and should be removed
                 CacheSystem::<
                     RenderRequestEntry,

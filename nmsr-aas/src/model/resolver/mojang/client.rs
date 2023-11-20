@@ -1,6 +1,8 @@
 use super::model::GameProfile;
 use crate::{
-    config::MojankConfiguration, error::MojangRequestResult, utils::http_client::NmsrHttpClient,
+    config::MojankConfiguration,
+    error::{MojangRequestError, MojangRequestResult},
+    utils::http_client::NmsrHttpClient,
 };
 use hyper::{body::Bytes, Method};
 use std::sync::Arc;
@@ -25,14 +27,17 @@ impl MojangClient {
         })
     }
 
-    #[instrument(skip(self, parent_span), parent = parent_span)]
+    #[instrument(skip(self, parent_span, on_error), parent = parent_span)]
     pub(crate) async fn do_request(
         &self,
         url: &str,
         method: Method,
         parent_span: &Span,
+        on_error: impl FnOnce() -> Option<MojangRequestError>,
     ) -> MojangRequestResult<Bytes> {
-        self.client.do_request(url, method, parent_span).await
+        self.client
+            .do_request(url, method, parent_span, on_error)
+            .await
     }
 
     pub async fn resolve_uuid_to_game_profile(
@@ -44,7 +49,11 @@ impl MojangClient {
             session_server = self.mojank_config.session_server
         );
 
-        let bytes = self.do_request(&url, Method::GET, &Span::current()).await?;
+        let bytes = self
+            .do_request(&url, Method::GET, &Span::current(), || {
+                Some(MojangRequestError::GameProfileNotFound(id.to_owned()))
+            })
+            .await?;
 
         Ok(serde_json::from_slice(&bytes)?)
     }
@@ -60,7 +69,13 @@ impl MojangClient {
             textures_server = self.mojank_config.textures_server
         );
 
-        let bytes = self.do_request(&url, Method::GET, &Span::current()).await?;
+        let bytes = self
+            .do_request(&url, Method::GET, &Span::current(), || {
+                Some(MojangRequestError::InvalidTextureHashError(
+                    texture_id.to_string(),
+                ))
+            })
+            .await?;
 
         Ok(bytes.to_vec())
     }

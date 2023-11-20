@@ -7,13 +7,15 @@ use std::{
 use chrono::{DateTime, Local};
 use derive_more::Debug;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, TryFromInto, DisplayFromStr};
+use serde_with::{serde_as, DisplayFromStr, TryFromInto};
 use tracing::trace;
 use twelf::config;
 
 use crate::{
     error::ExplainableExt,
-    model::request::{cache::CacheBias, entry::RenderRequestEntry, RenderRequestFeatures, RenderRequestMode},
+    model::request::{
+        cache::CacheBias, entry::RenderRequestEntry, RenderRequestFeatures, RenderRequestMode,
+    },
 };
 
 #[config]
@@ -104,7 +106,7 @@ pub struct RenderingConfiguration {
 pub struct FeaturesConfiguration {
     #[serde_as(as = "Vec<DisplayFromStr>")]
     pub disabled_features: Vec<RenderRequestFeatures>,
-    
+
     #[serde_as(as = "Vec<DisplayFromStr>")]
     pub disabled_modes: Vec<RenderRequestMode>,
 }
@@ -162,6 +164,20 @@ impl ModelCacheConfiguration {
         trace!("Entry expires on {}", Into::<DateTime<Local>>::into(expiry));
 
         Ok(expiry < SystemTime::now())
+    }
+
+    const VALID_PNG_HEADER: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
+
+    #[must_use]
+    pub fn validate_png_data(&self, data: &[u8]) -> bool {
+        // Cheeky hack to validate that the texture is valid
+        let data_header = data.get(0..Self::VALID_PNG_HEADER.len());
+
+        if let Some(data_header) = data_header {
+            data_header == Self::VALID_PNG_HEADER
+        } else {
+            false
+        }
     }
 }
 

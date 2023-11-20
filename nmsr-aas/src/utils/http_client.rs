@@ -9,7 +9,9 @@ use sync_wrapper::SyncWrapper;
 use tokio::sync::RwLock;
 use tower::{util::BoxService, Service, ServiceBuilder, ServiceExt};
 use tower_http::{
-    classify::{NeverClassifyEos, ServerErrorsFailureClass},
+    classify::{
+        NeverClassifyEos, ServerErrorsFailureClass,
+    },
     set_header::SetRequestHeaderLayer,
     trace::{DefaultOnFailure, ResponseBody, TraceLayer},
 };
@@ -37,12 +39,13 @@ impl NmsrHttpClient {
     }
 
     #[allow(clippy::significant_drop_tightening)] // Not worth making the code less readable
-    #[instrument(skip(self, parent_span), parent = parent_span)]
+    #[instrument(skip(self, parent_span, on_error), parent = parent_span)]
     pub(crate) async fn do_request(
         &self,
         url: &str,
         method: Method,
         parent_span: &Span,
+        on_error: impl FnOnce() -> Option<MojangRequestError>
     ) -> MojangRequestResult<Bytes> {
         let request = Request::builder()
             .method(method)
@@ -55,6 +58,12 @@ impl NmsrHttpClient {
 
             service.call(request).await?
         };
+
+        if !response.status().is_success() {
+            if let Some(err) = on_error() {
+                return Err(err);
+            }
+        }
 
         let body = response.into_body();
 

@@ -55,7 +55,14 @@ impl TryFrom<String> for RenderRequestEntry {
 
             Ok(Self::TextureHash(value))
         } else {
-            Err(RenderRequestError::InvalidPlayerRequest(value))
+            Err(RenderRequestError::InvalidPlayerRequest(formatdoc! {"
+                You've provided an invalid player request ({value}).
+                I don't know what to do with this.
+                
+                If it's a texture hash, make sure that it's a valid texture hash.
+                If you've provided a UUID, make sure that it's a valid UUID and isn't truncated.
+                Otherwise, if you're using a player name, you should resolve it to a UUID first.
+            "}))
         }
     }
 }

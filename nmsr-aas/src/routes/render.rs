@@ -1,6 +1,6 @@
 use super::{NMSRState, bbmodel_export::internal_bbmodel_export};
 use crate::{
-    error::Result,
+    error::{Result, RenderRequestError},
     model::request::{RenderRequest, RenderRequestMode},
     routes::render_model::internal_render_model,
     routes::render_skin::internal_render_skin,
@@ -18,6 +18,11 @@ use tracing::instrument;
 use xxhash_rust::xxh3::xxh3_64;
 
 const IMAGE_PNG_MIME: &str = "image/png";
+
+#[axum::debug_handler]
+pub async fn render_post_warning() -> Result<Response> {
+    return Err(RenderRequestError::WrongHttpMethodError("POST", "GET").into())
+}
 
 #[axum::debug_handler]
 #[instrument(skip(state, method))]

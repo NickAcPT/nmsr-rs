@@ -20,7 +20,7 @@ use crate::error::{MojangRequestError, MojangRequestResult};
 const USER_AGENT: &str = concat!(
     "NMSR-as-a-Service/",
     env!("VERGEN_GIT_SHA"),
-    " (Discord=@nickacpt; +https://nmsr.nickac.dev/)"
+    " (Discord=@nickac; +https://nmsr.nickac.dev/)"
 );
 
 type TraceResponseBody =

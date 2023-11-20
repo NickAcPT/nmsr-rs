@@ -25,7 +25,7 @@ use nmsr_rendering::high_level::pipeline::{
     pools::SceneContextPoolManager, Backends, Features, GraphicsContext, GraphicsContextDescriptor,
     GraphicsContextPools,
 };
-pub use render::{render, render_post_warning};
+pub use render::{render, render_post_warning, render_get_warning};
 use std::{borrow::Cow, hint::black_box, sync::Arc, time::Duration};
 use strum::IntoEnumIterator;
 use tracing::{debug_span, info, info_span, instrument, Instrument};

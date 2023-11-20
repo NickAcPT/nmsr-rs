@@ -25,6 +25,11 @@ pub async fn render_post_warning() -> Result<Response> {
 }
 
 #[axum::debug_handler]
+pub async fn render_get_warning() -> Result<Response> {
+    return Err(RenderRequestError::WrongHttpMethodError("GET", "POST").into())
+}
+
+#[axum::debug_handler]
 #[instrument(skip(state, method))]
 pub async fn render(
     state: State<NMSRState>,

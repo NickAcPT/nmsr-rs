@@ -19,7 +19,7 @@ mod routes;
 mod utils;
 
 use crate::{
-    routes::{render, render_post_warning, NMSRState},
+    routes::{render, render_post_warning, render_get_warning, NMSRState},
     utils::tracing::NmsrTracing,
 };
 
@@ -91,6 +91,7 @@ async fn main() -> anyhow::Result<()> {
     let router = Router::new()
         .route("/:mode/:texture", get(render))
         .route("/:mode/:texture", post(render_post_warning))
+        .route("/:mode", get(render_get_warning))
         .route("/:mode", post(render))
         .with_state(state)
         .layer(NormalizePathLayer::trim_trailing_slash());

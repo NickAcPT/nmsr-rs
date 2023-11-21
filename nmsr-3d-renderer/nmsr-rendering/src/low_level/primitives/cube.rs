@@ -19,6 +19,10 @@ impl PartPrimitive for Cube {
     fn get_indices(&self) -> Vec<u16> {
         self.mesh.get_indices()
     }
+    
+    fn get_vertices_grouped(&self) -> Vec<[Vertex; 3]> {
+        self.mesh.get_vertices_grouped()
+    }
 }
 
 impl Cube {

@@ -67,4 +67,11 @@ impl PartPrimitive for Quad {
             0, 1, 3,
         ]
     }
+
+    fn get_vertices_grouped(&self) -> Vec<[Vertex; 3]> {
+        vec![
+            [self.bottom_left, self.top_left, self.bottom_right],
+            [self.top_left, self.top_right, self.bottom_right],
+        ]
+    }
 }

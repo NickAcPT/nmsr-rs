@@ -48,6 +48,15 @@ impl PartPrimitive for Mesh {
 
         indices
     }
+    
+    #[inline(always)]
+    fn get_vertices_grouped(&self) -> Vec<[Vertex; 3]> {
+        self.primitives
+            .iter()
+            .flat_map(|quad| quad.get_vertices_grouped())
+            .map(|v| [v[0].transform(self.model_transform), v[1].transform(self.model_transform), v[2].transform(self.model_transform)])
+            .collect()
+    }
 }
 
 pub enum PrimitiveDispatch {
@@ -88,6 +97,14 @@ impl PartPrimitive for PrimitiveDispatch {
             PrimitiveDispatch::Cube(cube) => cube.get_indices(),
             PrimitiveDispatch::Quad(quad) => quad.get_indices(),
             PrimitiveDispatch::Mesh(mesh) => mesh.get_indices(),
+        }
+    }
+    
+    fn get_vertices_grouped(&self) -> Vec<[Vertex; 3]> {
+        match self {
+            PrimitiveDispatch::Cube(cube) => cube.get_vertices_grouped(),
+            PrimitiveDispatch::Quad(quad) => quad.get_vertices_grouped(),
+            PrimitiveDispatch::Mesh(mesh) => mesh.get_vertices_grouped(),
         }
     }
 }

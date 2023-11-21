@@ -10,7 +10,7 @@ pub struct Vertex {
     pub position: Vec3,
     /// The uv coordinates of the vertex
     pub uv: VertexUvCoordinates,
-    normal: Vec3,
+    pub normal: Vec3,
 }
 
 impl Vertex {

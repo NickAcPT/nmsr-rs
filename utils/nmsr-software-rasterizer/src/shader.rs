@@ -129,6 +129,8 @@ pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> Vec4 {
         return Vec4::new(0.1, 0.2, 0.3, 1.0);
     };
     
+    let color = unsafe { std::mem::transmute::<Rgba<u8>, [u8; 4]>(*color) };
+    
     let color = Vec4::new(
         color[0] as f32 / 255.0,
         color[1] as f32 / 255.0,

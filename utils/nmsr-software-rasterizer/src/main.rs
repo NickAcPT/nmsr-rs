@@ -1,13 +1,16 @@
+#![feature(core_intrinsics)]
+
 use std::fs;
 
 use glam::{Mat4, Vec3};
 
-use crate::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
+pub use crate::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
 
-mod camera;
-mod logic;
-mod model;
+pub mod camera;
+pub mod logic;
+pub mod model;
 pub mod shader;
+
 
 fn main() {
 

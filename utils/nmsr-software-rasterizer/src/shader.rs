@@ -122,7 +122,7 @@ fn compute_sun_lighting(color: Vec4, normal: Vec3, state: &ShaderState) -> Vec4 
 }
 
 pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> Vec4 {
-    return vertex.tex_coord.extend(0.0).extend(1.0);
+    return Vec3::X.extend(1.0);
     
     let color = *state.texture.get_pixel(
         (vertex.tex_coord.x * state.texture.width() as f32) as u32,

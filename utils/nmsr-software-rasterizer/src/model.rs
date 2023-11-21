@@ -1,6 +1,19 @@
 use glam::Vec3;
-use image::{RgbaImage, Rgb32FImage, Luma, ImageBuffer, imageops};
-use nmsr_rendering::low_level::primitives::{vertex::{Vertex, VertexUvCoordinates}, part_primitive::PartPrimitive, mesh::PrimitiveDispatch, quad::Quad};
+use image::{imageops, ImageBuffer, Luma, Rgb32FImage, RgbaImage};
+use nmsr_rendering::{
+    high_level::{
+        parts::provider::{
+            minecraft::MinecraftPlayerPartsProvider, PartsProvider, PlayerPartProviderContext,
+        },
+        utils::parts::primitive_convert,
+    },
+    low_level::primitives::{
+        mesh::{PrimitiveDispatch, Mesh},
+        part_primitive::PartPrimitive,
+        quad::Quad,
+        vertex::{Vertex, VertexUvCoordinates},
+    },
+};
 
 use crate::shader::ShaderState;
 
@@ -29,9 +42,48 @@ pub struct RenderEntry {
 
 impl RenderEntry {
     pub fn new(size: Size) -> Self {
+        /* let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
+            model: nmsr_rendering::high_level::model::PlayerModel::Alex,
+            has_hat_layer: false,
+            has_layers: false,
+            has_cape: false,
+            arm_rotation: 0.0,
+            shadow_y_pos: None,
+            shadow_is_square: false,
+            armor_slots: None,
+        };
+
+        let parts = MinecraftPlayerPartsProvider::default().get_parts(
+            &context,
+            nmsr_rendering::high_level::types::PlayerBodyPartType::Head,
+        );
+
+        let parts = parts
+            .into_iter()
+            .map(|p| primitive_convert(&p))
+            .collect::<Vec<_>>();
+        
+        let part = Mesh::new(parts);
+
+        let depth_buffer = ImageBuffer::from_raw(
+            size.width,
+            size.height,
+            [1.0].repeat((size.width * size.height) as usize),
+        )
+        .unwrap();
+
+        Self {
+            size,
+            textures: Textures {
+                depth_buffer,
+                output: RgbaImage::new(size.width, size.height),
+            },
+            primitive: PrimitiveDispatch::Mesh(part),
+        } */
+        
         let full_quad = Quad::new_with_normal(
-            Vec3::new(-1.0, 1.0, 0.0),
-            Vec3::new(1.0, 1.0, 0.0),
+            Vec3::new(-1.0, 0.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
             Vec3::new(-1.0, -1.0, 0.0),
             Vec3::new(1.0, -1.0, 0.0),
             VertexUvCoordinates::new(0.0, 1.0),
@@ -53,7 +105,7 @@ impl RenderEntry {
             primitive: PrimitiveDispatch::Quad(full_quad)
         }
     }
-    
+
     pub fn dump(&self) {
         self.textures.output.save("output.png").unwrap();
     }

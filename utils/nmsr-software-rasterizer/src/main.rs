@@ -1,3 +1,5 @@
+use std::fs;
+
 use glam::{Mat4, Vec3};
 
 use crate::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
@@ -8,7 +10,6 @@ mod model;
 pub mod shader;
 
 fn main() {
-    let mut entry = RenderEntry::new((512, 869).into());
 
     let mut camera = camera::Camera::new_orbital(
         Vec3::new(0.0, 16.5 + 2.5, 0.0),
@@ -30,7 +31,9 @@ fn main() {
     ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
     ears_rs::utils::strip_alpha(&mut texture);
     
-    let state = ShaderState {
+    fs::create_dir("output").unwrap_or_default();
+    
+    let mut state = ShaderState {
         transform: camera.get_view_projection_matrix(),
         texture,
         sun: shader::SunInformation {
@@ -39,8 +42,19 @@ fn main() {
             ambient: 0.621,
         },
     };
+    
+    for angle in 0..360 {
+        let mut entry = RenderEntry::new((512, 869).into());
+        camera.get_rotation_mut().yaw = angle as f32;
+        
+        state.transform = camera.get_view_projection_matrix();
+        // Measure draw
+        let start = std::time::Instant::now();
+        entry.draw(&state);
+        let end = std::time::Instant::now();
+        println!("Draw took {}ms", (end - start).as_millis());
 
-    entry.draw(&state);
+        entry.textures.output.save(format!("output/output-{angle}.png")).unwrap();
+    }
 
-    entry.dump();
 }

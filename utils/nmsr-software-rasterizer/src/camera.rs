@@ -279,6 +279,10 @@ impl Camera {
 
         self.cached_view_projection_matrix
     }
+    
+    pub fn get_rotation_mut(&mut self) -> &mut CameraRotation {
+        &mut self.rotation
+    }
 
     fn compute_view_projection_matrix(&self) -> Mat4 {
         let projection = self

@@ -2,7 +2,7 @@
 
 use std::fs;
 
-use glam::{Mat4, Vec3};
+use glam::{Vec3};
 
 pub use crate::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
 

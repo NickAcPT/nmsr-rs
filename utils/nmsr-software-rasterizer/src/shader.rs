@@ -1,5 +1,5 @@
 use glam::{Vec2, Vec4, Vec3};
-use image::{Rgba, GenericImageView};
+use image::Rgba;
 
 /* struct VertexInput {
     @location(0) position: vec4<f32>,
@@ -102,13 +102,13 @@ pub struct ShaderState {
 const MAX_LIGHT: f32 = 1.0;
 
 pub fn vertex_shader(vertex: VertexInput, state: &ShaderState) -> VertexOutput {
-    let result = VertexOutput {
+    
+
+    VertexOutput {
         tex_coord: vertex.tex_coord,
         position: state.transform * vertex.position,
         normal: vertex.normal,
-    };
-
-    result
+    }
 }
 
 fn compute_sun_lighting(color: Vec4, normal: Vec3, state: &ShaderState) -> Vec4 {

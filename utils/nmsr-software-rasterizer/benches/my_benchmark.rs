@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, SamplingMode};
+use criterion::{criterion_group, criterion_main, Criterion, SamplingMode};
 
 use glam::Vec3;
 pub use nmsr_rasterizer_test::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
@@ -26,7 +26,7 @@ fn bench(c: &mut Criterion) {
     ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
     ears_rs::utils::strip_alpha(&mut texture);
     
-    let mut state = ShaderState {
+    let state = ShaderState {
         transform: camera.get_view_projection_matrix(),
         texture,
         sun: shader::SunInformation {

@@ -1,19 +1,14 @@
 use ears_rs::parser::EarsParser;
-use glam::Vec3;
-use image::{imageops, ImageBuffer, Luma, Rgb32FImage, RgbaImage};
+
+use image::{ImageBuffer, Luma, RgbaImage};
 use nmsr_rendering::{
     high_level::{
         parts::{provider::{
-            minecraft::MinecraftPlayerPartsProvider, PartsProvider, PlayerPartProviderContext, PlayerPartsProvider,
+            PartsProvider, PlayerPartProviderContext, PlayerPartsProvider,
         }, part::Part},
         utils::parts::primitive_convert, types::PlayerBodyPartType, IntoEnumIterator,
     },
-    low_level::primitives::{
-        mesh::{PrimitiveDispatch, Mesh},
-        part_primitive::PartPrimitive,
-        quad::Quad,
-        vertex::{Vertex, VertexUvCoordinates},
-    },
+    low_level::primitives::mesh::{PrimitiveDispatch, Mesh},
 };
 
 use crate::shader::ShaderState;
@@ -119,7 +114,7 @@ impl RenderEntry {
         self.textures.output.save("output.png").unwrap();
     }
 
-    pub fn draw(&mut self, state: &ShaderState) -> () {
+    pub fn draw(&mut self, state: &ShaderState) {
         self.draw_primitives(state)
     }
 }

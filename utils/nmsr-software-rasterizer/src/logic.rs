@@ -1,11 +1,6 @@
-use std::{
-    hint,
-    ops::{Div, Sub},
-};
-
 use arrayvec::ArrayVec;
-use glam::{Mat2, Vec2, Vec3, Vec4, Vec4Swizzles};
-use image::{GenericImageView, Pixel, Rgba};
+use glam::{Vec2, Vec3, Vec4, Vec4Swizzles};
+use image::Pixel;
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
 use crate::{
@@ -28,7 +23,7 @@ impl RenderEntry {
 #[inline(never)]
 pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &ShaderState) {
     let vertices: ArrayVec<VertexOutput, 3> = vertices
-        .into_iter()
+        .iter()
         .map(|v| apply_vertex_shader(*v, state))
         .collect();
     let vertices = unsafe { vertices.into_inner_unchecked() };
@@ -69,8 +64,8 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             //* println! */("{x}, {y} corresponds to ({screen_x}, {screen_y})");
             // Compute the barycentric coordinates of the pixel
             let barycentric = barycentric_coordinates(
-                x as f32,
-                y as f32,
+                x,
+                y,
                 /* dbg! */ va.position.xyz(),
                 /* dbg! */ vb.position.xyz(),
                 /* dbg! */ vc.position.xyz(),
@@ -137,10 +132,6 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             {
                 pixel.blend(&image::Rgba(convert_f32_slice_to_u8_slice(color)));
             }
-            
-            
-
-
 
             // Write the depth to the depth buffer
 
@@ -164,12 +155,10 @@ fn map_float_u32(value: f32, old_min: f32, old_max: f32, new_min: u32, new_max: 
 fn map_u32_float(value: u32, old_min: u32, old_max: u32, new_min: f32, new_max: f32) -> f32 {
     let value = value.max(old_min).min(old_max);
 
-    ((value - old_min) as f32 / (old_max - old_min) as f32 * (new_max - new_min) + new_min) as f32
+    (value - old_min) as f32 / (old_max - old_min) as f32 * (new_max - new_min) + new_min
 }
 
 fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
-    let vertex = vertex;
-
     let mut result = vertex_shader(
         VertexInput {
             position: vertex.position.extend(1.0),
@@ -207,7 +196,7 @@ fn barycentric_coordinates(x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
     let d11 = v1.dot(v1);
     let d20 = v2.dot(v0);
     let d21 = v2.dot(v1);
-    
+
     let denom = d00 * d11 - d01 * d01;
 
     let vw = Vec2::from_array([(d11 * d20 - d01 * d21), (d00 * d21 - d01 * d20)]) / denom;

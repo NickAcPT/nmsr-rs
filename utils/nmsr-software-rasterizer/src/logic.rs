@@ -180,9 +180,9 @@ fn convert_f32_slice_to_u8_slice(slice: Vec4) -> [u8; 4] {
 }
 
 fn barycentric_coordinates(x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
-    let v0 = b - a;
-    let v1 = c - a;
-    let v2 = Vec3::new(x, y, 0.0) - a;
+    let v0 = b.truncate() - a.truncate();
+    let v1 = c.truncate() - a.truncate();
+    let v2 = Vec2::new(x, y) - a.truncate();
 
     let d00 = v0.dot(v0);
     let d01 = v0.dot(v1);

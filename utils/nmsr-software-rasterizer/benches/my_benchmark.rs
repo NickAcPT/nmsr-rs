@@ -23,7 +23,6 @@ fn bench(c: &mut Criterion) {
     
     let mut texture = image::open("NickAc.png").unwrap().into_rgba8();
     
-    ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
     ears_rs::utils::strip_alpha(&mut texture);
     
     let state = ShaderState {

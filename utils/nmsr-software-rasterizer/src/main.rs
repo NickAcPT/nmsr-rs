@@ -1,6 +1,6 @@
 #![feature(core_intrinsics)]
 
-use std::fs;
+use std::{fs, f32::consts::FRAC_1_SQRT_2};
 
 use glam::{Vec3};
 
@@ -46,8 +46,11 @@ fn main() {
         },
     };
     
-    for angle in 0..360 {
-        let mut entry = RenderEntry::new((512, 869).into());
+    let mut entry = RenderEntry::new((512, 869).into());
+    entry.draw(&state);
+    entry.dump();
+    
+    /* for angle in 0..360 {
         camera.get_rotation_mut().yaw = angle as f32;
         
         state.transform = camera.get_view_projection_matrix();
@@ -58,6 +61,6 @@ fn main() {
         println!("Draw took {}ms", (end - start).as_millis());
 
         entry.textures.output.save(format!("output/output-{angle}.png")).unwrap();
-    }
+    } */
 
 }

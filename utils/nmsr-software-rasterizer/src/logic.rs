@@ -1,5 +1,5 @@
 use arrayvec::ArrayVec;
-use glam::{Vec2, Vec4, Vec4Swizzles, Vec3A};
+use glam::{Vec2, Vec4, Vec3A};
 use image::Pixel;
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl RenderEntry {
-    pub fn draw_primitives(&mut self, state: &ShaderState) {
+    pub fn draw_primitives(&mut self, state: &mut ShaderState) {
         let grouped_vertices = self.primitive.get_vertices_grouped();
 
         let triangles = grouped_vertices;
@@ -19,7 +19,7 @@ impl RenderEntry {
     }
 }
 
-pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &ShaderState) {
+pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &mut ShaderState) {
     let vertices: ArrayVec<VertexOutput, 3> = vertices
         .iter()
         .map(|v| apply_vertex_shader(*v, state))
@@ -157,14 +157,14 @@ fn map_u32_float(value: u32, old_min: u32, old_max: u32, new_min: f32, new_max: 
     (value - old_min) as f32 / (old_max - old_min) as f32 * (new_max - new_min) + new_min
 }
 
-fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
+fn apply_vertex_shader(vertex: Vertex, mut state: &mut ShaderState) -> VertexOutput {
     let mut result = vertex_shader(
         VertexInput {
             position: vertex.position.extend(1.0),
             normal: vertex.normal,
             tex_coord: vertex.uv,
         },
-        state,
+        &mut state,
     );
     let old_w = result.position.w;
 

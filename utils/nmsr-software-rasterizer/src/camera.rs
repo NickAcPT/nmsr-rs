@@ -280,6 +280,14 @@ impl Camera {
         self.cached_view_projection_matrix
     }
     
+    pub fn get_distance_as_mut(&mut self) -> Option<&mut f32> {
+        self.position_parameters.as_mut_distance()
+    }
+    
+    pub fn get_rotation(&self) -> &CameraRotation {
+        &self.rotation
+    }
+    
     pub fn get_rotation_mut(&mut self) -> &mut CameraRotation {
         &mut self.rotation
     }

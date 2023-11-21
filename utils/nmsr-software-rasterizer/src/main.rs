@@ -1,8 +1,10 @@
 #![feature(core_intrinsics)]
 
-use std::{fs, f32::consts::FRAC_1_SQRT_2};
+use std::fs;
 
-use glam::{Vec3};
+use ears_rs::parser::EarsParser;
+use glam::Vec3;
+use nmsr_rendering::high_level::parts::provider::PlayerPartProviderContext;
 
 pub use crate::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
 
@@ -13,7 +15,7 @@ pub mod shader;
 
 fn main() {
 
-    let mut camera = camera::Camera::new_orbital(
+    let camera = camera::Camera::new_orbital(
         Vec3::new(0.0, 16.5 + 2.5, 0.0),
         45.0 + 3.5 + 4.0,
         CameraRotation {
@@ -30,13 +32,25 @@ fn main() {
     
     let mut texture = image::open("NickAc.png").unwrap().into_rgba8();
     
+    let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
+        model: nmsr_rendering::high_level::model::PlayerModel::Alex,
+        has_hat_layer: true,
+        has_layers: true,
+        has_cape: false,
+        arm_rotation: 10.0,
+        shadow_y_pos: None,
+        shadow_is_square: false,
+        armor_slots: None,
+        ears_features: EarsParser::parse(&texture).expect("Yes"),
+    };
+    
     ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
     ears_rs::utils::strip_alpha(&mut texture);
     
     fs::create_dir("output").unwrap_or_default();
     
     let mut state = ShaderState {
-        transform: camera.get_view_projection_matrix(),
+        camera,
         texture,
         sun: shader::SunInformation {
             direction: glam::Vec3::new(0.0, -1.0, 1.0),
@@ -45,8 +59,8 @@ fn main() {
         },
     };
     
-    let mut entry = RenderEntry::new((512, 869).into());
-    entry.draw(&state);
+    let mut entry = RenderEntry::new((512, 869).into(), &context);
+    entry.draw(&mut state);
     entry.dump();
     
     /* for angle in 0..360 {

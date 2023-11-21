@@ -1,6 +1,8 @@
 use glam::{Vec2, Vec3, Vec4};
 use image::Rgba;
 
+use crate::camera::Camera;
+
 /* struct VertexInput {
     @location(0) position: vec4<f32>,
     @location(1) tex_coord: vec2<f32>,
@@ -74,6 +76,7 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     return compute_sun_lighting(color, vertex.normal);
 } */
 
+#[derive(Clone, Copy, Debug)]
 pub struct VertexInput {
     pub position: Vec4,
     pub tex_coord: Vec2,
@@ -88,6 +91,7 @@ pub struct VertexOutput {
     pub old_w: f32,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct SunInformation {
     pub direction: Vec3,
     pub intensity: f32,
@@ -95,17 +99,17 @@ pub struct SunInformation {
 }
 
 pub struct ShaderState {
-    pub transform: glam::Mat4,
+    pub camera: Camera,
     pub texture: image::RgbaImage,
     pub sun: SunInformation,
 }
 
 const MAX_LIGHT: f32 = 1.0;
 
-pub fn vertex_shader(vertex: VertexInput, state: &ShaderState) -> VertexOutput {
+pub fn vertex_shader(vertex: VertexInput, state: &mut ShaderState) -> VertexOutput {
     VertexOutput {
         tex_coord: vertex.tex_coord,
-        position: state.transform * vertex.position,
+        position: state.camera.get_view_projection_matrix() * vertex.position,
         normal: vertex.normal,
         old_w: 0.0,
     }

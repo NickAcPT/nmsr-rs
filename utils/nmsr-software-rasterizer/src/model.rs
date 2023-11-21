@@ -1,4 +1,3 @@
-use ears_rs::parser::EarsParser;
 
 use image::{ImageBuffer, Luma, RgbaImage};
 use nmsr_rendering::{
@@ -37,19 +36,7 @@ pub struct RenderEntry {
 }
 
 impl RenderEntry {
-    pub fn new(size: Size) -> Self {
-        let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
-            model: nmsr_rendering::high_level::model::PlayerModel::Alex,
-            has_hat_layer: true,
-            has_layers: true,
-            has_cape: false,
-            arm_rotation: 10.0,
-            shadow_y_pos: None,
-            shadow_is_square: false,
-            armor_slots: None,
-            ears_features: EarsParser::parse(&image::open("NickAc.png").unwrap().into_rgba8()).expect("Yes"),
-        };
-        
+    pub fn new(size: Size, context: &PlayerPartProviderContext<()>) -> Self {
         let providers = [
             PlayerPartsProvider::Minecraft,
             PlayerPartsProvider::Ears,
@@ -114,7 +101,7 @@ impl RenderEntry {
         self.textures.output.save("output.png").unwrap();
     }
 
-    pub fn draw(&mut self, state: &ShaderState) {
+    pub fn draw(&mut self, state: &mut ShaderState) {
         self.draw_primitives(state)
     }
 }

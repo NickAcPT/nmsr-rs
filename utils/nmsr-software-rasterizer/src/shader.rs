@@ -115,8 +115,7 @@ fn compute_sun_lighting(color: Vec4, normal: Vec3, state: &ShaderState) -> Vec4 
     let sun_direction: Vec3 = state.sun.direction.normalize();
     let sun_dot: f32 = normal.dot(-sun_direction);
 
-    let sun_color = Vec3::new(1.0, 1.0, 1.0)
-        * (state.sun.intensity * sun_dot).clamp(state.sun.ambient, MAX_LIGHT);
+    let sun_color = Vec3::splat((state.sun.intensity * sun_dot).clamp(state.sun.ambient, MAX_LIGHT));
 
     color * sun_color.extend(1.0)
 }

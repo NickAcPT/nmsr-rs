@@ -5,7 +5,7 @@ use std::{
 
 use arrayvec::ArrayVec;
 use glam::{Mat2, Vec2, Vec3, Vec4, Vec4Swizzles};
-use image::{Pixel, Rgba, GenericImageView};
+use image::{GenericImageView, Pixel, Rgba};
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
 use crate::{
@@ -49,7 +49,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
     // Find the bounding box (in screen space)
     let vx = Vec3::new(va.position.x, vb.position.x, vc.position.x);
     let vy = Vec3::new(va.position.y, vb.position.y, vc.position.y);
-    
+
     let (min_x, max_x) = (vx.min_element(), vx.max_element());
     let (min_y, max_y) = (vy.min_element(), vy.max_element());
 
@@ -63,28 +63,6 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
     for screen_y in min_screen_y..=max_screen_y {
         for screen_x in min_screen_x..=max_screen_x {
             // Convert the pixel coordinates to screen space
-            let barycentric_coordinates = |x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3| {
-                let v0 = b - a;
-                let v1 = c - a;
-                let v2 = Vec3::new(x, y, 0.0) - a;
-
-                let d00 = v0.dot(v0);
-                let d01 = v0.dot(v1);
-                let d11 = v1.dot(v1);
-                let d20 = v2.dot(v0);
-                let d21 = v2.dot(v1);
-                let denom = d00 * d11 - d01 * d01;
-
-                let vw = Vec2::from_array([(d11 * d20 - d01 * d21), (d00 * d21 - d01 * d20)]) / denom;
-                
-                
-                let v = vw.x;
-                let w = vw.y;
-                let u = 1.0 - v - w;
-
-                Vec3::new(u, v, w)
-            };
-
             let x = map_u32_float(screen_x, 0, entry.size.width, -1.0, 1.0);
             let y = map_u32_float(screen_y, 0, entry.size.height, -1.0, 1.0);
 
@@ -93,9 +71,9 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             let barycentric = barycentric_coordinates(
                 x as f32,
                 y as f32,
-                /* dbg! */va.position.xyz(),
-                /* dbg! */vb.position.xyz(),
-                /* dbg! */vc.position.xyz(),
+                /* dbg! */ va.position.xyz(),
+                /* dbg! */ vb.position.xyz(),
+                /* dbg! */ vc.position.xyz(),
             );
 
             // If the pixel is outside the triangle, skip it
@@ -116,12 +94,12 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             let position = barycentric.x * va.position
                 + barycentric.y * vb.position
                 + barycentric.z * vc.position;
-                
+
             let tex_coord = (barycentric.x * va.tex_coord
                 + barycentric.y * vb.tex_coord
                 + barycentric.z * vc.tex_coord)
                 * position.z;
-                
+
             let normal =
                 barycentric.x * va.normal + barycentric.y * vb.normal + barycentric.z * vc.normal;
 
@@ -141,7 +119,11 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             }
 
             // If the pixel is behind the depth buffer, skip it
-            if let Some(buffer_depth) = entry.textures.depth_buffer.get_pixel_checked(screen_x, screen_y) {
+            if let Some(buffer_depth) = entry
+                .textures
+                .depth_buffer
+                .get_pixel_checked(screen_x, screen_y)
+            {
                 if buffer_depth.0[0] >= depth {
                     continue;
                 }
@@ -156,24 +138,29 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 pixel.blend(&image::Rgba(convert_f32_slice_to_u8_slice(color)));
             }
             
+            
+
+
 
             // Write the depth to the depth buffer
-            entry
+
+            if let Some(pixel) = entry
                 .textures
                 .depth_buffer
-                .put_pixel(screen_x, screen_y, image::Luma([depth]));
+                .get_pixel_mut_checked(screen_x, screen_y)
+            {
+                pixel.0[0] = depth;
+            }
         }
     }
 }
 
-#[inline(always)]
 fn map_float_u32(value: f32, old_min: f32, old_max: f32, new_min: u32, new_max: u32) -> u32 {
     let value = value.max(old_min).min(old_max);
 
     ((value - old_min) / (old_max - old_min) * (new_max - new_min) as f32 + new_min as f32) as u32
 }
 
-#[inline(always)]
 fn map_u32_float(value: u32, old_min: u32, old_max: u32, new_min: f32, new_max: f32) -> f32 {
     let value = value.max(old_min).min(old_max);
 
@@ -199,7 +186,6 @@ fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
     result
 }
 
-#[inline(always)]
 fn convert_f32_slice_to_u8_slice(slice: Vec4) -> [u8; 4] {
     let result = slice * 255.0;
 
@@ -211,22 +197,24 @@ fn convert_f32_slice_to_u8_slice(slice: Vec4) -> [u8; 4] {
     ]
 }
 
+fn barycentric_coordinates(x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
+    let v0 = b - a;
+    let v1 = c - a;
+    let v2 = Vec3::new(x, y, 0.0) - a;
 
+    let d00 = v0.dot(v0);
+    let d01 = v0.dot(v1);
+    let d11 = v1.dot(v1);
+    let d20 = v2.dot(v0);
+    let d21 = v2.dot(v1);
+    
+    let denom = d00 * d11 - d01 * d01;
 
+    let vw = Vec2::from_array([(d11 * d20 - d01 * d21), (d00 * d21 - d01 * d20)]) / denom;
 
+    let v = vw.x;
+    let w = vw.y;
+    let u = 1.0 - v - w;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    Vec3::new(u, v, w)
+}

@@ -38,11 +38,11 @@ fn bench(c: &mut Criterion) {
     
     
     let mut entry = RenderEntry::new((512, 869).into());
-    
     let mut group = c.benchmark_group("nmsr-rs");
     group.sampling_mode(SamplingMode::Flat);
     group.bench_function("render_entry", |b| b.iter(|| entry.draw(&state)));
     group.finish();
+    entry.dump();
 }
 
 criterion_group!(benches, bench);

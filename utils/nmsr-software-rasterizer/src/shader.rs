@@ -1,5 +1,5 @@
 use glam::{Vec2, Vec4, Vec3};
-use image::Rgba;
+use image::{Rgba, GenericImageView};
 
 /* struct VertexInput {
     @location(0) position: vec4<f32>,
@@ -126,17 +126,17 @@ pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> Vec4 {
         (vertex.tex_coord.x * state.texture.width() as f32) as u32,
         (vertex.tex_coord.y * state.texture.height() as f32) as u32,
     ) else {
-        return Vec4::new(0.1, 0.2, 0.3, 1.0);
+        return Vec4::ZERO;
     };
     
     let color = unsafe { std::mem::transmute::<Rgba<u8>, [u8; 4]>(*color) };
     
     let color = Vec4::new(
-        color[0] as f32 / 255.0,
-        color[1] as f32 / 255.0,
-        color[2] as f32 / 255.0,
-        color[3] as f32 / 255.0,
-    );
+        f32::from(color[0]),
+        f32::from(color[1]),
+        f32::from(color[2]),
+        f32::from(color[3]),
+    ) / 255.0;
 
     if color.w == 0.0 {
         return Vec4::ZERO;

@@ -5,7 +5,7 @@ use std::{
 
 use arrayvec::ArrayVec;
 use glam::{Mat2, Vec2, Vec3, Vec4, Vec4Swizzles};
-use image::Pixel;
+use image::{Pixel, Rgba, GenericImageView};
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
 use crate::{
@@ -14,9 +14,8 @@ use crate::{
 };
 
 impl RenderEntry {
+    #[inline(never)]
     pub fn draw_primitives(&mut self, state: &ShaderState) {
-        let vertices = self.primitive.get_vertices();
-        let indices = self.primitive.get_indices();
         let grouped_vertices = self.primitive.get_vertices_grouped();
 
         let triangles = grouped_vertices;
@@ -37,11 +36,9 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
     // Our triangles are defined by three indices (clockwise)
     let [mut vc, mut va, mut vb] = vertices;
 
-    let flip_y = Vec4::new(1.0, -1.0, 1.0, 1.0);
-
-    va.position *= flip_y;
-    vb.position *= flip_y;
-    vc.position *= flip_y;
+    va.position.y *= -1.0;
+    vb.position.y *= -1.0;
+    vc.position.y *= -1.0;
 
     // Vertices are in NDC space (Our Y axis is flipped, so the top left corner is (-1, 1) and the bottom right corner is (1, -1))
 
@@ -50,10 +47,11 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
     // and then iterating over all pixels in that box
 
     // Find the bounding box (in screen space)
-    let min_x = va.position.x.min(vb.position.x).min(vc.position.x).floor();
-    let max_x = va.position.x.max(vb.position.x).max(vc.position.x).ceil();
-    let min_y = va.position.y.min(vb.position.y).min(vc.position.y).floor();
-    let max_y = va.position.y.max(vb.position.y).max(vc.position.y).ceil();
+    let vx = Vec3::new(va.position.x, vb.position.x, vc.position.x);
+    let vy = Vec3::new(va.position.y, vb.position.y, vc.position.y);
+    
+    let (min_x, max_x) = (vx.min_element(), vx.max_element());
+    let (min_y, max_y) = (vy.min_element(), vy.max_element());
 
     // Convert the bounding box to actual screen coordinates
     let min_screen_x: u32 = map_float_u32(min_x, -1.0, 1.0, 0u32, entry.size.width);
@@ -62,8 +60,8 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
     let max_screen_y: u32 = map_float_u32(max_y, -1.0, 1.0, 0u32, entry.size.height);
 
     // Iterate over all pixels in the bounding box
-    for screen_y in min_screen_y..max_screen_y {
-        for screen_x in min_screen_x..max_screen_x {
+    for screen_y in min_screen_y..=max_screen_y {
+        for screen_x in min_screen_x..=max_screen_x {
             // Convert the pixel coordinates to screen space
             let barycentric_coordinates = |x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3| {
                 let v0 = b - a;
@@ -77,8 +75,11 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 let d21 = v2.dot(v1);
                 let denom = d00 * d11 - d01 * d01;
 
-                let v = (d11 * d20 - d01 * d21) / denom;
-                let w = (d00 * d21 - d01 * d20) / denom;
+                let vw = Vec2::from_array([(d11 * d20 - d01 * d21), (d00 * d21 - d01 * d20)]) / denom;
+                
+                
+                let v = vw.x;
+                let w = vw.y;
                 let u = 1.0 - v - w;
 
                 Vec3::new(u, v, w)
@@ -92,13 +93,13 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             let barycentric = barycentric_coordinates(
                 x as f32,
                 y as f32,
-                /* dbg! */ (va.position.xyz()),
-                /* dbg! */ (vb.position.xyz()),
-                /* dbg! */ (vc.position.xyz()),
+                /* dbg! */va.position.xyz(),
+                /* dbg! */vb.position.xyz(),
+                /* dbg! */vc.position.xyz(),
             );
 
             // If the pixel is outside the triangle, skip it
-            if barycentric.x < 0.0 || barycentric.y < 0.0 || barycentric.z < 0.0 {
+            if barycentric.is_negative_bitmask().count_ones() > 0 {
                 continue;
             }
 
@@ -115,10 +116,12 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             let position = barycentric.x * va.position
                 + barycentric.y * vb.position
                 + barycentric.z * vc.position;
+                
             let tex_coord = (barycentric.x * va.tex_coord
                 + barycentric.y * vb.tex_coord
                 + barycentric.z * vc.tex_coord)
                 * position.z;
+                
             let normal =
                 barycentric.x * va.normal + barycentric.y * vb.normal + barycentric.z * vc.normal;
 
@@ -138,8 +141,10 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             }
 
             // If the pixel is behind the depth buffer, skip it
-            if depth >= entry.textures.depth_buffer.get_pixel(screen_x, screen_y)[0] {
-                continue;
+            if let Some(buffer_depth) = entry.textures.depth_buffer.get_pixel_checked(screen_x, screen_y) {
+                if buffer_depth.0[0] >= depth {
+                    continue;
+                }
             }
 
             // Write the pixel to the output buffer

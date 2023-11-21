@@ -80,6 +80,7 @@ pub struct VertexInput {
     pub normal: Vec3,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct VertexOutput {
     pub position: Vec4,
     pub tex_coord: Vec2,

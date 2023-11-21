@@ -13,20 +13,25 @@ impl RenderEntry {
         let vertices = self.primitive.get_vertices();
         let indices = self.primitive.get_indices();
 
-        let mut triangles = indices.chunks_exact(3);
-        self.draw_triangle(triangles.next().unwrap(), &vertices, state);
+        let triangles = indices.chunks_exact(3);
+        for triangle in triangles {
+            self.draw_triangle(triangle, &vertices, state);
+        }
     }
 
     pub fn draw_triangle(&mut self, indices: &[u16], vertices: &[Vertex], state: &ShaderState) {
+        
         if indices.len() != 3 {
             return;
         }
 
         // Our triangles are defined by three indices (clockwise)
-        let va = apply_vertex_shader(vertices[indices[0] as usize], state);
+        let va = apply_vertex_shader(vertices[indices[2] as usize], state);
         let vb = apply_vertex_shader(vertices[indices[1] as usize], state);
-        let vc = apply_vertex_shader(vertices[indices[2] as usize], state);
-
+        let vc = apply_vertex_shader(vertices[indices[0] as usize], state);
+        
+        println!("Drawing triangle with vertices {va:#?}, {vb:#?}, {vc:#?}");
+        
         // Next, we need to rasterize the triangle
         // We'll do this by finding the bounding box of the triangle
         // and then iterating over all pixels in that box
@@ -52,7 +57,6 @@ impl RenderEntry {
         for screen_y in min_screen_y..max_screen_y {
             for screen_x in min_screen_x..max_screen_x {
                 // Convert the pixel coordinates to screen space
-
                 let barycentric_coordinates = |x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3| {
                     let v0 = b - a;
                     let v1 = c - a;
@@ -67,26 +71,27 @@ impl RenderEntry {
 
                     let v = (d11 * d20 - d01 * d21) / denom;
                     let w = (d00 * d21 - d01 * d20) / denom;
-                    let u = 1.0 - v - w;
-
+                    let u = 1.0 - v - w;                    
+                    
                     Vec3::new(u, v, w)
                 };
 
                 let x = map_u32_float(screen_x, 0, self.size.width);
                 let y = map_u32_float(screen_y, 0, self.size.height);
                 
+                
                 // Compute the barycentric coordinates of the pixel
                 let barycentric = barycentric_coordinates(
                     x,
                     y,
-                    va.position.xyz(),
-                    vb.position.xyz(),
-                    vc.position.xyz(),
+                    /* dbg! */(va.position.xyz()),
+                    /* dbg! */(vb.position.xyz()),
+                    /* dbg! */(vc.position.xyz()),
                 );
 
                 // If the pixel is outside the triangle, skip it
                 if barycentric.x < 0.0 || barycentric.y < 0.0 || barycentric.z < 0.0 {
-                    println!("Skipping pixel at ({x}, {y}) because it's outside the triangle (barycentric coordinates: {barycentric:?})");
+                    /* println! */("Skipping pixel at ({x}, {y}) because it's outside the triangle (barycentric coordinates: {barycentric:?})");
                     continue;
                 }
 
@@ -95,7 +100,7 @@ impl RenderEntry {
 
                 // If the depth is outside the depth buffer, skip it
                 if depth < 0.0 || depth > 1.0 {
-                    println!("Skipping pixel at ({x}, {y}) because it's outside the depth buffer");
+                    /* println! */("Skipping pixel at ({x}, {y}) because it's outside the depth buffer");
                     continue;
                 }
 
@@ -126,7 +131,7 @@ impl RenderEntry {
                     continue;
                 }
 
-                println!("Writing pixel at ({screen_x}, {screen_y}) with color {color:?} and depth {depth}");
+                //println!("Writing pixel at ({screen_x}, {screen_y}) with color {color:?} and depth {depth}");
 
                 // Write the pixel to the output buffer
                 self.textures.output.put_pixel(

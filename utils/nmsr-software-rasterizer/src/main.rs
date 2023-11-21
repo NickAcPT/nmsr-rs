@@ -26,7 +26,7 @@ fn main() {
     );
     
     let state = ShaderState {
-        transform: Mat4::IDENTITY,
+        transform: camera.get_view_projection_matrix(),
         texture: image::open("NickAc.png").unwrap().into_rgba8(),
         sun: shader::SunInformation {
             direction: glam::Vec3::ZERO,

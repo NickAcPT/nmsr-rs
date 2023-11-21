@@ -175,14 +175,19 @@ fn map_u32_float(value: u32, old_min: u32, old_max: u32, new_min: f32, new_max: 
 fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
     let vertex = vertex;
 
-    vertex_shader(
+    let mut result = vertex_shader(
         VertexInput {
             position: vertex.position.extend(1.0),
             normal: vertex.normal,
             tex_coord: vertex.uv,
         },
         state,
-    )
+    );
+    
+    // Apply perspective divide
+    result.position /= result.position.w;
+    
+    result
 }
 
 fn convert_f32_slice_to_u8_slice(slice: Vec4) -> [u8; 4] {

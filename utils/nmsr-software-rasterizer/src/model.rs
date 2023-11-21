@@ -42,7 +42,7 @@ pub struct RenderEntry {
 
 impl RenderEntry {
     pub fn new(size: Size) -> Self {
-        /* let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
+        let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
             model: nmsr_rendering::high_level::model::PlayerModel::Alex,
             has_hat_layer: false,
             has_layers: false,
@@ -79,9 +79,9 @@ impl RenderEntry {
                 output: RgbaImage::new(size.width, size.height),
             },
             primitive: PrimitiveDispatch::Mesh(part),
-        } */
+        }
         
-        let full_quad = Quad::new_with_normal(
+        /* let full_quad = Quad::new_with_normal(
             Vec3::new(-1.0, 0.0, 0.0),
             Vec3::new(1.0, 0.0, 0.0),
             Vec3::new(-1.0, -1.0, 0.0),
@@ -103,7 +103,7 @@ impl RenderEntry {
                 output: RgbaImage::new(size.width, size.height),
             },
             primitive: PrimitiveDispatch::Quad(full_quad)
-        }
+        } */
     }
 
     pub fn dump(&self) {

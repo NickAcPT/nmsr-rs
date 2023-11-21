@@ -1,3 +1,4 @@
+use ears_rs::parser::EarsParser;
 use glam::Vec3;
 use image::{imageops, ImageBuffer, Luma, Rgb32FImage, RgbaImage};
 use nmsr_rendering::{
@@ -51,7 +52,7 @@ impl RenderEntry {
             shadow_y_pos: None,
             shadow_is_square: false,
             armor_slots: None,
-            ears_features: None,
+            ears_features: EarsParser::parse(&image::open("NickAc.png").unwrap().into_rgba8()).expect("Yes"),
         };
         
         let providers = [

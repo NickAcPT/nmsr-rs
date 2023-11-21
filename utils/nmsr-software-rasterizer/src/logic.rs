@@ -1,6 +1,6 @@
 use std::ops::{Div, Sub};
 
-use glam::{Vec2, Vec3, Vec4, Vec4Swizzles, Mat2};
+use glam::{Mat2, Vec2, Vec3, Vec4, Vec4Swizzles};
 use image::Pixel;
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
@@ -21,7 +21,6 @@ impl RenderEntry {
     }
 
     pub fn draw_triangle(&mut self, indices: &[u16], vertices: &[Vertex], state: &ShaderState) {
-        
         if indices.len() != 3 {
             panic!("Tried to draw a triangle with {} vertices", indices.len());
             return;
@@ -31,17 +30,18 @@ impl RenderEntry {
         let mut va = apply_vertex_shader(vertices[indices[1] as usize], state);
         let mut vb = apply_vertex_shader(vertices[indices[2] as usize], state);
         let mut vc = apply_vertex_shader(vertices[indices[0] as usize], state);
-        
+
         let flip_y = Vec4::new(1.0, -1.0, 1.0, 1.0);
-        
+
         va.position *= flip_y;
         vb.position *= flip_y;
         vc.position *= flip_y;
-        
+
         // Vertices are in NDC space (Our Y axis is flipped, so the top left corner is (-1, 1) and the bottom right corner is (1, -1))
-        
-        /* println! */("Drawing triangle with vertices {va:?}, {vb:?}, {vc:?}");
-        
+
+        /* println! */
+        ("Drawing triangle with vertices {va:?}, {vb:?}, {vc:?}");
+
         // Next, we need to rasterize the triangle
         // We'll do this by finding the bounding box of the triangle
         // and then iterating over all pixels in that box
@@ -58,14 +58,18 @@ impl RenderEntry {
         let min_screen_y: u32 = map_float_u32(min_y, -1.0, 1.0, 0u32, self.size.height);
         let max_screen_y: u32 = map_float_u32(max_y, -1.0, 1.0, 0u32, self.size.height);
 
-        /* println! */(
+        /* println! */
+        (
             "min_x: {}, max_x: {}, min_y: {}, max_y: {}",
-            min_screen_x, max_screen_x, min_screen_y, max_screen_y
+            min_screen_x,
+            max_screen_x,
+            min_screen_y,
+            max_screen_y,
         );
 
         // Iterate over all pixels in the bounding box
-        for screen_x in min_screen_x..max_screen_x {
-                for screen_y in min_screen_y..max_screen_y {
+        for screen_y in min_screen_y..max_screen_y {
+            for screen_x in min_screen_x..max_screen_x {
                 // Convert the pixel coordinates to screen space
                 let barycentric_coordinates = |x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3| {
                     let v0 = b - a;
@@ -81,29 +85,28 @@ impl RenderEntry {
 
                     let v = (d11 * d20 - d01 * d21) / denom;
                     let w = (d00 * d21 - d01 * d20) / denom;
-                    let u = 1.0 - v - w;                    
-                    
+                    let u = 1.0 - v - w;
+
                     Vec3::new(u, v, w)
                 };
-                
+
                 let x = map_u32_float(screen_x, 0, self.size.width, -1.0, 1.0);
                 let y = map_u32_float(screen_y, 0, self.size.height, -1.0, 1.0);
-                
-                
+
                 ///* println! */("{x}, {y} corresponds to ({screen_x}, {screen_y})");
-                
                 // Compute the barycentric coordinates of the pixel
                 let barycentric = barycentric_coordinates(
                     x as f32,
                     y as f32,
-                    /* dbg! */(va.position.xyz()),
-                    /* dbg! */(vb.position.xyz()),
-                    /* dbg! */(vc.position.xyz()),
+                    /* dbg! */ (va.position.xyz()),
+                    /* dbg! */ (vb.position.xyz()),
+                    /* dbg! */ (vc.position.xyz()),
                 );
-                
+
                 // If the pixel is outside the triangle, skip it
                 if barycentric.x < 0.0 || barycentric.y < 0.0 || barycentric.z < 0.0 {
-                    /* println! */("Skipping pixel at ({x}, {y}) because it's outside the triangle (barycentric coordinates: {barycentric:?})");
+                    /* println! */
+                    ("Skipping pixel at ({x}, {y}) because it's outside the triangle (barycentric coordinates: {barycentric:?})");
                     continue;
                 }
 
@@ -113,7 +116,8 @@ impl RenderEntry {
 
                 // If the depth is outside the depth buffer, skip it
                 if depth < 0.0 || depth > 1.0 {
-                    /* println! */("Skipping pixel at ({x}, {y}) because it's outside the depth buffer");
+                    /* println! */
+                    ("Skipping pixel at ({x}, {y}) because it's outside the depth buffer");
                     continue;
                 }
 
@@ -121,9 +125,10 @@ impl RenderEntry {
                 let position = barycentric.x * va.position
                     + barycentric.y * vb.position
                     + barycentric.z * vc.position;
-                let tex_coord = barycentric.x * va.tex_coord
+                let tex_coord = (barycentric.x * va.tex_coord
                     + barycentric.y * vb.tex_coord
-                    + barycentric.z * vc.tex_coord;
+                    + barycentric.z * vc.tex_coord)
+                    * position.z;
                 let normal = barycentric.x * va.normal
                     + barycentric.y * vb.normal
                     + barycentric.z * vc.normal;
@@ -138,19 +143,26 @@ impl RenderEntry {
                     state,
                 );
 
-                // If the pixel is behind the depth buffer, skip it
-                if depth >= self.textures.depth_buffer.get_pixel(screen_x, screen_y)[0] {
-                    /* println! */("Skipping pixel at ({screen_x}, {screen_y}) because it's behind the depth buffer {depth}");
+                if color.w == 0.0 {
+                    // Discarded pixel
                     continue;
                 }
 
-                /* println! */("Writing pixel at ({screen_x}, {screen_y}) with color {color:?} and depth {depth}");
+                // If the pixel is behind the depth buffer, skip it
+                if depth >= self.textures.depth_buffer.get_pixel(screen_x, screen_y)[0] {
+                    /* println! */
+                    ("Skipping pixel at ({screen_x}, {screen_y}) because it's behind the depth buffer {depth}");
+                    continue;
+                }
+
+                /* println! */
+                ("Writing pixel at ({screen_x}, {screen_y}) with color {color:?} and depth {depth}");
 
                 // Write the pixel to the output buffer
-                self.textures.output.get_pixel_mut(
-                    screen_x,
-                    screen_y,
-                ).blend(&image::Rgba(convert_f32_slice_to_u8_slice(color)));
+                self.textures
+                    .output
+                    .get_pixel_mut(screen_x, screen_y)
+                    .blend(&image::Rgba(convert_f32_slice_to_u8_slice(color)));
 
                 // Write the depth to the depth buffer
                 self.textures
@@ -160,7 +172,6 @@ impl RenderEntry {
         }
     }
 }
-
 
 fn map_float_u32(value: f32, old_min: f32, old_max: f32, new_min: u32, new_max: u32) -> u32 {
     let value = value.max(old_min).min(old_max);
@@ -185,10 +196,11 @@ fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
         },
         state,
     );
-    
+
     // Apply perspective divide
     result.position /= result.position.w;
-    
+    result.tex_coord /= result.position.z;
+
     result
 }
 

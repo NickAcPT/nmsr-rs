@@ -1,6 +1,7 @@
 use std::ops::{Div, Sub};
 
 use glam::{Vec2, Vec3, Vec4, Vec4Swizzles, Mat2};
+use image::Pixel;
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
 use crate::{
@@ -106,12 +107,14 @@ impl RenderEntry {
                     continue;
                 }
 
-                let depth = 1.0;
+                let depth = barycentric.x * va.position.z
+                    + barycentric.y * vb.position.z
+                    + barycentric.z * vc.position.z;
 
                 // If the depth is outside the depth buffer, skip it
                 if depth < 0.0 || depth > 1.0 {
                     /* println! */("Skipping pixel at ({x}, {y}) because it's outside the depth buffer");
-                    //continue;
+                    continue;
                 }
 
                 // Compute the interpolated vertex attributes
@@ -136,19 +139,18 @@ impl RenderEntry {
                 );
 
                 // If the pixel is behind the depth buffer, skip it
-                if depth < self.textures.depth_buffer.get_pixel(screen_x, screen_y)[0] {
-                    println!("Skipping pixel at ({screen_x}, {screen_y}) because it's behind the depth buffer");
+                if depth >= self.textures.depth_buffer.get_pixel(screen_x, screen_y)[0] {
+                    /* println! */("Skipping pixel at ({screen_x}, {screen_y}) because it's behind the depth buffer {depth}");
                     continue;
                 }
 
                 /* println! */("Writing pixel at ({screen_x}, {screen_y}) with color {color:?} and depth {depth}");
 
                 // Write the pixel to the output buffer
-                self.textures.output.put_pixel(
+                self.textures.output.get_pixel_mut(
                     screen_x,
                     screen_y,
-                    image::Rgba(convert_f32_slice_to_u8_slice(color)),
-                );
+                ).blend(&image::Rgba(convert_f32_slice_to_u8_slice(color)));
 
                 // Write the depth to the depth buffer
                 self.textures

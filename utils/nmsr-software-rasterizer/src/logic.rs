@@ -1,6 +1,6 @@
 use std::ops::{Div, Sub};
 
-use glam::{Vec2, Vec3, Vec4, Vec4Swizzles};
+use glam::{Vec2, Vec3, Vec4, Vec4Swizzles, Mat2};
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
 use crate::{
@@ -26,8 +26,8 @@ impl RenderEntry {
         }
 
         // Our triangles are defined by three indices (clockwise)
-        let va = apply_vertex_shader(vertices[indices[2] as usize], state);
-        let vb = apply_vertex_shader(vertices[indices[1] as usize], state);
+        let va = apply_vertex_shader(vertices[indices[1] as usize], state);
+        let vb = apply_vertex_shader(vertices[indices[2] as usize], state);
         let vc = apply_vertex_shader(vertices[indices[0] as usize], state);
         
         println!("Drawing triangle with vertices {va:#?}, {vb:#?}, {vc:#?}");
@@ -43,10 +43,10 @@ impl RenderEntry {
         let max_y = va.position.y.max(vb.position.y).max(vc.position.y).ceil();
 
         // Convert the bounding box to actual screen coordinates
-        let min_screen_x: u32 = map_float_u32(min_x, 0u32, self.size.width);
-        let max_screen_x: u32 = map_float_u32(max_x, 0u32, self.size.width);
-        let min_screen_y: u32 = map_float_u32(min_y, 0u32, self.size.height);
-        let max_screen_y: u32 = map_float_u32(max_y, 0u32, self.size.height);
+        let min_screen_x: u32 = map_float_u32(min_x, -1.0, 1.0, 0u32, self.size.width);
+        let max_screen_x: u32 = map_float_u32(max_x, -1.0, 1.0, 0u32, self.size.width);
+        let min_screen_y: u32 = map_float_u32(min_y, -1.0, 1.0, 0u32, self.size.height);
+        let max_screen_y: u32 = map_float_u32(max_y, -1.0, 1.0, 0u32, self.size.height);
 
         println!(
             "min_x: {}, max_x: {}, min_y: {}, max_y: {}",
@@ -75,27 +75,26 @@ impl RenderEntry {
                     
                     Vec3::new(u, v, w)
                 };
-
+                
                 let x = map_u32_float(screen_x, 0, self.size.width);
-                let y = map_u32_float(screen_y, 0, self.size.height);
+                let y = -map_u32_float(screen_y, 0, self.size.height);
                 
                 
                 // Compute the barycentric coordinates of the pixel
                 let barycentric = barycentric_coordinates(
-                    x,
-                    y,
+                    x as f32,
+                    y as f32,
                     /* dbg! */(va.position.xyz()),
                     /* dbg! */(vb.position.xyz()),
                     /* dbg! */(vc.position.xyz()),
                 );
-
+                
                 // If the pixel is outside the triangle, skip it
                 if barycentric.x < 0.0 || barycentric.y < 0.0 || barycentric.z < 0.0 {
                     /* println! */("Skipping pixel at ({x}, {y}) because it's outside the triangle (barycentric coordinates: {barycentric:?})");
                     continue;
                 }
 
-                // Compute the depth of the pixel
                 let depth = 1.0;
 
                 // If the depth is outside the depth buffer, skip it
@@ -127,7 +126,7 @@ impl RenderEntry {
 
                 // If the pixel is behind the depth buffer, skip it
                 if depth < self.textures.depth_buffer.get_pixel(screen_x, screen_y)[0] {
-                    println!("Skipping pixel at ({x}, {y}) because it's behind the depth buffer");
+                    println!("Skipping pixel at ({screen_x}, {screen_y}) because it's behind the depth buffer");
                     continue;
                 }
 
@@ -149,16 +148,17 @@ impl RenderEntry {
     }
 }
 
-fn map_float_u32(value: f32, min: u32, max: u32) -> u32 {
-    let value = value.max(0.0).min(1.0);
 
-    (value * (max - min) as f32 + min as f32) as u32
+fn map_float_u32(value: f32, old_min: f32, old_max: f32, new_min: u32, new_max: u32) -> u32 {
+    let value = value.max(old_min).min(old_max);
+
+    ((value - old_min) / (old_max - old_min) * (new_max - new_min) as f32 + new_min as f32) as u32
 }
 
-fn map_u32_float(value: u32, min: u32, max: u32) -> f32 {
-    let value = value.max(min).min(max);
+fn map_u32_float(value: u32, old_min: u32, old_max: u32) -> f32 {
+    let value = value.max(old_min).min(old_max);
 
-    (value - min) as f32 / (max - min) as f32
+    (value - old_min) as f32 / (old_max - old_min) as f32
 }
 
 fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {

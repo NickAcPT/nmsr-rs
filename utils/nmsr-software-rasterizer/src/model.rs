@@ -2,10 +2,10 @@ use glam::Vec3;
 use image::{imageops, ImageBuffer, Luma, Rgb32FImage, RgbaImage};
 use nmsr_rendering::{
     high_level::{
-        parts::provider::{
-            minecraft::MinecraftPlayerPartsProvider, PartsProvider, PlayerPartProviderContext,
-        },
-        utils::parts::primitive_convert,
+        parts::{provider::{
+            minecraft::MinecraftPlayerPartsProvider, PartsProvider, PlayerPartProviderContext, PlayerPartsProvider,
+        }, part::Part},
+        utils::parts::primitive_convert, types::PlayerBodyPartType, IntoEnumIterator,
     },
     low_level::primitives::{
         mesh::{PrimitiveDispatch, Mesh},
@@ -44,20 +44,28 @@ impl RenderEntry {
     pub fn new(size: Size) -> Self {
         let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
             model: nmsr_rendering::high_level::model::PlayerModel::Alex,
-            has_hat_layer: false,
-            has_layers: false,
+            has_hat_layer: true,
+            has_layers: true,
             has_cape: false,
-            arm_rotation: 0.0,
+            arm_rotation: 10.0,
             shadow_y_pos: None,
             shadow_is_square: false,
             armor_slots: None,
+            ears_features: None,
         };
+        
+        let providers = [
+            PlayerPartsProvider::Minecraft,
+            PlayerPartsProvider::Ears,
+        ];
 
-        let parts = MinecraftPlayerPartsProvider::default().get_parts(
-            &context,
-            nmsr_rendering::high_level::types::PlayerBodyPartType::Head,
-        );
-
+        let parts = providers
+            .iter()
+            .flat_map(|provider| { 
+                PlayerBodyPartType::iter().flat_map(|part| provider.get_parts(&context, part))
+             })
+            .collect::<Vec<Part>>();
+        
         let parts = parts
             .into_iter()
             .map(|p| primitive_convert(&p))

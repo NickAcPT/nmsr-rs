@@ -25,9 +25,13 @@ fn main() {
         }),
     );
     
+    let mut texture = image::open("NickAc.png").unwrap().into_rgba8();
+    
+    ears_rs::utils::strip_alpha(&mut texture);
+    
     let state = ShaderState {
         transform: camera.get_view_projection_matrix(),
-        texture: image::open("NickAc.png").unwrap().into_rgba8(),
+        texture,
         sun: shader::SunInformation {
             direction: glam::Vec3::ZERO,
             intensity: 1.0,

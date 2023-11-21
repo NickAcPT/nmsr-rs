@@ -9,7 +9,6 @@ use crate::{
 };
 
 impl RenderEntry {
-    #[inline(never)]
     pub fn draw_primitives(&mut self, state: &ShaderState) {
         let grouped_vertices = self.primitive.get_vertices_grouped();
 
@@ -20,7 +19,6 @@ impl RenderEntry {
     }
 }
 
-#[inline(never)]
 pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &ShaderState) {
     let vertices: ArrayVec<VertexOutput, 3> = vertices
         .iter()
@@ -80,9 +78,15 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 + barycentric.y * vb.position.z
                 + barycentric.z * vc.position.z;
 
-            // If the depth is outside the depth buffer, skip it
-            if depth < 0.0 || depth > 1.0 {
-                continue;
+            // If the pixel is behind the depth buffer, skip it
+            if let Some(buffer_depth) = entry
+                .textures
+                .depth_buffer
+                .get_pixel_checked(screen_x, screen_y)
+            {
+                if depth >= buffer_depth.0[0] {
+                    continue;
+                }
             }
 
             // Compute the interpolated vertex attributes
@@ -111,17 +115,6 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             if color.w == 0.0 {
                 // Discarded pixel
                 continue;
-            }
-
-            // If the pixel is behind the depth buffer, skip it
-            if let Some(buffer_depth) = entry
-                .textures
-                .depth_buffer
-                .get_pixel_checked(screen_x, screen_y)
-            {
-                if depth >= buffer_depth.0[0] {
-                    continue;
-                }
             }
 
             // Write the pixel to the output buffer

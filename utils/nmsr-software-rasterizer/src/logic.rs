@@ -119,7 +119,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 .depth_buffer
                 .get_pixel_checked(screen_x, screen_y)
             {
-                if buffer_depth.0[0] >= depth {
+                if depth >= buffer_depth.0[0] {
                     continue;
                 }
             }

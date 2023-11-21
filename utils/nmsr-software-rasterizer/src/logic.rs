@@ -1,5 +1,5 @@
 use arrayvec::ArrayVec;
-use glam::{Vec2, Vec4, Vec3A};
+use glam::{Vec2, Vec3A, Vec4};
 use image::Pixel;
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
@@ -170,7 +170,7 @@ fn apply_vertex_shader(vertex: Vertex, mut state: &mut ShaderState) -> VertexOut
 
     // Apply perspective divide
     result.position /= old_w;
-    
+
     result.old_w = old_w;
 
     result

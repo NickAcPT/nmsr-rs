@@ -265,6 +265,13 @@ impl Camera {
             cached_view_projection_matrix: Mat4::ZERO,
         }
     }
+    
+    pub fn get_size(&self) -> Size {
+        self.size.unwrap_or(Size {
+            width: 1,
+            height: 1,
+        })
+    }
 
     pub fn get_aspect_ratio(&self) -> f32 {
         self.size

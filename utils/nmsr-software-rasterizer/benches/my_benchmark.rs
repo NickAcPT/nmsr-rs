@@ -1,8 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion, SamplingMode};
 
+use ears_rs::parser::EarsParser;
 use glam::Vec3;
 pub use nmsr_rasterizer_test::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
 use nmsr_rasterizer_test::shader;
+use nmsr_rendering::high_level::parts::provider::PlayerPartProviderContext;
 
 
 fn bench(c: &mut Criterion) {
@@ -21,26 +23,38 @@ fn bench(c: &mut Criterion) {
         }),
     );
     
+    
     let mut texture = image::open("NickAc.png").unwrap().into_rgba8();
+    
+    let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
+        model: nmsr_rendering::high_level::model::PlayerModel::Alex,
+        has_hat_layer: true,
+        has_layers: true,
+        has_cape: false,
+        arm_rotation: 10.0,
+        shadow_y_pos: None,
+        shadow_is_square: false,
+        armor_slots: None,
+        ears_features: EarsParser::parse(&texture).expect("Yes"),
+    };
     
     ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
     ears_rs::utils::strip_alpha(&mut texture);
     
-    let state = ShaderState {
-        transform: camera.get_view_projection_matrix(),
+    let mut state = ShaderState {
         texture,
         sun: shader::SunInformation {
             direction: glam::Vec3::new(0.0, -1.0, 1.0),
             intensity: 2.0,
             ambient: 0.621,
         },
+        camera,
     };
     
-    
-    let mut entry = RenderEntry::new((512, 869).into());
+    let mut entry = RenderEntry::new((512, 869).into(), &context);
     let mut group = c.benchmark_group("nmsr-rs");
     group.sampling_mode(SamplingMode::Flat);
-    group.bench_function("render_entry", |b| b.iter(|| entry.draw(&state)));
+    group.bench_function("render_entry", |b| b.iter(|| entry.draw(&mut state)));
     group.finish();
     entry.dump();
 }

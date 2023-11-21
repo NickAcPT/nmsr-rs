@@ -33,9 +33,9 @@ fn main() {
         transform: camera.get_view_projection_matrix(),
         texture,
         sun: shader::SunInformation {
-            direction: glam::Vec3::ZERO,
-            intensity: 1.0,
-            ambient: 1.0,
+            direction: glam::Vec3::new(0.0, -1.0, 1.0),
+            intensity: 2.0,
+            ambient: 0.621,
         },
     };
 

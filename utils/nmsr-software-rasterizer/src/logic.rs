@@ -40,7 +40,7 @@ impl RenderEntry {
         
         // Vertices are in NDC space (Our Y axis is flipped, so the top left corner is (-1, 1) and the bottom right corner is (1, -1))
         
-        println!("Drawing triangle with vertices {va:?}, {vb:?}, {vc:?}");
+        /* println! */("Drawing triangle with vertices {va:?}, {vb:?}, {vc:?}");
         
         // Next, we need to rasterize the triangle
         // We'll do this by finding the bounding box of the triangle
@@ -58,7 +58,7 @@ impl RenderEntry {
         let min_screen_y: u32 = map_float_u32(min_y, -1.0, 1.0, 0u32, self.size.height);
         let max_screen_y: u32 = map_float_u32(max_y, -1.0, 1.0, 0u32, self.size.height);
 
-        println!(
+        /* println! */(
             "min_x: {}, max_x: {}, min_y: {}, max_y: {}",
             min_screen_x, max_screen_x, min_screen_y, max_screen_y
         );
@@ -90,7 +90,7 @@ impl RenderEntry {
                 let y = map_u32_float(screen_y, 0, self.size.height, -1.0, 1.0);
                 
                 
-                //println!("{x}, {y} corresponds to ({screen_x}, {screen_y})");
+                ///* println! */("{x}, {y} corresponds to ({screen_x}, {screen_y})");
                 
                 // Compute the barycentric coordinates of the pixel
                 let barycentric = barycentric_coordinates(

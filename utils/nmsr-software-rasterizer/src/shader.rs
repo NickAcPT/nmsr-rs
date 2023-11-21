@@ -115,10 +115,10 @@ fn compute_sun_lighting(color: Vec4, normal: Vec3, state: &ShaderState) -> Vec4 
     let sun_direction: Vec3 = state.sun.direction.normalize();
     let sun_dot: f32 = normal.dot(-sun_direction);
 
-    let sun_color: Vec4 = Vec4::new(1.0, 1.0, 1.0, 1.0)
+    let sun_color = Vec3::new(1.0, 1.0, 1.0)
         * (state.sun.intensity * sun_dot).clamp(state.sun.ambient, MAX_LIGHT);
 
-    color * sun_color
+    color * sun_color.extend(1.0)
 }
 
 pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> Vec4 {
@@ -134,8 +134,6 @@ pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> Vec4 {
         color[3] as f32 / 255.0,
     );
 
-    return color;
-    
     if color.w == 0.0 {
         return Vec4::ZERO;
     }

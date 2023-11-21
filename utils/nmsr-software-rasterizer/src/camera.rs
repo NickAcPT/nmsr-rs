@@ -1,15 +1,15 @@
-use std::mem;
 use std::f32::consts;
+use std::mem;
 
-use nmsr_rendering::low_level::{Mat4, Vec3, Quat, EulerRot};
+use nmsr_rendering::low_level::{EulerRot, Mat4, Quat, Vec3};
 
 use crate::model::Size;
 
 pub static FLIP_X_AND_Z: Vec3 = Vec3::new(-1.0, 1.0, -1.0);
 
 pub fn minecraft_rotation_matrix(yaw: f32, pitch: f32, roll: f32) -> Mat4 {
-    Mat4::from_scale(FLIP_X_AND_Z) * 
-        Mat4::from_quat(Quat::from_euler(
+    Mat4::from_scale(FLIP_X_AND_Z)
+        * Mat4::from_quat(Quat::from_euler(
             EulerRot::ZXY,
             roll.to_radians(),
             -pitch.to_radians(),
@@ -265,7 +265,7 @@ impl Camera {
             cached_view_projection_matrix: Mat4::ZERO,
         }
     }
-    
+
     pub fn get_size(&self) -> Size {
         self.size.unwrap_or(Size {
             width: 1,
@@ -279,22 +279,31 @@ impl Camera {
             .unwrap_or(1.0)
     }
 
-    pub fn get_view_projection_matrix(&mut self) -> Mat4 {
+    pub fn get_cached_view_projection_matrix(&self) -> Mat4 {
+        self.cached_view_projection_matrix
+    }
+
+    pub fn update_mvp(&mut self) {
         if self.dirty {
-            self.cached_view_projection_matrix = self.compute_view_projection_matrix()
+            self.dirty = false;
+            self.cached_view_projection_matrix = self.compute_view_projection_matrix();
         }
+    }
+
+    pub fn get_view_projection_matrix(&mut self) -> Mat4 {
+        self.update_mvp();
 
         self.cached_view_projection_matrix
     }
-    
+
     pub fn get_distance_as_mut(&mut self) -> Option<&mut f32> {
         self.position_parameters.as_mut_distance()
     }
-    
+
     pub fn get_rotation(&self) -> &CameraRotation {
         &self.rotation
     }
-    
+
     pub fn get_rotation_mut(&mut self) -> &mut CameraRotation {
         &mut self.rotation
     }

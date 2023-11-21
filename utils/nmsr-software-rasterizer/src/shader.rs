@@ -104,12 +104,30 @@ pub struct ShaderState {
     pub sun: SunInformation,
 }
 
+impl ShaderState {
+    pub fn new(camera: Camera, texture: image::RgbaImage, sun: SunInformation) -> Self {
+        let mut result = Self {
+            camera,
+            texture,
+            sun,
+        };
+        
+        result.update();
+        
+        result
+    }
+
+    pub fn update(&mut self) {
+        self.camera.update_mvp();
+    }
+}
+
 const MAX_LIGHT: f32 = 1.0;
 
-pub fn vertex_shader(vertex: VertexInput, state: &mut ShaderState) -> VertexOutput {
+pub fn vertex_shader(vertex: VertexInput, state: &ShaderState) -> VertexOutput {
     VertexOutput {
         tex_coord: vertex.tex_coord,
-        position: state.camera.get_view_projection_matrix() * vertex.position,
+        position: state.camera.get_cached_view_projection_matrix() * vertex.position,
         normal: vertex.normal,
         old_w: 0.0,
     }

@@ -101,7 +101,7 @@ impl RenderEntry {
         self.textures.output.save("output.png").unwrap();
     }
 
-    pub fn draw(&mut self, state: &mut ShaderState) {
+    pub fn draw(&mut self, state: &ShaderState) {
         self.draw_primitives(state)
     }
 }

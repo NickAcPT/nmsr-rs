@@ -11,7 +11,6 @@ pub mod logic;
 pub mod model;
 pub mod shader;
 
-
 fn main() {
 
     let mut camera = camera::Camera::new_orbital(

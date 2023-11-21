@@ -17,7 +17,7 @@ path = "src/lib.rs"
 [dependencies]
 ears-rs = {git = "https://github.com/NickAcPT/ears-rs"}
 glam = "0"
-nmsr-rendering = { version = "0.1.0", path = "../nmsr-rs/nmsr-3d-renderer/nmsr-rendering", features = ["ears"], default-features = false}
+nmsr-rendering = { version = "0.1.0", git = "https://github.com/NickAcPT/nmsr-rs", features = ["ears"], default-features = false}
 image = { version = "0", default-features = false, features = ["png"] }
 arrayvec = "0.7.4"
 

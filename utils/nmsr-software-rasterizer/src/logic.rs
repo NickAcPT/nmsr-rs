@@ -94,10 +94,15 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 + barycentric.y * vb.position
                 + barycentric.z * vc.position;
 
-            let tex_coord = (barycentric.x * va.tex_coord
-                + barycentric.y * vb.tex_coord
-                + barycentric.z * vc.tex_coord)
-                * position.z;
+            // Compute the interpolated w-coordinate
+            let interpolated_w = 1.0 / (barycentric.x / va.old_w
+                + barycentric.y / vb.old_w
+                + barycentric.z / vc.old_w);
+
+            // Compute the perspective-corrected texture coordinates
+            let tex_coord = interpolated_w * (barycentric.x * va.tex_coord / va.old_w
+                + barycentric.y * vb.tex_coord / vb.old_w
+                + barycentric.z * vc.tex_coord / vc.old_w);
 
             let normal =
                 barycentric.x * va.normal + barycentric.y * vb.normal + barycentric.z * vc.normal;
@@ -108,6 +113,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                     position,
                     tex_coord,
                     normal,
+                    old_w: 0.0
                 },
                 state,
             );
@@ -160,10 +166,12 @@ fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
         },
         state,
     );
+    let old_w = result.position.w;
 
     // Apply perspective divide
-    result.position /= result.position.w;
-    result.tex_coord /= result.position.z;
+    result.position /= old_w;
+    
+    result.old_w = old_w;
 
     result
 }

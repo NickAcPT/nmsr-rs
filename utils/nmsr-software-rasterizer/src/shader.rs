@@ -1,4 +1,4 @@
-use glam::{Vec2, Vec4, Vec3};
+use glam::{Vec2, Vec3, Vec4};
 use image::Rgba;
 
 /* struct VertexInput {
@@ -85,6 +85,7 @@ pub struct VertexOutput {
     pub position: Vec4,
     pub tex_coord: Vec2,
     pub normal: Vec3,
+    pub old_w: f32,
 }
 
 pub struct SunInformation {
@@ -102,12 +103,11 @@ pub struct ShaderState {
 const MAX_LIGHT: f32 = 1.0;
 
 pub fn vertex_shader(vertex: VertexInput, state: &ShaderState) -> VertexOutput {
-    
-
     VertexOutput {
         tex_coord: vertex.tex_coord,
         position: state.transform * vertex.position,
         normal: vertex.normal,
+        old_w: 0.0,
     }
 }
 
@@ -115,7 +115,8 @@ fn compute_sun_lighting(color: Vec4, normal: Vec3, state: &ShaderState) -> Vec4 
     let sun_direction: Vec3 = state.sun.direction.normalize();
     let sun_dot: f32 = normal.dot(-sun_direction);
 
-    let sun_color = Vec3::splat((state.sun.intensity * sun_dot).clamp(state.sun.ambient, MAX_LIGHT));
+    let sun_color =
+        Vec3::splat((state.sun.intensity * sun_dot).clamp(state.sun.ambient, MAX_LIGHT));
 
     color * sun_color.extend(1.0)
 }
@@ -127,9 +128,9 @@ pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> Vec4 {
     ) else {
         return Vec4::ZERO;
     };
-    
+
     let color = unsafe { std::mem::transmute::<Rgba<u8>, [u8; 4]>(*color) };
-    
+
     let color = Vec4::new(
         f32::from(color[0]),
         f32::from(color[1]),

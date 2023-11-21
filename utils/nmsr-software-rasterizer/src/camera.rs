@@ -284,10 +284,8 @@ impl Camera {
     }
 
     pub fn update_mvp(&mut self) {
-        if self.dirty {
-            self.dirty = false;
-            self.cached_view_projection_matrix = self.compute_view_projection_matrix();
-        }
+        self.dirty = false;
+        self.cached_view_projection_matrix = self.compute_view_projection_matrix();
     }
 
     pub fn get_view_projection_matrix(&mut self) -> Mat4 {
@@ -296,6 +294,10 @@ impl Camera {
         self.cached_view_projection_matrix
     }
 
+    pub fn get_distance(&self) -> Option<f32> {
+        self.position_parameters.get_distance()
+    }
+    
     pub fn get_distance_as_mut(&mut self) -> Option<&mut f32> {
         self.position_parameters.as_mut_distance()
     }

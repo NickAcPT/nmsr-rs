@@ -1,5 +1,5 @@
 use arrayvec::ArrayVec;
-use glam::{Vec2, Vec3, Vec4, Vec4Swizzles};
+use glam::{Vec2, Vec4, Vec4Swizzles, Vec3A};
 use image::Pixel;
 use nmsr_rendering::low_level::primitives::{part_primitive::PartPrimitive, vertex::Vertex};
 
@@ -40,8 +40,8 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
     // and then iterating over all pixels in that box
 
     // Find the bounding box (in screen space)
-    let vx = Vec3::new(va.position.x, vb.position.x, vc.position.x);
-    let vy = Vec3::new(va.position.y, vb.position.y, vc.position.y);
+    let vx = Vec3A::new(va.position.x, vb.position.x, vc.position.x);
+    let vy = Vec3A::new(va.position.y, vb.position.y, vc.position.y);
 
     let (min_x, max_x) = (vx.min_element(), vx.max_element());
     let (min_y, max_y) = (vy.min_element(), vy.max_element());
@@ -64,9 +64,9 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             let barycentric = barycentric_coordinates(
                 x,
                 y,
-                /* dbg! */ va.position.xyz(),
-                /* dbg! */ vb.position.xyz(),
-                /* dbg! */ vc.position.xyz(),
+                /* dbg! */ Vec3A::from(va.position),
+                /* dbg! */ Vec3A::from(vb.position),
+                /* dbg! */ Vec3A::from(vc.position),
             );
 
             // If the pixel is outside the triangle, skip it
@@ -187,7 +187,7 @@ fn convert_f32_slice_to_u8_slice(slice: Vec4) -> [u8; 4] {
     ]
 }
 
-fn barycentric_coordinates(x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
+fn barycentric_coordinates(x: f32, y: f32, a: Vec3A, b: Vec3A, c: Vec3A) -> Vec3A {
     let v0 = b.truncate() - a.truncate();
     let v1 = c.truncate() - a.truncate();
     let v2 = Vec2::new(x, y) - a.truncate();
@@ -206,5 +206,5 @@ fn barycentric_coordinates(x: f32, y: f32, a: Vec3, b: Vec3, c: Vec3) -> Vec3 {
     let w = vw.y;
     let u = 1.0 - v - w;
 
-    Vec3::new(u, v, w)
+    Vec3A::new(u, v, w)
 }

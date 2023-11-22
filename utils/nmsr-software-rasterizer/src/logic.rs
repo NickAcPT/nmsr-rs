@@ -52,6 +52,12 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
     let min_screen_y: u32 = map_float_u32(min_y, -1.0, 1.0, 0u32, entry.size.height);
     let max_screen_y: u32 = map_float_u32(max_y, -1.0, 1.0, 0u32, entry.size.height);
 
+    let barycentric_state = barycentric_coordinates_state(
+        Vec3A::from(va.position),
+        Vec3A::from(vb.position),
+        Vec3A::from(vc.position),
+    );
+    
     // Iterate over all pixels in the bounding box
     for screen_y in min_screen_y..=max_screen_y {
         for screen_x in min_screen_x..=max_screen_x {
@@ -64,9 +70,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             let barycentric = barycentric_coordinates(
                 x,
                 y,
-                /* dbg! */ Vec3A::from(va.position),
-                /* dbg! */ Vec3A::from(vb.position),
-                /* dbg! */ Vec3A::from(vc.position),
+                &barycentric_state
             );
 
             // If the pixel is outside the triangle, skip it
@@ -97,12 +101,14 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             // Compute the interpolated w-coordinate
             let interpolated_w = (barycentric.x * va.old_w_recip
                 + barycentric.y * vb.old_w_recip
-                + barycentric.z * vc.old_w_recip).recip();
+                + barycentric.z * vc.old_w_recip)
+                .recip();
 
             // Compute the perspective-corrected texture coordinates
-            let tex_coord = interpolated_w * (barycentric.x * va.tex_coord * va.old_w_recip
-                + barycentric.y * vb.tex_coord * vb.old_w_recip
-                + barycentric.z * vc.tex_coord * vc.old_w_recip);
+            let tex_coord = interpolated_w
+                * (barycentric.x * va.tex_coord * va.old_w_recip
+                    + barycentric.y * vb.tex_coord * vb.old_w_recip
+                    + barycentric.z * vc.tex_coord * vc.old_w_recip);
 
             let normal =
                 barycentric.x * va.normal + barycentric.y * vb.normal + barycentric.z * vc.normal;
@@ -113,7 +119,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                     position,
                     tex_coord,
                     normal,
-                    old_w_recip: 0.0
+                    old_w_recip: 0.0,
                 },
                 state,
             );
@@ -146,6 +152,12 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
 }
 
 fn map_float_u32(value: f32, old_min: f32, old_max: f32, new_min: u32, new_max: u32) -> u32 {
+    if value < old_min {
+        return new_min;
+    } else if value > old_max {
+        return new_max;
+    }
+    
     let value = value.max(old_min).min(old_max);
 
     ((value - old_min) / (old_max - old_min) * (new_max - new_min) as f32 + new_min as f32) as u32
@@ -176,23 +188,51 @@ fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
     result
 }
 
-fn barycentric_coordinates(x: f32, y: f32, a: Vec3A, b: Vec3A, c: Vec3A) -> Vec3A {
+struct BarycentricState {
+    v0: Vec2,
+    v1: Vec2,
+    d00: f32,
+    d01: f32,
+    d11: f32,
+    inv_denom: f32,
+    
+    a: Vec2,
+}
+
+fn barycentric_coordinates_state(a: Vec3A, b: Vec3A, c: Vec3A) -> BarycentricState {
     let v0 = b.truncate() - a.truncate();
     let v1 = c.truncate() - a.truncate();
-    let v2 = Vec2::new(x, y) - a.truncate();
 
     let d00 = v0.dot(v0);
     let d01 = v0.dot(v1);
     let d11 = v1.dot(v1);
-    let d20 = v2.dot(v0);
-    let d21 = v2.dot(v1);
 
     let denom = (d00 * d11 - d01 * d01).recip();
 
-    let vw = Vec2::from_array([(d11 * d20 - d01 * d21), (d00 * d21 - d01 * d20)]) * denom;
+    BarycentricState {
+        v0,
+        v1,
+        d00,
+        d01,
+        d11,
+        inv_denom: denom,
+        a: a.truncate()
+    }
+}
 
-    let v = vw.x;
-    let w = vw.y;
+#[inline]
+fn barycentric_coordinates(
+    x: f32,
+    y: f32,
+    state: &BarycentricState,
+) -> Vec3A {
+    let v2 = Vec2::new(x, y) - state.a;
+
+    let d20 = v2.dot(state.v0);
+    let d21 = v2.dot(state.v1);
+
+    let v = (state.d11 * d20 - state.d01 * d21) * state.inv_denom;
+    let w = (state.d00 * d21 - state.d01 * d20) * state.inv_denom;
     let u = 1.0 - v - w;
 
     Vec3A::new(u, v, w)

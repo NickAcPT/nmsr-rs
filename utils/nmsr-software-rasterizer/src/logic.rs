@@ -176,17 +176,6 @@ fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
     result
 }
 
-fn convert_f32_slice_to_u8_slice(slice: Vec4) -> [u8; 4] {
-    let result = slice * 255.0;
-
-    [
-        result.x as u8,
-        result.y as u8,
-        result.z as u8,
-        result.w as u8,
-    ]
-}
-
 fn barycentric_coordinates(x: f32, y: f32, a: Vec3A, b: Vec3A, c: Vec3A) -> Vec3A {
     let v0 = b.truncate() - a.truncate();
     let v1 = c.truncate() - a.truncate();

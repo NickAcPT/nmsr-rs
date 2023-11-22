@@ -161,7 +161,7 @@ pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> [u8; 4] {
 
     let color = unsafe { std::mem::transmute::<Rgba<u8>, [u8; 4]>(*color) };
 
-    if color[3] == 0 {
+    if std::intrinsics::unlikely(color[3] == 0) {
         return [0; 4];
     }
 

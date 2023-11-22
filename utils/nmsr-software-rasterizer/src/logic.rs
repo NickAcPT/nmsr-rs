@@ -19,12 +19,31 @@ impl RenderEntry {
 
         let indices = self.primitive.get_indices();
 
-        let mut grouped_vertices = indices.chunks_exact(3).flat_map(|chunk| {
-            chunk
-                .iter()
-                .copied()
-                .collect::<ArrayVec<u16, 3>>()
-                .into_inner()
+        let mut grouped_vertices = indices
+            .chunks_exact(3)
+            .flat_map(|chunk| {
+                chunk
+                    .iter()
+                    .copied()
+                    .collect::<ArrayVec<u16, 3>>()
+                    .into_inner()
+            })
+            .collect::<Vec<_>>();
+
+        // Depth sort the triangles
+        grouped_vertices.sort_by(|a, b| {
+            // Average the z-coordinates of the vertices
+            let a = (vertices[a[0] as usize].position.z
+                + vertices[a[1] as usize].position.z
+                + vertices[a[2] as usize].position.z)
+                / 3.0;
+
+            let b = (vertices[b[0] as usize].position.z
+                + vertices[b[1] as usize].position.z
+                + vertices[b[2] as usize].position.z)
+                / 3.0;
+        
+            a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         for triangle_indices in grouped_vertices {
@@ -74,21 +93,17 @@ pub fn draw_triangle(
         Vec3A::from(vb.position),
         Vec3A::from(vc.position),
     );
-    
+
     // Iterate over all pixels in the bounding box
-    for screen_y in min_screen_y..=max_screen_y {
-        for screen_x in min_screen_x..=max_screen_x {
+    for screen_y in min_screen_y..max_screen_y {
+        for screen_x in min_screen_x..max_screen_x {
             // Convert the pixel coordinates to screen space
             let x = map_u32_float(screen_x, 0, entry.size.width, -1.0, 1.0);
             let y = map_u32_float(screen_y, 0, entry.size.height, -1.0, 1.0);
 
             //* println! */("{x}, {y} corresponds to ({screen_x}, {screen_y})");
             // Compute the barycentric coordinates of the pixel
-            let barycentric = barycentric_coordinates(
-                x,
-                y,
-                &barycentric_state
-            );
+            let barycentric = barycentric_coordinates(x, y, &barycentric_state);
 
             // If the pixel is outside the triangle, skip it
             if barycentric.is_negative_bitmask() != 0 {
@@ -105,24 +120,20 @@ pub fn draw_triangle(
                 .depth_buffer
                 .get_pixel_checked(screen_x, screen_y)
             {
-                if depth >= buffer_depth.0[0] {
+                if std::intrinsics::unlikely(depth >= buffer_depth.0[0]) {
                     continue;
                 }
             }
 
             // Compute the interpolated vertex attributes
-            let position = barycentric.x * va.position
-                + barycentric.y * vb.position
-                + barycentric.z * vc.position;
-
             // Compute the interpolated w-coordinate
-            let interpolated_w = (barycentric.x * va.old_w_recip
+            let interpolated_recip_w = (barycentric.x * va.old_w_recip
                 + barycentric.y * vb.old_w_recip
                 + barycentric.z * vc.old_w_recip)
                 .recip();
-
+            
             // Compute the perspective-corrected texture coordinates
-            let tex_coord = interpolated_w
+            let tex_coord = interpolated_recip_w
                 * (barycentric.x * va.tex_coord * va.old_w_recip
                     + barycentric.y * vb.tex_coord * vb.old_w_recip
                     + barycentric.z * vc.tex_coord * vc.old_w_recip);
@@ -133,7 +144,7 @@ pub fn draw_triangle(
             // Compute the color of the pixel
             let color = fragment_shader(
                 VertexOutput {
-                    position,
+                    position: Vec4::ZERO,
                     tex_coord,
                     normal,
                     old_w_recip: 0.0,
@@ -174,7 +185,7 @@ fn map_float_u32(value: f32, old_min: f32, old_max: f32, new_min: u32, new_max: 
     } else if value > old_max {
         return new_max;
     }
-    
+
     let value = value.max(old_min).min(old_max);
 
     ((value - old_min) / (old_max - old_min) * (new_max - new_min) as f32 + new_min as f32) as u32
@@ -195,12 +206,12 @@ fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
         },
         &state,
     );
-    let old_w = result.position.w;
+    let old_w_recip = result.position.w.recip();
 
     // Apply perspective divide
-    result.position /= old_w;
+    result.position *= old_w_recip;
 
-    result.old_w_recip = old_w.recip();
+    result.old_w_recip = old_w_recip;
 
     result
 }
@@ -212,7 +223,7 @@ struct BarycentricState {
     d01: f32,
     d11: f32,
     inv_denom: f32,
-    
+
     a: Vec2,
 }
 
@@ -233,16 +244,12 @@ fn barycentric_coordinates_state(a: Vec3A, b: Vec3A, c: Vec3A) -> BarycentricSta
         d01,
         d11,
         inv_denom: denom,
-        a: a.truncate()
+        a: a.truncate(),
     }
 }
 
 #[inline]
-fn barycentric_coordinates(
-    x: f32,
-    y: f32,
-    state: &BarycentricState,
-) -> Vec3A {
+fn barycentric_coordinates(x: f32, y: f32, state: &BarycentricState) -> Vec3A {
     let v2 = Vec2::new(x, y) - state.a;
 
     let d20 = v2.dot(state.v0);

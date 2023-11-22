@@ -10,24 +10,41 @@ use crate::{
 
 impl RenderEntry {
     pub fn draw_primitives(&mut self, state: &ShaderState) {
-        let grouped_vertices = self.primitive.get_vertices_grouped();
+        let vertices = self
+            .primitive
+            .get_vertices()
+            .into_iter()
+            .map(|v| apply_vertex_shader(v, state))
+            .collect::<Vec<_>>();
 
-        let triangles = grouped_vertices;
-        for triangle in triangles {
-            draw_triangle(self, &triangle, state);
+        let indices = self.primitive.get_indices();
+
+        let mut grouped_vertices = indices.chunks_exact(3).flat_map(|chunk| {
+            chunk
+                .iter()
+                .copied()
+                .collect::<ArrayVec<u16, 3>>()
+                .into_inner()
+        });
+
+        for triangle_indices in grouped_vertices {
+            draw_triangle(self, &triangle_indices, &vertices, state);
         }
     }
 }
 
-pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &ShaderState) {
-    let vertices: ArrayVec<VertexOutput, 3> = vertices
-        .iter()
-        .map(|v| apply_vertex_shader(*v, state))
-        .collect();
-    let vertices = unsafe { vertices.into_inner_unchecked() };
-
+pub fn draw_triangle(
+    entry: &mut RenderEntry,
+    indices: &[u16; 3],
+    vertices: &[VertexOutput],
+    state: &ShaderState,
+) {
     // Our triangles are defined by three indices (clockwise)
-    let [mut vc, mut va, mut vb] = vertices;
+    let [mut vc, mut va, mut vb] = [
+        vertices[indices[0] as usize],
+        vertices[indices[1] as usize],
+        vertices[indices[2] as usize],
+    ];
 
     va.position.y *= -1.0;
     vb.position.y *= -1.0;

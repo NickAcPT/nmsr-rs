@@ -187,9 +187,9 @@ fn barycentric_coordinates(x: f32, y: f32, a: Vec3A, b: Vec3A, c: Vec3A) -> Vec3
     let d20 = v2.dot(v0);
     let d21 = v2.dot(v1);
 
-    let denom = d00 * d11 - d01 * d01;
+    let denom = (d00 * d11 - d01 * d01).recip();
 
-    let vw = Vec2::from_array([(d11 * d20 - d01 * d21), (d00 * d21 - d01 * d20)]) / denom;
+    let vw = Vec2::from_array([(d11 * d20 - d01 * d21), (d00 * d21 - d01 * d20)]) * denom;
 
     let v = vw.x;
     let w = vw.y;

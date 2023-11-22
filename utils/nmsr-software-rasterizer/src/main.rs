@@ -49,15 +49,11 @@ fn main() {
     
     fs::create_dir("output").unwrap_or_default();
     
-    let mut state = ShaderState {
-        camera,
-        texture,
-        sun: shader::SunInformation {
-            direction: glam::Vec3::new(0.0, -1.0, 1.0),
-            intensity: 2.0,
-            ambient: 0.621,
-        },
-    };
+    let mut state = ShaderState::new(camera, texture, shader::SunInformation {
+        direction: glam::Vec3::new(0.0, -1.0, 1.0),
+        intensity: 2.0,
+        ambient: 0.621,
+    });
     
     let mut entry = RenderEntry::new((512, 869).into(), &context);
     

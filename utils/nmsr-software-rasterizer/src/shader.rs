@@ -101,6 +101,7 @@ pub struct SunInformation {
 pub struct ShaderState {
     pub camera: Camera,
     pub texture: image::RgbaImage,
+    pub texture_size: (f32, f32),
     pub sun: SunInformation,
 }
 
@@ -108,12 +109,13 @@ impl ShaderState {
     pub fn new(camera: Camera, texture: image::RgbaImage, sun: SunInformation) -> Self {
         let mut result = Self {
             camera,
+            texture_size: (texture.width() as f32, texture.height() as f32),
             texture,
             sun,
         };
-        
+
         result.update();
-        
+
         result
     }
 
@@ -144,9 +146,11 @@ fn compute_sun_lighting(color: Vec4, normal: Vec3, state: &ShaderState) -> Vec4 
 }
 
 pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> Vec4 {
+    let (w, h) = state.texture_size;
+    
     let Some(color) = state.texture.get_pixel_checked(
-        (vertex.tex_coord.x * state.texture.width() as f32) as u32,
-        (vertex.tex_coord.y * state.texture.height() as f32) as u32,
+        (vertex.tex_coord.x * w) as u32,
+        (vertex.tex_coord.y * h) as u32,
     ) else {
         return Vec4::ZERO;
     };

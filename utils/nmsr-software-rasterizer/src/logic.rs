@@ -95,9 +95,9 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 + barycentric.z * vc.position;
 
             // Compute the interpolated w-coordinate
-            let interpolated_w = 1.0 / (barycentric.x * va.old_w_recip
+            let interpolated_w = (barycentric.x * va.old_w_recip
                 + barycentric.y * vb.old_w_recip
-                + barycentric.z * vc.old_w_recip);
+                + barycentric.z * vc.old_w_recip).recip();
 
             // Compute the perspective-corrected texture coordinates
             let tex_coord = interpolated_w * (barycentric.x * va.tex_coord * va.old_w_recip

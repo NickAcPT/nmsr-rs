@@ -1,4 +1,4 @@
-use glam::{Vec2, Vec3, Vec4};
+use glam::{Vec2, Vec3, Vec4, Vec3A};
 use image::Rgba;
 
 use crate::camera::Camera;
@@ -80,20 +80,20 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
 pub struct VertexInput {
     pub position: Vec4,
     pub tex_coord: Vec2,
-    pub normal: Vec3,
+    pub normal: Vec3A,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct VertexOutput {
     pub position: Vec4,
     pub tex_coord: Vec2,
-    pub normal: Vec3,
+    pub normal: Vec3A,
     pub old_w_recip: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct SunInformation {
-    pub direction: Vec3,
+    pub direction: Vec3A,
     pub intensity: f32,
     pub ambient: f32,
 }
@@ -135,38 +135,35 @@ pub fn vertex_shader(vertex: VertexInput, state: &ShaderState) -> VertexOutput {
     }
 }
 
-fn compute_sun_lighting(color: Vec4, normal: Vec3, state: &ShaderState) -> Vec4 {
-    let sun_direction: Vec3 = state.sun.direction.normalize();
+fn compute_sun_lighting(color: &[u8; 4], normal: Vec3A, state: &ShaderState) -> [u8; 4] {
+    let sun_direction: Vec3A = state.sun.direction.normalize();
     let sun_dot: f32 = normal.dot(-sun_direction);
 
-    let sun_color =
-        Vec3::splat((state.sun.intensity * sun_dot).clamp(state.sun.ambient, MAX_LIGHT));
+    let sun_color = (state.sun.intensity * sun_dot).clamp(state.sun.ambient, MAX_LIGHT);
 
-    color * sun_color.extend(1.0)
+    [
+        (color[0] as f32 * sun_color) as u8,
+        (color[1] as f32 * sun_color) as u8,
+        (color[2] as f32 * sun_color) as u8,
+        color[3],
+    ]
 }
 
-pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> Vec4 {
+pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> [u8; 4] {
     let (w, h) = state.texture_size;
     
     let Some(color) = state.texture.get_pixel_checked(
         (vertex.tex_coord.x * w) as u32,
         (vertex.tex_coord.y * h) as u32,
     ) else {
-        return Vec4::ZERO;
+        return [0; 4];
     };
 
     let color = unsafe { std::mem::transmute::<Rgba<u8>, [u8; 4]>(*color) };
 
-    let color = Vec4::new(
-        f32::from(color[0]),
-        f32::from(color[1]),
-        f32::from(color[2]),
-        f32::from(color[3]),
-    ) / 255.0;
-
-    if color.w == 0.0 {
-        return Vec4::ZERO;
+    if color[3] == 0 {
+        return [0; 4];
     }
 
-    compute_sun_lighting(color, vertex.normal, state)
+    compute_sun_lighting(&color, vertex.normal, state)
 }

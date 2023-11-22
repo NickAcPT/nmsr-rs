@@ -118,7 +118,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 state,
             );
 
-            if color.w == 0.0 {
+            if color[3] == 0 {
                 // Discarded pixel
                 continue;
             }
@@ -129,7 +129,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 .output
                 .get_pixel_mut_checked(screen_x, screen_y)
             {
-                pixel.blend(&image::Rgba(convert_f32_slice_to_u8_slice(color)));
+                pixel.blend(&image::Rgba(color));
             }
 
             // Write the depth to the depth buffer
@@ -161,7 +161,7 @@ fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
     let mut result = vertex_shader(
         VertexInput {
             position: vertex.position.extend(1.0),
-            normal: vertex.normal,
+            normal: vertex.normal.into(),
             tex_coord: vertex.uv,
         },
         &state,

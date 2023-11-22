@@ -50,7 +50,7 @@ fn main() {
     fs::create_dir("output").unwrap_or_default();
     
     let mut state = ShaderState::new(camera, texture, shader::SunInformation {
-        direction: glam::Vec3::new(0.0, -1.0, 1.0),
+        direction: glam::Vec3A::new(0.0, -1.0, 1.0),
         intensity: 2.0,
         ambient: 0.621,
     });

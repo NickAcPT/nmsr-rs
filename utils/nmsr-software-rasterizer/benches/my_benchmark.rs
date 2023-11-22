@@ -10,7 +10,7 @@ use nmsr_rendering::high_level::parts::provider::PlayerPartProviderContext;
 fn bench(c: &mut Criterion) {
     let mut camera = nmsr_rasterizer_test::camera::Camera::new_orbital(
         Vec3::new(0.0, 16.5 + 2.5, 0.0),
-        5.0 + 3.5 + 4.0,
+        5.0,
         CameraRotation {
             yaw: 20f32,
             pitch: 10f32,

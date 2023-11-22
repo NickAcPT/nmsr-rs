@@ -1,6 +1,6 @@
 #![feature(core_intrinsics)]
 
-use std::fs;
+use std::{fs, hint::black_box};
 
 use ears_rs::parser::EarsParser;
 use glam::Vec3;
@@ -15,9 +15,9 @@ pub mod shader;
 
 fn main() {
 
-    let camera = camera::Camera::new_orbital(
+    let mut camera = camera::Camera::new_orbital(
         Vec3::new(0.0, 16.5 + 2.5, 0.0),
-        45.0 + 3.5 + 4.0,
+        15.0 + 3.5 + 4.0,
         CameraRotation {
             yaw: 20f32,
             pitch: 10f32,
@@ -60,20 +60,14 @@ fn main() {
     };
     
     let mut entry = RenderEntry::new((512, 869).into(), &context);
-    entry.draw(&mut state);
-    entry.dump();
     
-    /* for angle in 0..360 {
-        camera.get_rotation_mut().yaw = angle as f32;
+    for angle in 0..360 {
+        entry.textures.output.fill(0);
+        entry.textures.depth_buffer.fill(1.0);
         
-        state.transform = camera.get_view_projection_matrix();
-        // Measure draw
-        let start = std::time::Instant::now();
-        entry.draw(&state);
-        let end = std::time::Instant::now();
-        println!("Draw took {}ms", (end - start).as_millis());
-
-        entry.textures.output.save(format!("output/output-{angle}.png")).unwrap();
-    } */
-
+        camera.get_rotation_mut().yaw = angle as f32;
+        state.update();
+        
+        entry.draw(black_box(&state));
+    }
 }

@@ -88,7 +88,7 @@ pub struct VertexOutput {
     pub position: Vec4,
     pub tex_coord: Vec2,
     pub normal: Vec3,
-    pub old_w: f32,
+    pub old_w_recip: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -129,7 +129,7 @@ pub fn vertex_shader(vertex: VertexInput, state: &ShaderState) -> VertexOutput {
         tex_coord: vertex.tex_coord,
         position: state.camera.get_cached_view_projection_matrix() * vertex.position,
         normal: vertex.normal,
-        old_w: 0.0,
+        old_w_recip: 0.0,
     }
 }
 

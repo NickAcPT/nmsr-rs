@@ -70,7 +70,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
             );
 
             // If the pixel is outside the triangle, skip it
-            if barycentric.is_negative_bitmask().count_ones() > 0 {
+            if barycentric.is_negative_bitmask() != 0 {
                 continue;
             }
 
@@ -95,14 +95,14 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                 + barycentric.z * vc.position;
 
             // Compute the interpolated w-coordinate
-            let interpolated_w = 1.0 / (barycentric.x / va.old_w
-                + barycentric.y / vb.old_w
-                + barycentric.z / vc.old_w);
+            let interpolated_w = 1.0 / (barycentric.x * va.old_w_recip
+                + barycentric.y * vb.old_w_recip
+                + barycentric.z * vc.old_w_recip);
 
             // Compute the perspective-corrected texture coordinates
-            let tex_coord = interpolated_w * (barycentric.x * va.tex_coord / va.old_w
-                + barycentric.y * vb.tex_coord / vb.old_w
-                + barycentric.z * vc.tex_coord / vc.old_w);
+            let tex_coord = interpolated_w * (barycentric.x * va.tex_coord * va.old_w_recip
+                + barycentric.y * vb.tex_coord * vb.old_w_recip
+                + barycentric.z * vc.tex_coord * vc.old_w_recip);
 
             let normal =
                 barycentric.x * va.normal + barycentric.y * vb.normal + barycentric.z * vc.normal;
@@ -113,7 +113,7 @@ pub fn draw_triangle(entry: &mut RenderEntry, vertices: &[Vertex; 3], state: &Sh
                     position,
                     tex_coord,
                     normal,
-                    old_w: 0.0
+                    old_w_recip: 0.0
                 },
                 state,
             );
@@ -171,7 +171,7 @@ fn apply_vertex_shader(vertex: Vertex, state: &ShaderState) -> VertexOutput {
     // Apply perspective divide
     result.position /= old_w;
 
-    result.old_w = old_w;
+    result.old_w_recip = old_w.recip();
 
     result
 }

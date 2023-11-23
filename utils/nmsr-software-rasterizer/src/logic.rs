@@ -83,10 +83,10 @@ pub fn draw_triangle(
     let (min_y, max_y) = (vy.min_element(), vy.max_element());
 
     // Convert the bounding box to actual screen coordinates
-    let min_screen_x: u32 = map_float_u32(min_x, -1.0, 1.0, 0u32, entry.size.width);
-    let max_screen_x: u32 = map_float_u32(max_x, -1.0, 1.0, 0u32, entry.size.width);
-    let min_screen_y: u32 = map_float_u32(min_y, -1.0, 1.0, 0u32, entry.size.height);
-    let max_screen_y: u32 = map_float_u32(max_y, -1.0, 1.0, 0u32, entry.size.height);
+    let min_screen_x: u32 = map_float_u32(min_x, -1.0, 1.0, 0u32, entry.size.width - 1);
+    let max_screen_x: u32 = map_float_u32(max_x, -1.0, 1.0, 0u32, entry.size.width - 1);
+    let min_screen_y: u32 = map_float_u32(min_y, -1.0, 1.0, 0u32, entry.size.height - 1);
+    let max_screen_y: u32 = map_float_u32(max_y, -1.0, 1.0, 0u32, entry.size.height - 1);
 
     let barycentric_state = barycentric_coordinates_state(
         Vec3A::from(va.position),
@@ -95,8 +95,8 @@ pub fn draw_triangle(
     );
 
     // Iterate over all pixels in the bounding box
-    for screen_y in min_screen_y..max_screen_y {
-        for screen_x in min_screen_x..max_screen_x {
+    for screen_y in min_screen_y..=max_screen_y {
+        for screen_x in min_screen_x..=max_screen_x {
             // Convert the pixel coordinates to screen space
             let x = map_u32_float(screen_x, 0, entry.size.width, -1.0, 1.0);
             let y = map_u32_float(screen_y, 0, entry.size.height, -1.0, 1.0);

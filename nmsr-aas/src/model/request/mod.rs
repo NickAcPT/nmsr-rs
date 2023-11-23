@@ -1,13 +1,12 @@
 use derive_more::Debug;
 use enumset::{enum_set, EnumSet, EnumSetType};
 use is_empty::IsEmpty;
-use nmsr_rendering::{
-    high_level::{
-        camera::Camera,
-        pipeline::scene::{Size, SunInformation},
-    },
-    low_level::{EulerRot, Quat, Vec3},
+use nmsr_rasterizer_test::{
+    camera::{Camera, CameraPositionParameters, ProjectionParameters},
+    model::Size,
+    shader::SunInformation,
 };
+use nmsr_rendering::low_level::{EulerRot, Quat, Vec3A};
 use strum::{Display, EnumString};
 
 use self::entry::{RenderRequestEntry, RenderRequestEntryModel};
@@ -146,32 +145,37 @@ impl RenderRequest {
         let mut camera = self.mode.get_camera();
 
         if let Some(settings) = &self.extra_settings {
+            let rotation = camera.get_rotation_mut();
             // Only allow to set the yaw, pitch and roll if we are not in a front mode
             if !self.mode.is_front() {
                 if let Some(yaw) = settings.yaw {
-                    camera.set_yaw(yaw);
+                    rotation.yaw = yaw;
                 }
 
                 if let Some(pitch) = settings.pitch {
-                    camera.set_pitch(pitch);
+                    rotation.pitch = pitch;
                 }
 
                 if let Some(roll) = settings.roll {
-                    camera.set_roll(roll);
+                    rotation.roll = roll;
                 }
             }
 
-            if self.mode.is_custom() {
-                if let Some(x_pos) = settings.x_pos {
-                    camera.set_look_at_x(x_pos);
-                }
+            if let CameraPositionParameters::Orbital { look_at, .. } =
+                camera.get_position_parameters_mut()
+            {
+                if self.mode.is_custom() {
+                    if let Some(x_pos) = settings.x_pos {
+                        look_at.x = x_pos;
+                    }
 
-                if let Some(y_pos) = settings.y_pos {
-                    camera.set_look_at_y(y_pos);
-                }
+                    if let Some(y_pos) = settings.y_pos {
+                        look_at.y = y_pos;
+                    }
 
-                if let Some(z_pos) = settings.z_pos {
-                    camera.set_look_at_z(z_pos);
+                    if let Some(z_pos) = settings.z_pos {
+                        look_at.z = z_pos;
+                    }
                 }
             }
 
@@ -192,9 +196,17 @@ impl RenderRequest {
             }
 
             if self.mode.is_isometric() {
-                camera.set_aspect(camera.get_aspect() + distance);
+                if let ProjectionParameters::Orthographic { aspect } = camera.get_projection_mut() {
+                    *aspect = distance;
+                }
             } else {
-                camera.set_distance(camera.get_distance() + distance);
+                if let CameraPositionParameters::Orbital {
+                    distance: camera_dist,
+                    ..
+                } = camera.get_position_parameters_mut()
+                {
+                    *camera_dist += distance;
+                }
             }
 
             if camera.get_size().is_some() {
@@ -221,26 +233,27 @@ impl RenderRequest {
         }
 
         let camera = self.get_camera();
-        let one_eighty_diff = (camera.get_yaw().abs() - 180.0).abs();
+        let rotation = camera.get_rotation();
+        let one_eighty_diff = (rotation.yaw.abs() - 180.0).abs();
         let yaw = if one_eighty_diff < 0.01 {
-            camera.get_yaw().abs() + 90.0
-        } else if camera.get_yaw().is_sign_positive() || camera.get_yaw() <= -90.0 {
-            camera.get_yaw()
+            rotation.yaw.abs() + 90.0
+        } else if rotation.yaw.is_sign_positive() || rotation.yaw <= -90.0 {
+            rotation.yaw
         } else {
-            camera.get_yaw() + 90.0
+            rotation.yaw + 90.0
         };
 
         let aligned_yaw = ((yaw + 180.0) / 90.0).floor() * 90.0;
 
         let rot_quat: Quat = Quat::from_euler(
             EulerRot::ZXY,
-            camera.get_roll().to_radians(),
+            rotation.roll.to_radians(),
             0.0,
             aligned_yaw.to_radians(),
         );
 
-        let light = Vec3::new(0.0, -6.21, 6.21);
-        let front_lighting = rot_quat.mul_vec3(light) * Vec3::new(1.0, 1.0, -1.0);
+        let light = Vec3A::new(0.0, -6.21, 6.21);
+        let front_lighting = rot_quat.mul_vec3a(light) * Vec3A::new(1.0, 1.0, -1.0);
 
         SunInformation::new(front_lighting, 2.0, 0.621)
     }
@@ -291,19 +304,23 @@ impl RenderRequest {
             request.features.remove(RenderRequestFeatures::BodyLayers);
             request.features.remove(RenderRequestFeatures::Cape);
         }
-        
+
         // If the request is custom, we add the custom feature, otherwise we remove it
         if request.mode.is_custom() {
             request.features.insert(RenderRequestFeatures::Custom);
         } else {
             request.features.remove(RenderRequestFeatures::Custom);
         }
-        
+
         // If the request has extra settings, we add the ExtraSettings feature, otherwise we remove it
         if request.extra_settings.is_some() {
-            request.features.insert(RenderRequestFeatures::ExtraSettings);
+            request
+                .features
+                .insert(RenderRequestFeatures::ExtraSettings);
         } else {
-            request.features.remove(RenderRequestFeatures::ExtraSettings);
+            request
+                .features
+                .remove(RenderRequestFeatures::ExtraSettings);
         }
 
         request

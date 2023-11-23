@@ -1,11 +1,12 @@
-use deadpool::managed::Object;
+use std::sync::Arc;
+
 use image::{ImageFormat, RgbaImage};
+use crate::utils::nmsr_rendering_compat::Scene;
 use nmsr_rendering::{
     errors::NMSRRenderingError,
     high_level::{
         model::{PlayerArmorSlots, PlayerModel},
         parts::provider::PlayerPartProviderContext,
-        pipeline::{pools::SceneContextPoolManager, scene::Scene},
     },
 };
 use tracing::instrument;
@@ -26,7 +27,6 @@ pub(crate) async fn internal_render_model(
     state: &NMSRState,
     resolved: &ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
-    let scene_context = state.create_scene_context().await?;
 
     let mode = request.mode;
     #[allow(unused_mut)] // We use mut when we have ears feature enabled
@@ -37,7 +37,7 @@ pub(crate) async fn internal_render_model(
 
     let parts = mode.get_body_parts();
 
-    let mut part_context = create_part_context(request, resolved);
+    let part_context = create_part_context(request, resolved);
 
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
@@ -47,8 +47,6 @@ pub(crate) async fn internal_render_model(
     }
 
     let mut scene = Scene::new(
-        &state.graphics_context,
-        scene_context,
         camera,
         lighting,
         size,
@@ -56,13 +54,11 @@ pub(crate) async fn internal_render_model(
         &parts,
     );
 
-    load_textures(resolved, state, request, &mut part_context, &mut scene).await?;
+    load_textures(resolved, state, request, &mut scene).await?;
 
-    scene.render(&state.graphics_context)?;
+    scene.render()?;
 
-    let render = scene
-        .copy_output_texture(&state.graphics_context, true)
-        .await?;
+    let render = scene.copy_output_texture();
     let render_bytes = create_png_from_bytes((size.width, size.height), &render)?;
 
     Ok(render_bytes)
@@ -83,12 +79,11 @@ fn load_ears_features(
 }
 
 #[instrument(skip_all)]
-async fn load_textures(
+async fn load_textures<'a>(
     resolved: &ResolvedRenderRequest,
     state: &NMSRState,
     request: &RenderRequest,
-    part_provider: &mut PlayerPartProviderContext<VanillaMinecraftArmorMaterialData>,
-    scene: &mut Scene<Object<SceneContextPoolManager>>,
+    scene: &mut Scene<'a, VanillaMinecraftArmorMaterialData>,
 ) -> Result<()> {
     for (&texture_type, texture_bytes) in &resolved.textures {
         let mut image_buffer = load_image(texture_bytes)?;
@@ -97,26 +92,27 @@ async fn load_textures(
             image_buffer = NMSRState::process_skin(image_buffer, request.features)?;
         }
 
-        scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);
+        scene.set_texture(texture_type.into(), Arc::new(image_buffer));
     }
 
-    if let Some(armor_slots) = part_provider.armor_slots.as_ref() {
+    if let Some(armor_slots) = scene.parts_context.armor_slots.as_ref() {
         let (main_layer, second_armor_layer) = state
             .armor_manager
             .create_armor_texture(armor_slots)
             .await?;
+        
+        let main_layer = Arc::new(main_layer);
+        let second_armor_layer = second_armor_layer.map(Arc::new);
 
         scene.set_texture(
-            &state.graphics_context,
             VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_ONE,
-            &main_layer,
+            main_layer,
         );
 
         if let Some(second_armor_layer) = second_armor_layer {
             scene.set_texture(
-                &state.graphics_context,
                 VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_TWO,
-                &second_armor_layer,
+                second_armor_layer,
             );
         }
     }

@@ -79,14 +79,6 @@ async fn main() -> anyhow::Result<()> {
 
     state.init().await?;
 
-    let adapter = &state.graphics_context.adapter.get_info();
-    let samples = &state.graphics_context.multisampling_strategy;
-
-    info!(
-        "Initialized state with adapter {:?} and using {:?} multisampling strategy",
-        adapter, samples
-    );
-
     // build our application with a route
     let router = Router::new()
         .route("/:mode/:texture", get(render))

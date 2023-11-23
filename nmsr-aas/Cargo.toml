@@ -8,10 +8,13 @@ authors.workspace = true
 homepage.workspace = true
 
 [dependencies]
-# NMSR Rendering - Library for rendering using a wgpu backed rendering engine
+# NMSR Rendering - Library for rendering
 nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering", features = [
     "part_tracker",
-] }
+], default-features = false }
+
+# NMSR Rasterizer - A software-based rasterizer for nmsr-rendering
+nmsr-rasterizer-test = { path = "../../nmsr-rasterizer-test" }
 
 nmsr-rendering-blockbench-model-generator-experiment = { path = "../utils/nmsr-rendering-blockbench-model-generator-experiment" }
 
@@ -78,7 +81,6 @@ tower-http = { version = "0.4", features = ["full"] }
 symlink = "0.1"
 humantime-serde = "1.1"
 serde_with = "3.3"
-deadpool = "0.9"
 image = { workspace = true, default-features = false }
 mtpng = "0.3"
 
@@ -95,8 +97,8 @@ xxhash-rust = { workspace = true }
 is_empty = "0.2"
 
 [features]
-default = []
-ears = ["nmsr-rendering/ears", "nmsr-rendering-blockbench-model-generator-experiment/ears"]
+default = ["ears"]
+ears = ["nmsr-rasterizer-test/ears", "nmsr-rendering/ears", "nmsr-rendering-blockbench-model-generator-experiment/ears"]
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

@@ -1,11 +1,8 @@
 use core::fmt::Debug;
 use std::f32::consts::FRAC_1_SQRT_2;
 
-use nmsr_rendering::high_level::{
-    camera::{Camera, CameraRotation, ProjectionParameters},
-    pipeline::scene::Size,
-    types::PlayerBodyPartType,
-};
+use nmsr_rasterizer_test::{model::Size, camera::{Camera, ProjectionParameters, CameraRotation}};
+use nmsr_rendering::high_level::types::PlayerBodyPartType;
 use strum::{EnumIter, EnumString, IntoEnumIterator, Display};
 use tracing::instrument;
 

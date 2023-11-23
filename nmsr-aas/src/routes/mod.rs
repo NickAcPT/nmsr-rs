@@ -16,16 +16,11 @@ use crate::{
         resolver::{mojang::client::MojangClient, RenderRequestResolver},
     },
 };
-use deadpool::managed::Object;
 use enumset::EnumSet;
 use image::RgbaImage;
 #[cfg(feature = "ears")]
-use nmsr_rendering::high_level::camera::Camera;
-use nmsr_rendering::high_level::pipeline::{
-    pools::SceneContextPoolManager, Backends, Features, GraphicsContext, GraphicsContextDescriptor,
-    GraphicsContextPools,
-};
-pub use render::{render, render_post_warning, render_get_warning};
+use nmsr_rasterizer_test::camera::Camera;
+pub use render::{render, render_get_warning, render_post_warning};
 use std::{borrow::Cow, hint::black_box, sync::Arc, time::Duration};
 use strum::IntoEnumIterator;
 use tracing::{debug_span, info, info_span, instrument, Instrument};
@@ -42,8 +37,6 @@ pub trait RenderRequestValidator {
 pub struct NMSRState {
     pub resolver: Arc<RenderRequestResolver>,
     pub armor_manager: Arc<VanillaMinecraftArmorManager>,
-    pub graphics_context: Arc<GraphicsContext>,
-    pools: Arc<GraphicsContextPools>,
     cache_config: ModelCacheConfiguration,
     features_config: FeaturesConfiguration,
 }
@@ -77,41 +70,16 @@ impl NMSRState {
         let cache_config = config.caching.clone();
         let model_cache = ModelCache::new("cache".into(), cache_config).await?;
 
-        let rendering_config = config.rendering.clone();
-
         let resolver = RenderRequestResolver::new(model_cache, Arc::new(mojang_client));
-
-        let graphics_context = GraphicsContext::new(GraphicsContextDescriptor {
-            backends: Some(Backends::all()),
-            surface_provider: Box::new(|_| None),
-            default_size: (0, 0), // can be zero since we don't provide any surface
-            texture_format: None,
-            features: Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-            limits: None,
-            blend_state: None,
-            sample_count: rendering_config.as_ref().map(|c| c.sample_count),
-            use_smaa: rendering_config.as_ref().map(|c| c.use_smaa),
-        })
-        .await?;
-
-        let graphics_context = Arc::new(graphics_context);
-
-        let pools = GraphicsContextPools::new(graphics_context.clone())?;
 
         let armor_manager = VanillaMinecraftArmorManager::new("cache".into()).await?;
 
         Ok(Self {
             resolver: Arc::new(resolver),
-            graphics_context,
-            pools: Arc::new(pools),
             cache_config: config.caching.clone(),
             armor_manager: Arc::new(armor_manager),
             features_config: config.features.clone().unwrap_or_default(),
         })
-    }
-
-    pub async fn create_scene_context(&self) -> Result<Object<SceneContextPoolManager>> {
-        Ok(self.pools.create_scene_context().await?)
     }
 
     #[allow(unused_variables)]
@@ -141,6 +109,9 @@ impl NMSRState {
         camera: &mut Camera,
     ) {
         use ears_rs::features::data::ear::EarMode;
+        use nmsr_rasterizer_test::camera::{
+            CameraPositionParameters, ProjectionParameters,
+        };
         let mut look_at_y_offset: f32 = 0.0;
         let mut distance_offset: f32 = 0.0;
 
@@ -163,10 +134,22 @@ impl NMSRState {
             }
         }
 
-        camera.set_look_at_y(camera.get_look_at_y() + look_at_y_offset);
+        if let CameraPositionParameters::Orbital { look_at, .. } =
+            camera.get_position_parameters_mut()
+        {
+            look_at.y += look_at_y_offset;
+        }
 
-        camera.set_aspect(camera.get_aspect() + distance_offset);
-        camera.set_distance(camera.get_distance() + distance_offset);
+        if let ProjectionParameters::Orthographic { aspect } = camera.get_projection_mut() {
+            *aspect += distance_offset;
+        }
+        if let CameraPositionParameters::Orbital {
+            distance: camera_dist,
+            ..
+        } = camera.get_position_parameters_mut()
+        {
+            *camera_dist += distance_offset;
+        }
     }
 
     #[instrument(skip(self))]

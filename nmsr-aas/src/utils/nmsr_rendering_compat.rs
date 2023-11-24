@@ -20,6 +20,7 @@ use nmsr_rasterizer_test::{
     model::{RenderEntry, Size},
     shader::{ShaderState, SunInformation},
 };
+use tracing::instrument;
 
 pub struct Scene<'a, M: ArmorMaterial> {
     camera: Camera,
@@ -31,7 +32,13 @@ pub struct Scene<'a, M: ArmorMaterial> {
     shader_states: Vec<ShaderState>,
 }
 
-impl<'a, M: ArmorMaterial> Scene<'a, M> {
+impl<'a, M: ArmorMaterial + derive_more::Debug> derive_more::Debug for Scene<'a, M> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Scene").field("camera", &self.camera).field("lighting", &self.lighting).field("size", &self.size).field("entry", &self.entry).field("parts_context", &self.parts_context).field("parts", &self.parts).field("shader_states", &self.shader_states).finish()
+    }
+}
+
+impl<'a, M: ArmorMaterial + derive_more::Debug> Scene<'a, M> {
     pub fn new(
         mut camera: Camera,
         lighting: SunInformation,
@@ -39,19 +46,23 @@ impl<'a, M: ArmorMaterial> Scene<'a, M> {
         parts_context: &'a PlayerPartProviderContext<M>,
         parts: &[PlayerBodyPartType],
     ) -> Self {
-        camera.set_size(Some(size));
-        
+        if let None = camera.get_size() {
+            camera.set_size(Some(size));
+        }
+
         Self {
             camera,
             lighting,
             size,
-            entry: RenderEntry::new(size),
+            entry: RenderEntry::new(camera.get_size().unwrap()),
             parts_context,
             parts: parts.to_vec(),
             shader_states: Vec::new(),
         }
     }
 
+    
+    #[instrument(skip(self, image))]
     pub fn set_texture(&mut self, texture: PlayerPartTextureType, image: Arc<RgbaImage>) {
         let providers = [
             PlayerPartsProvider::Minecraft,
@@ -82,6 +93,7 @@ impl<'a, M: ArmorMaterial> Scene<'a, M> {
         ));
     }
 
+    #[instrument(skip_all)]
     pub fn render(&mut self) -> Result<(), NMSRRenderingError> {
         for state in &mut self.shader_states {
             state.update();
@@ -91,7 +103,14 @@ impl<'a, M: ArmorMaterial> Scene<'a, M> {
         Ok(())
     }
 
+    #[instrument(skip_all)]
     pub fn copy_output_texture(&self) -> &[u8] {
-        &self.entry.textures.output
+        let size = self.size;
+        &self
+            .entry
+            .textures
+            .output
+            .get(0..((size.width * size.height * 4) as usize))
+            .expect("Failed to copy output texture")
     }
 }

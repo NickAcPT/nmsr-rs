@@ -113,7 +113,7 @@ impl NMSRState {
             CameraPositionParameters, ProjectionParameters,
         };
         let mut look_at_y_offset: f32 = 0.0;
-        let mut distance_offset: f32 = 0.0;
+        let mut distance_offset: f32 = 0.0005;
 
         if features.ear_mode == EarMode::Around || features.ear_mode == EarMode::Above {
             look_at_y_offset += 2.5;
@@ -157,8 +157,8 @@ impl NMSRState {
         info!("Pre-loading our cache biases.");
         self.preload_cache_biases().await?;
 
-        info!("Pre-warming model renderer.");
-        self.prewarm_renderer().await?;
+        //info!("Pre-warming model renderer.");
+        //self.prewarm_renderer().await?;
 
         info!("Starting cache clean-up task");
         self.start_cache_cleanup_task();

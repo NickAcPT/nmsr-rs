@@ -197,7 +197,7 @@ impl RenderRequest {
 
             if self.mode.is_isometric() {
                 if let ProjectionParameters::Orthographic { aspect } = camera.get_projection_mut() {
-                    *aspect = distance;
+                    *aspect += distance;
                 }
             } else {
                 if let CameraPositionParameters::Orbital {

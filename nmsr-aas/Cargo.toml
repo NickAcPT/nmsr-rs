@@ -21,7 +21,14 @@ nmsr-rendering-blockbench-model-generator-experiment = { path = "../utils/nmsr-r
 ears-rs = { workspace = true }
 
 anyhow = { workspace = true }
-axum = { version = "0.6", features = ["macros"] }
+axum = { git = "https://github.com/tokio-rs/axum", rev = "fc3cb44b9161ce6bfae654f0a31d7224643b6cfb", features = [
+    "macros",
+    "tokio"
+] }
+axum-extra = { git = "https://github.com/tokio-rs/axum", rev = "fc3cb44b9161ce6bfae654f0a31d7224643b6cfb", features = [
+    "multipart",
+] }
+http-body-util = "0.1.0"
 
 # async-trait - Async trait support because Rust is bad at async
 async-trait = { workspace = true }
@@ -40,12 +47,13 @@ serde_json = { workspace = true }
 base64 = "0.21"
 
 # Hyper - HTTP client
-hyper = { version = "0.14", features = ["client", "runtime"] }
-hyper-tls = "0.5"
+hyper = { version = "1.0", features = ["client"] }
+hyper-util = { version = "0.1.1", features = ["client", "client-legacy", "http1", "http2", "server-auto", "tokio"] }
+hyper-tls = { git = "https://github.com/hyperium/hyper-tls", rev = "95ebd8d3ac8785e552fc9fee0ffac141bb361423" }
 url = "2.4"
 
 # Tokio - Async runtime
-tokio = { workspace = true, features = ["full"] }
+tokio = { workspace = true, features = ["macros", "fs", "sync", "signal", "rt-multi-thread"] }
 
 # Tracing - Logging framework
 tracing = { workspace = true }
@@ -75,7 +83,8 @@ derive_more = { workspace = true }
 
 # Tower - Service framework
 tower = { version = "0.4", features = ["limit", "retry", "load-shed"] }
-tower-http = { version = "0.4", features = ["full"] }
+tower-http = { version = "0.5", features = ["full"] }
+http = "1.0"
 
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
 symlink = "0.1"
@@ -87,7 +96,6 @@ mtpng = "0.3"
 chrono = "0.4"
 tokio-stream = { version = "0.1", features = ["fs"] }
 sync_wrapper = "0.1"
-axum-extra = { version = "0.8", features = ["multipart"] }
 
 regex = "1.9"
 indoc = "2"
@@ -98,7 +106,11 @@ is_empty = "0.2"
 
 [features]
 default = ["ears"]
-ears = ["nmsr-rasterizer-test/ears", "nmsr-rendering/ears", "nmsr-rendering-blockbench-model-generator-experiment/ears"]
+ears = [
+    "nmsr-rasterizer-test/ears",
+    "nmsr-rendering/ears",
+    "nmsr-rendering-blockbench-model-generator-experiment/ears",
+]
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

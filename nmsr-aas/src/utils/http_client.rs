@@ -1,17 +1,17 @@
-use axum::http::{HeaderName, HeaderValue};
-use hyper::{
-    body::{to_bytes, Bytes},
-    Body, Client, Method, Request, Response,
+use axum::{
+    body::Body,
+    http::{HeaderName, HeaderValue},
 };
+use http_body_util::BodyExt;
+use hyper::{body::{Bytes, Incoming}, Method, Request, Response};
 use hyper_tls::HttpsConnector;
+use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use std::time::Duration;
 use sync_wrapper::SyncWrapper;
 use tokio::sync::RwLock;
 use tower::{util::BoxService, Service, ServiceBuilder, ServiceExt};
 use tower_http::{
-    classify::{
-        NeverClassifyEos, ServerErrorsFailureClass,
-    },
+    classify::{NeverClassifyEos, ServerErrorsFailureClass},
     set_header::SetRequestHeaderLayer,
     trace::{DefaultOnFailure, ResponseBody, TraceLayer},
 };
@@ -25,9 +25,9 @@ const USER_AGENT: &str = concat!(
     " (Discord=@nickac; +https://nmsr.nickac.dev/)"
 );
 
-type TraceResponseBody =
-    ResponseBody<Body, NeverClassifyEos<ServerErrorsFailureClass>, (), (), DefaultOnFailure>;
-type BoxedTracedResponse = BoxService<Request<Body>, Response<TraceResponseBody>, hyper::Error>;
+pub(crate) type TraceResponseBody =
+    ResponseBody<Incoming, NeverClassifyEos<ServerErrorsFailureClass>, (), (), DefaultOnFailure>;
+type BoxedTracedResponse = BoxService<Request<Body>, Response<TraceResponseBody>, hyper_util::client::legacy::Error>;
 
 pub struct NmsrHttpClient {
     inner: RwLock<SyncWrapper<BoxedTracedResponse>>,
@@ -45,7 +45,7 @@ impl NmsrHttpClient {
         url: &str,
         method: Method,
         parent_span: &Span,
-        on_error: impl FnOnce() -> Option<MojangRequestError>
+        on_error: impl FnOnce() -> Option<MojangRequestError>,
     ) -> MojangRequestResult<Bytes> {
         let request = Request::builder()
             .method(method)
@@ -67,16 +67,18 @@ impl NmsrHttpClient {
 
         let body = response.into_body();
 
-        to_bytes(body)
+        body.collect()
             .await
+            .map(|b| b.to_bytes())
             .map_err(|e| MojangRequestError::BoxedRequestError(Box::new(e)))
     }
 }
 
 fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
     let https = HttpsConnector::new();
-
-    let client = Client::builder().build(https);
+    
+    // A new higher level client from hyper is in the works, so we gotta use the legacy one
+    let client = Client::builder(TokioExecutor::new()).build(https);
 
     let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
     let service = ServiceBuilder::new()

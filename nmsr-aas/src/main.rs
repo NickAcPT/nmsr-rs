@@ -22,7 +22,6 @@ use crate::{
     routes::{render, render_get_warning, render_post_warning, NMSRState},
     utils::tracing::NmsrTracing,
 };
-
 use crate::utils::config::NmsrConfiguration;
 use anyhow::Context;
 use axum::routing::post;

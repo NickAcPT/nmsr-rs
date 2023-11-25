@@ -1,23 +1,49 @@
+use crate::error::{MojangRequestError, MojangRequestResult};
 use axum::{
     body::Body,
     http::{HeaderName, HeaderValue},
+    response::Response as AxumResponse,
 };
+use http::HeaderMap;
 use http_body_util::BodyExt;
-use hyper::{body::{Bytes, Incoming}, Method, Request, Response};
+use hyper::{
+    body::{Bytes, Incoming},
+    Method, Request, Response,
+};
+
 use hyper_tls::HttpsConnector;
 use hyper_util::{client::legacy::Client, rt::TokioExecutor};
-use std::time::Duration;
+use std::{future::Future, pin::Pin, task::Poll, time::Duration, convert::Infallible};
 use sync_wrapper::SyncWrapper;
 use tokio::sync::RwLock;
-use tower::{util::BoxService, Service, ServiceBuilder, ServiceExt};
+use tower::{
+    layer::util::Identity,
+    service_fn,
+    util::{BoxService, ServiceFn},
+    Service, ServiceBuilder, ServiceExt,
+};
 use tower_http::{
     classify::{NeverClassifyEos, ServerErrorsFailureClass},
     set_header::SetRequestHeaderLayer,
     trace::{DefaultOnFailure, ResponseBody, TraceLayer},
 };
 use tracing::{instrument, Span};
+use wasm_bindgen_futures::{
+    future_to_promise,
+    js_sys::{Object, Reflect, Uint8Array},
+    JsFuture,
+};
 
-use crate::error::{MojangRequestError, MojangRequestResult};
+#[cfg(feature = "wasm")]
+use wasm_bindgen::prelude::*;
+#[cfg(feature = "wasm")]
+use wasm_bindgen_futures::js_sys::Promise;
+
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+extern "C" {
+    fn do_request(url: &str, method: &str, headers: JsValue, body: Uint8Array) -> Promise;
+}
 
 const USER_AGENT: &str = concat!(
     "NMSR-as-a-Service/",
@@ -25,12 +51,18 @@ const USER_AGENT: &str = concat!(
     " (Discord=@nickac; +https://nmsr.nickac.dev/)"
 );
 
+#[cfg(not(feature = "wasm"))]
 pub(crate) type TraceResponseBody =
     ResponseBody<Incoming, NeverClassifyEos<ServerErrorsFailureClass>, (), (), DefaultOnFailure>;
-type BoxedTracedResponse = BoxService<Request<Body>, Response<TraceResponseBody>, hyper_util::client::legacy::Error>;
+#[cfg(not(feature = "wasm"))]
+type BoxedTracedResponse =
+    BoxService<Request<Body>, Response<TraceResponseBody>, hyper_util::client::legacy::Error>;
 
 pub struct NmsrHttpClient {
+    #[cfg(not(feature = "wasm"))]
     inner: RwLock<SyncWrapper<BoxedTracedResponse>>,
+    #[cfg(feature = "wasm")]
+    inner: RwLock<SyncWrapper<BoxService<axum::extract::Request, AxumResponse, JsError>>>,
 }
 
 impl NmsrHttpClient {
@@ -75,12 +107,69 @@ impl NmsrHttpClient {
 }
 
 fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
-    let https = HttpsConnector::new();
-    
-    // A new higher level client from hyper is in the works, so we gotta use the legacy one
-    let client = Client::builder(TokioExecutor::new()).build(https);
+    #[cfg(not(feature = "wasm"))]
+    let client = {
+        let https = HttpsConnector::new();
 
-    let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
+        // A new higher level client from hyper is in the works, so we gotta use the legacy one
+        Client::builder(TokioExecutor::new()).build(https)
+    };
+
+    let client = {
+        fn raw_do_request(
+            uri: String,
+            method: String,
+            headers: HeaderMap,
+            body: &[u8],
+        ) -> NmsrRequestFuture {
+            let body_array = Uint8Array::from(body);
+            
+            let mut headers_obj = Object::new();
+
+            for (name, value) in headers.iter() {
+                Reflect::set(
+                    &mut headers_obj,
+                    &name.as_str().into (),
+                    &value.to_str().unwrap().into(),
+                )
+                .unwrap();
+            }
+
+            let promise = do_request(&uri, &method, headers_obj.into(), body_array);
+
+            let promise = promise;
+            let future = JsFuture::from(promise);
+
+            NmsrRequestFuture(future)
+        }
+
+        async fn do_wasm_request(request: Request<Body>) -> Result<AxumResponse, JsError> {
+            let (parts, body) = request.into_parts();
+
+            let body = body.collect().await?.to_bytes();
+            let uri = parts.uri.to_string();
+            let method = parts.method.to_string();
+
+            let result_bytes = { raw_do_request(uri, method, parts.headers, body.as_ref()) }.await?;
+
+            let response = Response::builder().body(result_bytes.to_vec().into())?;
+
+            Ok(response)
+        }
+
+        service_fn(do_wasm_request)
+    };
+
+    let tracing = {
+        #[cfg(not(feature = "wasm"))]
+        {
+            TraceLayer::new_for_http().on_body_chunk(()).on_eos(())
+        }
+        #[cfg(feature = "wasm")]
+        {
+            Identity::new()
+        }
+    };
     let service = ServiceBuilder::new()
         .boxed()
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))
@@ -93,5 +182,27 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
 
     NmsrHttpClient {
         inner: RwLock::new(SyncWrapper::new(service)),
+    }
+}
+
+struct NmsrRequestFuture(JsFuture);
+
+unsafe impl Send for NmsrRequestFuture {}
+
+// Map future<jsvalue, jsvalue> to future<jsvalue, jserror>
+impl Future for NmsrRequestFuture {
+    type Output = Result<Vec<u8>, Infallible>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut core::task::Context<'_>) -> Poll<Self::Output> {
+        let future = unsafe { self.map_unchecked_mut(|f| &mut f.0) };
+
+        match future.poll(cx) {
+            Poll::Ready(Ok(value)) => Poll::Ready(Ok(value
+                .dyn_into::<Uint8Array>()
+                .expect_throw("Failed to convert response to Uint8Array")
+                .to_vec())),
+            Poll::Ready(Err(err)) => panic!("Failed to do request: {:?}", err),
+            Poll::Pending => Poll::Pending,
+        }
     }
 }

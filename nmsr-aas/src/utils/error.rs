@@ -130,6 +130,9 @@ pub enum MojangRequestError {
     InvalidTextureHashError(String),
     #[error("Unable to find a player with the UUID {0}")]
     GameProfileNotFound(Uuid),
+    #[cfg(feature = "wasm")]
+    #[error("JS error")]
+    JsError,
 }
 
 #[derive(Error, Debug)]
@@ -203,5 +206,14 @@ impl IntoResponse for NMSRaaSError {
         res.extensions_mut().insert(NmsrErrorExtension(self));
 
         res
+    }
+}
+
+
+#[cfg(feature = "wasm")]
+impl From<wasm_bindgen::JsError> for MojangRequestError {
+    fn from(err: wasm_bindgen::JsError) -> Self {
+        // TODO: Think whether to throw a JS error instead of converting it to a Rust error
+        Self::JsError
     }
 }

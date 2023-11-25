@@ -7,6 +7,10 @@ build = "build.rs"
 authors.workspace = true
 homepage.workspace = true
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "nmsr_aas_lib"
+
 [dependencies]
 # NMSR Rendering - Library for rendering
 nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering", features = [
@@ -104,13 +108,18 @@ xxhash-rust = { workspace = true }
 
 is_empty = "0.2"
 
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+web-sys = { version = "0.3", features = ["Request", "RequestInit", "WorkerGlobalScope"], optional = true }
+
 [features]
-default = ["ears"]
+default = ["ears", "wasm"]
 ears = [
     "nmsr-rasterizer-test/ears",
     "nmsr-rendering/ears",
     "nmsr-rendering-blockbench-model-generator-experiment/ears",
 ]
+wasm = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:web-sys"]
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

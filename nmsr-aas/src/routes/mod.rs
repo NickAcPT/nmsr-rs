@@ -109,9 +109,7 @@ impl NMSRState {
         camera: &mut Camera,
     ) {
         use ears_rs::features::data::ear::EarMode;
-        use nmsr_rasterizer_test::camera::{
-            CameraPositionParameters, ProjectionParameters,
-        };
+        use nmsr_rasterizer_test::camera::{CameraPositionParameters, ProjectionParameters};
         let mut look_at_y_offset: f32 = 0.0;
         let mut distance_offset: f32 = 0.0005;
 
@@ -154,14 +152,17 @@ impl NMSRState {
 
     #[instrument(skip(self))]
     pub(crate) async fn init(&self) -> Result<()> {
-        info!("Pre-loading our cache biases.");
-        self.preload_cache_biases().await?;
+        #[cfg(not(feature = "wasm"))]
+        {
+            info!("Pre-loading our cache biases.");
+            self.preload_cache_biases().await?;
 
-        //info!("Pre-warming model renderer.");
-        //self.prewarm_renderer().await?;
+            info!("Pre-warming model renderer.");
+            self.prewarm_renderer().await?;
 
-        info!("Starting cache clean-up task");
-        self.start_cache_cleanup_task();
+            info!("Starting cache clean-up task");
+            self.start_cache_cleanup_task();
+        }
 
         Ok(())
     }

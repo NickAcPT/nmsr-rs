@@ -17,6 +17,9 @@ pub enum NMSRaaSError {
     RenderError(#[from] nmsr_rendering::errors::NMSRRenderingError),
     #[error("Armor manager error: {0}")]
     ArmorManagerError(#[from] ArmorManagerError),
+    
+    #[error("{0}")]
+    ClonedError(String),
 
     #[cfg(feature = "ears")]
     #[error("Ears error: {0}")]
@@ -109,7 +112,7 @@ pub enum MojangRequestError {
     #[error("Request error: {0}")]
     BoxedRequestError(Box<dyn std::error::Error + Send + Sync>),
     #[error("Request error: {0}")]
-    RequestError(#[from] hyper::Error),
+    RequestError(#[from] hyper_util::client::legacy::Error),
     #[error("Missing skin from game profile: {0}")]
     MissingSkinPropertyError(Uuid),
     #[error("Received invalid texture url: {0}")]
@@ -171,6 +174,13 @@ impl<T> ExplainableExt<T> for std::result::Result<T, std::io::Error> {
 }
 
 pub struct NmsrErrorExtension(pub NMSRaaSError);
+
+impl Clone for NmsrErrorExtension {
+    fn clone(&self) -> Self {
+        // This is bad code, I don't care
+        Self(NMSRaaSError::ClonedError(self.0.to_string()))
+    }
+}
 
 impl IntoResponse for NMSRaaSError {
     fn into_response(self) -> axum::response::Response {

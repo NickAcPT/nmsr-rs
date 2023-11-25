@@ -10,21 +10,18 @@ use crate::{
 };
 use async_trait::async_trait;
 use axum::{
-    extract::{FromRequest, Path, Query},
-    BoxError, RequestExt,
+    extract::{FromRequest, Path, Query, Request, FromRequestParts},
+    RequestExt,
 };
 use axum_extra::extract::Multipart;
-use hyper::{body::Bytes, Method, Request};
+use hyper::{Method, body::Bytes};
 use is_empty::IsEmpty;
 use serde_json::{json, Value};
 use std::{borrow::ToOwned, collections::HashMap};
 
 #[async_trait]
-impl<S, B> FromRequest<S, B> for RenderRequest
+impl<S> FromRequest<S> for RenderRequest
 where
-    B: axum::body::HttpBody + Send + 'static,
-    B::Data: Into<Bytes>,
-    B::Error: Into<BoxError>,
     S: Send + Sync + RenderRequestValidator,
 {
     type Rejection = NMSRaaSError;
@@ -39,7 +36,7 @@ where
     ///
     /// The entry is in the URL path, and the options are in the query string.
     ///
-    async fn from_request(mut request: Request<B>, state: &S) -> Result<Self> {
+    async fn from_request(mut request: Request, state: &S) -> Result<Self> {
         let (mode, entry, mut query) = if request.method() == Method::POST {
             let Path(mode_str) = request
                 .extract_parts_with_state::<Path<String>, S>(state)
@@ -155,7 +152,7 @@ where
 mod tests {
     use std::collections::HashMap;
 
-    use axum::{debug_handler, extract::State, routing::get, Router};
+    use axum::{debug_handler, extract::State, routing::get, Router, body::Body};
     use enumset::{enum_set, EnumSet};
     use hyper::{Body, Request};
     use tokio::sync::mpsc::Sender;

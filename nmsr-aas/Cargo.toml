@@ -18,7 +18,14 @@ nmsr-rendering-blockbench-model-generator-experiment = { path = "../utils/nmsr-r
 ears-rs = { workspace = true }
 
 anyhow = { workspace = true }
-axum = { version = "0.6", features = ["macros"] }
+axum = { version = "0.7", features = [
+    "macros",
+    "tokio"
+] }
+axum-extra = { version = "0.9", features = [
+    "multipart",
+] }
+http-body-util = "0.1"
 
 # async-trait - Async trait support because Rust is bad at async
 async-trait = { workspace = true }
@@ -37,12 +44,13 @@ serde_json = { workspace = true }
 base64 = "0.21"
 
 # Hyper - HTTP client
-hyper = { version = "0.14", features = ["client", "runtime"] }
-hyper-tls = "0.5"
+hyper = { version = "1.0", features = ["client"] }
+hyper-util = { version = "0.1", features = ["client", "client-legacy", "http1", "http2", "server-auto", "tokio"] }
+hyper-tls = "0.6"
 url = "2.4"
 
 # Tokio - Async runtime
-tokio = { workspace = true, features = ["full"] }
+tokio = { workspace = true, features = ["macros", "fs", "sync", "signal", "rt-multi-thread"] }
 
 # Tracing - Logging framework
 tracing = { workspace = true }
@@ -51,11 +59,12 @@ tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # OpenTelemetry - Tracing framework
-opentelemetry = { version = "0.20", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.13", default-features = true }
+opentelemetry = { version = "0.21", features = [] }
+opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.14", default-features = true }
 
 # Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
-tracing-opentelemetry = "0.21"
+tracing-opentelemetry = "0.22"
 
 # Strum - Enum helper library
 strum = { workspace = true }
@@ -72,20 +81,20 @@ derive_more = { workspace = true }
 
 # Tower - Service framework
 tower = { version = "0.4", features = ["limit", "retry", "load-shed"] }
-tower-http = { version = "0.4", features = ["full"] }
+tower-http = { version = "0.5", features = ["full"] }
+http = "1.0"
 
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
 symlink = "0.1"
 humantime-serde = "1.1"
 serde_with = "3.3"
-deadpool = "0.9"
+deadpool = "0.10"
 image = { workspace = true, default-features = false }
 mtpng = "0.3"
 
 chrono = "0.4"
 tokio-stream = { version = "0.1", features = ["fs"] }
 sync_wrapper = "0.1"
-axum-extra = { version = "0.8", features = ["multipart"] }
 
 regex = "1.9"
 indoc = "2"
@@ -96,7 +105,10 @@ is_empty = "0.2"
 
 [features]
 default = []
-ears = ["nmsr-rendering/ears", "nmsr-rendering-blockbench-model-generator-experiment/ears"]
+ears = [
+    "nmsr-rendering/ears",
+    "nmsr-rendering-blockbench-model-generator-experiment/ears",
+]
 
 [build-dependencies]
 vergen = { version = "8.2.4", default-features = false, features = [

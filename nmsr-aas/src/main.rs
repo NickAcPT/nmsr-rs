@@ -19,40 +19,37 @@ mod routes;
 mod utils;
 
 use crate::{
-    routes::{render, render_post_warning, render_get_warning, NMSRState},
+    routes::{render, render_get_warning, render_post_warning, NMSRState},
     utils::tracing::NmsrTracing,
 };
 
+use crate::utils::config::NmsrConfiguration;
 use anyhow::Context;
 use axum::routing::post;
+use axum::{routing::get, Router};
+use http::HeaderName;
 use opentelemetry::StringValue;
+use opentelemetry::{
+    global,
+    KeyValue,
+};
+use opentelemetry_sdk::{propagation::TraceContextPropagator, trace, Resource};
+use opentelemetry_otlp::{new_exporter, WithExportConfig};
+use std::{net::SocketAddr, path::PathBuf};
+use tokio::{main, signal};
 use tower_http::{
     cors::{AllowMethods, Any, CorsLayer},
-    normalize_path::NormalizePathLayer,
-    services::ServeDir,
+    request_id::{PropagateRequestIdLayer, SetRequestIdLayer},
+    services::ServeDir, normalize_path::NormalizePathLayer,
 };
+use tower_http::request_id::MakeRequestUuid;
+use tracing::info;
 use tracing::info_span;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use twelf::Layer;
 use utils::config::TracingConfiguration;
 pub use utils::{caching, config, error};
-
-use crate::utils::config::NmsrConfiguration;
-
-use std::{net::SocketAddr, path::PathBuf};
-
-use axum::{routing::get, Router, ServiceExt};
-use opentelemetry::{
-    global,
-    sdk::{propagation::TraceContextPropagator, trace, Resource},
-    KeyValue,
-};
-use opentelemetry_otlp::{new_exporter, WithExportConfig};
-use tokio::{main, signal};
-use tower::ServiceBuilder;
-use tower_http::{request_id::MakeRequestUuid, ServiceBuilderExt};
-use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[main]
 async fn main() -> anyhow::Result<()> {
@@ -101,35 +98,51 @@ async fn main() -> anyhow::Result<()> {
             .precompressed_gzip()
             .call_fallback_on_method_not_allowed(true)
             .fallback(router.layer(NormalizePathLayer::trim_trailing_slash()));
-        
+
         Router::new().nest_service("/", serve_dir)
     } else {
         router.route("/", get(root))
     };
 
-    let trace_layer = NmsrTracing::new_trace_layer();
+    let trace_layer: tower_http::trace::TraceLayer<
+        tower_http::classify::SharedClassifier<tower_http::classify::ServerErrorsAsFailures>,
+        NmsrTracing<axum::body::Body>,
+        NmsrTracing<axum::body::Body>,
+        NmsrTracing<axum::body::Body>,
+        tower_http::trace::DefaultOnBodyChunk,
+        (),
+        NmsrTracing<axum::body::Body>,
+    > = NmsrTracing::new_trace_layer();
 
-    let app = ServiceBuilder::new()
-        .set_x_request_id(MakeRequestUuid)
+    let app = router
+        .layer(SetRequestIdLayer::new(
+            HeaderName::from_static("x-request-id"),
+            MakeRequestUuid,
+        ))
         .layer(trace_layer)
-        .propagate_x_request_id()
+        .layer(PropagateRequestIdLayer::new(HeaderName::from_static(
+            "x-request-id",
+        )))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
                 .allow_methods(AllowMethods::any()),
-        )
-        .service(router);
+        );
 
-    let addr = (config.server.address + ":" + &config.server.port.to_string()).parse()?;
+    let addr: SocketAddr =
+        (config.server.address + ":" + &config.server.port.to_string()).parse()?;
 
     tracing::info!("Listening on {}", &addr);
 
     drop(init_guard);
 
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
 
     Ok(())
 }
@@ -163,7 +176,7 @@ fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
                     Into::<StringValue>::into(tracing.service_name.clone()),
                 )])),
             )
-            .install_batch(opentelemetry::runtime::Tokio)?;
+            .install_batch(opentelemetry_sdk::runtime::Tokio)?;
 
         let otel_layer = tracing_subscriber::Layer::with_filter(
             tracing_opentelemetry::layer().with_tracer(tracer),
@@ -178,6 +191,7 @@ fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)] // TODO: Replace when axum supports this again
 async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()

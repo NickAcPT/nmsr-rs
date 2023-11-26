@@ -4,7 +4,8 @@ use crate::{
     error::{MojangRequestError, MojangRequestResult},
     utils::http_client::NmsrHttpClient,
 };
-use hyper::{body::Bytes, Method};
+use axum::body::Bytes;
+use http::Method;
 use std::sync::Arc;
 use tracing::{instrument, Span};
 use uuid::Uuid;

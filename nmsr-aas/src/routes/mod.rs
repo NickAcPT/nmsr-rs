@@ -167,21 +167,7 @@ impl NMSRState {
         Ok(())
     }
 
-    fn start_cache_cleanup_task(&self) {
-        let mut interval = tokio::time::interval(self.cache_config.cleanup_interval);
-
-        let resolver = self.resolver.clone();
-
-        tokio::task::spawn(async move {
-            loop {
-                interval.tick().await;
-
-                if let Err(err) = Self::do_cache_clean_up(resolver.clone()).await {
-                    tracing::error!("Error while cleaning up cache: {:?}", err);
-                }
-            }
-        });
-    }
+    fn start_cache_cleanup_task(&self) {}
 
     #[inline]
     #[instrument(name = "clean_cache", skip_all)]

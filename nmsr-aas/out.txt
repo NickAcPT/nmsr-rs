@@ -1,0 +1,1400 @@
+nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
+|-- anyhow feature "default"
+|   |-- anyhow v1.0.75
+|   `-- anyhow feature "std"
+|       `-- anyhow v1.0.75
+|-- async-trait feature "default"
+|   `-- async-trait v0.1.74 (proc-macro)
+|       |-- proc-macro2 feature "default"
+|       |   |-- proc-macro2 v1.0.69
+|       |   |   `-- unicode-ident feature "default"
+|       |   |       `-- unicode-ident v1.0.12
+|       |   `-- proc-macro2 feature "proc-macro"
+|       |       `-- proc-macro2 v1.0.69 (*)
+|       |-- quote feature "default"
+|       |   |-- quote v1.0.33
+|       |   |   `-- proc-macro2 v1.0.69 (*)
+|       |   `-- quote feature "proc-macro"
+|       |       |-- quote v1.0.33 (*)
+|       |       `-- proc-macro2 feature "proc-macro" (*)
+|       |-- syn feature "default"
+|       |   |-- syn v2.0.39
+|       |   |   |-- proc-macro2 v1.0.69 (*)
+|       |   |   |-- quote v1.0.33 (*)
+|       |   |   `-- unicode-ident feature "default" (*)
+|       |   |-- syn feature "clone-impls"
+|       |   |   `-- syn v2.0.39 (*)
+|       |   |-- syn feature "derive"
+|       |   |   `-- syn v2.0.39 (*)
+|       |   |-- syn feature "parsing"
+|       |   |   `-- syn v2.0.39 (*)
+|       |   |-- syn feature "printing"
+|       |   |   |-- syn v2.0.39 (*)
+|       |   |   `-- syn feature "quote"
+|       |   |       `-- syn v2.0.39 (*)
+|       |   `-- syn feature "proc-macro"
+|       |       |-- syn v2.0.39 (*)
+|       |       |-- proc-macro2 feature "proc-macro" (*)
+|       |       |-- quote feature "proc-macro" (*)
+|       |       `-- syn feature "quote" (*)
+|       |-- syn feature "full"
+|       |   `-- syn v2.0.39 (*)
+|       `-- syn feature "visit-mut"
+|           `-- syn v2.0.39 (*)
+|-- axum feature "form"
+|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241)
+|       |-- async-trait feature "default" (*)
+|       |-- axum-core feature "default"
+|       |   `-- axum-core v0.3.4 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241)
+|       |       |-- async-trait feature "default" (*)
+|       |       |-- bytes feature "default"
+|       |       |   |-- bytes v1.5.0
+|       |       |   `-- bytes feature "std"
+|       |       |       `-- bytes v1.5.0
+|       |       |-- futures-util feature "alloc"
+|       |       |   |-- futures-util v0.3.29
+|       |       |   |   |-- futures-core v0.3.29
+|       |       |   |   |-- futures-task v0.3.29
+|       |       |   |   |-- pin-project-lite feature "default"
+|       |       |   |   |   `-- pin-project-lite v0.2.13
+|       |       |   |   `-- pin-utils feature "default"
+|       |       |   |       `-- pin-utils v0.1.0
+|       |       |   |-- futures-core feature "alloc"
+|       |       |   |   `-- futures-core v0.3.29
+|       |       |   `-- futures-task feature "alloc"
+|       |       |       `-- futures-task v0.3.29
+|       |       |-- pin-project-lite feature "default" (*)
+|       |       |-- http feature "default"
+|       |       |   |-- http v1.0.0
+|       |       |   |   |-- bytes feature "default" (*)
+|       |       |   |   |-- fnv feature "default"
+|       |       |   |   |   |-- fnv v1.0.7
+|       |       |   |   |   `-- fnv feature "std"
+|       |       |   |   |       `-- fnv v1.0.7
+|       |       |   |   `-- itoa feature "default"
+|       |       |   |       `-- itoa v1.0.9
+|       |       |   `-- http feature "std"
+|       |       |       `-- http v1.0.0 (*)
+|       |       |-- http-body feature "default"
+|       |       |   `-- http-body v1.0.0
+|       |       |       |-- bytes feature "default" (*)
+|       |       |       `-- http feature "default" (*)
+|       |       |-- http-body-util feature "default"
+|       |       |   `-- http-body-util v0.1.0
+|       |       |       |-- bytes feature "default" (*)
+|       |       |       |-- futures-util feature "alloc" (*)
+|       |       |       |-- pin-project-lite feature "default" (*)
+|       |       |       |-- http feature "default" (*)
+|       |       |       `-- http-body feature "default" (*)
+|       |       |-- mime feature "default"
+|       |       |   `-- mime v0.3.17
+|       |       |-- sync_wrapper feature "default"
+|       |       |   `-- sync_wrapper v0.1.2
+|       |       |-- tower-layer feature "default"
+|       |       |   `-- tower-layer v0.3.2
+|       |       `-- tower-service feature "default"
+|       |           `-- tower-service v0.3.2
+|       |       [build-dependencies]
+|       |       `-- rustversion feature "default"
+|       |           `-- rustversion v1.0.14 (proc-macro)
+|       |-- bytes feature "default" (*)
+|       |-- futures-util feature "alloc" (*)
+|       |-- pin-project-lite feature "default" (*)
+|       |-- http feature "default" (*)
+|       |-- itoa feature "default" (*)
+|       |-- http-body feature "default" (*)
+|       |-- http-body-util feature "default" (*)
+|       |-- mime feature "default" (*)
+|       |-- sync_wrapper feature "default" (*)
+|       |-- tower-layer feature "default" (*)
+|       |-- tower-service feature "default" (*)
+|       |-- axum-macros feature "default"
+|       |   `-- axum-macros v0.3.7 (proc-macro) (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241)
+|       |       |-- proc-macro2 feature "default" (*)
+|       |       |-- quote feature "default" (*)
+|       |       |-- syn feature "default" (*)
+|       |       |-- syn feature "extra-traits"
+|       |       |   `-- syn v2.0.39 (*)
+|       |       |-- syn feature "full" (*)
+|       |       |-- syn feature "parsing" (*)
+|       |       `-- heck feature "default"
+|       |           `-- heck v0.4.1
+|       |-- matchit feature "default"
+|       |   `-- matchit v0.7.3
+|       |-- memchr feature "default"
+|       |   |-- memchr v2.6.4
+|       |   `-- memchr feature "std"
+|       |       |-- memchr v2.6.4
+|       |       `-- memchr feature "alloc"
+|       |           `-- memchr v2.6.4
+|       |-- percent-encoding feature "default"
+|       |   |-- percent-encoding v2.3.1
+|       |   `-- percent-encoding feature "std"
+|       |       |-- percent-encoding v2.3.1
+|       |       `-- percent-encoding feature "alloc"
+|       |           `-- percent-encoding v2.3.1
+|       |-- serde feature "default"
+|       |   |-- serde v1.0.193
+|       |   |   `-- serde_derive feature "default"
+|       |   |       `-- serde_derive v1.0.193 (proc-macro)
+|       |   |           |-- proc-macro2 feature "default" (*)
+|       |   |           |-- quote feature "default" (*)
+|       |   |           `-- syn feature "default" (*)
+|       |   `-- serde feature "std"
+|       |       `-- serde v1.0.193 (*)
+|       |-- serde_json feature "default"
+|       |   |-- serde_json v1.0.108
+|       |   |   |-- serde v1.0.193 (*)
+|       |   |   |-- itoa feature "default" (*)
+|       |   |   `-- ryu feature "default"
+|       |   |       `-- ryu v1.0.15
+|       |   `-- serde_json feature "std"
+|       |       |-- serde_json v1.0.108 (*)
+|       |       `-- serde feature "std" (*)
+|       |-- serde_json feature "raw_value"
+|       |   `-- serde_json v1.0.108 (*)
+|       |-- serde_path_to_error feature "default"
+|       |   `-- serde_path_to_error v0.1.14
+|       |       |-- itoa feature "default" (*)
+|       |       `-- serde feature "default" (*)
+|       |-- serde_urlencoded feature "default"
+|       |   `-- serde_urlencoded v0.7.1
+|       |       |-- itoa feature "default" (*)
+|       |       |-- serde feature "default" (*)
+|       |       |-- ryu feature "default" (*)
+|       |       `-- form_urlencoded feature "default"
+|       |           |-- form_urlencoded v1.2.1
+|       |           |   `-- percent-encoding v2.3.1
+|       |           `-- form_urlencoded feature "std"
+|       |               |-- form_urlencoded v1.2.1 (*)
+|       |               |-- percent-encoding feature "std" (*)
+|       |               `-- form_urlencoded feature "alloc"
+|       |                   |-- form_urlencoded v1.2.1 (*)
+|       |                   `-- percent-encoding feature "alloc" (*)
+|       `-- tower feature "util"
+|           |-- tower v0.4.13
+|           |   |-- tokio-util v0.7.10
+|           |   |   |-- bytes feature "default" (*)
+|           |   |   |-- futures-core feature "default"
+|           |   |   |   |-- futures-core v0.3.29
+|           |   |   |   `-- futures-core feature "std"
+|           |   |   |       |-- futures-core v0.3.29
+|           |   |   |       `-- futures-core feature "alloc" (*)
+|           |   |   |-- pin-project-lite feature "default" (*)
+|           |   |   |-- tokio feature "default"
+|           |   |   |   `-- tokio v1.34.0
+|           |   |   |       |-- pin-project-lite feature "default" (*)
+|           |   |   |       `-- tokio-macros feature "default"
+|           |   |   |           `-- tokio-macros v2.2.0 (proc-macro)
+|           |   |   |               |-- proc-macro2 feature "default" (*)
+|           |   |   |               |-- quote feature "default" (*)
+|           |   |   |               |-- syn feature "default" (*)
+|           |   |   |               `-- syn feature "full" (*)
+|           |   |   |-- tokio feature "sync"
+|           |   |   |   `-- tokio v1.34.0 (*)
+|           |   |   `-- futures-sink feature "default"
+|           |   |       |-- futures-sink v0.3.29
+|           |   |       `-- futures-sink feature "std"
+|           |   |           |-- futures-sink v0.3.29
+|           |   |           `-- futures-sink feature "alloc"
+|           |   |               `-- futures-sink v0.3.29
+|           |   |-- futures-util feature "alloc" (*)
+|           |   |-- futures-core feature "default" (*)
+|           |   |-- pin-project-lite feature "default" (*)
+|           |   |-- tower-layer feature "default" (*)
+|           |   |-- tower-service feature "default" (*)
+|           |   |-- pin-project feature "default"
+|           |   |   `-- pin-project v1.1.3
+|           |   |       `-- pin-project-internal feature "default"
+|           |   |           `-- pin-project-internal v1.1.3 (proc-macro)
+|           |   |               |-- proc-macro2 feature "default" (*)
+|           |   |               |-- quote feature "default" (*)
+|           |   |               |-- syn feature "default" (*)
+|           |   |               |-- syn feature "full" (*)
+|           |   |               `-- syn feature "visit-mut" (*)
+|           |   |-- tokio feature "default" (*)
+|           |   |-- tokio feature "sync" (*)
+|           |   `-- tracing feature "std"
+|           |       |-- tracing v0.1.40
+|           |       |   |-- tracing-core v0.1.32
+|           |       |   |   `-- once_cell feature "default"
+|           |       |   |       |-- once_cell v1.18.0
+|           |       |   |       `-- once_cell feature "std"
+|           |       |   |           |-- once_cell v1.18.0
+|           |       |   |           `-- once_cell feature "alloc"
+|           |       |   |               |-- once_cell v1.18.0
+|           |       |   |               `-- once_cell feature "race"
+|           |       |   |                   `-- once_cell v1.18.0
+|           |       |   |-- pin-project-lite feature "default" (*)
+|           |       |   |-- log feature "default"
+|           |       |   |   `-- log v0.4.20
+|           |       |   `-- tracing-attributes feature "default"
+|           |       |       `-- tracing-attributes v0.1.27 (proc-macro)
+|           |       |           |-- proc-macro2 feature "default" (*)
+|           |       |           |-- quote feature "default" (*)
+|           |       |           |-- syn feature "clone-impls" (*)
+|           |       |           |-- syn feature "extra-traits" (*)
+|           |       |           |-- syn feature "full" (*)
+|           |       |           |-- syn feature "parsing" (*)
+|           |       |           |-- syn feature "printing" (*)
+|           |       |           |-- syn feature "proc-macro" (*)
+|           |       |           `-- syn feature "visit-mut" (*)
+|           |       `-- tracing-core feature "std"
+|           |           |-- tracing-core v0.1.32 (*)
+|           |           `-- tracing-core feature "once_cell"
+|           |               `-- tracing-core v0.1.32 (*)
+|           |-- tower feature "__common"
+|           |   |-- tower v0.4.13 (*)
+|           |   |-- tower feature "futures-core"
+|           |   |   `-- tower v0.4.13 (*)
+|           |   `-- tower feature "pin-project-lite"
+|           |       `-- tower v0.4.13 (*)
+|           |-- tower feature "futures-util"
+|           |   `-- tower v0.4.13 (*)
+|           `-- tower feature "pin-project"
+|               `-- tower v0.4.13 (*)
+|       [build-dependencies]
+|       `-- rustversion feature "default" (*)
+|-- axum feature "json"
+|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|-- axum feature "macros"
+|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|-- axum feature "matched-path"
+|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|-- axum feature "original-uri"
+|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|-- axum feature "query"
+|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|-- axum feature "tower-log"
+|   |-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   `-- tower feature "log"
+|       |-- tower v0.4.13 (*)
+|       |-- tower feature "tracing"
+|       |   `-- tower v0.4.13 (*)
+|       `-- tracing feature "log"
+|           `-- tracing v0.1.40 (*)
+|-- http feature "default" (*)
+|-- http-body-util feature "default" (*)
+|-- sync_wrapper feature "default" (*)
+|-- serde feature "default" (*)
+|-- serde feature "derive"
+|   |-- serde v1.0.193 (*)
+|   `-- serde feature "serde_derive"
+|       `-- serde v1.0.193 (*)
+|-- serde_json feature "default" (*)
+|-- tower feature "limit"
+|   |-- tower v0.4.13 (*)
+|   |-- tower feature "__common" (*)
+|   |-- tower feature "tokio"
+|   |   `-- tower v0.4.13 (*)
+|   |-- tower feature "tokio-util"
+|   |   `-- tower v0.4.13 (*)
+|   |-- tower feature "tracing" (*)
+|   |-- tokio feature "sync" (*)
+|   `-- tokio feature "time"
+|       `-- tokio v1.34.0 (*)
+|-- tower feature "load-shed"
+|   |-- tower v0.4.13 (*)
+|   `-- tower feature "__common" (*)
+|-- tower feature "retry"
+|   |-- tower v0.4.13 (*)
+|   |-- tower feature "__common" (*)
+|   |-- tower feature "tokio" (*)
+|   `-- tokio feature "time" (*)
+|-- tokio feature "macros"
+|   |-- tokio v1.34.0 (*)
+|   `-- tokio feature "tokio-macros"
+|       `-- tokio v1.34.0 (*)
+|-- tokio feature "sync" (*)
+|-- tracing feature "default"
+|   |-- tracing v0.1.40 (*)
+|   |-- tracing feature "attributes"
+|   |   |-- tracing v0.1.40 (*)
+|   |   `-- tracing feature "tracing-attributes"
+|   |       `-- tracing v0.1.40 (*)
+|   `-- tracing feature "std" (*)
+|-- axum-extra feature "default"
+|   `-- axum-extra v0.7.4 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241)
+|       |-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|       |-- axum-core feature "default" (*)
+|       |-- bytes feature "default" (*)
+|       |-- futures-util feature "alloc" (*)
+|       |-- pin-project-lite feature "default" (*)
+|       |-- http feature "default" (*)
+|       |-- http-body feature "default" (*)
+|       |-- http-body-util feature "default" (*)
+|       |-- mime feature "default" (*)
+|       |-- tower-layer feature "default" (*)
+|       |-- tower-service feature "default" (*)
+|       |-- serde feature "default" (*)
+|       |-- tower feature "util" (*)
+|       `-- multer feature "default"
+|           `-- multer v2.1.0
+|               |-- futures-util v0.3.29 (*)
+|               |-- bytes feature "default" (*)
+|               |-- mime feature "default" (*)
+|               |-- memchr feature "default" (*)
+|               |-- log feature "default" (*)
+|               |-- encoding_rs feature "default"
+|               |   |-- encoding_rs v0.8.33
+|               |   |   `-- cfg-if feature "default"
+|               |   |       `-- cfg-if v1.0.0
+|               |   `-- encoding_rs feature "alloc"
+|               |       `-- encoding_rs v0.8.33 (*)
+|               |-- http feature "default"
+|               |   `-- http v0.2.11
+|               |       |-- bytes feature "default" (*)
+|               |       |-- fnv feature "default" (*)
+|               |       `-- itoa feature "default" (*)
+|               |-- httparse feature "default"
+|               |   |-- httparse v1.8.0
+|               |   `-- httparse feature "std"
+|               |       `-- httparse v1.8.0
+|               `-- spin feature "spin_mutex"
+|                   |-- spin v0.9.8
+|                   `-- spin feature "mutex"
+|                       `-- spin v0.9.8
+|               [build-dependencies]
+|               `-- version_check feature "default"
+|                   `-- version_check v0.9.4
+|-- axum-extra feature "multipart"
+|   `-- axum-extra v0.7.4 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|-- base64 feature "default"
+|   |-- base64 v0.21.5
+|   `-- base64 feature "std"
+|       |-- base64 v0.21.5
+|       `-- base64 feature "alloc"
+|           `-- base64 v0.21.5
+|-- chrono feature "default"
+|   |-- chrono v0.4.31
+|   |   |-- num-traits v0.2.17
+|   |   |   [build-dependencies]
+|   |   |   `-- autocfg feature "default"
+|   |   |       `-- autocfg v1.1.0
+|   |   `-- windows-targets feature "default"
+|   |       `-- windows-targets v0.48.5
+|   |           `-- windows_x86_64_msvc feature "default"
+|   |               `-- windows_x86_64_msvc v0.48.5
+|   |-- chrono feature "clock"
+|   |   |-- chrono v0.4.31 (*)
+|   |   |-- chrono feature "android-tzdata"
+|   |   |   `-- chrono v0.4.31 (*)
+|   |   |-- chrono feature "iana-time-zone"
+|   |   |   `-- chrono v0.4.31 (*)
+|   |   |-- chrono feature "std"
+|   |   |   `-- chrono v0.4.31 (*)
+|   |   `-- chrono feature "winapi"
+|   |       |-- chrono v0.4.31 (*)
+|   |       `-- chrono feature "windows-targets"
+|   |           `-- chrono v0.4.31 (*)
+|   |-- chrono feature "oldtime"
+|   |   `-- chrono v0.4.31 (*)
+|   |-- chrono feature "std" (*)
+|   `-- chrono feature "wasmbind"
+|       |-- chrono v0.4.31 (*)
+|       |-- chrono feature "js-sys"
+|       |   `-- chrono v0.4.31 (*)
+|       `-- chrono feature "wasm-bindgen"
+|           `-- chrono v0.4.31 (*)
+|-- derive_more feature "debug"
+|   |-- derive_more v1.0.0-beta.6
+|   |   `-- derive_more-impl feature "default"
+|   |       `-- derive_more-impl v1.0.0-beta.6 (proc-macro)
+|   |           |-- proc-macro2 feature "default" (*)
+|   |           |-- quote feature "default" (*)
+|   |           |-- syn feature "default" (*)
+|   |           `-- unicode-xid feature "default"
+|   |               `-- unicode-xid v0.2.4
+|   `-- derive_more-impl feature "debug"
+|       |-- derive_more-impl v1.0.0-beta.6 (proc-macro) (*)
+|       `-- syn feature "extra-traits" (*)
+|-- derive_more feature "deref"
+|   |-- derive_more v1.0.0-beta.6 (*)
+|   `-- derive_more-impl feature "deref"
+|       `-- derive_more-impl v1.0.0-beta.6 (proc-macro) (*)
+|-- derive_more feature "deref_mut"
+|   |-- derive_more v1.0.0-beta.6 (*)
+|   `-- derive_more-impl feature "deref_mut"
+|       `-- derive_more-impl v1.0.0-beta.6 (proc-macro) (*)
+|-- derive_more feature "from"
+|   |-- derive_more v1.0.0-beta.6 (*)
+|   `-- derive_more-impl feature "from"
+|       |-- derive_more-impl v1.0.0-beta.6 (proc-macro) (*)
+|       `-- syn feature "extra-traits" (*)
+|-- ears-rs feature "default"
+|   `-- ears-rs v0.2.0 (https://github.com/NickAcPT/ears-rs#e6210006)
+|       |-- image v0.24.7
+|       |   |-- num-rational v0.4.1
+|       |   |   |-- num-traits feature "i128"
+|       |   |   |   `-- num-traits v0.2.17 (*)
+|       |   |   `-- num-integer feature "i128"
+|       |   |       |-- num-integer v0.1.45
+|       |   |       |   `-- num-traits v0.2.17 (*)
+|       |   |       |   [build-dependencies]
+|       |   |       |   `-- autocfg feature "default" (*)
+|       |   |       `-- num-traits feature "i128" (*)
+|       |   |   [build-dependencies]
+|       |   |   `-- autocfg feature "default" (*)
+|       |   |-- num-traits feature "default"
+|       |   |   |-- num-traits v0.2.17 (*)
+|       |   |   `-- num-traits feature "std"
+|       |   |       `-- num-traits v0.2.17 (*)
+|       |   |-- byteorder feature "default"
+|       |   |   |-- byteorder v1.5.0
+|       |   |   `-- byteorder feature "std"
+|       |   |       `-- byteorder v1.5.0
+|       |   |-- bytemuck feature "default"
+|       |   |   `-- bytemuck v1.14.0
+|       |   |       `-- bytemuck_derive feature "default"
+|       |   |           `-- bytemuck_derive v1.5.0 (proc-macro)
+|       |   |               |-- proc-macro2 feature "default" (*)
+|       |   |               |-- quote feature "default" (*)
+|       |   |               `-- syn feature "default" (*)
+|       |   |-- bytemuck feature "extern_crate_alloc"
+|       |   |   `-- bytemuck v1.14.0 (*)
+|       |   |-- color_quant feature "default"
+|       |   |   `-- color_quant v1.1.0
+|       |   `-- png feature "default"
+|       |       `-- png v0.17.10
+|       |           |-- bitflags feature "default"
+|       |           |   `-- bitflags v1.3.2
+|       |           |-- crc32fast feature "default"
+|       |           |   |-- crc32fast v1.3.2
+|       |           |   |   `-- cfg-if feature "default" (*)
+|       |           |   `-- crc32fast feature "std"
+|       |           |       `-- crc32fast v1.3.2 (*)
+|       |           |-- fdeflate feature "default"
+|       |           |   `-- fdeflate v0.3.1
+|       |           |       `-- simd-adler32 feature "default"
+|       |           |           |-- simd-adler32 v0.3.7
+|       |           |           |-- simd-adler32 feature "const-generics"
+|       |           |           |   `-- simd-adler32 v0.3.7
+|       |           |           `-- simd-adler32 feature "std"
+|       |           |               `-- simd-adler32 v0.3.7
+|       |           |-- flate2 feature "default"
+|       |           |   |-- flate2 v1.0.28
+|       |           |   |   |-- crc32fast feature "default" (*)
+|       |           |   |   `-- miniz_oxide feature "with-alloc"
+|       |           |   |       `-- miniz_oxide v0.7.1
+|       |           |   |           |-- adler v1.0.2
+|       |           |   |           `-- simd-adler32 v0.3.7
+|       |           |   `-- flate2 feature "rust_backend"
+|       |           |       |-- flate2 v1.0.28 (*)
+|       |           |       |-- flate2 feature "any_impl"
+|       |           |       |   `-- flate2 v1.0.28 (*)
+|       |           |       `-- flate2 feature "miniz_oxide"
+|       |           |           `-- flate2 v1.0.28 (*)
+|       |           |-- miniz_oxide feature "default"
+|       |           |   |-- miniz_oxide v0.7.1 (*)
+|       |           |   `-- miniz_oxide feature "with-alloc" (*)
+|       |           `-- miniz_oxide feature "simd"
+|       |               |-- miniz_oxide v0.7.1 (*)
+|       |               `-- miniz_oxide feature "simd-adler32"
+|       |                   `-- miniz_oxide v0.7.1 (*)
+|       |-- byteorder feature "default" (*)
+|       |-- enum-ordinalize feature "default"
+|       |   `-- enum-ordinalize v3.1.15 (proc-macro)
+|       |       |-- proc-macro2 feature "default" (*)
+|       |       |-- quote feature "default" (*)
+|       |       |-- syn feature "default" (*)
+|       |       |-- num-traits feature "default" (*)
+|       |       `-- num-bigint feature "default"
+|       |           |-- num-bigint v0.4.4
+|       |           |   |-- num-traits feature "i128" (*)
+|       |           |   `-- num-integer feature "i128"
+|       |           |       |-- num-integer v0.1.45
+|       |           |       |   `-- num-traits v0.2.17 (*)
+|       |           |       |   [build-dependencies]
+|       |           |       |   `-- autocfg feature "default" (*)
+|       |           |       `-- num-traits feature "i128" (*)
+|       |           |   [build-dependencies]
+|       |           |   `-- autocfg feature "default" (*)
+|       |           `-- num-bigint feature "std"
+|       |               |-- num-bigint v0.4.4 (*)
+|       |               |-- num-traits feature "std" (*)
+|       |               `-- num-integer feature "std"
+|       |                   |-- num-integer v0.1.45 (*)
+|       |                   `-- num-traits feature "std" (*)
+|       |-- ibig feature "default"
+|       |   |-- ibig v0.3.6
+|       |   |   |-- num-traits v0.2.17 (*)
+|       |   |   |-- rand v0.8.5
+|       |   |   |   `-- rand_core feature "default"
+|       |   |   |       `-- rand_core v0.6.4
+|       |   |   |-- cfg-if feature "default" (*)
+|       |   |   `-- static_assertions feature "default"
+|       |   |       `-- static_assertions v1.1.0
+|       |   |-- ibig feature "num-traits"
+|       |   |   `-- ibig v0.3.6 (*)
+|       |   |-- ibig feature "rand"
+|       |   |   `-- ibig v0.3.6 (*)
+|       |   `-- ibig feature "std"
+|       |       `-- ibig v0.3.6 (*)
+|       |-- itertools feature "default"
+|       |   |-- itertools v0.11.0
+|       |   |   `-- either v1.9.0
+|       |   `-- itertools feature "use_std"
+|       |       |-- itertools v0.11.0 (*)
+|       |       |-- itertools feature "use_alloc"
+|       |       |   `-- itertools v0.11.0 (*)
+|       |       `-- either feature "use_std"
+|       |           `-- either v1.9.0
+|       `-- thiserror feature "default"
+|           `-- thiserror v1.0.50
+|               `-- thiserror-impl feature "default"
+|                   `-- thiserror-impl v1.0.50 (proc-macro)
+|                       |-- proc-macro2 feature "default" (*)
+|                       |-- quote feature "default" (*)
+|                       `-- syn feature "default" (*)
+|-- image feature "png"
+|   `-- image v0.24.7 (*)
+|-- thiserror feature "default" (*)
+|-- enumset feature "alloc"
+|   `-- enumset v1.1.3
+|       |-- serde v1.0.193 (*)
+|       `-- enumset_derive feature "default"
+|           `-- enumset_derive v0.8.1 (proc-macro)
+|               |-- darling v0.20.3
+|               |   |-- darling_core feature "default"
+|               |   |   `-- darling_core v0.20.3
+|               |   |       |-- proc-macro2 feature "default" (*)
+|               |   |       |-- quote feature "default" (*)
+|               |   |       |-- syn feature "default" (*)
+|               |   |       |-- syn feature "extra-traits" (*)
+|               |   |       |-- syn feature "full" (*)
+|               |   |       |-- fnv feature "default" (*)
+|               |   |       |-- ident_case feature "default"
+|               |   |       |   `-- ident_case v1.0.1
+|               |   |       `-- strsim feature "default"
+|               |   |           `-- strsim v0.10.0
+|               |   `-- darling_macro feature "default"
+|               |       `-- darling_macro v0.20.3 (proc-macro)
+|               |           |-- quote feature "default" (*)
+|               |           |-- syn feature "default" (*)
+|               |           `-- darling_core feature "default" (*)
+|               |-- proc-macro2 feature "default" (*)
+|               |-- quote feature "default" (*)
+|               |-- syn feature "default" (*)
+|               `-- proc-macro-crate feature "default"
+|                   `-- proc-macro-crate v1.3.1
+|                       |-- once_cell feature "default" (*)
+|                       `-- toml_edit feature "default"
+|                           `-- toml_edit v0.19.15
+|                               |-- indexmap feature "default"
+|                               |   |-- indexmap v2.1.0
+|                               |   |   |-- equivalent v1.0.1
+|                               |   |   `-- hashbrown feature "raw"
+|                               |   |       `-- hashbrown v0.14.2
+|                               |   `-- indexmap feature "std"
+|                               |       `-- indexmap v2.1.0 (*)
+|                               |-- indexmap feature "std" (*)
+|                               |-- toml_datetime feature "default"
+|                               |   `-- toml_datetime v0.6.5
+|                               `-- winnow feature "default"
+|                                   |-- winnow v0.5.19
+|                                   `-- winnow feature "std"
+|                                       |-- winnow v0.5.19
+|                                       `-- winnow feature "alloc"
+|                                           `-- winnow v0.5.19
+|-- enumset feature "default"
+|   `-- enumset v1.1.3 (*)
+|-- enumset feature "serde"
+|   |-- enumset v1.1.3 (*)
+|   |-- enumset feature "serde2"
+|   |   `-- enumset v1.1.3 (*)
+|   `-- enumset_derive feature "serde"
+|       `-- enumset_derive v0.8.1 (proc-macro) (*)
+|-- enumset feature "std"
+|   |-- enumset v1.1.3 (*)
+|   |-- enumset feature "alloc" (*)
+|   `-- enumset_derive feature "proc-macro-crate"
+|       `-- enumset_derive v0.8.1 (proc-macro) (*)
+|-- getrandom feature "default"
+|   `-- getrandom v0.2.11
+|       `-- cfg-if feature "default" (*)
+|-- getrandom feature "js"
+|   |-- getrandom v0.2.11 (*)
+|   |-- getrandom feature "js-sys"
+|   |   `-- getrandom v0.2.11 (*)
+|   `-- getrandom feature "wasm-bindgen"
+|       `-- getrandom v0.2.11 (*)
+|-- humantime-serde feature "default"
+|   `-- humantime-serde v1.1.1
+|       |-- serde feature "default" (*)
+|       |-- serde feature "derive" (*)
+|       `-- humantime feature "default"
+|           `-- humantime v2.1.0
+|-- indoc feature "default"
+|   `-- indoc v2.0.4 (proc-macro)
+|-- is_empty feature "default"
+|   `-- is_empty v0.2.0
+|       `-- is_empty_derive feature "default"
+|           `-- is_empty_derive v0.1.0 (proc-macro)
+|               |-- proc-macro2 feature "default" (*)
+|               |-- quote feature "default" (*)
+|               `-- syn feature "default"
+|                   |-- syn v1.0.109
+|                   |   |-- proc-macro2 v1.0.69 (*)
+|                   |   |-- quote v1.0.33 (*)
+|                   |   `-- unicode-ident feature "default" (*)
+|                   |-- syn feature "clone-impls"
+|                   |   `-- syn v1.0.109 (*)
+|                   |-- syn feature "derive"
+|                   |   `-- syn v1.0.109 (*)
+|                   |-- syn feature "parsing"
+|                   |   `-- syn v1.0.109 (*)
+|                   |-- syn feature "printing"
+|                   |   |-- syn v1.0.109 (*)
+|                   |   `-- syn feature "quote"
+|                   |       `-- syn v1.0.109 (*)
+|                   `-- syn feature "proc-macro"
+|                       |-- syn v1.0.109 (*)
+|                       |-- proc-macro2 feature "proc-macro" (*)
+|                       |-- quote feature "proc-macro" (*)
+|                       `-- syn feature "quote" (*)
+|-- mtpng feature "default"
+|   `-- mtpng v0.3.5
+|       |-- crc feature "default"
+|       |   |-- crc v1.8.1
+|       |   |   [build-dependencies]
+|       |   |   `-- build_const feature "default"
+|       |   |       |-- build_const v0.2.2
+|       |   |       `-- build_const feature "std"
+|       |   |           `-- build_const v0.2.2
+|       |   `-- crc feature "std"
+|       |       `-- crc v1.8.1 (*)
+|       |-- itertools feature "default"
+|       |   |-- itertools v0.10.5
+|       |   |   `-- either v1.9.0
+|       |   `-- itertools feature "use_std"
+|       |       |-- itertools v0.10.5 (*)
+|       |       |-- either feature "use_std" (*)
+|       |       `-- itertools feature "use_alloc"
+|       |           `-- itertools v0.10.5 (*)
+|       |-- libz-sys feature "default"
+|       |   |-- libz-sys v1.1.12
+|       |   |   `-- libc feature "default"
+|       |   |       |-- libc v0.2.150
+|       |   |       `-- libc feature "std"
+|       |   |           `-- libc v0.2.150
+|       |   |   [build-dependencies]
+|       |   |   |-- cc feature "default"
+|       |   |   |   `-- cc v1.0.83
+|       |   |   |-- pkg-config feature "default"
+|       |   |   |   `-- pkg-config v0.3.27
+|       |   |   `-- vcpkg feature "default"
+|       |   |       `-- vcpkg v0.2.15
+|       |   |-- libz-sys feature "libc"
+|       |   |   `-- libz-sys v1.1.12 (*)
+|       |   `-- libz-sys feature "stock-zlib"
+|       |       `-- libz-sys v1.1.12 (*)
+|       |-- rayon feature "default"
+|       |   `-- rayon v1.8.0
+|       |       |-- either v1.9.0
+|       |       `-- rayon-core feature "default"
+|       |           `-- rayon-core v1.12.0
+|       |               |-- crossbeam-deque feature "default"
+|       |               |   |-- crossbeam-deque v0.8.3
+|       |               |   |   |-- crossbeam-epoch v0.9.15
+|       |               |   |   |   |-- crossbeam-utils v0.8.16
+|       |               |   |   |   |   `-- cfg-if feature "default" (*)
+|       |               |   |   |   |-- scopeguard v1.2.0
+|       |               |   |   |   |-- cfg-if feature "default" (*)
+|       |               |   |   |   `-- memoffset feature "default"
+|       |               |   |   |       `-- memoffset v0.9.0
+|       |               |   |   |           [build-dependencies]
+|       |               |   |   |           `-- autocfg feature "default" (*)
+|       |               |   |   |   [build-dependencies]
+|       |               |   |   |   `-- autocfg feature "default" (*)
+|       |               |   |   |-- crossbeam-utils v0.8.16 (*)
+|       |               |   |   `-- cfg-if feature "default" (*)
+|       |               |   `-- crossbeam-deque feature "std"
+|       |               |       |-- crossbeam-deque v0.8.3 (*)
+|       |               |       |-- crossbeam-deque feature "crossbeam-epoch"
+|       |               |       |   `-- crossbeam-deque v0.8.3 (*)
+|       |               |       |-- crossbeam-deque feature "crossbeam-utils"
+|       |               |       |   `-- crossbeam-deque v0.8.3 (*)
+|       |               |       |-- crossbeam-epoch feature "std"
+|       |               |       |   |-- crossbeam-epoch v0.9.15 (*)
+|       |               |       |   |-- crossbeam-epoch feature "alloc"
+|       |               |       |   |   `-- crossbeam-epoch v0.9.15 (*)
+|       |               |       |   `-- crossbeam-utils feature "std"
+|       |               |       |       `-- crossbeam-utils v0.8.16 (*)
+|       |               |       `-- crossbeam-utils feature "std" (*)
+|       |               `-- crossbeam-utils feature "default"
+|       |                   |-- crossbeam-utils v0.8.16 (*)
+|       |                   `-- crossbeam-utils feature "std" (*)
+|       `-- typenum feature "default"
+|           `-- typenum v1.17.0
+|-- nmsr-rasterizer-test feature "default"
+|   `-- nmsr-rasterizer-test v0.1.0 (D:\IDEs\CLionProjects\nmsr-rasterizer-test)
+|       |-- nmsr-rendering v0.1.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-3d-renderer\nmsr-rendering)
+|       |   |-- async-trait feature "default" (*)
+|       |   |-- tokio feature "sync" (*)
+|       |   |-- tracing feature "default" (*)
+|       |   |-- derive_more feature "debug" (*)
+|       |   |-- derive_more feature "deref" (*)
+|       |   |-- derive_more feature "deref_mut" (*)
+|       |   |-- derive_more feature "from" (*)
+|       |   |-- image feature "png" (*)
+|       |   |-- bytemuck feature "default" (*)
+|       |   |-- bytemuck feature "derive"
+|       |   |   |-- bytemuck v1.14.0 (*)
+|       |   |   `-- bytemuck feature "bytemuck_derive"
+|       |   |       `-- bytemuck v1.14.0 (*)
+|       |   |-- itertools feature "default" (*)
+|       |   |-- thiserror feature "default" (*)
+|       |   |-- glam feature "bytemuck"
+|       |   |   `-- glam v0.24.2
+|       |   |       |-- bytemuck v1.14.0 (*)
+|       |   |       `-- serde v1.0.193 (*)
+|       |   |-- glam feature "default"
+|       |   |   |-- glam v0.24.2 (*)
+|       |   |   `-- glam feature "std"
+|       |   |       `-- glam v0.24.2 (*)
+|       |   |-- nmsr-player-parts feature "default"
+|       |   |   `-- nmsr-player-parts v0.1.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-3d-renderer\nmsr-player-parts)
+|       |   |       |-- ears-rs feature "default" (*)
+|       |   |       |-- itertools feature "default" (*)
+|       |   |       |-- thiserror feature "default" (*)
+|       |   |       |-- glam feature "bytemuck" (*)
+|       |   |       |-- glam feature "default" (*)
+|       |   |       |-- paste feature "default"
+|       |   |       |   `-- paste v1.0.14 (proc-macro)
+|       |   |       |-- strum feature "default"
+|       |   |       |   |-- strum v0.25.0
+|       |   |       |   |   `-- strum_macros feature "default"
+|       |   |       |   |       `-- strum_macros v0.25.3 (proc-macro)
+|       |   |       |   |           |-- proc-macro2 feature "default" (*)
+|       |   |       |   |           |-- quote feature "default" (*)
+|       |   |       |   |           |-- syn feature "default" (*)
+|       |   |       |   |           |-- syn feature "extra-traits" (*)
+|       |   |       |   |           |-- syn feature "parsing" (*)
+|       |   |       |   |           |-- rustversion feature "default" (*)
+|       |   |       |   |           `-- heck feature "default" (*)
+|       |   |       |   `-- strum feature "std"
+|       |   |       |       `-- strum v0.25.0 (*)
+|       |   |       `-- strum feature "derive"
+|       |   |           |-- strum v0.25.0 (*)
+|       |   |           `-- strum feature "strum_macros"
+|       |   |               `-- strum v0.25.0 (*)
+|       |   |-- paste feature "default" (*)
+|       |   |-- strum feature "default" (*)
+|       |   |-- strum feature "derive" (*)
+|       |   `-- wgpu-types feature "default"
+|       |       `-- wgpu-types v0.18.0
+|       |           `-- bitflags feature "default"
+|       |               `-- bitflags v2.4.1
+|       |-- ears-rs feature "default" (*)
+|       |-- image feature "png" (*)
+|       |-- arrayvec feature "default"
+|       |   |-- arrayvec v0.7.4
+|       |   `-- arrayvec feature "std"
+|       |       `-- arrayvec v0.7.4
+|       `-- glam feature "default" (*)
+|-- nmsr-rendering feature "part_tracker"
+|   |-- nmsr-rendering v0.1.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-3d-renderer\nmsr-rendering) (*)
+|   `-- nmsr-player-parts feature "part_tracker"
+|       `-- nmsr-player-parts v0.1.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-3d-renderer\nmsr-player-parts) (*)
+|-- strum feature "default" (*)
+|-- strum feature "derive" (*)
+|-- nmsr-rendering-blockbench-model-generator-experiment feature "default"
+|   |-- nmsr-rendering-blockbench-model-generator-experiment v0.1.0 (D:\IDEs\CLionProjects\nmsr-rs\utils\nmsr-rendering-blockbench-model-generator-experiment)
+|   |   |-- nmsr-rendering v0.1.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-3d-renderer\nmsr-rendering) (*)
+|   |   |-- serde feature "default" (*)
+|   |   |-- serde feature "derive" (*)
+|   |   |-- serde_json feature "default" (*)
+|   |   |-- base64 feature "default" (*)
+|   |   |-- derive_more feature "debug" (*)
+|   |   |-- derive_more feature "default"
+|   |   |   |-- derive_more v1.0.0-beta.6 (*)
+|   |   |   `-- derive_more feature "std"
+|   |   |       `-- derive_more v1.0.0-beta.6 (*)
+|   |   |-- derive_more feature "deref" (*)
+|   |   |-- ears-rs feature "default" (*)
+|   |   |-- image feature "png" (*)
+|   |   |-- itertools feature "default" (*)
+|   |   |-- thiserror feature "default" (*)
+|   |   |-- glam feature "default" (*)
+|   |   |-- glam feature "serde"
+|   |   |   `-- glam v0.24.2 (*)
+|   |   |-- clap feature "default"
+|   |   |   |-- clap v4.4.8
+|   |   |   |   |-- clap_builder v4.4.8
+|   |   |   |   |   |-- strsim feature "default" (*)
+|   |   |   |   |   |-- anstream feature "default"
+|   |   |   |   |   |   |-- anstream v0.6.4
+|   |   |   |   |   |   |   |-- anstyle feature "default"
+|   |   |   |   |   |   |   |   |-- anstyle v1.0.4
+|   |   |   |   |   |   |   |   `-- anstyle feature "std"
+|   |   |   |   |   |   |   |       `-- anstyle v1.0.4
+|   |   |   |   |   |   |   |-- anstyle-parse feature "default"
+|   |   |   |   |   |   |   |   |-- anstyle-parse v0.2.2
+|   |   |   |   |   |   |   |   |   `-- utf8parse feature "default"
+|   |   |   |   |   |   |   |   |       `-- utf8parse v0.2.1
+|   |   |   |   |   |   |   |   `-- anstyle-parse feature "utf8"
+|   |   |   |   |   |   |   |       `-- anstyle-parse v0.2.2 (*)
+|   |   |   |   |   |   |   |-- utf8parse feature "default" (*)
+|   |   |   |   |   |   |   |-- anstyle-query feature "default"
+|   |   |   |   |   |   |   |   `-- anstyle-query v1.0.0
+|   |   |   |   |   |   |   |       |-- windows-sys feature "Win32_Foundation"
+|   |   |   |   |   |   |   |       |   |-- windows-sys v0.48.0
+|   |   |   |   |   |   |   |       |   |   `-- windows-targets feature "default" (*)
+|   |   |   |   |   |   |   |       |   `-- windows-sys feature "Win32"
+|   |   |   |   |   |   |   |       |       `-- windows-sys v0.48.0 (*)
+|   |   |   |   |   |   |   |       |-- windows-sys feature "Win32_System_Console"
+|   |   |   |   |   |   |   |       |   |-- windows-sys v0.48.0 (*)
+|   |   |   |   |   |   |   |       |   `-- windows-sys feature "Win32_System"
+|   |   |   |   |   |   |   |       |       |-- windows-sys v0.48.0 (*)
+|   |   |   |   |   |   |   |       |       `-- windows-sys feature "Win32" (*)
+|   |   |   |   |   |   |   |       `-- windows-sys feature "default"
+|   |   |   |   |   |   |   |           `-- windows-sys v0.48.0 (*)
+|   |   |   |   |   |   |   |-- anstyle-wincon feature "default"
+|   |   |   |   |   |   |   |   `-- anstyle-wincon v3.0.1
+|   |   |   |   |   |   |   |       |-- anstyle feature "default" (*)
+|   |   |   |   |   |   |   |       |-- windows-sys feature "Win32_Foundation" (*)
+|   |   |   |   |   |   |   |       |-- windows-sys feature "Win32_System_Console" (*)
+|   |   |   |   |   |   |   |       `-- windows-sys feature "default" (*)
+|   |   |   |   |   |   |   `-- colorchoice feature "default"
+|   |   |   |   |   |   |       `-- colorchoice v1.0.0
+|   |   |   |   |   |   |-- anstream feature "auto"
+|   |   |   |   |   |   |   `-- anstream v0.6.4 (*)
+|   |   |   |   |   |   `-- anstream feature "wincon"
+|   |   |   |   |   |       `-- anstream v0.6.4 (*)
+|   |   |   |   |   |-- anstyle feature "default" (*)
+|   |   |   |   |   `-- clap_lex feature "default"
+|   |   |   |   |       `-- clap_lex v0.6.0
+|   |   |   |   `-- clap_derive feature "default"
+|   |   |   |       `-- clap_derive v4.4.7 (proc-macro)
+|   |   |   |           |-- proc-macro2 feature "default" (*)
+|   |   |   |           |-- quote feature "default" (*)
+|   |   |   |           |-- syn feature "default" (*)
+|   |   |   |           |-- syn feature "full" (*)
+|   |   |   |           `-- heck feature "default" (*)
+|   |   |   |-- clap feature "color"
+|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   `-- clap_builder feature "color"
+|   |   |   |       `-- clap_builder v4.4.8 (*)
+|   |   |   |-- clap feature "error-context"
+|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   `-- clap_builder feature "error-context"
+|   |   |   |       `-- clap_builder v4.4.8 (*)
+|   |   |   |-- clap feature "help"
+|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   `-- clap_builder feature "help"
+|   |   |   |       `-- clap_builder v4.4.8 (*)
+|   |   |   |-- clap feature "std"
+|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   `-- clap_builder feature "std"
+|   |   |   |       |-- clap_builder v4.4.8 (*)
+|   |   |   |       `-- anstyle feature "std" (*)
+|   |   |   |-- clap feature "suggestions"
+|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   `-- clap_builder feature "suggestions"
+|   |   |   |       |-- clap_builder v4.4.8 (*)
+|   |   |   |       `-- clap_builder feature "error-context" (*)
+|   |   |   `-- clap feature "usage"
+|   |   |       |-- clap v4.4.8 (*)
+|   |   |       `-- clap_builder feature "usage"
+|   |   |           `-- clap_builder v4.4.8 (*)
+|   |   |-- clap feature "derive"
+|   |   |   `-- clap v4.4.8 (*)
+|   |   |-- uuid feature "default"
+|   |   |   |-- uuid v1.6.1
+|   |   |   |   |-- serde v1.0.193 (*)
+|   |   |   |   `-- getrandom feature "default" (*)
+|   |   |   `-- uuid feature "std"
+|   |   |       `-- uuid v1.6.1 (*)
+|   |   |-- uuid feature "serde"
+|   |   |   `-- uuid v1.6.1 (*)
+|   |   |-- uuid feature "v4"
+|   |   |   |-- uuid v1.6.1 (*)
+|   |   |   `-- uuid feature "rng"
+|   |   |       |-- uuid v1.6.1 (*)
+|   |   |       `-- uuid feature "getrandom"
+|   |   |           `-- uuid v1.6.1 (*)
+|   |   |-- xxhash-rust feature "default"
+|   |   |   `-- xxhash-rust v0.8.7
+|   |   `-- xxhash-rust feature "xxh3"
+|   |       `-- xxhash-rust v0.8.7
+|   `-- nmsr-rendering feature "part_tracker" (*)
+|-- uuid feature "default" (*)
+|-- uuid feature "serde" (*)
+|-- xxhash-rust feature "default" (*)
+|-- xxhash-rust feature "xxh3" (*)
+|-- regex feature "default"
+|   |-- regex v1.10.2
+|   |   |-- regex-syntax v0.8.2
+|   |   |-- memchr feature "default" (*)
+|   |   |-- aho-corasick feature "default"
+|   |   |   |-- aho-corasick v1.1.2
+|   |   |   |   `-- memchr v2.6.4
+|   |   |   |-- aho-corasick feature "perf-literal"
+|   |   |   |   `-- aho-corasick v1.1.2 (*)
+|   |   |   `-- aho-corasick feature "std"
+|   |   |       |-- aho-corasick v1.1.2 (*)
+|   |   |       `-- memchr feature "std" (*)
+|   |   |-- regex-automata feature "alloc"
+|   |   |   `-- regex-automata v0.4.3
+|   |   |       |-- aho-corasick v1.1.2 (*)
+|   |   |       |-- memchr v2.6.4
+|   |   |       `-- regex-syntax v0.8.2
+|   |   |-- regex-automata feature "meta"
+|   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |-- regex-automata feature "nfa-pikevm"
+|   |   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |   `-- regex-automata feature "nfa-thompson"
+|   |   |   |       |-- regex-automata v0.4.3 (*)
+|   |   |   |       `-- regex-automata feature "alloc" (*)
+|   |   |   `-- regex-automata feature "syntax"
+|   |   |       |-- regex-automata v0.4.3 (*)
+|   |   |       `-- regex-automata feature "alloc" (*)
+|   |   |-- regex-automata feature "nfa-pikevm" (*)
+|   |   `-- regex-automata feature "syntax" (*)
+|   |-- regex feature "perf"
+|   |   |-- regex v1.10.2 (*)
+|   |   |-- regex feature "perf-backtrack"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   `-- regex-automata feature "nfa-backtrack"
+|   |   |       |-- regex-automata v0.4.3 (*)
+|   |   |       `-- regex-automata feature "nfa-thompson" (*)
+|   |   |-- regex feature "perf-cache"
+|   |   |   `-- regex v1.10.2 (*)
+|   |   |-- regex feature "perf-dfa"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   `-- regex-automata feature "hybrid"
+|   |   |       |-- regex-automata v0.4.3 (*)
+|   |   |       |-- regex-automata feature "alloc" (*)
+|   |   |       `-- regex-automata feature "nfa-thompson" (*)
+|   |   |-- regex feature "perf-inline"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   `-- regex-automata feature "perf-inline"
+|   |   |       `-- regex-automata v0.4.3 (*)
+|   |   |-- regex feature "perf-literal"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   `-- regex-automata feature "perf-literal"
+|   |   |       |-- regex-automata v0.4.3 (*)
+|   |   |       |-- regex-automata feature "perf-literal-multisubstring"
+|   |   |       |   |-- regex-automata v0.4.3 (*)
+|   |   |       |   `-- regex-automata feature "std"
+|   |   |       |       |-- regex-automata v0.4.3 (*)
+|   |   |       |       |-- memchr feature "std" (*)
+|   |   |       |       |-- aho-corasick feature "std" (*)
+|   |   |       |       |-- regex-automata feature "alloc" (*)
+|   |   |       |       `-- regex-syntax feature "std"
+|   |   |       |           `-- regex-syntax v0.8.2
+|   |   |       `-- regex-automata feature "perf-literal-substring"
+|   |   |           |-- regex-automata v0.4.3 (*)
+|   |   |           `-- aho-corasick feature "perf-literal" (*)
+|   |   `-- regex feature "perf-onepass"
+|   |       |-- regex v1.10.2 (*)
+|   |       `-- regex-automata feature "dfa-onepass"
+|   |           |-- regex-automata v0.4.3 (*)
+|   |           `-- regex-automata feature "nfa-thompson" (*)
+|   |-- regex feature "std"
+|   |   |-- regex v1.10.2 (*)
+|   |   |-- memchr feature "std" (*)
+|   |   |-- aho-corasick feature "std" (*)
+|   |   |-- regex-automata feature "std" (*)
+|   |   `-- regex-syntax feature "std" (*)
+|   |-- regex feature "unicode"
+|   |   |-- regex v1.10.2 (*)
+|   |   |-- regex feature "unicode-age"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   |-- regex-automata feature "unicode-age"
+|   |   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |   `-- regex-syntax feature "unicode-age"
+|   |   |   |       `-- regex-syntax v0.8.2
+|   |   |   `-- regex-syntax feature "unicode-age" (*)
+|   |   |-- regex feature "unicode-bool"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   |-- regex-automata feature "unicode-bool"
+|   |   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |   `-- regex-syntax feature "unicode-bool"
+|   |   |   |       `-- regex-syntax v0.8.2
+|   |   |   `-- regex-syntax feature "unicode-bool" (*)
+|   |   |-- regex feature "unicode-case"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   |-- regex-automata feature "unicode-case"
+|   |   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |   `-- regex-syntax feature "unicode-case"
+|   |   |   |       `-- regex-syntax v0.8.2
+|   |   |   `-- regex-syntax feature "unicode-case" (*)
+|   |   |-- regex feature "unicode-gencat"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   |-- regex-automata feature "unicode-gencat"
+|   |   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |   `-- regex-syntax feature "unicode-gencat"
+|   |   |   |       `-- regex-syntax v0.8.2
+|   |   |   `-- regex-syntax feature "unicode-gencat" (*)
+|   |   |-- regex feature "unicode-perl"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   |-- regex-automata feature "unicode-perl"
+|   |   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |   `-- regex-syntax feature "unicode-perl"
+|   |   |   |       `-- regex-syntax v0.8.2
+|   |   |   |-- regex-automata feature "unicode-word-boundary"
+|   |   |   |   `-- regex-automata v0.4.3 (*)
+|   |   |   `-- regex-syntax feature "unicode-perl" (*)
+|   |   |-- regex feature "unicode-script"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   |-- regex-automata feature "unicode-script"
+|   |   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |   `-- regex-syntax feature "unicode-script"
+|   |   |   |       `-- regex-syntax v0.8.2
+|   |   |   `-- regex-syntax feature "unicode-script" (*)
+|   |   |-- regex feature "unicode-segment"
+|   |   |   |-- regex v1.10.2 (*)
+|   |   |   |-- regex-automata feature "unicode-segment"
+|   |   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |   `-- regex-syntax feature "unicode-segment"
+|   |   |   |       `-- regex-syntax v0.8.2
+|   |   |   `-- regex-syntax feature "unicode-segment" (*)
+|   |   |-- regex-automata feature "unicode"
+|   |   |   |-- regex-automata v0.4.3 (*)
+|   |   |   |-- regex-automata feature "unicode-age" (*)
+|   |   |   |-- regex-automata feature "unicode-bool" (*)
+|   |   |   |-- regex-automata feature "unicode-case" (*)
+|   |   |   |-- regex-automata feature "unicode-gencat" (*)
+|   |   |   |-- regex-automata feature "unicode-perl" (*)
+|   |   |   |-- regex-automata feature "unicode-script" (*)
+|   |   |   |-- regex-automata feature "unicode-segment" (*)
+|   |   |   |-- regex-automata feature "unicode-word-boundary" (*)
+|   |   |   `-- regex-syntax feature "unicode"
+|   |   |       |-- regex-syntax v0.8.2
+|   |   |       |-- regex-syntax feature "unicode-age" (*)
+|   |   |       |-- regex-syntax feature "unicode-bool" (*)
+|   |   |       |-- regex-syntax feature "unicode-case" (*)
+|   |   |       |-- regex-syntax feature "unicode-gencat" (*)
+|   |   |       |-- regex-syntax feature "unicode-perl" (*)
+|   |   |       |-- regex-syntax feature "unicode-script" (*)
+|   |   |       `-- regex-syntax feature "unicode-segment" (*)
+|   |   `-- regex-syntax feature "unicode" (*)
+|   `-- regex-syntax feature "default"
+|       |-- regex-syntax v0.8.2
+|       |-- regex-syntax feature "std" (*)
+|       `-- regex-syntax feature "unicode" (*)
+|-- serde_with feature "default"
+|   |-- serde_with v3.4.0
+|   |   |-- serde feature "derive" (*)
+|   |   `-- serde_with_macros feature "default"
+|   |       `-- serde_with_macros v3.4.0 (proc-macro)
+|   |           |-- proc-macro2 feature "default" (*)
+|   |           |-- quote feature "default" (*)
+|   |           |-- syn feature "default" (*)
+|   |           |-- syn feature "extra-traits" (*)
+|   |           |-- syn feature "full" (*)
+|   |           |-- syn feature "parsing" (*)
+|   |           `-- darling feature "default"
+|   |               |-- darling v0.20.3 (*)
+|   |               `-- darling feature "suggestions"
+|   |                   |-- darling v0.20.3 (*)
+|   |                   `-- darling_core feature "suggestions"
+|   |                       |-- darling_core v0.20.3 (*)
+|   |                       `-- darling_core feature "strsim"
+|   |                           `-- darling_core v0.20.3 (*)
+|   |-- serde_with feature "macros"
+|   |   `-- serde_with v3.4.0 (*)
+|   `-- serde_with feature "std"
+|       |-- serde_with v3.4.0 (*)
+|       |-- serde feature "std" (*)
+|       `-- serde_with feature "alloc"
+|           |-- serde_with v3.4.0 (*)
+|           `-- serde feature "alloc"
+|               `-- serde v1.0.193 (*)
+|-- symlink feature "default"
+|   `-- symlink v0.1.0
+|-- tokio-stream feature "default"
+|   |-- tokio-stream v0.1.14
+|   |   |-- futures-core feature "default" (*)
+|   |   |-- pin-project-lite feature "default" (*)
+|   |   |-- tokio feature "default" (*)
+|   |   `-- tokio feature "sync" (*)
+|   `-- tokio-stream feature "time"
+|       |-- tokio-stream v0.1.14 (*)
+|       `-- tokio feature "time" (*)
+|-- tower-http feature "default"
+|   `-- tower-http v0.5.0
+|       |-- bytes feature "default" (*)
+|       |-- pin-project-lite feature "default" (*)
+|       |-- http feature "default" (*)
+|       |-- http-body feature "default" (*)
+|       |-- http-body-util feature "default" (*)
+|       |-- tower-layer feature "default" (*)
+|       |-- tower-service feature "default" (*)
+|       `-- bitflags feature "default" (*)
+|-- tracing-subscriber feature "default"
+|   |-- tracing-subscriber v0.3.18
+|   |   |-- tracing v0.1.40 (*)
+|   |   |-- tracing-core v0.1.32 (*)
+|   |   |-- serde feature "default" (*)
+|   |   |-- serde_json feature "default" (*)
+|   |   |-- once_cell feature "default" (*)
+|   |   |-- regex feature "std" (*)
+|   |   |-- regex feature "unicode-case" (*)
+|   |   |-- regex feature "unicode-perl" (*)
+|   |   |-- matchers feature "default"
+|   |   |   `-- matchers v0.1.0
+|   |   |       `-- regex-automata feature "default"
+|   |   |           |-- regex-automata v0.1.10
+|   |   |           |   `-- regex-syntax feature "default"
+|   |   |           |       |-- regex-syntax v0.6.29
+|   |   |           |       `-- regex-syntax feature "unicode"
+|   |   |           |           |-- regex-syntax v0.6.29
+|   |   |           |           |-- regex-syntax feature "unicode-age"
+|   |   |           |           |   `-- regex-syntax v0.6.29
+|   |   |           |           |-- regex-syntax feature "unicode-bool"
+|   |   |           |           |   `-- regex-syntax v0.6.29
+|   |   |           |           |-- regex-syntax feature "unicode-case"
+|   |   |           |           |   `-- regex-syntax v0.6.29
+|   |   |           |           |-- regex-syntax feature "unicode-gencat"
+|   |   |           |           |   `-- regex-syntax v0.6.29
+|   |   |           |           |-- regex-syntax feature "unicode-perl"
+|   |   |           |           |   `-- regex-syntax v0.6.29
+|   |   |           |           |-- regex-syntax feature "unicode-script"
+|   |   |           |           |   `-- regex-syntax v0.6.29
+|   |   |           |           `-- regex-syntax feature "unicode-segment"
+|   |   |           |               `-- regex-syntax v0.6.29
+|   |   |           `-- regex-automata feature "std"
+|   |   |               |-- regex-automata v0.1.10 (*)
+|   |   |               `-- regex-automata feature "regex-syntax"
+|   |   |                   `-- regex-automata v0.1.10 (*)
+|   |   |-- nu-ansi-term feature "default"
+|   |   |   `-- nu-ansi-term v0.46.0
+|   |   |       |-- overload feature "default"
+|   |   |       |   `-- overload v0.1.1
+|   |   |       |-- winapi feature "consoleapi"
+|   |   |       |   `-- winapi v0.3.9
+|   |   |       |-- winapi feature "default"
+|   |   |       |   `-- winapi v0.3.9
+|   |   |       |-- winapi feature "errhandlingapi"
+|   |   |       |   `-- winapi v0.3.9
+|   |   |       |-- winapi feature "fileapi"
+|   |   |       |   `-- winapi v0.3.9
+|   |   |       |-- winapi feature "handleapi"
+|   |   |       |   `-- winapi v0.3.9
+|   |   |       `-- winapi feature "processenv"
+|   |   |           `-- winapi v0.3.9
+|   |   |-- sharded-slab feature "default"
+|   |   |   `-- sharded-slab v0.1.7
+|   |   |       `-- lazy_static feature "default"
+|   |   |           `-- lazy_static v1.4.0
+|   |   |-- smallvec feature "default"
+|   |   |   `-- smallvec v1.11.2
+|   |   |-- thread_local feature "default"
+|   |   |   `-- thread_local v1.1.7
+|   |   |       |-- once_cell feature "default" (*)
+|   |   |       `-- cfg-if feature "default" (*)
+|   |   |-- tracing-log feature "log-tracer"
+|   |   |   `-- tracing-log v0.2.0
+|   |   |       |-- log feature "default" (*)
+|   |   |       |-- tracing-core feature "default"
+|   |   |       |   |-- tracing-core v0.1.32 (*)
+|   |   |       |   `-- tracing-core feature "std" (*)
+|   |   |       `-- once_cell feature "default" (*)
+|   |   |-- tracing-log feature "std"
+|   |   |   |-- tracing-log v0.2.0 (*)
+|   |   |   `-- log feature "std"
+|   |   |       `-- log v0.4.20
+|   |   `-- tracing-serde feature "default"
+|   |       `-- tracing-serde v0.1.3
+|   |           |-- serde feature "default" (*)
+|   |           `-- tracing-core feature "default" (*)
+|   |-- tracing-subscriber feature "ansi"
+|   |   |-- tracing-subscriber v0.3.18 (*)
+|   |   |-- tracing-subscriber feature "fmt"
+|   |   |   |-- tracing-subscriber v0.3.18 (*)
+|   |   |   |-- tracing-subscriber feature "registry"
+|   |   |   |   |-- tracing-subscriber v0.3.18 (*)
+|   |   |   |   |-- tracing-subscriber feature "sharded-slab"
+|   |   |   |   |   `-- tracing-subscriber v0.3.18 (*)
+|   |   |   |   |-- tracing-subscriber feature "std"
+|   |   |   |   |   |-- tracing-subscriber v0.3.18 (*)
+|   |   |   |   |   |-- tracing-core feature "std" (*)
+|   |   |   |   |   `-- tracing-subscriber feature "alloc"
+|   |   |   |   |       `-- tracing-subscriber v0.3.18 (*)
+|   |   |   |   `-- tracing-subscriber feature "thread_local"
+|   |   |   |       `-- tracing-subscriber v0.3.18 (*)
+|   |   |   `-- tracing-subscriber feature "std" (*)
+|   |   `-- tracing-subscriber feature "nu-ansi-term"
+|   |       `-- tracing-subscriber v0.3.18 (*)
+|   |-- tracing-subscriber feature "fmt" (*)
+|   |-- tracing-subscriber feature "smallvec"
+|   |   `-- tracing-subscriber v0.3.18 (*)
+|   |-- tracing-subscriber feature "std" (*)
+|   `-- tracing-subscriber feature "tracing-log"
+|       `-- tracing-subscriber v0.3.18 (*)
+|-- tracing-subscriber feature "env-filter"
+|   |-- tracing-subscriber v0.3.18 (*)
+|   |-- tracing-subscriber feature "matchers"
+|   |   `-- tracing-subscriber v0.3.18 (*)
+|   |-- tracing-subscriber feature "once_cell"
+|   |   `-- tracing-subscriber v0.3.18 (*)
+|   |-- tracing-subscriber feature "regex"
+|   |   `-- tracing-subscriber v0.3.18 (*)
+|   |-- tracing-subscriber feature "std" (*)
+|   |-- tracing-subscriber feature "thread_local" (*)
+|   `-- tracing-subscriber feature "tracing"
+|       `-- tracing-subscriber v0.3.18 (*)
+|-- tracing-subscriber feature "json"
+|   |-- tracing-subscriber v0.3.18 (*)
+|   |-- tracing-subscriber feature "serde"
+|   |   `-- tracing-subscriber v0.3.18 (*)
+|   |-- tracing-subscriber feature "serde_json"
+|   |   `-- tracing-subscriber v0.3.18 (*)
+|   `-- tracing-subscriber feature "tracing-serde"
+|       `-- tracing-subscriber v0.3.18 (*)
+|-- twelf feature "default_trait"
+|   |-- twelf v0.12.0
+|   |   |-- serde feature "default" (*)
+|   |   |-- serde feature "derive" (*)
+|   |   |-- serde_json feature "default" (*)
+|   |   |-- log feature "default" (*)
+|   |   |-- thiserror feature "default" (*)
+|   |   |-- config-derive feature "default"
+|   |   |   `-- config-derive v0.12.0 (proc-macro)
+|   |   |       |-- proc-macro2 feature "default" (*)
+|   |   |       |-- quote feature "default" (*)
+|   |   |       |-- heck feature "default" (*)
+|   |   |       |-- syn feature "default" (*)
+|   |   |       |-- syn feature "extra-traits"
+|   |   |       |   `-- syn v1.0.109 (*)
+|   |   |       `-- syn feature "full"
+|   |   |           `-- syn v1.0.109 (*)
+|   |   |-- envy feature "default"
+|   |   |   `-- envy v0.4.2
+|   |   |       `-- serde feature "default" (*)
+|   |   `-- toml feature "default"
+|   |       `-- toml v0.5.11
+|   |           `-- serde feature "default" (*)
+|   `-- config-derive feature "default_trait"
+|       `-- config-derive v0.12.0 (proc-macro) (*)
+|-- twelf feature "env"
+|   |-- twelf v0.12.0 (*)
+|   |-- twelf feature "envy"
+|   |   `-- twelf v0.12.0 (*)
+|   `-- config-derive feature "env"
+|       `-- config-derive v0.12.0 (proc-macro) (*)
+|-- twelf feature "toml"
+|   |-- twelf v0.12.0 (*)
+|   |-- twelf feature "toml_rs"
+|   |   `-- twelf v0.12.0 (*)
+|   `-- config-derive feature "toml"
+|       `-- config-derive v0.12.0 (proc-macro) (*)
+|-- url feature "default"
+|   `-- url v2.5.0
+|       |-- percent-encoding feature "default" (*)
+|       |-- form_urlencoded feature "default" (*)
+|       `-- idna feature "default"
+|           |-- idna v0.5.0
+|           |   |-- unicode-normalization v0.1.22
+|           |   |   |-- tinyvec feature "alloc"
+|           |   |   |   |-- tinyvec v1.6.0
+|           |   |   |   |   `-- tinyvec_macros feature "default"
+|           |   |   |   |       `-- tinyvec_macros v0.1.1
+|           |   |   |   `-- tinyvec feature "tinyvec_macros"
+|           |   |   |       `-- tinyvec v1.6.0 (*)
+|           |   |   `-- tinyvec feature "default"
+|           |   |       `-- tinyvec v1.6.0 (*)
+|           |   `-- unicode-bidi feature "hardcoded-data"
+|           |       `-- unicode-bidi v0.3.13
+|           `-- idna feature "std"
+|               |-- idna v0.5.0 (*)
+|               |-- idna feature "alloc"
+|               |   `-- idna v0.5.0 (*)
+|               |-- unicode-bidi feature "std"
+|               |   `-- unicode-bidi v0.3.13
+|               `-- unicode-normalization feature "std"
+|                   `-- unicode-normalization v0.1.22 (*)
+|-- wasm-bindgen feature "default"
+|   |-- wasm-bindgen v0.2.88
+|   |   |-- cfg-if feature "default" (*)
+|   |   `-- wasm-bindgen-macro feature "default"
+|   |       `-- wasm-bindgen-macro v0.2.88 (proc-macro)
+|   |           |-- quote feature "default" (*)
+|   |           `-- wasm-bindgen-macro-support feature "default"
+|   |               `-- wasm-bindgen-macro-support v0.2.88
+|   |                   |-- proc-macro2 feature "default" (*)
+|   |                   |-- quote feature "default" (*)
+|   |                   |-- syn feature "default" (*)
+|   |                   |-- syn feature "full" (*)
+|   |                   |-- syn feature "visit"
+|   |                   |   `-- syn v2.0.39 (*)
+|   |                   |-- wasm-bindgen-backend feature "default"
+|   |                   |   `-- wasm-bindgen-backend v0.2.88
+|   |                   |       |-- proc-macro2 feature "default" (*)
+|   |                   |       |-- quote feature "default" (*)
+|   |                   |       |-- syn feature "default" (*)
+|   |                   |       |-- syn feature "full" (*)
+|   |                   |       |-- once_cell feature "default" (*)
+|   |                   |       |-- bumpalo feature "default"
+|   |                   |       |   `-- bumpalo v3.14.0
+|   |                   |       |-- log feature "default"
+|   |                   |       |   `-- log v0.4.20
+|   |                   |       `-- wasm-bindgen-shared feature "default"
+|   |                   |           `-- wasm-bindgen-shared v0.2.88
+|   |                   `-- wasm-bindgen-shared feature "default" (*)
+|   |-- wasm-bindgen feature "spans"
+|   |   |-- wasm-bindgen v0.2.88 (*)
+|   |   `-- wasm-bindgen-macro feature "spans"
+|   |       |-- wasm-bindgen-macro v0.2.88 (proc-macro) (*)
+|   |       `-- wasm-bindgen-macro-support feature "spans"
+|   |           |-- wasm-bindgen-macro-support v0.2.88 (*)
+|   |           `-- wasm-bindgen-backend feature "spans"
+|   |               `-- wasm-bindgen-backend v0.2.88 (*)
+|   `-- wasm-bindgen feature "std"
+|       `-- wasm-bindgen v0.2.88 (*)
+|-- wasm-bindgen-futures feature "default"
+|   `-- wasm-bindgen-futures v0.4.38
+|       |-- cfg-if feature "default" (*)
+|       |-- wasm-bindgen feature "default" (*)
+|       `-- js-sys feature "default"
+|           `-- js-sys v0.3.65
+|               `-- wasm-bindgen feature "default" (*)
+|-- web-sys feature "Request"
+|   `-- web-sys v0.3.64
+|       |-- wasm-bindgen feature "default" (*)
+|       `-- js-sys feature "default" (*)
+|-- web-sys feature "RequestInit"
+|   `-- web-sys v0.3.64 (*)
+|-- web-sys feature "WorkerGlobalScope"
+|   |-- web-sys v0.3.64 (*)
+|   `-- web-sys feature "EventTarget"
+|       `-- web-sys v0.3.64 (*)
+`-- web-sys feature "default"
+    `-- web-sys v0.3.64 (*)
+[build-dependencies]
+|-- vergen feature "git"
+|   `-- vergen v8.2.6
+|       |-- anyhow feature "default" (*)
+|       |-- time feature "default"
+|       |   |-- time v0.3.30
+|       |   |   |-- powerfmt v0.2.0
+|       |   |   |-- itoa feature "default" (*)
+|       |   |   |-- deranged feature "powerfmt"
+|       |   |   |   `-- deranged v0.3.9
+|       |   |   |       `-- powerfmt v0.2.0
+|       |   |   `-- time-core feature "default"
+|       |   |       `-- time-core v0.1.2
+|       |   `-- time feature "std"
+|       |       |-- time v0.3.30 (*)
+|       |       |-- time feature "alloc"
+|       |       |   `-- time v0.3.30 (*)
+|       |       `-- deranged feature "std"
+|       |           |-- deranged v0.3.9 (*)
+|       |           `-- deranged feature "alloc"
+|       |               `-- deranged v0.3.9 (*)
+|       |-- time feature "formatting"
+|       |   |-- time v0.3.30 (*)
+|       |   `-- time feature "std" (*)
+|       |-- time feature "local-offset"
+|       |   |-- time v0.3.30 (*)
+|       |   `-- time feature "std" (*)
+|       `-- time feature "parsing"
+|           `-- time v0.3.30 (*)
+|       [build-dependencies]
+|       `-- rustversion feature "default" (*)
+`-- vergen feature "gitcl"
+    |-- vergen v8.2.6 (*)
+    `-- vergen feature "time"
+        `-- vergen v8.2.6 (*)

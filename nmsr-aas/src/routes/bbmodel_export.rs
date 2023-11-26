@@ -5,11 +5,11 @@ use axum::{
     http::HeaderValue,
     response::{IntoResponse, Response},
 };
-use hyper::{
+use http::{
     header::{CONTENT_DISPOSITION, CONTENT_TYPE},
     Method,
 };
-use nmsr_rendering::high_level::{pipeline::{scene::Scene, SceneContextWrapper}, types::PlayerPartTextureType};
+use nmsr_rendering::high_level::types::PlayerPartTextureType;
 use nmsr_rendering_blockbench_model_generator_experiment::{
     blockbench::generate_project,
     error::BlockbenchGeneratorError,
@@ -53,6 +53,18 @@ impl ModelProjectImageIO for NMSRaaSImageIO {
     }
 }
 
+
+const RECTANGLE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_rectangle.png");
+const SQUARE_SHADOW_BYTES: &'static [u8] = include_bytes!("shadow_square.png");
+
+pub fn get_shadow_bytes(is_square: bool) -> &'static [u8] {
+    if is_square {
+        SQUARE_SHADOW_BYTES
+    } else {
+        RECTANGLE_SHADOW_BYTES
+    }
+}
+
 #[axum::debug_handler]
 #[instrument(skip(state, method))]
 pub(crate) async fn internal_bbmodel_export(
@@ -85,7 +97,7 @@ pub(crate) async fn internal_bbmodel_export(
     if request.features.contains(RenderRequestFeatures::Shadow) {
         textures.insert(
             PlayerPartTextureType::Shadow,
-            load_image(Scene::<SceneContextWrapper>::get_shadow_bytes(part_context.shadow_is_square))?,
+            load_image(get_shadow_bytes(part_context.shadow_is_square))?,
         );
     }
 

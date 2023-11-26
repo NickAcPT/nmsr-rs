@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use axum::response::IntoResponse;
-use hyper::StatusCode;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -108,11 +107,9 @@ pub enum MojangRequestError {
     #[error("Url parse error: {0}")]
     UrlParseError(#[from] url::ParseError),
     #[error("Http error: {0}")]
-    HttpRequestError(#[from] hyper::http::Error),
+    HttpRequestError(#[from] http::Error),
     #[error("Request error: {0}")]
     BoxedRequestError(Box<dyn std::error::Error + Send + Sync>),
-    #[error("Request error: {0}")]
-    RequestError(#[from] hyper_util::client::legacy::Error),
     #[error("Missing skin from game profile: {0}")]
     MissingSkinPropertyError(Uuid),
     #[error("Received invalid texture url: {0}")]
@@ -196,9 +193,9 @@ impl IntoResponse for NMSRaaSError {
         };
 
         let error = if is_bad_request {
-            StatusCode::BAD_REQUEST
+            http::StatusCode::BAD_REQUEST
         } else {
-            StatusCode::INTERNAL_SERVER_ERROR
+            http::StatusCode::INTERNAL_SERVER_ERROR
         };
 
         *res.status_mut() = error;

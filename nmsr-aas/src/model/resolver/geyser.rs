@@ -3,7 +3,7 @@ use crate::{
     error::{MojangRequestError, MojangRequestResult},
     model::request::entry::RenderRequestEntryModel,
 };
-use hyper::Method;
+use http::Method;
 use serde::Deserialize;
 use tracing::{instrument, Span};
 use uuid::Uuid;

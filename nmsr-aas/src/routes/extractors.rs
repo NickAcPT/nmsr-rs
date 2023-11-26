@@ -14,7 +14,8 @@ use axum::{
     RequestExt,
 };
 use axum_extra::extract::Multipart;
-use hyper::{Method, body::Bytes};
+use axum::body::Bytes;
+use http::Method;
 use is_empty::IsEmpty;
 use serde_json::{json, Value};
 use std::{borrow::ToOwned, collections::HashMap};

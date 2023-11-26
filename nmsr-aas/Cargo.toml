@@ -25,11 +25,10 @@ nmsr-rendering-blockbench-model-generator-experiment = { path = "../utils/nmsr-r
 ears-rs = { workspace = true }
 
 anyhow = { workspace = true }
-axum = { git = "https://github.com/tokio-rs/axum", rev = "fc3cb44b9161ce6bfae654f0a31d7224643b6cfb", features = [
-    "macros",
-    "tokio"
-] }
-axum-extra = { git = "https://github.com/tokio-rs/axum", rev = "fc3cb44b9161ce6bfae654f0a31d7224643b6cfb", features = [
+axum = { git = "https://github.com/tokio-rs/axum", rev = "a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea", features = [
+    "macros", "form", "json", "matched-path", "original-uri", "query", "tower-log"
+], default-features = false }
+axum-extra = { git = "https://github.com/tokio-rs/axum", rev = "a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea", features = [
     "multipart",
 ] }
 http-body-util = "0.1.0"
@@ -50,27 +49,16 @@ serde_json = { workspace = true }
 
 base64 = "0.21"
 
-# Hyper - HTTP client
-hyper = { version = "1.0", features = ["client"] }
-hyper-util = { version = "0.1.1", features = ["client", "client-legacy", "http1", "http2", "server-auto", "tokio"] }
-hyper-tls = { git = "https://github.com/hyperium/hyper-tls", rev = "95ebd8d3ac8785e552fc9fee0ffac141bb361423" }
 url = "2.4"
 
 # Tokio - Async runtime
-tokio = { workspace = true, features = ["macros", "fs", "sync", "signal", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "sync"] }
 
 # Tracing - Logging framework
 tracing = { workspace = true }
 
 # Tracing subscriber - Composing Tracing subscribers
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-
-# OpenTelemetry - Tracing framework
-opentelemetry = { version = "0.20", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.13", default-features = true }
-
-# Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
-tracing-opentelemetry = "0.21"
 
 # Strum - Enum helper library
 strum = { workspace = true }
@@ -86,8 +74,8 @@ thiserror = { workspace = true }
 derive_more = { workspace = true }
 
 # Tower - Service framework
-tower = { version = "0.4", features = ["limit", "retry", "load-shed"] }
-tower-http = { version = "0.5", features = ["full"] }
+tower = { version = "0.4", features = ["limit", "retry", "load-shed"], default-features = false }
+tower-http = { version = "0.5", features = [] }
 http = "1.0"
 
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
@@ -98,7 +86,7 @@ image = { workspace = true, default-features = false }
 mtpng = "0.3"
 
 chrono = "0.4"
-tokio-stream = { version = "0.1", features = ["fs"] }
+tokio-stream = { version = "0.1", features = [] }
 sync_wrapper = "0.1"
 
 regex = "1.9"
@@ -108,9 +96,13 @@ xxhash-rust = { workspace = true }
 
 is_empty = "0.2"
 
-wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen = { version = "=0.2.88", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
-web-sys = { version = "0.3", features = ["Request", "RequestInit", "WorkerGlobalScope"], optional = true }
+web-sys = { version = "0.3", features = ["Request", "RequestInit", "WorkerGlobalScope", "console"], optional = true }
+
+getrandom = { version = "0.2", features = ["js"] }
+
+pin-project-lite = "0.2"
 
 [features]
 default = ["ears", "wasm"]
@@ -126,3 +118,6 @@ vergen = { version = "8.2.4", default-features = false, features = [
     "git",
     "gitcl",
 ] }
+
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false

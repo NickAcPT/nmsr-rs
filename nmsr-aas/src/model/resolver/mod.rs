@@ -14,6 +14,7 @@ use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParse
 #[cfg(feature = "ears")]
 use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
 use nmsr_rendering::high_level::types::PlayerPartTextureType;
+use web_sys::console;
 use std::{collections::HashMap, sync::Arc};
 use strum::EnumCount;
 use tracing::{instrument, Span};
@@ -216,6 +217,9 @@ impl RenderRequestResolver {
         &self,
         entry: &RenderRequestEntry,
     ) -> Result<ResolvedRenderEntryTextures> {
+        
+//        console::log_1(&format!("Resolving: {:?}", entry).into());
+        
         if let Some(result) = self.model_cache.get_cached_resolved_texture(entry).await? {
             return Ok(result);
         }
@@ -223,28 +227,44 @@ impl RenderRequestResolver {
         let model: Option<RenderRequestEntryModel>;
         let skin_texture: Option<MojangTexture>;
         let cape_texture: Option<MojangTexture>;
+        
+//        console::log_1(&"Resolving 2".into());
 
         match &entry {
             RenderRequestEntry::MojangPlayerUuid(id) => {
+                
+//                console::log_1(&"Resolving 3".into());
+                
                 let result = self
                     .mojang_requests_client
                     .resolve_uuid_to_game_profile(id)
                     .await?;
+                
+//                console::log_1(&"Resolving 4".into());
+                
                 let textures = result.textures()?;
+                
+//                console::log_1(&"Resolving 5".into());
 
                 let skin = textures
                     .skin()
                     .ok_or_else(|| MojangRequestError::MissingSkinPropertyError(*id))?;
                 let cape = textures.cape();
 
+//                console::log_1(&"Resolving 6".into());
+                
                 model = if skin.is_slim() {
                     Some(RenderRequestEntryModel::Alex)
                 } else {
                     Some(RenderRequestEntryModel::Steve)
                 };
+                
+//                console::log_1(&"Resolving 7".into());
 
                 skin_texture = self.fetch_game_profile_texture(textures.skin()).await?;
+//                console::log_1(&"Resolving 8".into());
                 cape_texture = self.fetch_game_profile_texture(cape).await?;
+//                console::log_1(&"Resolving 9".into());
             }
             RenderRequestEntry::GeyserPlayerUuid(id) => {
                 let (texture_id, player_model) =
@@ -268,25 +288,42 @@ impl RenderRequestResolver {
                 model = None;
             }
         }
+//        console::log_1(&"Resolving 10".into());
 
         let mut textures = HashMap::new();
 
+//        console::log_1(&"Resolving 11".into());
+        
         if let Some(cape_texture) = cape_texture {
             textures.insert(ResolvedRenderEntryTextureType::Cape, cape_texture);
         }
+        
+//        console::log_1(&"Resolving 12".into());
 
         if let Some(skin_texture) = skin_texture {
+//            console::log_1(&"Resolving 12.5".into());
+            
             #[cfg(feature = "ears")]
             Self::resolve_ears_textures(&skin_texture, &mut textures);
+            
+//            console::log_1(&"Resolving 12.6".into());
 
             textures.insert(ResolvedRenderEntryTextureType::Skin, skin_texture);
+            
+//            console::log_1(&"Resolving 12.7".into());
         }
+        
+//        console::log_1(&"Resolving 13".into());
 
         let result = ResolvedRenderEntryTextures::new(textures, model);
 
+//        console::log_1(&"Resolving 14".into());
+        
         self.model_cache
             .cache_resolved_texture(entry, &result)
             .await?;
+        
+//        console::log_1(&"Resolving 15".into());
 
         Ok(result)
     }
@@ -296,16 +333,21 @@ impl RenderRequestResolver {
         skin_texture: &MojangTexture,
         textures: &mut HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
     ) -> Option<EarsFeatures> {
+//        console::log_1(&"ears 1".into());
+        
         use std::borrow::Cow;
         use image::DynamicImage;
         use xxhash_rust::xxh3::xxh3_128;
         use crate::utils::png::create_png_from_bytes;
 
         image::load_from_memory(skin_texture.data()).map_or(None, |image| {
+//            console::log_1(&"ears 2".into());
             let image = image.into_rgba8();
+//            console::log_1(&"ears 3".into());
 
             let features = EarsParser::parse(&image).ok().flatten();
             let alfalfa = ears_rs::alfalfa::read_alfalfa(&image).ok().flatten();
+//            console::log_1(&"ears 4".into());
 
             if let Some(alfalfa) = alfalfa {
                 for texture_type in &[
@@ -330,10 +372,14 @@ impl RenderRequestResolver {
                                 Cow::Borrowed(data)
                             };
 
+//                            console::log_1(&"ears 5".into());
+                            
                             textures.insert(
                                 ResolvedRenderEntryTextureType::Ears(*texture_type),
                                 MojangTexture::new_named(hash, data.into_owned()),
                             );
+                            
+//                            console::log_1(&"ears 6".into());
                         }
                     }
                 }

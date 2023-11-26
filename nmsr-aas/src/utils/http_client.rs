@@ -4,15 +4,8 @@ use axum::{
     http::{HeaderName, HeaderValue},
     response::Response as AxumResponse,
 };
-use http::HeaderMap;
+use http::{HeaderMap, Method};
 use http_body_util::BodyExt;
-use hyper::{
-    body::{Bytes, Incoming},
-    Method, Request, Response,
-};
-
-use hyper_tls::HttpsConnector;
-use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use std::{future::Future, pin::Pin, task::Poll, time::Duration, convert::Infallible};
 use sync_wrapper::SyncWrapper;
 use tokio::sync::RwLock;
@@ -22,11 +15,6 @@ use tower::{
     util::{BoxService, ServiceFn},
     Service, ServiceBuilder, ServiceExt,
 };
-use tower_http::{
-    classify::{NeverClassifyEos, ServerErrorsFailureClass},
-    set_header::SetRequestHeaderLayer,
-    trace::{DefaultOnFailure, ResponseBody, TraceLayer},
-};
 use tracing::{instrument, Span};
 use wasm_bindgen_futures::{
     future_to_promise,
@@ -34,9 +22,11 @@ use wasm_bindgen_futures::{
     JsFuture,
 };
 
-#[cfg(feature = "wasm")]
+use axum::extract::Request;
+use axum::body::Bytes;
+use axum::response::Response;
+
 use wasm_bindgen::prelude::*;
-#[cfg(feature = "wasm")]
 use wasm_bindgen_futures::js_sys::Promise;
 
 #[cfg(feature = "wasm")]
@@ -45,22 +35,14 @@ extern "C" {
     fn do_request(url: &str, method: &str, headers: JsValue, body: Uint8Array) -> Promise;
 }
 
+
 const USER_AGENT: &str = concat!(
     "NMSR-as-a-Service/",
     env!("VERGEN_GIT_SHA"),
     " (Discord=@nickac; +https://nmsr.nickac.dev/)"
 );
 
-#[cfg(not(feature = "wasm"))]
-pub(crate) type TraceResponseBody =
-    ResponseBody<Incoming, NeverClassifyEos<ServerErrorsFailureClass>, (), (), DefaultOnFailure>;
-#[cfg(not(feature = "wasm"))]
-type BoxedTracedResponse =
-    BoxService<Request<Body>, Response<TraceResponseBody>, hyper_util::client::legacy::Error>;
-
 pub struct NmsrHttpClient {
-    #[cfg(not(feature = "wasm"))]
-    inner: RwLock<SyncWrapper<BoxedTracedResponse>>,
     #[cfg(feature = "wasm")]
     inner: RwLock<SyncWrapper<BoxService<axum::extract::Request, AxumResponse, JsError>>>,
 }
@@ -107,14 +89,6 @@ impl NmsrHttpClient {
 }
 
 fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
-    #[cfg(not(feature = "wasm"))]
-    let client = {
-        let https = HttpsConnector::new();
-
-        // A new higher level client from hyper is in the works, so we gotta use the legacy one
-        Client::builder(TokioExecutor::new()).build(https)
-    };
-
     let client = {
         fn raw_do_request(
             uri: String,
@@ -140,7 +114,9 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
             let promise = promise;
             let future = JsFuture::from(promise);
 
-            NmsrRequestFuture(future)
+            NmsrRequestFuture {
+                future,
+            }
         }
 
         async fn do_wasm_request(request: Request<Body>) -> Result<AxumResponse, JsError> {
@@ -160,32 +136,21 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
         service_fn(do_wasm_request)
     };
 
-    let tracing = {
-        #[cfg(not(feature = "wasm"))]
-        {
-            TraceLayer::new_for_http().on_body_chunk(()).on_eos(())
-        }
-        #[cfg(feature = "wasm")]
-        {
-            Identity::new()
-        }
-    };
     let service = ServiceBuilder::new()
         .boxed()
-        .rate_limit(rate_limit_per_second, Duration::from_secs(1))
-        .layer(tracing)
-        .layer(SetRequestHeaderLayer::overriding(
-            HeaderName::from_static("user-agent"),
-            HeaderValue::from_str(USER_AGENT).expect("Expected user-agent to be valid"),
-        ))
+        //.rate_limit(rate_limit_per_second, Duration::from_secs(1))
         .service(client);
 
     NmsrHttpClient {
         inner: RwLock::new(SyncWrapper::new(service)),
     }
 }
-
-struct NmsrRequestFuture(JsFuture);
+pin_project_lite::pin_project! {
+    struct NmsrRequestFuture {
+        #[pin]
+        future: JsFuture,
+    }
+}
 
 unsafe impl Send for NmsrRequestFuture {}
 
@@ -194,13 +159,18 @@ impl Future for NmsrRequestFuture {
     type Output = Result<Vec<u8>, Infallible>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut core::task::Context<'_>) -> Poll<Self::Output> {
-        let future = unsafe { self.map_unchecked_mut(|f| &mut f.0) };
+        let this = self.project();
+        
+        let future = this.future;
 
         match future.poll(cx) {
-            Poll::Ready(Ok(value)) => Poll::Ready(Ok(value
+            Poll::Ready(Ok(value)) => {
+//                //web_sys::console::log_2(&"Got response".into(), &value);
+                
+                Poll::Ready(Ok(value
                 .dyn_into::<Uint8Array>()
                 .expect_throw("Failed to convert response to Uint8Array")
-                .to_vec())),
+                .to_vec()))},
             Poll::Ready(Err(err)) => panic!("Failed to do request: {:?}", err),
             Poll::Pending => Poll::Pending,
         }

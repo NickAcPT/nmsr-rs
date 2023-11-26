@@ -1,14 +1,13 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, collections::HashMap};
 
 use ears_rs::utils::upgrade_skin_if_needed;
-use hyper::Method;
+use http::Method;
 use image::{GenericImageView, RgbaImage};
 use nmsr_rendering::high_level::{
     model::{PlayerArmorSlot, PlayerArmorSlots},
     parts::provider::minecraft::compute_base_part,
 };
 use strum::IntoEnumIterator;
-use tokio::fs;
 use tracing::Span;
 
 use crate::{
@@ -25,6 +24,7 @@ pub struct VanillaMinecraftArmorManager {
     client: NmsrHttpClient,
     material_location: PathBuf,
     trims_location: PathBuf,
+    files: HashMap<PathBuf, Vec<u8>>,
 }
 
 enum VanillaArmorApplicable<'a> {
@@ -74,18 +74,11 @@ impl VanillaMinecraftArmorManager {
         let material_location = armor_location.join("material");
         let trims_location = armor_location.join("trims");
 
-        fs::create_dir_all(&material_location)
-            .await
-            .explain("Unable to create armor cache folder".to_string())?;
-
-        fs::create_dir_all(&trims_location)
-            .await
-            .explain("Unable to create armor cache folder".to_string())?;
-
-        let manager = Self {
+        let mut manager = Self {
             client: NmsrHttpClient::new(20),
             material_location,
             trims_location,
+            files: HashMap::new(),
         };
 
         manager.init().await?;
@@ -101,27 +94,23 @@ impl VanillaMinecraftArmorManager {
         self.trims_location.join(trim.to_string())
     }
 
-    async fn init(&self) -> Result<()> {
+    async fn init(&mut self) -> Result<()> {
         self.download_materials().await?;
         self.download_trims().await?;
 
         Ok(())
     }
 
-    async fn download_trims(&self) -> Result<()> {
+    async fn download_trims(&mut self) -> Result<()> {
         for trim in VanillaMinecraftArmorTrim::iter() {
             let trim_path = self.get_trim_file_path(trim);
-
-            fs::create_dir_all(&trim_path).await.explain(format!(
-                "Unable to create armor cache folder for trim {trim}"
-            ))?;
 
             let layers = trim.get_layer_names();
 
             for layer in layers {
                 let layer_path = trim_path.join(&layer);
 
-                if !layer_path.exists() {
+                if self.files.get(&layer_path).is_none() {
                     let url = format!(
                         "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/trims/models/armor/{name}",
                         name = &layer
@@ -132,23 +121,17 @@ impl VanillaMinecraftArmorManager {
                         .do_request(&url, Method::GET, &Span::current(), || None)
                         .await?;
 
-                    fs::write(&layer_path, bytes)
-                        .await
-                        .explain(format!("Unable to write armor cache file for trim {layer}"))?;
+                    self.files.insert(layer_path, bytes.to_vec());
                 }
             }
         }
 
         Ok(())
     }
-    async fn download_materials(&self) -> Result<()> {
+    async fn download_materials(&mut self) -> Result<()> {
         for material in VanillaMinecraftArmorMaterial::iter() {
             let material_path = self.get_material_file_path(material);
             let material_name = material.to_string().to_lowercase();
-
-            fs::create_dir_all(&material_path).await.explain(format!(
-                "Unable to create armor cache folder for material {material}"
-            ))?;
 
             let layers = material.get_layer_names();
 
@@ -156,7 +139,7 @@ impl VanillaMinecraftArmorManager {
                 let file_name = format!("{material_name}_layer_{layer}.png");
                 let layer_path = material_path.join(&file_name);
 
-                if !layer_path.exists() {
+                if self.files.get(&layer_path).is_none() {
                     let url = format!(
                         "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/models/armor/{name}",
                         name = &file_name
@@ -167,9 +150,7 @@ impl VanillaMinecraftArmorManager {
                         .do_request(&url, Method::GET, &Span::current(), || None)
                         .await?;
 
-                    fs::write(&layer_path, bytes).await.explain(format!(
-                        "Unable to write armor cache file for material {material}"
-                    ))?;
+                    self.files.insert(layer_path, bytes.to_vec());
                 }
             }
         }
@@ -233,9 +214,7 @@ impl VanillaMinecraftArmorManager {
     ) -> ArmorManagerResult<()> {
         let material_path = self.get_image_path(applicable, slot);
 
-        let bytes = fs::read(&material_path)
-            .await
-            .map_err(|_| ArmorManagerError::MissingArmorTextureError(material_path.clone()))?;
+        let bytes = self.files.get(&material_path).ok_or_else(|| ArmorManagerError::MissingArmorTextureError(material_path.clone()))?;
 
         let mut image = image::load_from_memory(&bytes)
             .map_err(|e| ArmorManagerError::ArmorTextureLoadError(material_path.clone(), e))?

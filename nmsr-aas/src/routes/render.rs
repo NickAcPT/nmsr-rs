@@ -10,11 +10,12 @@ use axum::{
     http::HeaderValue,
     response::{IntoResponse, Response},
 };
-use hyper::{
+use http::{
     header::{CACHE_CONTROL, CONTENT_TYPE},
     Method,
 };
 use tracing::instrument;
+use web_sys::console;
 use xxhash_rust::xxh3::xxh3_64;
 
 const IMAGE_PNG_MIME: &str = "image/png";
@@ -36,6 +37,7 @@ pub async fn render(
     method: Method,
     request: RenderRequest,
 ) -> Result<Response> {
+//    console::log_1(&format!("Request: {:?}", request).into());
     let resolved = state.resolver.resolve(&request).await?;
 
     if request.mode.is_blockbench_export() {
@@ -50,6 +52,8 @@ pub async fn render(
         RenderRequestMode::Skin => internal_render_skin(&request, resolved).await,
         _ => internal_render_model(&request, &state, &resolved).await,
     }?;
+    
+//    console::log_1(&format!("Result: {:?}", result.len()).into());
 
     let mut res = create_image_response(result, &state, &request);
     let hash = xxh3_64(format!("{request:?}").as_bytes());

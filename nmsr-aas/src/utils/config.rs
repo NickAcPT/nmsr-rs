@@ -1,7 +1,8 @@
 use std::{
     collections::HashMap,
     fs::Metadata,
-    time::{Duration, SystemTime}, path::PathBuf,
+    path::PathBuf,
+    time::{Duration, SystemTime},
 };
 
 use chrono::{DateTime, Local};
@@ -30,7 +31,8 @@ pub struct NmsrConfiguration {
 }
 
 #[serde_as]
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(default)]
 pub struct ModelCacheConfiguration {
     /// The interval of time to run the cleanup task.
     /// This task will remove any files in the cache that are older than the image cache expiry.
@@ -57,26 +59,44 @@ pub struct ModelCacheConfiguration {
     pub cache_biases: HashMap<RenderRequestEntry, CacheBias>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+impl Default for ModelCacheConfiguration {
+    fn default() -> Self {
+        Self {
+            cleanup_interval: Duration::from_secs(60 * 60),
+            resolve_cache_duration: Duration::from_secs(60 * 60 * 15),
+            texture_cache_duration: Duration::from_secs(60 * 60 * 24 * 2),
+            cache_biases: HashMap::new(),
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(default)]
 pub struct MojankConfiguration {
     /// The session server to use for resolving player textures.
     /// This is used to resolve the player's skin, cape and other textures.
-    #[serde(default = "default_session_server")]
     pub session_server: String,
 
     /// The textures server to use for downloading player textures.
-    #[serde(default = "default_textures_server")]
     pub textures_server: String,
 
-    #[serde(default = "default_geyser_api_server")]
     pub geysermc_api_server: String,
 
     /// The rate limit to use for requests to the session server in a 1 second window.
-    #[serde(default = "default_session_server_rate_limit")]
     pub session_server_rate_limit: u64,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+impl Default for MojankConfiguration {
+    fn default() -> Self {
+        Self {
+            session_server: "https://sessionserver.mojang.com/".to_string(),
+            textures_server: "https://textures.minecraft.net".to_string(),
+            geysermc_api_server: "https://api.geysermc.org/".to_string(),
+            session_server_rate_limit: 10,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ServerConfiguration {
     /// The address to bind the server to.
     pub address: String,
@@ -84,6 +104,15 @@ pub struct ServerConfiguration {
     pub port: u16,
     /// The static files directory to serve.
     pub static_files_directory: Option<PathBuf>,
+}
+impl Default for ServerConfiguration {
+    fn default() -> Self {
+        Self {
+            address: "0.0.0.0".to_string(),
+            port: 8080,
+            static_files_directory: None,
+        }
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
@@ -183,23 +212,6 @@ impl ModelCacheConfiguration {
     }
 }
 
-#[inline]
-const fn default_session_server_rate_limit() -> u64 {
-    10
-}
-
 fn default_service_name() -> String {
     "nmsr-aas".to_string()
-}
-
-fn default_session_server() -> String {
-    "https://sessionserver.mojang.com/".to_string()
-}
-
-fn default_textures_server() -> String {
-    "https://textures.minecraft.net".to_string()
-}
-
-fn default_geyser_api_server() -> String {
-    "https://api.geysermc.org/".to_string()
 }

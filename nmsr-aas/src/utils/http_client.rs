@@ -165,8 +165,6 @@ impl Future for NmsrRequestFuture {
 
         match future.poll(cx) {
             Poll::Ready(Ok(value)) => {
-//                //web_sys::console::log_2(&"Got response".into(), &value);
-                
                 Poll::Ready(Ok(value
                 .dyn_into::<Uint8Array>()
                 .expect_throw("Failed to convert response to Uint8Array")

@@ -10,13 +10,13 @@ use web_sys::console;
 use crate::error::{ExplainableExt, Result};
 
 pub(crate) fn create_png_from_bytes(size: (u32, u32), bytes: &[u8]) -> Result<Vec<u8>> {
-//    console::log_1(&"create_png_from_bytes".into());
+    crate::log("create_png_from_bytes");
     
     let result = {
         let image = RgbaImage::from_raw(size.0, size.1, bytes.to_vec())
             .expect_throw("Failed to create image from raw bytes");
         
-//        console::log_1(&"create_png_from_bytes 2".into());
+        crate::log("create_png_from_bytes 2");
         
         let output = Vec::new();
         
@@ -28,7 +28,7 @@ pub(crate) fn create_png_from_bytes(size: (u32, u32), bytes: &[u8]) -> Result<Ve
         buf_cursor.into_inner()
     };
     
-//    console::log_1(&"create_png_from_bytes 3".into());
+    crate::log("create_png_from_bytes 3");
     
     Ok(result)
 }

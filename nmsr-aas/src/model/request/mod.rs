@@ -229,7 +229,7 @@ impl RenderRequest {
 
     pub(crate) fn get_lighting(&self) -> SunInformation {
         if !self.features.contains(RenderRequestFeatures::Shading) {
-            return SunInformation::new([0.0; 3].into(), 0.0, 1.0);
+            return SunInformation::new([1.0; 3].into(), 1.0, 1.0);
         }
 
         let camera = self.get_camera();

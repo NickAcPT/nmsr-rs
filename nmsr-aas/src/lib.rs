@@ -20,6 +20,12 @@ mod utils;
 
 use std::collections::HashMap;
 
+
+// Make function to log
+fn log<T: Into<JsValue>>(_s: T) {
+    //web_sys::console::log_1(&s.into());
+}
+
 use crate::{
     model::request::{cache::CacheBias, entry::RenderRequestEntry},
     routes::{render, render_get_warning, render_post_warning, NMSRState},
@@ -36,13 +42,11 @@ use chrono::Duration;
 use http::{HeaderName, HeaderValue, Method, Request, Uri, response::Parts};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
-use uuid::uuid;
 
 pub use utils::{caching, config, error};
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::js_sys::{Reflect, Uint8Array};
-use web_sys::console;
 
 type Result<T> = std::result::Result<T, JsError>;
 
@@ -51,6 +55,9 @@ pub struct WasmNMSRState(Router);
 
 #[wasm_bindgen]
 pub async fn init_nmsr_aas() -> Result<WasmNMSRState> {
+    
+    console_error_panic_hook::set_once();
+    
     let cache_biases = HashMap::new();
 
     let config = NmsrConfiguration {
@@ -62,8 +69,8 @@ pub async fn init_nmsr_aas() -> Result<WasmNMSRState> {
         tracing: None,
         caching: ModelCacheConfiguration {
             cleanup_interval: std::time::Duration::ZERO,
-            resolve_cache_duration: std::time::Duration::ZERO,
-            texture_cache_duration: std::time::Duration::ZERO,
+            resolve_cache_duration: std::time::Duration::from_secs(60 * 15),
+            texture_cache_duration: std::time::Duration::from_secs(60 * 60 * 48),
             cache_biases,
         },
         mojank: MojankConfiguration {
@@ -179,9 +186,9 @@ impl NmsrWasmResponse {
         }
     
         let response_bytes = self.body.collect().await?.to_bytes().to_vec();
-//        web_sys::console::log_1(&format!("Response bytes: {:?}", response_bytes.len()).into());
+        crate::log(format!("Response bytes: {:?}", response_bytes.len()));
     
-//        console::log_1(&"Creating response array".into());
+        crate::log("Creating response array");
         let response_array = Uint8Array::from(response_bytes.as_slice());
         
         Ok(response_array)
@@ -195,11 +202,11 @@ pub async fn handle_request(request: WasmRequest) -> Result<NmsrWasmResponse> {
 
     let request = request.to_request()?;
 
-//    web_sys::console::log_1(&"Handling request".into());
+    crate::log("Handling request");
 
     let response = state.0.oneshot(request).await?;
 
-//    web_sys::console::log_1(&format!("Response: {:?}", response).into());
+    crate::log(format!("Response: {:?}", response));
 
     let (parts, response) = response.into_parts();
 

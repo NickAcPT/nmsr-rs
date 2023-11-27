@@ -12,6 +12,8 @@ crate-type = ["cdylib", "rlib"]
 name = "nmsr_aas_lib"
 
 [dependencies]
+console_error_panic_hook = { version = "0.1" }
+
 # NMSR Rendering - Library for rendering
 nmsr-rendering = { path = "../nmsr-3d-renderer/nmsr-rendering", features = [
     "part_tracker",
@@ -120,4 +122,7 @@ vergen = { version = "8.2.4", default-features = false, features = [
 ] }
 
 [package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.release]
 wasm-opt = false

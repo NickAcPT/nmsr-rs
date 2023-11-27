@@ -1,4 +1,4 @@
-use std::{path::PathBuf, collections::HashMap};
+use std::{collections::HashMap, path::PathBuf};
 
 use ears_rs::utils::upgrade_skin_if_needed;
 use http::Method;
@@ -7,11 +7,11 @@ use nmsr_rendering::high_level::{
     model::{PlayerArmorSlot, PlayerArmorSlots},
     parts::provider::minecraft::compute_base_part,
 };
-use strum::IntoEnumIterator;
+use tokio::sync::RwLock;
 use tracing::Span;
 
 use crate::{
-    error::{ArmorManagerError, ArmorManagerResult, ExplainableExt, Result},
+    error::{ArmorManagerError, Result},
     utils::http_client::NmsrHttpClient,
 };
 
@@ -24,7 +24,7 @@ pub struct VanillaMinecraftArmorManager {
     client: NmsrHttpClient,
     material_location: PathBuf,
     trims_location: PathBuf,
-    files: HashMap<PathBuf, Vec<u8>>,
+    files: RwLock<HashMap<PathBuf, Vec<u8>>>,
 }
 
 enum VanillaArmorApplicable<'a> {
@@ -74,101 +74,105 @@ impl VanillaMinecraftArmorManager {
         let material_location = armor_location.join("material");
         let trims_location = armor_location.join("trims");
 
-        let mut manager = Self {
+        let manager = Self {
             client: NmsrHttpClient::new(20),
             material_location,
             trims_location,
-            files: HashMap::new(),
+            files: RwLock::new(HashMap::new()),
         };
 
-        manager.init().await?;
 
         Ok(manager)
     }
 
-    fn get_material_file_path(&self, material: VanillaMinecraftArmorMaterial) -> PathBuf {
+    fn get_material_file_path_inner(&self, material: VanillaMinecraftArmorMaterial) -> PathBuf {
         self.material_location.join(material.to_string())
     }
 
-    fn get_trim_file_path(&self, trim: VanillaMinecraftArmorTrim) -> PathBuf {
+    async fn get_material_file_path(
+        &self,
+        material: VanillaMinecraftArmorMaterial,
+    ) -> Result<PathBuf> {
+        for layer in material.get_layer_names() {
+            self.download_material_layer(material, layer).await?;
+        }
+
+        Ok(self.get_material_file_path_inner(material))
+    }
+
+    async fn get_trim_file_path(&self, trim: VanillaMinecraftArmorTrim) -> Result<PathBuf> {
+        for layer in trim.get_layer_names() {
+            self.download_trim_layer(trim, layer).await?;
+        }
+
+        Ok(self.get_trim_file_path_inner(trim))
+    }
+    fn get_trim_file_path_inner(&self, trim: VanillaMinecraftArmorTrim) -> PathBuf {
         self.trims_location.join(trim.to_string())
     }
 
-    async fn init(&mut self) -> Result<()> {
-        self.download_materials().await?;
-        self.download_trims().await?;
-
-        Ok(())
-    }
-
-    async fn download_trims(&mut self) -> Result<()> {
-        for trim in VanillaMinecraftArmorTrim::iter() {
-            let trim_path = self.get_trim_file_path(trim);
-
-            let layers = trim.get_layer_names();
-
-            for layer in layers {
-                let layer_path = trim_path.join(&layer);
-
-                if self.files.get(&layer_path).is_none() {
-                    let url = format!(
-                        "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/trims/models/armor/{name}",
-                        name = &layer
-                    );
-
-                    let bytes = self
-                        .client
-                        .do_request(&url, Method::GET, &Span::current(), || None)
-                        .await?;
-
-                    self.files.insert(layer_path, bytes.to_vec());
-                }
-            }
-        }
-
-        Ok(())
-    }
-    async fn download_materials(&mut self) -> Result<()> {
-        for material in VanillaMinecraftArmorMaterial::iter() {
-            let material_path = self.get_material_file_path(material);
-            let material_name = material.to_string().to_lowercase();
-
-            let layers = material.get_layer_names();
-
-            for layer in layers {
-                let file_name = format!("{material_name}_layer_{layer}.png");
-                let layer_path = material_path.join(&file_name);
-
-                if self.files.get(&layer_path).is_none() {
-                    let url = format!(
-                        "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/models/armor/{name}",
-                        name = &file_name
-                    );
-
-                    let bytes = self
-                        .client
-                        .do_request(&url, Method::GET, &Span::current(), || None)
-                        .await?;
-
-                    self.files.insert(layer_path, bytes.to_vec());
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn get_image_path(
+    async fn download_trim_layer(
         &self,
-        applicable: &VanillaArmorApplicable,
+        trim: VanillaMinecraftArmorTrim,
+        layer: String,
+    ) -> Result<()> {
+        let trim_path = self.get_trim_file_path_inner(trim);
+        let layer_path = trim_path.join(&layer);
+
+        if self.files.read().await.get(&layer_path).is_none() {
+            let url = format!(
+                "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/trims/models/armor/{name}",
+                name = &layer
+            );
+
+            let bytes = self
+                .client
+                .do_request(&url, Method::GET, &Span::current(), || None)
+                .await?;
+
+            self.files.write().await.insert(layer_path, bytes.to_vec());
+        }
+        
+        Ok(())
+    }
+    async fn download_material_layer(
+        &self,
+        material: VanillaMinecraftArmorMaterial,
+        layer: String,
+    ) -> Result<()> {
+        let material_path = self.get_material_file_path_inner(material);
+        let material_name = material.to_string().to_lowercase();
+        let file_name = format!("{material_name}_layer_{layer}.png");
+        let layer_path = material_path.join(&file_name);
+
+        if self.files.read().await.get(&layer_path).is_none() {
+            let url = format!(
+                "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/models/armor/{name}",
+                name = &file_name
+            );
+
+            let bytes = self
+                .client
+                .do_request(&url, Method::GET, &Span::current(), || None)
+                .await?;
+
+            self.files.write().await.insert(layer_path, bytes.to_vec());
+        }
+
+        Ok(())
+    }
+
+    async fn get_image_path(
+        &self,
+        applicable: &VanillaArmorApplicable<'_>,
         slot: PlayerArmorSlot,
-    ) -> PathBuf {
+    ) -> Result<PathBuf> {
         let root = match applicable {
-            VanillaArmorApplicable::Armor(data) => self.get_material_file_path(*data),
-            VanillaArmorApplicable::Trim(_, data) => self.get_trim_file_path(data.trim),
+            VanillaArmorApplicable::Armor(data) => self.get_material_file_path(*data).await?,
+            VanillaArmorApplicable::Trim(_, data) => self.get_trim_file_path(data.trim).await?,
         };
 
-        root.join(applicable.get_layer_name(slot))
+        Ok(root.join(applicable.get_layer_name(slot)))
     }
 
     pub async fn create_armor_texture(
@@ -211,10 +215,14 @@ impl VanillaMinecraftArmorManager {
         applicable: &VanillaArmorApplicable<'_>,
         slot: PlayerArmorSlot,
         output_image: &mut RgbaImage,
-    ) -> ArmorManagerResult<()> {
-        let material_path = self.get_image_path(applicable, slot);
+    ) -> Result<()> {
+        let material_path = self.get_image_path(applicable, slot).await?;
 
-        let bytes = self.files.get(&material_path).ok_or_else(|| ArmorManagerError::MissingArmorTextureError(material_path.clone()))?;
+        let files = self.files.read().await;
+
+        let bytes = files
+            .get(&material_path)
+            .ok_or_else(|| ArmorManagerError::MissingArmorTextureError(material_path.clone()))?;
 
         let mut image = image::load_from_memory(&bytes)
             .map_err(|e| ArmorManagerError::ArmorTextureLoadError(material_path.clone(), e))?

@@ -218,7 +218,7 @@ impl RenderRequestResolver {
         entry: &RenderRequestEntry,
     ) -> Result<ResolvedRenderEntryTextures> {
         
-//        console::log_1(&format!("Resolving: {:?}", entry).into());
+        crate::log(format!("Resolving: {:?}", entry));
         
         if let Some(result) = self.model_cache.get_cached_resolved_texture(entry).await? {
             return Ok(result);
@@ -228,30 +228,30 @@ impl RenderRequestResolver {
         let skin_texture: Option<MojangTexture>;
         let cape_texture: Option<MojangTexture>;
         
-//        console::log_1(&"Resolving 2".into());
+        crate::log("Resolving 2");
 
         match &entry {
             RenderRequestEntry::MojangPlayerUuid(id) => {
                 
-//                console::log_1(&"Resolving 3".into());
+                crate::log("Resolving 3");
                 
                 let result = self
                     .mojang_requests_client
                     .resolve_uuid_to_game_profile(id)
                     .await?;
                 
-//                console::log_1(&"Resolving 4".into());
+                crate::log("Resolving 4");
                 
                 let textures = result.textures()?;
                 
-//                console::log_1(&"Resolving 5".into());
+                crate::log("Resolving 5");
 
                 let skin = textures
                     .skin()
                     .ok_or_else(|| MojangRequestError::MissingSkinPropertyError(*id))?;
                 let cape = textures.cape();
 
-//                console::log_1(&"Resolving 6".into());
+                crate::log("Resolving 6");
                 
                 model = if skin.is_slim() {
                     Some(RenderRequestEntryModel::Alex)
@@ -259,12 +259,12 @@ impl RenderRequestResolver {
                     Some(RenderRequestEntryModel::Steve)
                 };
                 
-//                console::log_1(&"Resolving 7".into());
+                crate::log("Resolving 7");
 
                 skin_texture = self.fetch_game_profile_texture(textures.skin()).await?;
-//                console::log_1(&"Resolving 8".into());
+                crate::log("Resolving 8");
                 cape_texture = self.fetch_game_profile_texture(cape).await?;
-//                console::log_1(&"Resolving 9".into());
+                crate::log("Resolving 9");
             }
             RenderRequestEntry::GeyserPlayerUuid(id) => {
                 let (texture_id, player_model) =
@@ -288,42 +288,42 @@ impl RenderRequestResolver {
                 model = None;
             }
         }
-//        console::log_1(&"Resolving 10".into());
+        crate::log("Resolving 10");
 
         let mut textures = HashMap::new();
 
-//        console::log_1(&"Resolving 11".into());
+        crate::log("Resolving 11");
         
         if let Some(cape_texture) = cape_texture {
             textures.insert(ResolvedRenderEntryTextureType::Cape, cape_texture);
         }
         
-//        console::log_1(&"Resolving 12".into());
+        crate::log("Resolving 12");
 
         if let Some(skin_texture) = skin_texture {
-//            console::log_1(&"Resolving 12.5".into());
+            crate::log("Resolving 12.5");
             
             #[cfg(feature = "ears")]
             Self::resolve_ears_textures(&skin_texture, &mut textures);
             
-//            console::log_1(&"Resolving 12.6".into());
+            crate::log("Resolving 12.6");
 
             textures.insert(ResolvedRenderEntryTextureType::Skin, skin_texture);
             
-//            console::log_1(&"Resolving 12.7".into());
+            crate::log("Resolving 12.7");
         }
         
-//        console::log_1(&"Resolving 13".into());
+        crate::log("Resolving 13");
 
         let result = ResolvedRenderEntryTextures::new(textures, model);
 
-//        console::log_1(&"Resolving 14".into());
+        crate::log("Resolving 14");
         
         self.model_cache
             .cache_resolved_texture(entry, &result)
             .await?;
         
-//        console::log_1(&"Resolving 15".into());
+        crate::log("Resolving 15");
 
         Ok(result)
     }
@@ -333,7 +333,7 @@ impl RenderRequestResolver {
         skin_texture: &MojangTexture,
         textures: &mut HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
     ) -> Option<EarsFeatures> {
-//        console::log_1(&"ears 1".into());
+        crate::log("ears 1");
         
         use std::borrow::Cow;
         use image::DynamicImage;
@@ -341,13 +341,13 @@ impl RenderRequestResolver {
         use crate::utils::png::create_png_from_bytes;
 
         image::load_from_memory(skin_texture.data()).map_or(None, |image| {
-//            console::log_1(&"ears 2".into());
+            crate::log("ears 2");
             let image = image.into_rgba8();
-//            console::log_1(&"ears 3".into());
+            crate::log("ears 3");
 
             let features = EarsParser::parse(&image).ok().flatten();
             let alfalfa = ears_rs::alfalfa::read_alfalfa(&image).ok().flatten();
-//            console::log_1(&"ears 4".into());
+            crate::log("ears 4");
 
             if let Some(alfalfa) = alfalfa {
                 for texture_type in &[
@@ -372,14 +372,14 @@ impl RenderRequestResolver {
                                 Cow::Borrowed(data)
                             };
 
-//                            console::log_1(&"ears 5".into());
+                            crate::log("ears 5");
                             
                             textures.insert(
                                 ResolvedRenderEntryTextureType::Ears(*texture_type),
                                 MojangTexture::new_named(hash, data.into_owned()),
                             );
                             
-//                            console::log_1(&"ears 6".into());
+                            crate::log("ears 6");
                         }
                     }
                 }

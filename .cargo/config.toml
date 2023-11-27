@@ -1,0 +1,6 @@
+[build]
+rustflags = ["-Z", "threads=8", "-Ctarget-feature=+simd128,+relaxed-simd"]
+
+[unstable]
+build-std = ["panic_abort", "std"]
+build-std-features = ["panic_immediate_abort"]

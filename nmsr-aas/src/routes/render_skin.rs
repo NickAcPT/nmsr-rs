@@ -16,7 +16,7 @@ pub(crate) async fn internal_render_skin(
     mut resolved: ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
 
-//    console::log_1(&"internal_render_skin".into());
+    crate::log("internal_render_skin");
     
     let skin = resolved
         .textures
@@ -25,7 +25,7 @@ pub(crate) async fn internal_render_skin(
             "Missing skin texture".to_string(),
         ))?;
         
-//    console::log_1(&"internal_render_skin 2".into());
+    crate::log("internal_render_skin 2");
 
     if request
         .features
@@ -34,22 +34,22 @@ pub(crate) async fn internal_render_skin(
         return Ok(skin);
     }
     
-//    console::log_1(&"internal_render_skin 3".into());
+    crate::log("internal_render_skin 3");
 
     let skin_image = image::load_from_memory(&skin)
         .map_err(NMSRRenderingError::ImageFromRawError)?
         .into_rgba8();
     
-//    console::log_1(&"internal_render_skin 4".into());
+    crate::log("internal_render_skin 4");
 
     let processed = NMSRState::process_skin(skin_image, request.features)?;
 
-//    console::log_1(&"internal_render_skin 5".into());
+    crate::log("internal_render_skin 5");
     
     let processed_png_bytes =
         create_png_from_bytes((processed.width(), processed.height()), &processed)?;
 
-//    console::log_1(&"internal_render_skin 6".into());
+    crate::log("internal_render_skin 6");
         
     Ok(processed_png_bytes)
 }

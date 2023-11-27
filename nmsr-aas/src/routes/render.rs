@@ -37,7 +37,7 @@ pub async fn render(
     method: Method,
     request: RenderRequest,
 ) -> Result<Response> {
-//    console::log_1(&format!("Request: {:?}", request).into());
+    crate::log(format!("Request: {:?}", request));
     let resolved = state.resolver.resolve(&request).await?;
 
     if request.mode.is_blockbench_export() {
@@ -53,7 +53,7 @@ pub async fn render(
         _ => internal_render_model(&request, &state, &resolved).await,
     }?;
     
-//    console::log_1(&format!("Result: {:?}", result.len()).into());
+    crate::log(format!("Result: {:?}", result.len()));
 
     let mut res = create_image_response(result, &state, &request);
     let hash = xxh3_64(format!("{request:?}").as_bytes());

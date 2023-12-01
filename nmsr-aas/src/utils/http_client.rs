@@ -6,7 +6,7 @@ use axum::{
 };
 use http::{HeaderMap, Method};
 use http_body_util::BodyExt;
-use std::{future::Future, pin::Pin, task::Poll, time::Duration, convert::Infallible};
+use std::{convert::Infallible, future::Future, pin::Pin, task::Poll, time::Duration};
 use sync_wrapper::SyncWrapper;
 use tokio::sync::RwLock;
 use tower::{
@@ -21,9 +21,10 @@ use wasm_bindgen_futures::{
     js_sys::{Object, Reflect, Uint8Array},
     JsFuture,
 };
+use web_sys::console;
 
-use axum::extract::Request;
 use axum::body::Bytes;
+use axum::extract::Request;
 use axum::response::Response;
 
 use wasm_bindgen::prelude::*;
@@ -34,7 +35,6 @@ use wasm_bindgen_futures::js_sys::Promise;
 extern "C" {
     fn do_request(url: &str, method: &str, headers: JsValue, body: Uint8Array) -> Promise;
 }
-
 
 const USER_AGENT: &str = concat!(
     "NMSR-as-a-Service/",
@@ -97,13 +97,13 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
             body: &[u8],
         ) -> NmsrRequestFuture {
             let body_array = Uint8Array::from(body);
-            
+
             let mut headers_obj = Object::new();
 
             for (name, value) in headers.iter() {
                 Reflect::set(
                     &mut headers_obj,
-                    &name.as_str().into (),
+                    &name.as_str().into(),
                     &value.to_str().unwrap().into(),
                 )
                 .unwrap();
@@ -114,9 +114,7 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
             let promise = promise;
             let future = JsFuture::from(promise);
 
-            NmsrRequestFuture {
-                future,
-            }
+            NmsrRequestFuture { future }
         }
 
         async fn do_wasm_request(request: Request<Body>) -> Result<AxumResponse, JsError> {
@@ -126,7 +124,8 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
             let uri = parts.uri.to_string();
             let method = parts.method.to_string();
 
-            let result_bytes = { raw_do_request(uri, method, parts.headers, body.as_ref()) }.await?;
+            let result_bytes =
+                { raw_do_request(uri, method, parts.headers, body.as_ref()) }.await?;
 
             let response = Response::builder().body(result_bytes.to_vec().into())?;
 
@@ -154,22 +153,33 @@ pin_project_lite::pin_project! {
 
 unsafe impl Send for NmsrRequestFuture {}
 
+pub struct TransmutedJsError {
+    pub value: JsValue,
+}
+
 // Map future<jsvalue, jsvalue> to future<jsvalue, jserror>
 impl Future for NmsrRequestFuture {
-    type Output = Result<Vec<u8>, Infallible>;
+    type Output = Result<Vec<u8>, JsError>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut core::task::Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
-        
+
         let future = this.future;
 
         match future.poll(cx) {
-            Poll::Ready(Ok(value)) => {
-                Poll::Ready(Ok(value
-                .dyn_into::<Uint8Array>()
-                .expect_throw("Failed to convert response to Uint8Array")
-                .to_vec()))},
-            Poll::Ready(Err(err)) => panic!("Failed to do request: {:?}", err),
+            Poll::Ready(value) => Poll::Ready(
+                value
+                    .map(|v| {
+                        v.dyn_into::<Uint8Array>()
+                            .expect_throw("Failed to convert response to Uint8Array")
+                            .to_vec()
+                    })
+                    .map_err(|e| {
+                        console::log_2(&"Unable to convert response: ".into(), &e);
+
+                        unsafe { std::mem::transmute(TransmutedJsError { value: e }) }
+                    }),
+            ),
             Poll::Pending => Poll::Pending,
         }
     }

@@ -49,7 +49,10 @@ where
                 .filter(|r| state.validate_mode(r))
                 .ok_or_else(|| RenderRequestError::InvalidRenderMode(mode_str))?;
 
-            let mut multipart = Multipart::from_request(request, state)
+            let query = if let Some(multipart_params) = request.extensions_mut().remove::<RenderRequestMultipartParams>() {
+                multipart_params
+            } else {
+                let mut multipart = Multipart::from_request(request, state)
                 .await
                 .map_err(RenderRequestError::from)?;
 
@@ -71,18 +74,19 @@ where
                                 .await
                                 .map_err(RenderRequestError::from)?
                                 .to_vec(),
-                        )
-                    };
-
-                    data.insert(name.clone(), entry_content);
+                            )
+                        };
+                        
+                        data.insert(name.clone(), entry_content);
+                    }
                 }
-            }
-
-            let object = json!(data);
-
-            let query = serde_json::from_value::<RenderRequestMultipartParams>(object.clone())
-                .map_err(|e| RenderRequestError::MultipartDecodeError(e, object.clone()))?;
-
+                
+                let object = json!(data);
+                
+                serde_json::from_value::<RenderRequestMultipartParams>(object.clone())
+                .map_err(|e| RenderRequestError::MultipartDecodeError(e, object.clone()))?
+            };
+            
             let entry = RenderRequestEntry::try_from(query.skin)?;
 
             (mode, entry, query.query)

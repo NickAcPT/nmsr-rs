@@ -68,6 +68,7 @@ strip = true
 [profile.release]
 opt-level = "s"
 codegen-units = 1
-strip = true
+strip = false
+debug = true
 lto = true
 panic = "abort"

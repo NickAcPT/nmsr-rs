@@ -20,7 +20,6 @@ mod utils;
 
 use std::collections::HashMap;
 
-
 // Make function to log
 fn log<T: Into<JsValue>>(_s: T) {
     //web_sys::console::log_1(&s.into());
@@ -28,18 +27,20 @@ fn log<T: Into<JsValue>>(_s: T) {
 
 use crate::{
     model::request::{cache::CacheBias, entry::RenderRequestEntry},
-    routes::{render, render_get_warning, render_post_warning, NMSRState},
+    routes::{render, render_get_warning, render_post_warning, NMSRState, query::RenderRequestMultipartParams},
     utils::config::{
         ModelCacheConfiguration, MojankConfiguration, NmsrConfiguration, RenderingConfiguration,
         ServerConfiguration,
     },
 };
 use axum::{
+    body::Body,
+    response::Response,
     routing::{get, post},
-    Router, response::Response, body::Body,
+    Router,
 };
 use chrono::Duration;
-use http::{HeaderName, HeaderValue, Method, Request, Uri, response::Parts};
+use http::{response::Parts, HeaderName, HeaderValue, Method, Request, Uri};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
@@ -55,9 +56,8 @@ pub struct WasmNMSRState(Router);
 
 #[wasm_bindgen]
 pub async fn init_nmsr_aas() -> Result<WasmNMSRState> {
-    
     console_error_panic_hook::set_once();
-    
+
     let cache_biases = HashMap::new();
 
     let config = NmsrConfiguration {
@@ -105,12 +105,13 @@ pub struct WasmRequest {
     method: Method,
     uri: Uri,
     headers: JsValue,
-    body: Vec<u8>,
+    body: Option<Vec<u8>>,
+    form_data: Option<JsValue>,
 }
 
 #[wasm_bindgen]
 impl WasmRequest {
-    pub fn new(
+    pub fn new_non_post(
         method: String,
         uri: String,
         headers: JsValue,
@@ -120,7 +121,22 @@ impl WasmRequest {
             method: method.parse()?,
             uri: uri.parse()?,
             headers,
-            body,
+            body: Some(body),
+            form_data: None,
+        })
+    }
+    pub fn new_post(
+        method: String,
+        uri: String,
+        headers: JsValue,
+        form_data: JsValue,
+    ) -> Result<WasmRequest> {
+        Ok(Self {
+            method: method.parse()?,
+            uri: uri.parse()?,
+            headers,
+            body: None,
+            form_data: Some(form_data),
         })
     }
 
@@ -151,12 +167,19 @@ impl WasmRequest {
 
     fn to_request(self) -> Result<Request<axum::body::Body>> {
         let headers = self.convert_headers()?;
-        let body = self.body.into();
+        let body = self.body.unwrap_or(vec![]).into();
 
         let mut builder = Request::builder().method(self.method).uri(self.uri);
 
         if let Some(header_map) = builder.headers_mut() {
             header_map.extend(headers.into_iter());
+        }
+        
+        if let Some(form_data) = self.form_data {
+            let form_data: RenderRequestMultipartParams = serde_wasm_bindgen::from_value::<RenderRequestMultipartParams>(form_data)
+            .map_err(|e| JsError::new(&format!("Failed to decode multipart form data: {}", e)))?;
+        
+            builder = builder.extension(form_data);
         }
 
         Ok(builder.body(body)?)
@@ -166,7 +189,7 @@ impl WasmRequest {
 #[wasm_bindgen]
 pub struct NmsrWasmResponse {
     parts: Parts,
-    body: Body
+    body: Body,
 }
 
 #[wasm_bindgen]
@@ -174,7 +197,7 @@ impl NmsrWasmResponse {
     pub fn get_status(&self) -> u16 {
         self.parts.status.as_u16()
     }
-    
+
     pub async fn get_body(self, headers: JsValue) -> Result<Uint8Array> {
         for (name, value) in self.parts.headers.iter() {
             Reflect::set(
@@ -184,17 +207,16 @@ impl NmsrWasmResponse {
             )
             .unwrap();
         }
-    
+
         let response_bytes = self.body.collect().await?.to_bytes().to_vec();
         crate::log(format!("Response bytes: {:?}", response_bytes.len()));
-    
+
         crate::log("Creating response array");
         let response_array = Uint8Array::from(response_bytes.as_slice());
-        
-        Ok(response_array)
-}
-}
 
+        Ok(response_array)
+    }
+}
 
 #[wasm_bindgen]
 pub async fn handle_request(request: WasmRequest) -> Result<NmsrWasmResponse> {

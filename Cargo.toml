@@ -60,15 +60,15 @@ uuid = { version = "1.4", features = ["serde"] }
 opt-level = 3
 
 # Set all libraries to be optimised
-[profile.release.package."*"]
-opt-level = "s"
-codegen-units = 1
-strip = true
+#[profile.release.package."*"]
+#opt-level = "s"
+#codegen-units = 1
+#strip = false
+#debug = true
 
 [profile.release]
 opt-level = "s"
 codegen-units = 1
-strip = false
+#strip = false
 debug = true
-lto = true
-panic = "abort"
+#lto = true

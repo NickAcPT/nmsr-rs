@@ -7,17 +7,20 @@ use super::request::{
     entry::{RenderRequestEntry, RenderRequestEntryModel},
     RenderRequest,
 };
-use crate::error::{MojangRequestError, Result};
+use crate::{
+    error::{MojangRequestError, Result},
+    model::request::RenderRequestFeatures,
+};
 use derive_more::Debug;
 #[cfg(feature = "ears")]
 use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParser};
 #[cfg(feature = "ears")]
 use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
 use nmsr_rendering::high_level::types::PlayerPartTextureType;
-use web_sys::console;
 use std::{collections::HashMap, sync::Arc};
 use strum::EnumCount;
 use tracing::{instrument, Span};
+use web_sys::console;
 
 pub mod geyser;
 pub mod mojang;
@@ -215,11 +218,12 @@ impl RenderRequestResolver {
     #[instrument(skip(self))]
     async fn resolve_entry_textures(
         &self,
-        entry: &RenderRequestEntry,
+        request: &RenderRequest,
     ) -> Result<ResolvedRenderEntryTextures> {
-        
+        let entry = &request.entry;
+
         crate::log(format!("Resolving: {:?}", entry));
-        
+
         if let Some(result) = self.model_cache.get_cached_resolved_texture(entry).await? {
             return Ok(result);
         }
@@ -227,23 +231,22 @@ impl RenderRequestResolver {
         let model: Option<RenderRequestEntryModel>;
         let skin_texture: Option<MojangTexture>;
         let cape_texture: Option<MojangTexture>;
-        
+
         crate::log("Resolving 2");
 
         match &entry {
             RenderRequestEntry::MojangPlayerUuid(id) => {
-                
                 crate::log("Resolving 3");
-                
+
                 let result = self
                     .mojang_requests_client
                     .resolve_uuid_to_game_profile(id)
                     .await?;
-                
+
                 crate::log("Resolving 4");
-                
+
                 let textures = result.textures()?;
-                
+
                 crate::log("Resolving 5");
 
                 let skin = textures
@@ -252,13 +255,13 @@ impl RenderRequestResolver {
                 let cape = textures.cape();
 
                 crate::log("Resolving 6");
-                
+
                 model = if skin.is_slim() {
                     Some(RenderRequestEntryModel::Alex)
                 } else {
                     Some(RenderRequestEntryModel::Steve)
                 };
-                
+
                 crate::log("Resolving 7");
 
                 skin_texture = self.fetch_game_profile_texture(textures.skin()).await?;
@@ -293,36 +296,40 @@ impl RenderRequestResolver {
         let mut textures = HashMap::new();
 
         crate::log("Resolving 11");
-        
+
         if let Some(cape_texture) = cape_texture {
             textures.insert(ResolvedRenderEntryTextureType::Cape, cape_texture);
         }
-        
+
         crate::log("Resolving 12");
 
         if let Some(skin_texture) = skin_texture {
             crate::log("Resolving 12.5");
-            
+
             #[cfg(feature = "ears")]
-            Self::resolve_ears_textures(&skin_texture, &mut textures);
-            
+            {
+                if request.features.contains(RenderRequestFeatures::Ears) {
+                    Self::resolve_ears_textures(&skin_texture, &mut textures);
+                }
+            }
+
             crate::log("Resolving 12.6");
 
             textures.insert(ResolvedRenderEntryTextureType::Skin, skin_texture);
-            
+
             crate::log("Resolving 12.7");
         }
-        
+
         crate::log("Resolving 13");
 
         let result = ResolvedRenderEntryTextures::new(textures, model);
 
         crate::log("Resolving 14");
-        
+
         self.model_cache
             .cache_resolved_texture(entry, &result)
             .await?;
-        
+
         crate::log("Resolving 15");
 
         Ok(result)
@@ -334,11 +341,11 @@ impl RenderRequestResolver {
         textures: &mut HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
     ) -> Option<EarsFeatures> {
         crate::log("ears 1");
-        
-        use std::borrow::Cow;
-        use image::DynamicImage;
-        use xxhash_rust::xxh3::xxh3_128;
+
         use crate::utils::png::create_png_from_bytes;
+        use image::DynamicImage;
+        use std::borrow::Cow;
+        use xxhash_rust::xxh3::xxh3_128;
 
         image::load_from_memory(skin_texture.data()).map_or(None, |image| {
             crate::log("ears 2");
@@ -373,12 +380,12 @@ impl RenderRequestResolver {
                             };
 
                             crate::log("ears 5");
-                            
+
                             textures.insert(
                                 ResolvedRenderEntryTextureType::Ears(*texture_type),
                                 MojangTexture::new_named(hash, data.into_owned()),
                             );
-                            
+
                             crate::log("ears 6");
                         }
                     }
@@ -391,15 +398,12 @@ impl RenderRequestResolver {
 
     pub async fn resolve(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {
         // First, we need to resolve the skin and cape textures.
-        let resolved_textures = self
-            .resolve_entry_textures(&request.entry)
-            .await
-            .map_err(|e| {
-                MojangRequestError::UnableToResolveRenderRequestEntity(
-                    Box::new(e),
-                    request.entry.clone(),
-                )
-            })?;
+        let resolved_textures = self.resolve_entry_textures(&request).await.map_err(|e| {
+            MojangRequestError::UnableToResolveRenderRequestEntity(
+                Box::new(e),
+                request.entry.clone(),
+            )
+        })?;
 
         let final_model = request
             .model

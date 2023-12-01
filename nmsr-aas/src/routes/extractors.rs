@@ -10,11 +10,11 @@ use crate::{
 };
 use async_trait::async_trait;
 use axum::{
-    extract::{FromRequest, Path, Query, Request, FromRequestParts},
+    extract::{FromRequest, Path, Query, Request},
     RequestExt,
 };
 use axum_extra::extract::Multipart;
-use hyper::{Method, body::Bytes};
+use hyper::Method;
 use is_empty::IsEmpty;
 use serde_json::{json, Value};
 use std::{borrow::ToOwned, collections::HashMap};
@@ -154,7 +154,7 @@ mod tests {
 
     use axum::{debug_handler, extract::State, routing::get, Router, body::Body};
     use enumset::{enum_set, EnumSet};
-    use hyper::{Body, Request};
+    use hyper::Request;
     use tokio::sync::mpsc::Sender;
     use tower::ServiceExt;
     use uuid::uuid;
@@ -237,7 +237,7 @@ mod tests {
                     mode: RenderRequestMode::FullBody,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape | RenderRequestFeatures::UnProcessedSkin)),
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape | RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::ExtraSettings)),
                     extra_settings: None
                 },
             ),

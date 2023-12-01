@@ -55,10 +55,11 @@ impl TryFrom<String> for RenderRequestEntry {
                 ))
             }
         } else if value.len() > 36 {
-            let regex = VALID_TEXTURE_HASH_REGEX
-                .get_or_init(|| regex::Regex::new(r"^[a-f0-9]{36,64}$").unwrap());
+            let valid = value.len() >= 36 && value.len() <= 64 && value.chars().all(|c| {
+                c.is_ascii_hexdigit()
+            });
 
-            if !regex.is_match(&value) {
+            if !valid {
                 return Err(RenderRequestError::InvalidPlayerRequest(formatdoc! {"
                     You've provided an invalid texture hash ({value}).
                     Texture hashes should be 36-64 characters long and only contain the characters 0-9 and a-f.

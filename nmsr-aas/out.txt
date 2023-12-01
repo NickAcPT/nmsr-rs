@@ -6,20 +6,20 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |-- async-trait feature "default"
 |   `-- async-trait v0.1.74 (proc-macro)
 |       |-- proc-macro2 feature "default"
-|       |   |-- proc-macro2 v1.0.69
+|       |   |-- proc-macro2 v1.0.70
 |       |   |   `-- unicode-ident feature "default"
 |       |   |       `-- unicode-ident v1.0.12
 |       |   `-- proc-macro2 feature "proc-macro"
-|       |       `-- proc-macro2 v1.0.69 (*)
+|       |       `-- proc-macro2 v1.0.70 (*)
 |       |-- quote feature "default"
 |       |   |-- quote v1.0.33
-|       |   |   `-- proc-macro2 v1.0.69 (*)
+|       |   |   `-- proc-macro2 v1.0.70 (*)
 |       |   `-- quote feature "proc-macro"
 |       |       |-- quote v1.0.33 (*)
 |       |       `-- proc-macro2 feature "proc-macro" (*)
 |       |-- syn feature "default"
 |       |   |-- syn v2.0.39
-|       |   |   |-- proc-macro2 v1.0.69 (*)
+|       |   |   |-- proc-macro2 v1.0.70 (*)
 |       |   |   |-- quote v1.0.33 (*)
 |       |   |   `-- unicode-ident feature "default" (*)
 |       |   |-- syn feature "clone-impls"
@@ -42,10 +42,10 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       `-- syn feature "visit-mut"
 |           `-- syn v2.0.39 (*)
 |-- axum feature "form"
-|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241)
+|   `-- axum v0.7.1
 |       |-- async-trait feature "default" (*)
 |       |-- axum-core feature "default"
-|       |   `-- axum-core v0.3.4 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241)
+|       |   `-- axum-core v0.4.0
 |       |       |-- async-trait feature "default" (*)
 |       |       |-- bytes feature "default"
 |       |       |   |-- bytes v1.5.0
@@ -109,7 +109,7 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       |-- tower-layer feature "default" (*)
 |       |-- tower-service feature "default" (*)
 |       |-- axum-macros feature "default"
-|       |   `-- axum-macros v0.3.7 (proc-macro) (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241)
+|       |   `-- axum-macros v0.4.0 (proc-macro)
 |       |       |-- proc-macro2 feature "default" (*)
 |       |       |-- quote feature "default" (*)
 |       |       |-- syn feature "default" (*)
@@ -256,23 +256,24 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       [build-dependencies]
 |       `-- rustversion feature "default" (*)
 |-- axum feature "json"
-|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   `-- axum v0.7.1 (*)
 |-- axum feature "macros"
-|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   `-- axum v0.7.1 (*)
 |-- axum feature "matched-path"
-|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   `-- axum v0.7.1 (*)
 |-- axum feature "original-uri"
-|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   `-- axum v0.7.1 (*)
 |-- axum feature "query"
-|   `-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   `-- axum v0.7.1 (*)
 |-- axum feature "tower-log"
-|   |-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   |-- axum v0.7.1 (*)
 |   `-- tower feature "log"
 |       |-- tower v0.4.13 (*)
 |       |-- tower feature "tracing"
 |       |   `-- tower v0.4.13 (*)
 |       `-- tracing feature "log"
 |           `-- tracing v0.1.40 (*)
+|-- pin-project-lite feature "default" (*)
 |-- http feature "default" (*)
 |-- http-body-util feature "default" (*)
 |-- sync_wrapper feature "default" (*)
@@ -314,8 +315,8 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |   |       `-- tracing v0.1.40 (*)
 |   `-- tracing feature "std" (*)
 |-- axum-extra feature "default"
-|   `-- axum-extra v0.7.4 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241)
-|       |-- axum v0.6.16 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   `-- axum-extra v0.9.0
+|       |-- axum v0.7.1 (*)
 |       |-- axum-core feature "default" (*)
 |       |-- bytes feature "default" (*)
 |       |-- futures-util feature "alloc" (*)
@@ -358,7 +359,7 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |               `-- version_check feature "default"
 |                   `-- version_check v0.9.4
 |-- axum-extra feature "multipart"
-|   `-- axum-extra v0.7.4 (https://github.com/tokio-rs/axum?rev=a9ac5241dc5138b366d05fa67c0cdf1a29ba66ea#a9ac5241) (*)
+|   `-- axum-extra v0.9.0 (*)
 |-- base64 feature "default"
 |   |-- base64 v0.21.5
 |   `-- base64 feature "std"
@@ -371,10 +372,54 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |   |   |   [build-dependencies]
 |   |   |   `-- autocfg feature "default"
 |   |   |       `-- autocfg v1.1.0
-|   |   `-- windows-targets feature "default"
-|   |       `-- windows-targets v0.48.5
-|   |           `-- windows_x86_64_msvc feature "default"
-|   |               `-- windows_x86_64_msvc v0.48.5
+|   |   |-- js-sys feature "default"
+|   |   |   `-- js-sys v0.3.66
+|   |   |       `-- wasm-bindgen feature "default"
+|   |   |           |-- wasm-bindgen v0.2.89
+|   |   |           |   |-- cfg-if feature "default" (*)
+|   |   |           |   `-- wasm-bindgen-macro feature "default"
+|   |   |           |       `-- wasm-bindgen-macro v0.2.89 (proc-macro)
+|   |   |           |           |-- quote feature "default" (*)
+|   |   |           |           `-- wasm-bindgen-macro-support feature "default"
+|   |   |           |               `-- wasm-bindgen-macro-support v0.2.89
+|   |   |           |                   |-- proc-macro2 feature "default" (*)
+|   |   |           |                   |-- quote feature "default" (*)
+|   |   |           |                   |-- syn feature "default" (*)
+|   |   |           |                   |-- syn feature "full" (*)
+|   |   |           |                   |-- syn feature "visit"
+|   |   |           |                   |   `-- syn v2.0.39 (*)
+|   |   |           |                   |-- wasm-bindgen-backend feature "default"
+|   |   |           |                   |   `-- wasm-bindgen-backend v0.2.89
+|   |   |           |                   |       |-- proc-macro2 feature "default" (*)
+|   |   |           |                   |       |-- quote feature "default" (*)
+|   |   |           |                   |       |-- syn feature "default" (*)
+|   |   |           |                   |       |-- syn feature "full" (*)
+|   |   |           |                   |       |-- bumpalo feature "default"
+|   |   |           |                   |       |   `-- bumpalo v3.14.0
+|   |   |           |                   |       |-- log feature "default"
+|   |   |           |                   |       |   `-- log v0.4.20
+|   |   |           |                   |       |-- once_cell feature "default"
+|   |   |           |                   |       |   |-- once_cell v1.18.0
+|   |   |           |                   |       |   `-- once_cell feature "std"
+|   |   |           |                   |       |       |-- once_cell v1.18.0
+|   |   |           |                   |       |       `-- once_cell feature "alloc"
+|   |   |           |                   |       |           |-- once_cell v1.18.0
+|   |   |           |                   |       |           `-- once_cell feature "race"
+|   |   |           |                   |       |               `-- once_cell v1.18.0
+|   |   |           |                   |       `-- wasm-bindgen-shared feature "default"
+|   |   |           |                   |           `-- wasm-bindgen-shared v0.2.89
+|   |   |           |                   `-- wasm-bindgen-shared feature "default" (*)
+|   |   |           |-- wasm-bindgen feature "spans"
+|   |   |           |   |-- wasm-bindgen v0.2.89 (*)
+|   |   |           |   `-- wasm-bindgen-macro feature "spans"
+|   |   |           |       |-- wasm-bindgen-macro v0.2.89 (proc-macro) (*)
+|   |   |           |       `-- wasm-bindgen-macro-support feature "spans"
+|   |   |           |           |-- wasm-bindgen-macro-support v0.2.89 (*)
+|   |   |           |           `-- wasm-bindgen-backend feature "spans"
+|   |   |           |               `-- wasm-bindgen-backend v0.2.89 (*)
+|   |   |           `-- wasm-bindgen feature "std"
+|   |   |               `-- wasm-bindgen v0.2.89 (*)
+|   |   `-- wasm-bindgen feature "default" (*)
 |   |-- chrono feature "clock"
 |   |   |-- chrono v0.4.31 (*)
 |   |   |-- chrono feature "android-tzdata"
@@ -396,6 +441,11 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       |   `-- chrono v0.4.31 (*)
 |       `-- chrono feature "wasm-bindgen"
 |           `-- chrono v0.4.31 (*)
+|-- wasm-bindgen feature "default" (*)
+|-- console_error_panic_hook feature "default"
+|   `-- console_error_panic_hook v0.1.7
+|       |-- cfg-if feature "default" (*)
+|       `-- wasm-bindgen feature "default" (*)
 |-- derive_more feature "debug"
 |   |-- derive_more v1.0.0-beta.6
 |   |   `-- derive_more-impl feature "default"
@@ -497,24 +547,30 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       |       |-- proc-macro2 feature "default" (*)
 |       |       |-- quote feature "default" (*)
 |       |       |-- syn feature "default" (*)
-|       |       |-- num-traits feature "default" (*)
-|       |       `-- num-bigint feature "default"
-|       |           |-- num-bigint v0.4.4
-|       |           |   |-- num-traits feature "i128" (*)
-|       |           |   `-- num-integer feature "i128"
-|       |           |       |-- num-integer v0.1.45
-|       |           |       |   `-- num-traits v0.2.17 (*)
-|       |           |       |   [build-dependencies]
-|       |           |       |   `-- autocfg feature "default" (*)
-|       |           |       `-- num-traits feature "i128" (*)
-|       |           |   [build-dependencies]
-|       |           |   `-- autocfg feature "default" (*)
-|       |           `-- num-bigint feature "std"
-|       |               |-- num-bigint v0.4.4 (*)
-|       |               |-- num-traits feature "std" (*)
-|       |               `-- num-integer feature "std"
-|       |                   |-- num-integer v0.1.45 (*)
-|       |                   `-- num-traits feature "std" (*)
+|       |       |-- num-bigint feature "default"
+|       |       |   |-- num-bigint v0.4.4
+|       |       |   |   |-- num-integer feature "i128"
+|       |       |   |   |   |-- num-integer v0.1.45
+|       |       |   |   |   |   `-- num-traits v0.2.17
+|       |       |   |   |   |       [build-dependencies]
+|       |       |   |   |   |       `-- autocfg feature "default" (*)
+|       |       |   |   |   |   [build-dependencies]
+|       |       |   |   |   |   `-- autocfg feature "default" (*)
+|       |       |   |   |   `-- num-traits feature "i128"
+|       |       |   |   |       `-- num-traits v0.2.17 (*)
+|       |       |   |   `-- num-traits feature "i128" (*)
+|       |       |   |   [build-dependencies]
+|       |       |   |   `-- autocfg feature "default" (*)
+|       |       |   `-- num-bigint feature "std"
+|       |       |       |-- num-bigint v0.4.4 (*)
+|       |       |       |-- num-integer feature "std"
+|       |       |       |   |-- num-integer v0.1.45 (*)
+|       |       |       |   `-- num-traits feature "std"
+|       |       |       |       `-- num-traits v0.2.17 (*)
+|       |       |       `-- num-traits feature "std" (*)
+|       |       `-- num-traits feature "default"
+|       |           |-- num-traits v0.2.17 (*)
+|       |           `-- num-traits feature "std" (*)
 |       |-- ibig feature "default"
 |       |   |-- ibig v0.3.6
 |       |   |   |-- num-traits v0.2.17 (*)
@@ -562,7 +618,10 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |               |   |       |-- syn feature "default" (*)
 |               |   |       |-- syn feature "extra-traits" (*)
 |               |   |       |-- syn feature "full" (*)
-|               |   |       |-- fnv feature "default" (*)
+|               |   |       |-- fnv feature "default"
+|               |   |       |   |-- fnv v1.0.7
+|               |   |       |   `-- fnv feature "std"
+|               |   |       |       `-- fnv v1.0.7
 |               |   |       |-- ident_case feature "default"
 |               |   |       |   `-- ident_case v1.0.1
 |               |   |       `-- strsim feature "default"
@@ -584,7 +643,7 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |                               |   |-- indexmap v2.1.0
 |                               |   |   |-- equivalent v1.0.1
 |                               |   |   `-- hashbrown feature "raw"
-|                               |   |       `-- hashbrown v0.14.2
+|                               |   |       `-- hashbrown v0.14.3
 |                               |   `-- indexmap feature "std"
 |                               |       `-- indexmap v2.1.0 (*)
 |                               |-- indexmap feature "std" (*)
@@ -611,7 +670,9 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       `-- enumset_derive v0.8.1 (proc-macro) (*)
 |-- getrandom feature "default"
 |   `-- getrandom v0.2.11
-|       `-- cfg-if feature "default" (*)
+|       |-- wasm-bindgen v0.2.89 (*)
+|       |-- cfg-if feature "default" (*)
+|       `-- js-sys feature "default" (*)
 |-- getrandom feature "js"
 |   |-- getrandom v0.2.11 (*)
 |   |-- getrandom feature "js-sys"
@@ -634,7 +695,7 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |               |-- quote feature "default" (*)
 |               `-- syn feature "default"
 |                   |-- syn v1.0.109
-|                   |   |-- proc-macro2 v1.0.69 (*)
+|                   |   |-- proc-macro2 v1.0.70 (*)
 |                   |   |-- quote v1.0.33 (*)
 |                   |   `-- unicode-ident feature "default" (*)
 |                   |-- syn feature "clone-impls"
@@ -780,11 +841,7 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       |   |               `-- strum v0.25.0 (*)
 |       |   |-- paste feature "default" (*)
 |       |   |-- strum feature "default" (*)
-|       |   |-- strum feature "derive" (*)
-|       |   `-- wgpu-types feature "default"
-|       |       `-- wgpu-types v0.18.0
-|       |           `-- bitflags feature "default"
-|       |               `-- bitflags v2.4.1
+|       |   `-- strum feature "derive" (*)
 |       |-- ears-rs feature "default" (*)
 |       |-- image feature "png" (*)
 |       |-- arrayvec feature "default"
@@ -819,9 +876,8 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |   |   |-- glam feature "serde"
 |   |   |   `-- glam v0.24.2 (*)
 |   |   |-- clap feature "default"
-|   |   |   |-- clap v4.4.8
-|   |   |   |   |-- clap_builder v4.4.8
-|   |   |   |   |   |-- strsim feature "default" (*)
+|   |   |   |-- clap v4.4.10
+|   |   |   |   |-- clap_builder v4.4.9
 |   |   |   |   |   |-- anstream feature "default"
 |   |   |   |   |   |   |-- anstream v0.6.4
 |   |   |   |   |   |   |   |-- anstyle feature "default"
@@ -837,24 +893,6 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |   |   |   |   |   |   |   |-- utf8parse feature "default" (*)
 |   |   |   |   |   |   |   |-- anstyle-query feature "default"
 |   |   |   |   |   |   |   |   `-- anstyle-query v1.0.0
-|   |   |   |   |   |   |   |       |-- windows-sys feature "Win32_Foundation"
-|   |   |   |   |   |   |   |       |   |-- windows-sys v0.48.0
-|   |   |   |   |   |   |   |       |   |   `-- windows-targets feature "default" (*)
-|   |   |   |   |   |   |   |       |   `-- windows-sys feature "Win32"
-|   |   |   |   |   |   |   |       |       `-- windows-sys v0.48.0 (*)
-|   |   |   |   |   |   |   |       |-- windows-sys feature "Win32_System_Console"
-|   |   |   |   |   |   |   |       |   |-- windows-sys v0.48.0 (*)
-|   |   |   |   |   |   |   |       |   `-- windows-sys feature "Win32_System"
-|   |   |   |   |   |   |   |       |       |-- windows-sys v0.48.0 (*)
-|   |   |   |   |   |   |   |       |       `-- windows-sys feature "Win32" (*)
-|   |   |   |   |   |   |   |       `-- windows-sys feature "default"
-|   |   |   |   |   |   |   |           `-- windows-sys v0.48.0 (*)
-|   |   |   |   |   |   |   |-- anstyle-wincon feature "default"
-|   |   |   |   |   |   |   |   `-- anstyle-wincon v3.0.1
-|   |   |   |   |   |   |   |       |-- anstyle feature "default" (*)
-|   |   |   |   |   |   |   |       |-- windows-sys feature "Win32_Foundation" (*)
-|   |   |   |   |   |   |   |       |-- windows-sys feature "Win32_System_Console" (*)
-|   |   |   |   |   |   |   |       `-- windows-sys feature "default" (*)
 |   |   |   |   |   |   |   `-- colorchoice feature "default"
 |   |   |   |   |   |   |       `-- colorchoice v1.0.0
 |   |   |   |   |   |   |-- anstream feature "auto"
@@ -862,8 +900,10 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |   |   |   |   |   |   `-- anstream feature "wincon"
 |   |   |   |   |   |       `-- anstream v0.6.4 (*)
 |   |   |   |   |   |-- anstyle feature "default" (*)
-|   |   |   |   |   `-- clap_lex feature "default"
-|   |   |   |   |       `-- clap_lex v0.6.0
+|   |   |   |   |   |-- clap_lex feature "default"
+|   |   |   |   |   |   `-- clap_lex v0.6.0
+|   |   |   |   |   `-- strsim feature "default"
+|   |   |   |   |       `-- strsim v0.10.0
 |   |   |   |   `-- clap_derive feature "default"
 |   |   |   |       `-- clap_derive v4.4.7 (proc-macro)
 |   |   |   |           |-- proc-macro2 feature "default" (*)
@@ -872,33 +912,33 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |   |   |   |           |-- syn feature "full" (*)
 |   |   |   |           `-- heck feature "default" (*)
 |   |   |   |-- clap feature "color"
-|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   |-- clap v4.4.10 (*)
 |   |   |   |   `-- clap_builder feature "color"
-|   |   |   |       `-- clap_builder v4.4.8 (*)
+|   |   |   |       `-- clap_builder v4.4.9 (*)
 |   |   |   |-- clap feature "error-context"
-|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   |-- clap v4.4.10 (*)
 |   |   |   |   `-- clap_builder feature "error-context"
-|   |   |   |       `-- clap_builder v4.4.8 (*)
+|   |   |   |       `-- clap_builder v4.4.9 (*)
 |   |   |   |-- clap feature "help"
-|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   |-- clap v4.4.10 (*)
 |   |   |   |   `-- clap_builder feature "help"
-|   |   |   |       `-- clap_builder v4.4.8 (*)
+|   |   |   |       `-- clap_builder v4.4.9 (*)
 |   |   |   |-- clap feature "std"
-|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   |-- clap v4.4.10 (*)
 |   |   |   |   `-- clap_builder feature "std"
-|   |   |   |       |-- clap_builder v4.4.8 (*)
+|   |   |   |       |-- clap_builder v4.4.9 (*)
 |   |   |   |       `-- anstyle feature "std" (*)
 |   |   |   |-- clap feature "suggestions"
-|   |   |   |   |-- clap v4.4.8 (*)
+|   |   |   |   |-- clap v4.4.10 (*)
 |   |   |   |   `-- clap_builder feature "suggestions"
-|   |   |   |       |-- clap_builder v4.4.8 (*)
+|   |   |   |       |-- clap_builder v4.4.9 (*)
 |   |   |   |       `-- clap_builder feature "error-context" (*)
 |   |   |   `-- clap feature "usage"
-|   |   |       |-- clap v4.4.8 (*)
+|   |   |       |-- clap v4.4.10 (*)
 |   |   |       `-- clap_builder feature "usage"
-|   |   |           `-- clap_builder v4.4.8 (*)
+|   |   |           `-- clap_builder v4.4.9 (*)
 |   |   |-- clap feature "derive"
-|   |   |   `-- clap v4.4.8 (*)
+|   |   |   `-- clap v4.4.10 (*)
 |   |   |-- uuid feature "default"
 |   |   |   |-- uuid v1.6.1
 |   |   |   |   |-- serde v1.0.193 (*)
@@ -1074,6 +1114,12 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       |-- regex-syntax v0.8.2
 |       |-- regex-syntax feature "std" (*)
 |       `-- regex-syntax feature "unicode" (*)
+|-- serde-wasm-bindgen feature "default"
+|   `-- serde-wasm-bindgen v0.6.1
+|       |-- serde feature "default" (*)
+|       |-- serde feature "derive" (*)
+|       |-- js-sys feature "default" (*)
+|       `-- wasm-bindgen feature "default" (*)
 |-- serde_with feature "default"
 |   |-- serde_with v3.4.0
 |   |   |-- serde feature "derive" (*)
@@ -1122,7 +1168,8 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |       |-- http-body-util feature "default" (*)
 |       |-- tower-layer feature "default" (*)
 |       |-- tower-service feature "default" (*)
-|       `-- bitflags feature "default" (*)
+|       `-- bitflags feature "default"
+|           `-- bitflags v2.4.1
 |-- tracing-subscriber feature "default"
 |   |-- tracing-subscriber v0.3.18
 |   |   |-- tracing v0.1.40 (*)
@@ -1161,20 +1208,8 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |   |   |                   `-- regex-automata v0.1.10 (*)
 |   |   |-- nu-ansi-term feature "default"
 |   |   |   `-- nu-ansi-term v0.46.0
-|   |   |       |-- overload feature "default"
-|   |   |       |   `-- overload v0.1.1
-|   |   |       |-- winapi feature "consoleapi"
-|   |   |       |   `-- winapi v0.3.9
-|   |   |       |-- winapi feature "default"
-|   |   |       |   `-- winapi v0.3.9
-|   |   |       |-- winapi feature "errhandlingapi"
-|   |   |       |   `-- winapi v0.3.9
-|   |   |       |-- winapi feature "fileapi"
-|   |   |       |   `-- winapi v0.3.9
-|   |   |       |-- winapi feature "handleapi"
-|   |   |       |   `-- winapi v0.3.9
-|   |   |       `-- winapi feature "processenv"
-|   |   |           `-- winapi v0.3.9
+|   |   |       `-- overload feature "default"
+|   |   |           `-- overload v0.1.1
 |   |   |-- sharded-slab feature "default"
 |   |   |   `-- sharded-slab v0.1.7
 |   |   |       `-- lazy_static feature "default"
@@ -1306,74 +1341,40 @@ nmsr-aas v0.2.0 (D:\IDEs\CLionProjects\nmsr-rs\nmsr-aas)
 |               |   `-- unicode-bidi v0.3.13
 |               `-- unicode-normalization feature "std"
 |                   `-- unicode-normalization v0.1.22 (*)
-|-- wasm-bindgen feature "default"
-|   |-- wasm-bindgen v0.2.88
-|   |   |-- cfg-if feature "default" (*)
-|   |   `-- wasm-bindgen-macro feature "default"
-|   |       `-- wasm-bindgen-macro v0.2.88 (proc-macro)
-|   |           |-- quote feature "default" (*)
-|   |           `-- wasm-bindgen-macro-support feature "default"
-|   |               `-- wasm-bindgen-macro-support v0.2.88
-|   |                   |-- proc-macro2 feature "default" (*)
-|   |                   |-- quote feature "default" (*)
-|   |                   |-- syn feature "default" (*)
-|   |                   |-- syn feature "full" (*)
-|   |                   |-- syn feature "visit"
-|   |                   |   `-- syn v2.0.39 (*)
-|   |                   |-- wasm-bindgen-backend feature "default"
-|   |                   |   `-- wasm-bindgen-backend v0.2.88
-|   |                   |       |-- proc-macro2 feature "default" (*)
-|   |                   |       |-- quote feature "default" (*)
-|   |                   |       |-- syn feature "default" (*)
-|   |                   |       |-- syn feature "full" (*)
-|   |                   |       |-- once_cell feature "default" (*)
-|   |                   |       |-- bumpalo feature "default"
-|   |                   |       |   `-- bumpalo v3.14.0
-|   |                   |       |-- log feature "default"
-|   |                   |       |   `-- log v0.4.20
-|   |                   |       `-- wasm-bindgen-shared feature "default"
-|   |                   |           `-- wasm-bindgen-shared v0.2.88
-|   |                   `-- wasm-bindgen-shared feature "default" (*)
-|   |-- wasm-bindgen feature "spans"
-|   |   |-- wasm-bindgen v0.2.88 (*)
-|   |   `-- wasm-bindgen-macro feature "spans"
-|   |       |-- wasm-bindgen-macro v0.2.88 (proc-macro) (*)
-|   |       `-- wasm-bindgen-macro-support feature "spans"
-|   |           |-- wasm-bindgen-macro-support v0.2.88 (*)
-|   |           `-- wasm-bindgen-backend feature "spans"
-|   |               `-- wasm-bindgen-backend v0.2.88 (*)
-|   `-- wasm-bindgen feature "std"
-|       `-- wasm-bindgen v0.2.88 (*)
 |-- wasm-bindgen-futures feature "default"
-|   `-- wasm-bindgen-futures v0.4.38
+|   `-- wasm-bindgen-futures v0.4.39
 |       |-- cfg-if feature "default" (*)
-|       |-- wasm-bindgen feature "default" (*)
-|       `-- js-sys feature "default"
-|           `-- js-sys v0.3.65
-|               `-- wasm-bindgen feature "default" (*)
+|       |-- js-sys feature "default" (*)
+|       `-- wasm-bindgen feature "default" (*)
 |-- web-sys feature "Request"
 |   `-- web-sys v0.3.64
-|       |-- wasm-bindgen feature "default" (*)
-|       `-- js-sys feature "default" (*)
+|       |-- js-sys feature "default" (*)
+|       `-- wasm-bindgen feature "default" (*)
 |-- web-sys feature "RequestInit"
 |   `-- web-sys v0.3.64 (*)
 |-- web-sys feature "WorkerGlobalScope"
 |   |-- web-sys v0.3.64 (*)
 |   `-- web-sys feature "EventTarget"
 |       `-- web-sys v0.3.64 (*)
+|-- web-sys feature "console"
+|   `-- web-sys v0.3.64 (*)
 `-- web-sys feature "default"
     `-- web-sys v0.3.64 (*)
 [build-dependencies]
 |-- vergen feature "git"
 |   `-- vergen v8.2.6
-|       |-- anyhow feature "default" (*)
+|       |-- anyhow feature "default"
+|       |   |-- anyhow v1.0.75
+|       |   `-- anyhow feature "std"
+|       |       `-- anyhow v1.0.75
 |       |-- time feature "default"
 |       |   |-- time v0.3.30
 |       |   |   |-- powerfmt v0.2.0
-|       |   |   |-- itoa feature "default" (*)
 |       |   |   |-- deranged feature "powerfmt"
 |       |   |   |   `-- deranged v0.3.9
 |       |   |   |       `-- powerfmt v0.2.0
+|       |   |   |-- itoa feature "default"
+|       |   |   |   `-- itoa v1.0.9
 |       |   |   `-- time-core feature "default"
 |       |   |       `-- time-core v0.1.2
 |       |   `-- time feature "std"

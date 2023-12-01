@@ -31,7 +31,7 @@ pub enum NMSRRenderingError {
     PoolError(#[from] deadpool::managed::PoolError<Box<Self>>),
     #[cfg(feature = "pipeline")]
     #[error("Pool Build error: {0}")]
-    PoolBuildError(#[from] deadpool::managed::BuildError<Box<Self>>),
+    PoolBuildError(#[from] deadpool::managed::BuildError),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRRenderingError>;

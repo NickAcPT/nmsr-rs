@@ -22,7 +22,7 @@ pub(crate) fn create_png_from_bytes(size: (u32, u32), bytes: &[u8]) -> Result<Ve
         let output = Vec::new();
         
         let mut buf_cursor = std::io::Cursor::new(output);
-        let encoder = PngEncoder::new_with_quality(&mut buf_cursor, image::codecs::png::CompressionType::Fast, image::codecs::png::FilterType::NoFilter);
+        let encoder = PngEncoder::new_with_quality(&mut buf_cursor, image::codecs::png::CompressionType::Default, image::codecs::png::FilterType::Paeth);
         
         image.write_with_encoder(encoder)
             .expect_throw("Failed to write image to buffer");

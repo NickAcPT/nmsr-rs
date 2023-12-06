@@ -56,10 +56,12 @@ impl RenderEntry {
         
         let part = Mesh::new(parts);
 
+        // Pad width for SIMD
+        let depth_width = size.width + 3;
         let depth_buffer = ImageBuffer::from_raw(
-            size.width,
+            depth_width,
             size.height,
-            [1.0].repeat((size.width * size.height) as usize),
+            [1.0].repeat((depth_width * size.height) as usize),
         )
         .unwrap();
 

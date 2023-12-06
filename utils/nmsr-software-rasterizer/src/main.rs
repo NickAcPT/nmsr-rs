@@ -1,4 +1,5 @@
 #![feature(core_intrinsics)]
+#![feature(portable_simd)]
 
 use std::{fs, hint::black_box};
 

@@ -1,5 +1,5 @@
 [build]
-rustflags = ["-Z", "threads=8", "-Ctarget-feature=+simd128,+relaxed-simd"]
+rustflags = ["--cfg=web_sys_unstable_apis", "-Z", "threads=8", "-Ctarget-feature=+simd128,+relaxed-simd"]
 
 target = "wasm32-unknown-unknown"
 

@@ -468,7 +468,7 @@ impl EarsPlayerPartsProvider {
         features: &EarsFeatures,
         result: &mut Vec<EarsPlayerBodyPartDefinition>,
     ) {
-        let mut anchor = features.ear_anchor.unwrap_or_default();
+        let mut anchor = features.ear_anchor;
         let mut mode = features.ear_mode;
 
         // Upgrade the old ear mode to the new one

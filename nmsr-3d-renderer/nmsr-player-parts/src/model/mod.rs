@@ -33,6 +33,27 @@ pub enum PlayerArmorSlot {
 }
 
 impl PlayerArmorSlot {
+    pub fn get_slot_for_part(part: PlayerBodyPartType) -> Self {
+        let part = part.get_non_layer_part();
+
+        match part {
+            PlayerBodyPartType::Head => Self::Helmet,
+            PlayerBodyPartType::Body
+            | PlayerBodyPartType::LeftArm
+            | PlayerBodyPartType::RightArm => Self::Chestplate,
+            PlayerBodyPartType::LeftLeg | PlayerBodyPartType::RightLeg => Self::Leggings,
+
+            PlayerBodyPartType::HeadLayer
+            | PlayerBodyPartType::BodyLayer
+            | PlayerBodyPartType::LeftArmLayer
+            | PlayerBodyPartType::RightArmLayer
+            | PlayerBodyPartType::LeftLegLayer
+            | PlayerBodyPartType::RightLegLayer => {
+                unreachable!("Layer parts should have been converted to non-layer parts")
+            }
+        }
+    }
+
     pub fn layer_id(&self) -> u32 {
         if self.is_leggings() {
             2

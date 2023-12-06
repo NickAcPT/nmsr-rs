@@ -874,6 +874,9 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
         }
 
         if let Some(features) = context.ears_features {
+            let mut features = features;
+            features.claws &= !context.armor_slots.as_ref().is_some_and(|s| s.boots.is_some());
+            
             let is_slim_arms = context.model.is_slim_arms();
 
             let mut result = Vec::new();

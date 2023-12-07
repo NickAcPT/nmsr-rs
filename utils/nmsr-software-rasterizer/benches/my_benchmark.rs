@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use criterion::{criterion_group, criterion_main, Criterion, SamplingMode};
 
 use ears_rs::parser::EarsParser;
 use glam::Vec3;
 pub use nmsr_rasterizer_test::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
 use nmsr_rasterizer_test::shader;
-use nmsr_rendering::high_level::parts::provider::PlayerPartProviderContext;
+use nmsr_rendering::high_level::{parts::provider::PlayerPartProviderContext, types::PlayerBodyPartType, IntoEnumIterator};
 
 
 fn bench(c: &mut Criterion) {
@@ -35,19 +37,21 @@ fn bench(c: &mut Criterion) {
         shadow_y_pos: None,
         shadow_is_square: false,
         armor_slots: None,
+        #[cfg(feature = "ears")]
         ears_features: EarsParser::parse(&texture).expect("Yes"),
     };
 
     ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
     ears_rs::utils::strip_alpha(&mut texture);
 
-    let state = ShaderState::new(camera, texture, shader::SunInformation {
+    let state = ShaderState::new(camera, Arc::new(texture), shader::SunInformation {
             direction: glam::Vec3A::new(0.0, -1.0, 1.0),
             intensity: 2.0,
             ambient: 0.621,
-        });
+        }, &context, &PlayerBodyPartType::iter().collect::<Vec<_>>());
 
-    let mut entry = RenderEntry::new((512, 869).into(), &context);
+
+    let mut entry = RenderEntry::new(camera.get_size().unwrap());
     let mut group = c.benchmark_group("nmsr-rs");
     group.sampling_mode(SamplingMode::Flat);
     group.bench_function("render_entry", |b| {

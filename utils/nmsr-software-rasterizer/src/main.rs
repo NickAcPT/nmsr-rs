@@ -1,10 +1,10 @@
 #![feature(core_intrinsics)]
 #![feature(portable_simd)]
 
-use std::{fs, hint::black_box};
+use std::{fs, hint::black_box, sync::Arc};
 
 use glam::Vec3;
-use nmsr_rendering::high_level::parts::provider::PlayerPartProviderContext;
+use nmsr_rendering::high_level::{parts::provider::PlayerPartProviderContext, types::PlayerBodyPartType, IntoEnumIterator};
 
 pub use crate::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
 
@@ -42,7 +42,7 @@ fn main() {
         shadow_is_square: false,
         armor_slots: None,
         #[cfg(feature = "ears")]
-        ears_features: EarsParser::parse(&texture).expect("Yes"),
+        ears_features: ears_rs::parser::EarsParser::parse(&texture).expect("Yes"),
     };
     
     ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
@@ -50,13 +50,15 @@ fn main() {
     
     fs::create_dir("output").unwrap_or_default();
     
-    let mut state = ShaderState::new(camera, texture, shader::SunInformation {
+    let mut state = ShaderState::new(camera, Arc::new(texture), shader::SunInformation {
         direction: glam::Vec3A::new(0.0, -1.0, 1.0),
         intensity: 2.0,
         ambient: 0.621,
-    });
+    }, &context, &PlayerBodyPartType::iter().collect::<Vec<_>>());
     
-    let mut entry = RenderEntry::new((512, 869).into(), &context);
+    let size = camera.get_size().unwrap();
+    
+    let mut entry = RenderEntry::new(size);
     
     for angle in 0..360 {
         entry.textures.output.fill(0);

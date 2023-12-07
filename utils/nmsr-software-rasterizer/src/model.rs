@@ -1,14 +1,7 @@
 
+use std::fmt::Debug;
+
 use image::{ImageBuffer, Luma, RgbaImage};
-use nmsr_rendering::{
-    high_level::{
-        parts::{provider::{
-            PartsProvider, PlayerPartProviderContext, PlayerPartsProvider,
-        }, part::Part},
-        utils::parts::primitive_convert, types::PlayerBodyPartType, IntoEnumIterator,
-    },
-    low_level::primitives::mesh::{PrimitiveDispatch, Mesh},
-};
 
 use crate::shader::ShaderState;
 
@@ -24,6 +17,7 @@ impl From<(u32, u32)> for Size {
     }
 }
 
+#[derive(Debug)]
 pub struct Textures {
     pub depth_buffer: ImageBuffer<Luma<f32>, Vec<f32>>,
     pub output: RgbaImage,
@@ -44,30 +38,17 @@ impl Textures {
 pub struct RenderEntry {
     pub size: Size,
     pub textures: Textures,
-    pub primitive: PrimitiveDispatch,
+}
+
+
+impl Debug for RenderEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RenderEntry").finish()
+    }
 }
 
 impl RenderEntry {
-    pub fn new(size: Size, context: &PlayerPartProviderContext<()>) -> Self {
-        let providers = [
-            PlayerPartsProvider::Minecraft,
-            PlayerPartsProvider::Ears,
-        ];
-        
-        let parts = providers
-            .iter()
-            .flat_map(|provider| {
-                PlayerBodyPartType::iter().flat_map(|part| provider.get_parts(&context, part))
-            })
-            .collect::<Vec<Part>>();
-
-        let parts = parts
-            .into_iter()
-            .map(|p| primitive_convert(&p))
-            .collect::<Vec<_>>();
-
-        let part = Mesh::new(parts);
-
+    pub fn new(size: Size) -> Self {
         // Align and pad width for SIMD
         const ALIGN: u32 = 4;
         let depth_width = (size.width + ALIGN - 1) / ALIGN * ALIGN + ALIGN;
@@ -84,9 +65,8 @@ impl RenderEntry {
                 depth_buffer,
                 output: RgbaImage::new(size.width, size.height),
             },
-            primitive: PrimitiveDispatch::Mesh(part),
         }
-
+        
         /* let full_quad = Quad::new_with_normal(
             Vec3::new(-1.0, 0.0, 0.0),
             Vec3::new(1.0, 0.0, 0.0),
@@ -98,10 +78,10 @@ impl RenderEntry {
             VertexUvCoordinates::new(1.0, 0.0),
             Vec3::new(0.0, 0.0, 1.0),
         );
-
+        
         let depth_buffer = ImageBuffer::from_raw(size.width, size.height, [1.0].repeat((size.width * size.height) as usize)).unwrap();
-
-
+        
+        
         Self {
             size,
             textures: Textures {
@@ -111,7 +91,7 @@ impl RenderEntry {
             primitive: PrimitiveDispatch::Quad(full_quad)
         } */
     }
-
+        
     pub fn dump(&self) {
         self.textures.output.save("output.png").unwrap();
     }

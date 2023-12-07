@@ -3,7 +3,6 @@
 
 use std::{fs, hint::black_box};
 
-use ears_rs::parser::EarsParser;
 use glam::Vec3;
 use nmsr_rendering::high_level::parts::provider::PlayerPartProviderContext;
 
@@ -42,6 +41,7 @@ fn main() {
         shadow_y_pos: None,
         shadow_is_square: false,
         armor_slots: None,
+        #[cfg(feature = "ears")]
         ears_features: EarsParser::parse(&texture).expect("Yes"),
     };
     

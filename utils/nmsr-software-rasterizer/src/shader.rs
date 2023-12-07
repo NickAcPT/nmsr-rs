@@ -1,5 +1,8 @@
-use glam::{Vec2, Vec3, Vec4, Vec3A};
-use image::Rgba;
+use std::{sync::Arc, fmt::Debug};
+
+use glam::{Vec2, Vec4, Vec3A};
+use image::{Rgba, RgbaImage};
+use nmsr_rendering::{high_level::{parts::{provider::{PlayerPartProviderContext, PlayerPartsProvider, PartsProvider}, part::Part}, types::PlayerBodyPartType, utils::parts::primitive_convert}, low_level::primitives::mesh::{PrimitiveDispatch, Mesh}};
 
 use crate::camera::Camera;
 
@@ -98,20 +101,54 @@ pub struct SunInformation {
     pub ambient: f32,
 }
 
+impl SunInformation {
+    pub fn new(direction: Vec3A, intensity: f32, ambient: f32) -> Self { Self { direction, intensity, ambient } }
+}
+
+impl Debug for ShaderState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ShaderState").finish()
+    }
+}
+
 pub struct ShaderState {
     pub camera: Camera,
-    pub texture: image::RgbaImage,
+    pub texture: Arc<RgbaImage>,
     pub texture_size: (f32, f32),
     pub sun: SunInformation,
+    pub primitive: PrimitiveDispatch,
 }
 
 impl ShaderState {
-    pub fn new(camera: Camera, texture: image::RgbaImage, sun: SunInformation) -> Self {
-        let mut result = Self {
+    pub fn new(camera: Camera, texture: Arc<RgbaImage>, sun: SunInformation, context: &PlayerPartProviderContext<()>, parts: &[PlayerBodyPartType]) -> Self {
+        let providers = [
+            PlayerPartsProvider::Minecraft,
+            #[cfg(feature = "ears")]
+            PlayerPartsProvider::Ears,
+        ];
+
+        let parts = providers
+            .iter()
+            .flat_map(|provider| { 
+                parts.iter().flat_map(|part| provider.get_parts(&context, *part))
+             })
+            .collect::<Vec<Part>>();
+        
+        let parts = parts
+            .into_iter()
+            .map(|p| primitive_convert(&p))
+            .collect::<Vec<_>>();
+        
+        Self::new_with_primitive(camera, texture, sun, PrimitiveDispatch::Mesh(Mesh::new(parts)))
+    }
+    
+    pub fn new_with_primitive(camera: Camera, texture: Arc<RgbaImage>, sun: SunInformation, primitive: PrimitiveDispatch) -> Self {
+        let mut result: ShaderState = Self {
             camera,
             texture_size: (texture.width() as f32, texture.height() as f32),
             texture,
             sun,
+            primitive
         };
 
         result.update();

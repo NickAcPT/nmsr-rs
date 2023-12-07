@@ -17,11 +17,13 @@ path = "src/lib.rs"
 [dependencies]
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
 glam = { version = "0" }
-nmsr-rendering = { version = "0.1.0", git = "https://github.com/NickAcPT/nmsr-rs", features = [
-    "ears",
-], default-features = false }
+nmsr-rendering = { git = "https://github.com/NickAcPT/nmsr-rs", default-features = false }
 image = { version = "0", default-features = false, features = ["png"] }
 arrayvec = "0.7.4"
+
+[features]
+default = []
+ears = ["nmsr-rendering/ears"]
 
 [dev-dependencies]
 criterion = { version = "0.4", features = ["html_reports"] }

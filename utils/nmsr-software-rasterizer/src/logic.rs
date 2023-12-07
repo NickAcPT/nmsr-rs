@@ -12,14 +12,14 @@ use crate::{
 
 impl RenderEntry {
     pub fn draw_primitives(&mut self, state: &ShaderState) {
-        let vertices = self
+        let vertices = state
             .primitive
             .get_vertices()
             .into_iter()
             .map(|v| apply_vertex_shader(v, state))
             .collect::<Vec<_>>();
 
-        let indices = self.primitive.get_indices();
+        let indices = state.primitive.get_indices();
 
         let mut grouped_vertices = indices
             .chunks_exact(3)

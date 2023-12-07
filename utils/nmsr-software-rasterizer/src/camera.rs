@@ -266,11 +266,13 @@ impl Camera {
         }
     }
 
-    pub fn get_size(&self) -> Size {
-        self.size.unwrap_or(Size {
-            width: 1,
-            height: 1,
-        })
+    pub fn get_size(&self) -> Option<Size> {
+        self.size
+    }
+    
+    pub fn set_size(&mut self, size: Option<Size>) {
+        self.size = size;
+        self.dirty = true;
     }
 
     pub fn get_aspect_ratio(&self) -> f32 {
@@ -294,20 +296,49 @@ impl Camera {
         self.cached_view_projection_matrix
     }
 
-    pub fn get_distance(&self) -> Option<f32> {
-        self.position_parameters.get_distance()
+    pub fn get_distance(&self) -> f32 {
+        self.position_parameters.get_distance().unwrap_or(0.0)
     }
     
     pub fn get_distance_as_mut(&mut self) -> Option<&mut f32> {
         self.position_parameters.as_mut_distance()
     }
 
-    pub fn get_rotation(&self) -> &CameraRotation {
-        &self.rotation
+    pub fn get_rotation(&self) -> CameraRotation {
+        self.rotation
     }
 
     pub fn get_rotation_mut(&mut self) -> &mut CameraRotation {
         &mut self.rotation
+    }
+    
+    pub fn set_rotation(&mut self, rotation: CameraRotation) {
+        *self.get_rotation_mut() = rotation;
+    }
+    
+    #[inline]
+    pub fn get_rotation_as_mut(&mut self) -> &mut CameraRotation {
+        self.get_rotation_mut()
+    }
+    
+    pub fn get_yaw(&self) -> f32 {
+        self.get_rotation().yaw
+    }
+    
+    pub fn get_pitch(&self) -> f32 {
+        self.get_rotation().pitch
+    }
+    
+    pub fn get_roll(&self) -> f32 {
+        self.get_rotation().roll
+    }
+    
+    pub fn get_position_parameters_mut(&mut self) -> &mut CameraPositionParameters {
+        &mut self.position_parameters
+    }
+    
+    pub fn get_projection_mut(&mut self) -> &mut ProjectionParameters {
+        &mut self.projection
     }
 
     fn compute_view_projection_matrix(&self) -> Mat4 {

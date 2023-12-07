@@ -60,9 +60,9 @@ fn main() {
     
     for angle in 0..360 {
         entry.textures.output.fill(0);
-        entry.textures.depth_buffer.fill(1.0);
+        entry.textures.clear_depth();
         
-        camera.get_rotation_mut().yaw = angle as f32;
+        state.camera.get_rotation_mut().yaw = angle as f32;
         state.update();
         
         entry.draw(black_box(&state));

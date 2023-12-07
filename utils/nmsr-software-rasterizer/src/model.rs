@@ -29,6 +29,18 @@ pub struct Textures {
     pub output: RgbaImage,
 }
 
+impl Textures {
+    pub fn clear_depth(&mut self) {
+        let width = self.output.width() as usize;
+        let buf = self.depth_buffer.as_flat_samples_mut();
+        for full_row in buf.samples.chunks_exact_mut(buf.layout.width as usize) {
+            let (row, suffix) = full_row.split_at_mut(width);
+            row.fill(1.0);
+            suffix.fill(0.0);
+        }
+    }
+}
+
 pub struct RenderEntry {
     pub size: Size,
     pub textures: Textures,
@@ -41,29 +53,30 @@ impl RenderEntry {
             PlayerPartsProvider::Minecraft,
             PlayerPartsProvider::Ears,
         ];
-
+        
         let parts = providers
             .iter()
-            .flat_map(|provider| { 
+            .flat_map(|provider| {
                 PlayerBodyPartType::iter().flat_map(|part| provider.get_parts(&context, part))
-             })
+            })
             .collect::<Vec<Part>>();
-        
+
         let parts = parts
             .into_iter()
             .map(|p| primitive_convert(&p))
             .collect::<Vec<_>>();
-        
+
         let part = Mesh::new(parts);
 
-        // Pad width for SIMD
-        let depth_width = size.width + 3;
-        let depth_buffer = ImageBuffer::from_raw(
-            depth_width,
-            size.height,
-            [1.0].repeat((depth_width * size.height) as usize),
-        )
-        .unwrap();
+        // Align and pad width for SIMD
+        const ALIGN: u32 = 4;
+        let depth_width = (size.width + ALIGN - 1) / ALIGN * ALIGN + ALIGN;
+        let mut depth_buffer_vec = Vec::with_capacity(depth_width as usize * size.height as usize);
+        unsafe {
+            depth_buffer_vec.set_len(depth_buffer_vec.capacity());
+        }
+        let depth_buffer =
+            ImageBuffer::from_raw(depth_width, size.height, depth_buffer_vec).unwrap();
 
         Self {
             size,
@@ -73,7 +86,7 @@ impl RenderEntry {
             },
             primitive: PrimitiveDispatch::Mesh(part),
         }
-        
+
         /* let full_quad = Quad::new_with_normal(
             Vec3::new(-1.0, 0.0, 0.0),
             Vec3::new(1.0, 0.0, 0.0),
@@ -85,10 +98,10 @@ impl RenderEntry {
             VertexUvCoordinates::new(1.0, 0.0),
             Vec3::new(0.0, 0.0, 1.0),
         );
-        
+
         let depth_buffer = ImageBuffer::from_raw(size.width, size.height, [1.0].repeat((size.width * size.height) as usize)).unwrap();
-        
-        
+
+
         Self {
             size,
             textures: Textures {

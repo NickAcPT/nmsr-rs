@@ -22,10 +22,10 @@ fn bench(c: &mut Criterion) {
             height: 869
         }),
     );
-    
-    
+
+
     let mut texture = image::open("NickAc.png").unwrap().into_rgba8();
-    
+
     let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
         model: nmsr_rendering::high_level::model::PlayerModel::Alex,
         has_hat_layer: true,
@@ -37,20 +37,25 @@ fn bench(c: &mut Criterion) {
         armor_slots: None,
         ears_features: EarsParser::parse(&texture).expect("Yes"),
     };
-    
+
     ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
     ears_rs::utils::strip_alpha(&mut texture);
-    
+
     let state = ShaderState::new(camera, texture, shader::SunInformation {
-        direction: glam::Vec3A::new(0.0, -1.0, 1.0),
-        intensity: 2.0,
-        ambient: 0.621,
-    });
-    
+            direction: glam::Vec3A::new(0.0, -1.0, 1.0),
+            intensity: 2.0,
+            ambient: 0.621,
+        });
+
     let mut entry = RenderEntry::new((512, 869).into(), &context);
     let mut group = c.benchmark_group("nmsr-rs");
     group.sampling_mode(SamplingMode::Flat);
-    group.bench_function("render_entry", |b| b.iter(|| entry.draw(&state)));
+    group.bench_function("render_entry", |b| {
+        b.iter(|| {
+            entry.textures.clear_depth();
+            entry.draw(&state);
+        })
+    });
     group.finish();
     entry.dump();
 }

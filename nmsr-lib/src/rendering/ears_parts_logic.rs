@@ -5,14 +5,13 @@ use ears_rs::features::EarsFeatures;
 pub(crate) fn get_ears_parts(features: &EarsFeatures, model: &PlayerModel) -> Vec<String> {
     let mut parts = vec![];
 
-    if let Some(anchor) = &features.ear_anchor {
-        let mode = &features.ear_mode;
-        parts.push(get_ear_anchor_key(mode, anchor));
+    let anchor = &features.ear_anchor;
+    let mode = &features.ear_mode;
+    parts.push(get_ear_anchor_key(mode, anchor));
 
-        // Around implicitly requires the above part
-        if mode == &EarMode::Around {
-            parts.push(get_ear_anchor_key(&EarMode::Above, anchor));
-        }
+    // Around implicitly requires the above part
+    if mode == &EarMode::Around {
+        parts.push(get_ear_anchor_key(&EarMode::Above, anchor));
     }
 
     if features.horn {

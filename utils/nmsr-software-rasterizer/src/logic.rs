@@ -140,10 +140,10 @@ pub fn draw_triangle(
             let barycentric = barycentric_coordinates_x4(x, f32x4::splat(y), &barycentric_state);
 
             // If the pixel is outside the triangle, skip it
-            if barycentric.u.is_sign_negative().any()
-                || barycentric.v.is_sign_negative().any()
-                || barycentric.w.is_sign_negative().any()
-            {
+            let is_negative = barycentric.u.is_sign_negative()
+                | barycentric.v.is_sign_negative()
+                | barycentric.w.is_sign_negative();
+            if is_negative.all() {
                 continue;
             }
 
@@ -156,7 +156,9 @@ pub fn draw_triangle(
 
             // If all pixels are behind the depth buffer, skip them
             let depth_cmp = f32x4::simd_ge(depth, buffer_depth);
-            if depth_cmp.all() {
+            
+            let skip_mask = is_negative | depth_cmp;
+            if skip_mask.all() {
                 continue;
             }
 
@@ -183,7 +185,7 @@ pub fn draw_triangle(
 
             for i in 0..4 {
                 // If the pixel is behind the depth buffer, skip it
-                if depth_cmp.test(i) {
+                if skip_mask.test(i) {
                     continue;
                 }
 

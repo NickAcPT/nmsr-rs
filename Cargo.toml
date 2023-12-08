@@ -12,7 +12,7 @@ members = [
     #"nmsr-jni",
     "nmsr-aas",
     "utils/nmsr-rendering-blockbench-model-generator-experiment",
-    #"utils/nmsr-rendering-blockbench-model-generator-experiment-cli",
+    "utils/nmsr-rendering-blockbench-model-generator-experiment-cli",
     #"utils/nmsr-rendering-blockbench-model-generator-experiment-wasm",
     "utils/nmsr-rendering-parts-generator-experiment",
     "utils/nmsr-rendering-parts-generator-experiment-cli",

@@ -231,8 +231,8 @@ impl Part {
         let rotation_mat = Mat4::from_quat(Quat::from_euler(
             glam::EulerRot::YXZ,
             rotation.y.to_radians(),
-            rotation.x.to_radians(),
-            rotation.z.to_radians(),
+            -rotation.x.to_radians(),
+            -rotation.z.to_radians(),
         ));
 
         let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;

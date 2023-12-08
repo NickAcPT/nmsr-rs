@@ -2,7 +2,7 @@ use super::provider::minecraft::compute_base_part;
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
-use glam::{Mat4, Quat, Vec3};
+use glam::{Mat4, Quat, Vec3, Affine3A};
 
 #[cfg(feature = "part_tracker")]
 use super::tracking::PartTrackingData;
@@ -195,6 +195,23 @@ impl Part {
         new_part
     }
 
+    pub fn transform_affine(&mut self, t: Affine3A) {
+        let t: Mat4 = t.into();
+        
+        match self {
+            Self::Cube {
+                ref mut rotation_matrix, ..
+            } => *rotation_matrix *= t,
+            Self::Quad {
+                ref mut rotation_matrix, ..
+            } => *rotation_matrix *= t,
+            Self::Group {
+                ref mut rotation_matrix, ..
+            } => *rotation_matrix *= t,
+        }
+        
+    }
+    
     pub fn get_rotation_matrix(&self) -> Mat4 {
         match self {
             Self::Cube {

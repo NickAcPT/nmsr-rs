@@ -60,6 +60,7 @@ fn convert_to_raw_elements<M: ArmorMaterial, I: ModelProjectImageIO>(
     let parts = grouped_parts
         .into_iter()
         .flat_map(|(_, parts)| parts)
+        //.filter(|p| p.get_name().map(|n| n.contains("Tail")).unwrap_or_default())
         .enumerate()
         .map(|(index, part)| -> Result<_> {
             #[cfg(feature = "markers")]

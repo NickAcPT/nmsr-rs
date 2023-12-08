@@ -97,9 +97,8 @@ impl RawProjectElement {
         let mut vertices_map = json!({});
 
         for vertex in vertices {
-            // Reversed since our primitives are emitted clockwise, but blockbench's are counter-clockwise
-            let [vc, vb, va] = vertex;
-
+            let [mut va, vb, mut vc] = vertex;
+            
             let [a, b, c] = [va.position, vb.position, vc.position];
 
             let ((va_name, vb_name), (vc_name, _)) =

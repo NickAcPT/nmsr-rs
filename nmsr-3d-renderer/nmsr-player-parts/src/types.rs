@@ -64,12 +64,23 @@ impl PlayerBodyPartType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Display, IntoStaticStr, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, IntoStaticStr, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PlayerPartTextureType {
     Shadow,
     Cape,
     Skin,
     Custom { key: &'static str, size: (u32, u32) },
+}
+
+impl std::fmt::Display for PlayerPartTextureType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            PlayerPartTextureType::Shadow => f.pad("Shadow"),
+            PlayerPartTextureType::Cape => f.pad("Cape"),
+            PlayerPartTextureType::Skin => f.pad("Skin"),
+            PlayerPartTextureType::Custom { key, .. } => f.pad(key)
+        }
+    }
 }
 
 impl PlayerPartTextureType {

@@ -3,13 +3,13 @@ use std::{
     io::{BufWriter, Cursor},
 };
 
-use glam::{Vec2, Vec3};
+use glam::Vec2;
 use image::RgbaImage;
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
     model::{ArmorMaterial, PlayerModel},
     parts::{
-        part::{Part, PartAnchorInfo},
+        part::Part,
         provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
         uv::{FaceUv, FaceUvPoint},
     },
@@ -31,11 +31,9 @@ pub struct DefaultImageIO;
 
 impl ModelProjectImageIO for DefaultImageIO {
     fn read_png(&self, image: &[u8]) -> Result<RgbaImage> {
-        let mut img = RgbaImage::new(1, 1);
-
-        *img.get_pixel_mut(0, 0) = image::Rgba([255, 255, 255, 255]);
-        
-        return Ok(img);
+        Ok(image::load_from_memory(image)
+            .context("Failed to load image")?
+            .to_rgba8())
     }
 
     fn write_png(&self, image: &RgbaImage) -> Result<Vec<u8>> {
@@ -176,18 +174,14 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
     }
 
     pub(crate) fn generate_parts(&self) -> Vec<Part> {
-        
-        let uvs = FaceUv { top_left: FaceUvPoint { x: 0, y: 0 }, top_right: FaceUvPoint { x: 0, y: 0 }, bottom_left: FaceUvPoint { x: 0, y: 0 }, bottom_right: FaceUvPoint { x: 0, y: 0 } };
-        
-        let first_quad = Part::new_quad(PlayerPartTextureType::Skin, [-8., 0., -8.], [16, 0, 8], uvs, Vec3::Z, None);
-        let mut second_quad = Part::new_quad(PlayerPartTextureType::Skin, [-8., 0., -8.], [16, 0, 8], uvs, Vec3::Z, None);
-        
-        second_quad.rotate(Vec3::X * 90.0, Some(PartAnchorInfo::new_rotation_anchor_position(Vec3::new(0., 0., -8.0))));
-        
-        vec![
-            first_quad,
-            second_quad            
-        ]
+        PlayerBodyPartType::iter()
+            .filter(|p| !(p.is_layer() || p.is_hat_layer()) || self.part_context.has_layers)
+            .flat_map(|p| {
+                self.providers
+                    .iter()
+                    .flat_map(move |provider| provider.get_parts(&self.part_context, p))
+            })
+            .collect_vec()
     }
 
     pub(crate) fn get_texture(&self, texture_type: PlayerPartTextureType) -> Option<&RgbaImage> {
@@ -239,6 +233,24 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
         }
     }
 
+    pub(crate) fn handle_single_coordinate(&self, texture: PlayerPartTextureType, coordinate: Vec2) -> Vec2 {
+        let resolution = texture.get_texture_size();
+        let resolution = Vec2::new(resolution.0 as f32, resolution.1 as f32);
+
+        let required_resolution = self.max_resolution;
+        let [mut x, mut y] = [coordinate.x, coordinate.y];
+
+        let [tex_width, tex_height]: [f32; 2] = resolution.into();
+        let [required_x, required_y]: [f32; 2] = required_resolution.into();
+
+        if resolution != required_resolution {
+            x = (x / tex_width) * required_x;
+            y = (y / tex_height) * required_y;
+        }
+
+        [x, y].into()
+    }
+    
     pub(crate) fn get_texture_id(&self, texture: PlayerPartTextureType) -> Result<u32> {
         self.textures
             .keys()

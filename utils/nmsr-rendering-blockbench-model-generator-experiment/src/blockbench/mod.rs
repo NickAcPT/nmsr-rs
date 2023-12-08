@@ -5,7 +5,7 @@ use std::{collections::HashMap, vec::Vec};
 use glam::Vec3;
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
-    model::ArmorMaterial, parts::part::Part, types::PlayerPartTextureType,
+    model::ArmorMaterial, parts::part::Part, types::PlayerPartTextureType, utils::parts::primitive_convert,
 };
 
 use crate::{
@@ -103,12 +103,12 @@ fn convert_to_raw_elements<M: ArmorMaterial, I: ModelProjectImageIO>(
                     let name = name
                         .to_owned()
                         .map_or_else(|| format!("part-{index}"), |s| s.to_string());
-
-                    let texture = *texture;
-
-                    RawProjectElement::new_quad(name, part, texture, project)?
+                    
+                    let primitive = primitive_convert(&part);
+                    
+                    RawProjectElement::new_primitive(name, primitive.into(), *texture, project)?
                 }
-            };
+        };
 
             #[cfg(feature = "markers")]
             {

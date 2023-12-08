@@ -2,20 +2,21 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use glam::{Vec2, Vec3};
 use nmsr_rendering::{
     high_level::{
-        parts::{
-            part::Part,
-            uv::{CubeFaceUvs, FaceUv},
-        },
-        types::PlayerPartTextureType, utils::parts::primitive_convert, model::ArmorMaterial,
+        model::ArmorMaterial,
+        parts::uv::{CubeFaceUvs, FaceUv},
+        types::PlayerPartTextureType,
     },
-    low_level::primitives::mesh::PrimitiveDispatch,
+    low_level::primitives::{mesh::PrimitiveDispatch, part_primitive::PartPrimitive},
 };
 use serde::Serialize;
 use serde_json::{json, Value};
 use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_128;
 
-use crate::{generator::{ModelGenerationProject, ModelProjectImageIO}, error::Result};
+use crate::{
+    error::Result,
+    generator::{ModelGenerationProject, ModelProjectImageIO},
+};
 
 #[derive(Debug, Copy, Clone, Serialize)]
 pub struct ProjectMeta {
@@ -48,34 +49,37 @@ impl RawProjectElement {
         rotation: Vec3,
         faces: RawProjectElementFaces,
     ) -> Self {
-        Self(json!({
-            "uuid": str_to_uuid(&name),
-            "name": name,
-            "box_uv": box_uv,
-            "type": "cube",
-            "from": from,
-            "to": to,
-            "origin": origin,
-            "rotation": rotation,
-            "faces": faces,
-        }).into())
-    }
-    
-    pub fn new_null(
-        name: String,
-        origin: Vec3,
-    ) -> Self {
-        Self(json!({
-            "uuid": str_to_uuid(&name),
-            "name": name,
-            "type": "null_object",
-            "position": origin,
-        }).into())
+        Self(
+            json!({
+                "uuid": str_to_uuid(&name),
+                "name": name,
+                "box_uv": box_uv,
+                "type": "cube",
+                "from": from,
+                "to": to,
+                "origin": origin,
+                "rotation": rotation,
+                "faces": faces,
+            })
+            .into(),
+        )
     }
 
-    pub fn new_quad<M: ArmorMaterial, I: ModelProjectImageIO>(
+    pub fn new_null(name: String, origin: Vec3) -> Self {
+        Self(
+            json!({
+                "uuid": str_to_uuid(&name),
+                "name": name,
+                "type": "null_object",
+                "position": origin,
+            })
+            .into(),
+        )
+    }
+
+    pub fn new_primitive<M: ArmorMaterial, I: ModelProjectImageIO>(
         name: String,
-        part: Part,
+        converted: PrimitiveDispatch,
         texture: PlayerPartTextureType,
         project: &ModelGenerationProject<M, I>,
     ) -> Result<Self> {
@@ -85,94 +89,67 @@ impl RawProjectElement {
             (format!("{a}{a_new:x}"), format!("{b}{b_new:x}"))
         }
 
-        let converted = primitive_convert(&part);
-
-        let (top_left, top_right) = random_names("top_left", "top_right");
-        let (bottom_left, bottom_right) = random_names("bottom_left", "bottom_right");
-
         let texture_id = project.get_texture_id(texture)?;
 
-        let uv_size = texture.get_texture_size();
-        let (uv_width, uv_height) = (uv_size.0 as f32, uv_size.1 as f32);
-        
-        let result = if let PrimitiveDispatch::Quad(quad) = converted {
-            let uvs = FaceUv::from([
-                (quad.top_left.uv.x * uv_width) as u16,
-                (quad.top_left.uv.y * uv_height) as u16,
-                (quad.top_right.uv.x * uv_width) as u16,
-                (quad.top_right.uv.y * uv_height) as u16,
-                (quad.bottom_left.uv.x * uv_width) as u16,
-                (quad.bottom_left.uv.y * uv_height) as u16,
-                (quad.bottom_right.uv.x * uv_width) as u16,
-                (quad.bottom_right.uv.y * uv_height) as u16,
-            ]);
+        let vertices = converted.get_vertices_grouped();
 
-            let uvs = project.handle_face(texture, uvs);
-            
-            let [top_left_uv, top_right_uv, bottom_right_uv, bottom_left_uv] = shrink_rectangle(
-                [
-                    [uvs.top_left.x, uvs.top_left.y],
-                    [uvs.top_right.x, uvs.top_right.y],
-                    [uvs.bottom_right.x, uvs.bottom_right.y],
-                    [uvs.bottom_left.x, uvs.bottom_left.y],
-                ],
-                RawProjectElementFace::UV_OFFSET,
-            );
-            
-            let owo = part.get_position();
+        let mut faces = json!({});
+        let mut vertices_map = json!({});
 
+        for vertex in vertices {
+            // Reversed since our primitives are emitted clockwise, but blockbench's are counter-clockwise
+            let [vc, vb, va] = vertex;
+
+            let [a, b, c] = [va.position, vb.position, vc.position];
+
+            let ((va_name, vb_name), (vc_name, _)) =
+                (random_names("a", "b"), random_names("c", "d"));
+
+            vertices_map[&va_name] = json!([a.x, a.y, a.z]);
+            vertices_map[&vb_name] = json!([b.x, b.y, b.z]);
+            vertices_map[&vc_name] = json!([c.x, c.y, c.z]);
+
+            let uv_size = texture.get_texture_size();
+            let uv_size = Vec2::new(uv_size.0 as f32, uv_size.1 as f32);
+
+            let [va_uv, vb_uv, vc_uv] = [
+                project.handle_single_coordinate(texture, va.uv * uv_size),
+                project.handle_single_coordinate(texture, vb.uv * uv_size),
+                project.handle_single_coordinate(texture, vc.uv * uv_size),
+            ];
+
+            let uv = json!({
+                &va_name: [va_uv.x, va_uv.y],
+                &vb_name: [vb_uv.x, vb_uv.y],
+                &vc_name: [vc_uv.x, vc_uv.y],
+            });
+
+            let face = json!({
+                "texture": texture_id,
+                "uv": uv,
+                "vertices": [
+                    &va_name,
+                    &vb_name,
+                    &vc_name,
+                ]
+            });
+
+            faces[va_name] = face;
+        }
+
+        Ok(Self(
             json!({
                 "uuid": str_to_uuid(&name),
                 "name": name,
                 "box_uv": false,
                 "type": "mesh",
-                "origin": owo,
+                "origin": Vec3::ZERO,
                 "rotation": Vec3::ZERO,
-                "vertices": {
-                    &top_left: [
-                        quad.top_left.position.x - owo.x,
-                        quad.top_left.position.y - owo.y,
-                        quad.top_left.position.z - owo.z,
-                    ],
-                    &top_right: [
-                        quad.top_right.position.x - owo.x,
-                        quad.top_right.position.y - owo.y,
-                        quad.top_right.position.z - owo.z,
-                    ],
-                    &bottom_right: [
-                        quad.bottom_right.position.x - owo.x,
-                        quad.bottom_right.position.y - owo.y,
-                        quad.bottom_right.position.z - owo.z,
-                    ],
-                    &bottom_left: [
-                        quad.bottom_left.position.x - owo.x,
-                        quad.bottom_left.position.y - owo.y,
-                        quad.bottom_left.position.z - owo.z,
-                    ],
-                },
-                "faces": {
-                    "face": {
-                        "texture": texture_id,
-                        "uv": {
-                            &top_left: top_left_uv,
-                            &top_right: top_right_uv,
-                            &bottom_right: bottom_right_uv,
-                            &bottom_left: bottom_left_uv,
-                        },
-                        "vertices": [
-                            &top_left,
-                            &top_right,
-                            &bottom_right,
-                            &bottom_left,
-                        ]
-                    }
-                },
+                "vertices": vertices_map,
+                "faces": faces,
             })
-        } else {
-            unreachable!("Expected a quad primitive, got something else")
-        };
-
-        Ok(Self(result))
+            .into(),
+        ))
     }
 }
 
@@ -289,7 +266,7 @@ impl RawProject {
             elements,
             textures,
             resolution,
-            outliner
+            outliner,
         }
     }
 }

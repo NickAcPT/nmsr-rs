@@ -1,7 +1,12 @@
 use glam::{Vec2, Vec3};
-use nmsr_player_parts::parts::{uv::FaceUv, part::Part};
+use itertools::Itertools;
+use nmsr_player_parts::parts::{part::Part, uv::FaceUv};
 
-use crate::low_level::primitives::{quad::Quad, cube::Cube, mesh::PrimitiveDispatch};
+use crate::low_level::primitives::{
+    cube::Cube,
+    mesh::{Mesh, PrimitiveDispatch},
+    quad::Quad,
+};
 
 pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
     let position = part.get_position();
@@ -58,6 +63,13 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             )
             .into()
         }
+        Part::Group {
+            parts,
+            ..
+        } => PrimitiveDispatch::Mesh(Mesh::new_with_transform(
+            parts.iter().map(primitive_convert).collect_vec(),
+            model_transform,
+        )),
     }
 }
 

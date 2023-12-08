@@ -82,6 +82,15 @@ pub enum Part {
         #[cfg(feature = "part_tracker")]
         part_tracking_data: PartTrackingData,
     },
+    /// Represents a group of parts as a part of a player model.
+    /// This is used to group parts together so that they can be rotated together.
+    Group {
+        parts: Vec<Part>,
+        rotation_matrix: Mat4,
+        texture: PlayerPartTextureType,
+        #[cfg(feature = "part_tracker")]
+        part_tracking_data: PartTrackingData,
+    },
 }
 
 impl Part {
@@ -133,6 +142,20 @@ impl Part {
             part_tracking_data: PartTrackingData::new(name),
         }
     }
+    
+    pub fn new_group(
+        texture: PlayerPartTextureType,
+        parts: Vec<Part>,
+        #[cfg(feature = "part_tracker")] name: Option<String>,
+    ) -> Self {
+        Self::Group {
+            parts,
+            rotation_matrix: Mat4::IDENTITY,
+            texture,
+            #[cfg(feature = "part_tracker")]
+            part_tracking_data: PartTrackingData::new(name),
+        }
+    }
 
     pub fn expand_splat(&self, amount: f32) -> Self {
         self.expand(Vec3::splat(amount))
@@ -143,7 +166,7 @@ impl Part {
         let amount = amount * 2.0;
 
         match new_part {
-            Cube {
+            Self::Cube {
                 ref mut size,
                 ref mut position,
                 ..
@@ -154,13 +177,18 @@ impl Part {
                 // Fix the position of the cube so that it is still centered.
                 *position -= amount / 2.0;
             }
-            Quad {
+            Self::Quad {
                 ref mut size,
                 ref mut position,
                 ..
             } => {
                 // Increase the size of the quad by the amount specified.
                 *size += amount;
+            }
+            Self::Group { ref mut parts, .. } => {
+                for part in parts {
+                    *part = part.expand(amount);
+                }
             }
         }
 
@@ -169,10 +197,13 @@ impl Part {
 
     pub fn get_rotation_matrix(&self) -> Mat4 {
         match self {
-            Cube {
+            Self::Cube {
                 rotation_matrix, ..
             } => *rotation_matrix,
-            Quad {
+            Self::Quad {
+                rotation_matrix, ..
+            } => *rotation_matrix,
+            Self::Group {
                 rotation_matrix, ..
             } => *rotation_matrix,
         }
@@ -180,10 +211,13 @@ impl Part {
 
     fn rotation_matrix_mut(&mut self) -> &mut Mat4 {
         match self {
-            Cube {
+            Self::Cube {
                 rotation_matrix, ..
             } => rotation_matrix,
-            Quad {
+            Self::Quad {
+                rotation_matrix, ..
+            } => rotation_matrix,
+            Self::Group {
                 rotation_matrix, ..
             } => rotation_matrix,
         }
@@ -192,10 +226,13 @@ impl Part {
     #[cfg(feature = "part_tracker")]
     pub fn last_rotation(&self) -> Option<(MinecraftPosition, PartAnchorInfo)> {
         match self {
-            Cube {
+            Self::Cube {
                 part_tracking_data, ..
             } => part_tracking_data.last_rotation().copied(),
-            Quad {
+            Self::Quad {
+                part_tracking_data, ..
+            } => part_tracking_data.last_rotation().copied(),
+            Self::Group {
                 part_tracking_data, ..
             } => part_tracking_data.last_rotation().copied(),
         }
@@ -204,10 +241,13 @@ impl Part {
     #[cfg(feature = "part_tracker")]
     fn last_rotation_mut(&mut self) -> &mut Option<(MinecraftPosition, PartAnchorInfo)> {
         match self {
-            Cube {
+            Self::Cube {
                 part_tracking_data, ..
             } => part_tracking_data.last_rotation_mut(),
-            Quad {
+            Self::Quad {
+                part_tracking_data, ..
+            } => part_tracking_data.last_rotation_mut(),
+            Self::Group {
                 part_tracking_data, ..
             } => part_tracking_data.last_rotation_mut(),
         }
@@ -247,8 +287,22 @@ impl Part {
 
     pub fn get_size(&self) -> MinecraftPosition {
         match self {
-            Cube { size, .. } => *size,
-            Quad { size, .. } => *size,
+            Self::Cube { size, .. } => *size,
+            Self::Quad { size, .. } => *size,
+            Self::Group { parts, .. } => {
+                let mut min = MinecraftPosition::new(f32::MAX, f32::MAX, f32::MAX);
+                let mut max = MinecraftPosition::new(f32::MIN, f32::MIN, f32::MIN);
+
+                for part in parts {
+                    let pos = part.get_position();
+                    let size = part.get_size();
+
+                    min = min.min(pos);
+                    max = max.max(pos + size);
+                }
+
+                max - min
+            }
         }
     }
 
@@ -256,6 +310,7 @@ impl Part {
         match self {
             Cube { size, .. } => size,
             Quad { size, .. } => size,
+            Self::Group { .. } => unreachable!("Cannot get mutable size on a group"),
         }
     }
 
@@ -263,6 +318,7 @@ impl Part {
         match self {
             Cube { position, .. } => *position,
             Quad { position, .. } => *position,
+            Self::Group { .. } => unreachable!("Cannot get position on a group"),
         }
     }
 
@@ -270,6 +326,7 @@ impl Part {
         match self {
             Cube { position, .. } => position,
             Quad { position, .. } => position,
+            Self::Group { .. } => unreachable!("Cannot get mutable position on a group"),
         }
     }
 
@@ -277,6 +334,7 @@ impl Part {
         match self {
             Cube { texture, .. } => *texture,
             Quad { texture, .. } => *texture,
+            Self::Group { texture, .. } => *texture,
         }
     }
 
@@ -288,6 +346,9 @@ impl Part {
             Quad {
                 texture: ref mut t, ..
             } => *t = texture,
+            Self::Group {
+                texture: ref mut t, ..
+            } => *t = texture,
         }
     }
 
@@ -295,6 +356,7 @@ impl Part {
         match self {
             Cube { face_uvs, .. } => unimplemented!("Cannot get face UV on a cube"),
             Quad { face_uv, .. } => *face_uv,
+            Self::Group { .. } => unreachable!("Cannot get face UV on a group"),
         }
     }
 
@@ -307,6 +369,7 @@ impl Part {
             Quad {
                 face_uv: ref mut f, ..
             } => *f = face_uv,
+            Self::Group { .. } => unreachable!("Cannot set face UV on a group"),
         }
     }
 
@@ -314,6 +377,7 @@ impl Part {
         match self {
             Cube { face_uvs, .. } => *face_uvs,
             Quad { face_uv, .. } => unimplemented!("Cannot get face UVs on a quad"),
+            Self::Group { .. } => unreachable!("Cannot get face UVs on a group"),
         }
     }
 
@@ -323,9 +387,8 @@ impl Part {
                 face_uvs: ref mut f,
                 ..
             } => *f = face_uvs,
-            Quad {
-                face_uv: ref mut f, ..
-            } => unreachable!("Cannot set face UVs on a quad"),
+            Self::Quad { .. } => unreachable!("Cannot set face UVs on a quad"),
+            Self::Group { .. } => unreachable!("Cannot set face UVs on a group"),
         }
     }
 
@@ -333,6 +396,7 @@ impl Part {
         match self {
             Cube { .. } => unreachable!("Cannot get normal on a cube"),
             Quad { normal, .. } => normal,
+            Self::Group { .. } => unreachable!("Cannot get normal on a group"),
         }
     }
 
@@ -345,9 +409,12 @@ impl Part {
             Quad {
                 part_tracking_data, ..
             } => part_tracking_data,
+            Self::Group {
+                part_tracking_data, ..
+            } => part_tracking_data,
         }
     }
-    
+
     #[cfg(feature = "part_tracker")]
     pub fn part_tracking_data_mut(&mut self) -> &mut PartTrackingData {
         match self {
@@ -357,9 +424,11 @@ impl Part {
             Quad {
                 part_tracking_data, ..
             } => part_tracking_data,
+            Self::Group {
+                part_tracking_data, ..
+            } => part_tracking_data,
         }
     }
-    
 
     #[cfg(feature = "part_tracker")]
     pub fn get_name(&self) -> Option<&str> {

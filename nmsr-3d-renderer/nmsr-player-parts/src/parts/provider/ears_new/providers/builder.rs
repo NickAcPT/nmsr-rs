@@ -212,6 +212,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             size,
             uvs,
             if front_facing { Vec3::NEG_Z } else { Vec3::Z },
+            #[cfg(feature = "part_tracker")]
             Some(name.into()),
         );
 

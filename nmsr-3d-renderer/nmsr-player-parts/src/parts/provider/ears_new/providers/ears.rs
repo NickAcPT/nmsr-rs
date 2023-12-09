@@ -66,13 +66,13 @@ fn ears_around_or_above<M: ArmorMaterial>(
         b.anchor_to(PlayerBodyPartType::Head);
 
         match features.ear_anchor {
-            EarAnchor::Center => b.translate(0., 0., 4.),
-            EarAnchor::Back => b.translate(0., 0., 8.),
+            EarAnchor::Center => b.translate_i(0, 0, 4),
+            EarAnchor::Back => b.translate_i(0, 0, 8),
             _ => {}
         }
 
         b.stack(|b| {
-            b.translate(-4., 8., 0.);
+            b.translate_i(-4, 8, 0);
             b.quad_front(
                 24,
                 0,
@@ -95,7 +95,7 @@ fn ears_around_or_above<M: ArmorMaterial>(
 
         if features.ear_mode == EarMode::Around {
             b.stack(|b| {
-                b.translate(-4., 0., 0.);
+                b.translate_i(-4, 0, 0);
                 b.quad_front(
                     36,
                     32,
@@ -117,7 +117,7 @@ fn ears_around_or_above<M: ArmorMaterial>(
             });
 
             b.stack(|b| {
-                b.translate(8.0, 0., 0.);
+                b.translate_i(8, 0, 0);
                 b.quad_front(
                     36,
                     16,
@@ -146,8 +146,8 @@ fn ears_sides<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, feature
         b.anchor_to(PlayerBodyPartType::Head);
 
         match features.ear_anchor {
-            EarAnchor::Center => b.translate(0., 0., 4.),
-            EarAnchor::Back => b.translate(0., 0., 8.),
+            EarAnchor::Center => b.translate_i(0, 0, 4),
+            EarAnchor::Back => b.translate_i(0, 0, 8),
             _ => {}
         }
 

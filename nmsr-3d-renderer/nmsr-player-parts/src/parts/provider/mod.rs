@@ -75,13 +75,18 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
         };
 
         if body_part.is_arm() {
+            //println!("Performing arm rotation for {:?}", body_part);
             for part in &mut parts {
+                //if !body_part.is_layer() { dbg!(part.clone()); }
+                
                 perform_arm_part_rotation(
                     body_part.get_non_layer_part(),
                     part,
                     context.model.is_slim_arms(),
                     context.arm_rotation,
                 );
+                
+                //if !body_part.is_layer() { dbg!(part.clone()); }
             }
         }
 

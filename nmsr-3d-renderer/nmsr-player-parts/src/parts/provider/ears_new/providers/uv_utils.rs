@@ -30,6 +30,7 @@ impl TextureRotation {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TextureFlip {
     None,
     Horizontal,

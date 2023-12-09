@@ -103,6 +103,23 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         *self.last_transformation_mut() *= Affine3A::from_quat(rotation_quat);
     }
 
+    #[inline(always)]
+    pub(crate) fn quad_double_sided(
+        &mut self,
+        u: u16,
+        v: u16,
+        width: u16,
+        height: u16,
+        rot: TextureRotation,
+        flip: TextureFlip,
+        name: impl Into<String>,
+    ) {
+        let name: String = name.into();
+        
+        self.quad_front(u, v, width, height, rot, flip, &name);
+        self.quad_back(u, v, width, height, rot, flip.flip_horizontally(), name);
+    }
+    
     pub(crate) fn quad_front(
         &mut self,
         u: u16,

@@ -1,6 +1,19 @@
-use ears_rs::features::{EarsFeatures, data::ear::{EarMode, EarAnchor}};
+use ears_rs::features::{
+    data::ear::{EarAnchor, EarMode},
+    EarsFeatures,
+};
 
-use crate::{parts::{provider::{PartsProvider, ears::providers::{ears::EarsModEarsPartProvider, builder::EarsModPartBuilder}}, part::Part}, model::ArmorMaterial, types::{PlayerBodyPartType, PlayerPartTextureType}};
+use crate::{
+    model::ArmorMaterial,
+    parts::{
+        part::Part,
+        provider::{
+            ears::providers::{builder::EarsModPartBuilder, ears::EarsModEarsPartProvider, protrusions::EarsModProtrusionsPartProvider},
+            PartsProvider,
+        },
+    },
+    types::{PlayerBodyPartType, PlayerPartTextureType},
+};
 
 use super::PlayerPartProviderContext;
 
@@ -17,37 +30,47 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
         let empty = Vec::with_capacity(0);
-        
-        let provider = EarsModEarsPartProvider::<M>::default();
-        
-        let Some(mut features) = context.ears_features.filter(|f| provider.provides_for_part(body_part) && provider.provides_for_feature(f, context)) else {
+
+        let provider = EarsModProtrusionsPartProvider::<M>::default();
+
+        let Some(mut features) = context.ears_features.filter(|f| {
+            provider.provides_for_part(body_part) && provider.provides_for_feature(f, context)
+        }) else {
             return empty;
         };
-        
+
         // Replace Behind mode with Out mode w/ Back anchor
         if features.ear_mode == EarMode::Behind {
             features.ear_mode = EarMode::Out;
-            features.ear_anchor = EarAnchor::Back;        
+            features.ear_anchor = EarAnchor::Back;
         }
-        
+
         let mut parts = Vec::new();
-        
+
         let mut builder = EarsModPartBuilder::new(&mut parts, &context);
-        
+
         provider.provide_parts(&features, context, &mut builder);
-        
+
         parts
     }
 }
 
 trait EarsModPartProvider<M: ArmorMaterial> {
     fn provides_for_part(&self, body_part: PlayerBodyPartType) -> bool;
-    
-    fn provides_for_feature(&self, feature: &EarsFeatures, context: &PlayerPartProviderContext<M>) -> bool;
-    
-    fn provide_parts(&self, feature: &EarsFeatures, context: &PlayerPartProviderContext<M>, builder: &mut EarsModPartBuilder<'_, M>);
-}
 
+    fn provides_for_feature(
+        &self,
+        feature: &EarsFeatures,
+        context: &PlayerPartProviderContext<M>,
+    ) -> bool;
+
+    fn provide_parts(
+        &self,
+        feature: &EarsFeatures,
+        context: &PlayerPartProviderContext<M>,
+        builder: &mut EarsModPartBuilder<'_, M>,
+    );
+}
 
 // TODO : Move this to a more appropriate place
 #[allow(dead_code)]

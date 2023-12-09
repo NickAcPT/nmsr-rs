@@ -70,37 +70,6 @@ fn convert_to_raw_elements<M: ArmorMaterial, I: ModelProjectImageIO>(
             let last_rotation = part.part_tracking_data().last_rotation().copied();
 
             let element = match &part {
-                Part::Cube {
-                    position,
-                    size,
-                    face_uvs,
-                    texture,
-                    ..
-                } => {
-                    let from = *position;
-                    let to = *position + *size;
-
-                    let faces = RawProjectElementFaces::new(project, *texture, *face_uvs)?;
-
-                    let mut rotation = Vec3::ZERO;
-                    let mut rotation_anchor = Vec3::ZERO;
-
-                    if let Some((rot, anchor)) = last_rotation {
-                        rotation_anchor = anchor.rotation_anchor;
-                        rotation = rot;
-                    }
-
-                    RawProjectElement::new_cube(
-                        project.get_part_name(name.as_deref(), index),
-                        false,
-                        from,
-                        to,
-                        rotation_anchor,
-                        rotation,
-                        faces,
-                    )
-                }
-
                 part => {
                     let name = name
                         .to_owned()

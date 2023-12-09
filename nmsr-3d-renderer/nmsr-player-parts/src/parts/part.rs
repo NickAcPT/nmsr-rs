@@ -2,7 +2,7 @@ use super::provider::minecraft::compute_base_part;
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
-use glam::{Mat4, Quat, Vec3, Affine3A};
+use glam::{Affine3A, Mat4, Quat, Vec3};
 
 #[cfg(feature = "part_tracker")]
 use super::tracking::PartTrackingData;
@@ -142,7 +142,7 @@ impl Part {
             part_tracking_data: PartTrackingData::new(name),
         }
     }
-    
+
     pub fn new_group(
         texture: PlayerPartTextureType,
         parts: Vec<Part>,
@@ -197,21 +197,10 @@ impl Part {
 
     pub fn transform_affine(&mut self, t: Affine3A) {
         let t: Mat4 = t.into();
-        
-        match self {
-            Self::Cube {
-                ref mut rotation_matrix, ..
-            } => *rotation_matrix *= t,
-            Self::Quad {
-                ref mut rotation_matrix, ..
-            } => *rotation_matrix *= t,
-            Self::Group {
-                ref mut rotation_matrix, ..
-            } => *rotation_matrix *= t,
-        }
-        
+
+        *self.rotation_matrix_mut() = t * self.get_rotation_matrix();
     }
-    
+
     pub fn get_rotation_matrix(&self) -> Mat4 {
         match self {
             Self::Cube {
@@ -275,31 +264,27 @@ impl Part {
     }
 
     pub fn rotate(&mut self, rotation: MinecraftPosition, anchor: Option<PartAnchorInfo>) {
-        let prev_rotation = *self.rotation_matrix_mut();
-
-        let anchor = anchor.unwrap_or_default();
-        *self.position_mut() += anchor.translation_anchor;
-
-        let offset = anchor.rotation_anchor;
-
-        let rot_translation_mat = Mat4::from_translation(offset);
-        let neg_rot_translation_mat = Mat4::from_translation(-offset);
-
-        let rotation_mat = Mat4::from_quat(Quat::from_euler(
+        let rotation_quat = Quat::from_euler(
             glam::EulerRot::YXZ,
             rotation.y.to_radians(),
             rotation.x.to_radians(),
             rotation.z.to_radians(),
-        ));
+        );
 
-        let model_transform = rot_translation_mat * rotation_mat * neg_rot_translation_mat;
+        let mut result = Affine3A::IDENTITY;
 
-        #[cfg(feature = "part_tracker")]
-        if rotation != Vec3::ZERO {
-            self.last_rotation_mut().replace((rotation, anchor));
+        if let Some(anchor) = anchor {
+            result *= Affine3A::from_translation(anchor.translation_anchor);
+            result *= Affine3A::from_translation(anchor.rotation_anchor);
         }
 
-        *self.rotation_matrix_mut() = model_transform * prev_rotation;
+        result *= Affine3A::from_quat(rotation_quat);
+
+        if let Some(anchor) = anchor {
+            result *= Affine3A::from_translation(-anchor.rotation_anchor);
+        }
+
+        self.transform_affine(result)
     }
 
     pub fn get_size(&self) -> MinecraftPosition {

@@ -1,4 +1,4 @@
-use ears_rs::features::EarsFeatures;
+use ears_rs::features::{EarsFeatures, data::ear::{EarMode, EarAnchor}};
 
 use crate::{parts::{provider::{PartsProvider, ears::providers::{ears::EarsModEarsPartProvider, builder::EarsModPartBuilder}}, part::Part}, model::ArmorMaterial, types::{PlayerBodyPartType, PlayerPartTextureType}};
 
@@ -20,15 +20,21 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
         
         let provider = EarsModEarsPartProvider::<M>::default();
         
-        let Some(features) = context.ears_features.as_ref().filter(|f| provider.provides_for_part(body_part) && provider.provides_for_feature(f, context)) else {
+        let Some(mut features) = context.ears_features.filter(|f| provider.provides_for_part(body_part) && provider.provides_for_feature(f, context)) else {
             return empty;
         };
+        
+        // Replace Behind mode with Out mode w/ Back anchor
+        if features.ear_mode == EarMode::Behind {
+            features.ear_mode = EarMode::Out;
+            features.ear_anchor = EarAnchor::Back;        
+        }
         
         let mut parts = Vec::new();
         
         let mut builder = EarsModPartBuilder::new(&mut parts, &context);
         
-        provider.provide_parts(features, context, &mut builder);
+        provider.provide_parts(&features, context, &mut builder);
         
         parts
     }

@@ -31,6 +31,12 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             context,
         }
     }
+    
+    fn last_transformation(&self) -> &Affine3A {
+        self.transformation_stack
+            .last()
+            .expect("Expected transformation stack to not be empty")
+    }
 
     fn last_transformation_mut(&mut self) -> &mut Affine3A {
         self.transformation_stack
@@ -68,12 +74,22 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         self.pop();
     }
 
+    #[inline(always)]
+    pub(crate) fn translate_i(&mut self, x: i32, y: i32, z: i32) {
+        self.translate(x as f32, y as f32, z as f32);
+    }
+    
     pub(crate) fn translate(&mut self, x: f32, y: f32, z: f32) {
         let translation = Affine3A::from_translation([x, y, z].into());
 
         *self.last_transformation_mut() *= translation;
     }
 
+    #[inline(always)]
+    pub(crate) fn rotate_i(&mut self, value: i32, x: i32, y: i32, z: i32) {
+        self.rotate((value * x) as f32, (value * y) as f32, (value * z) as f32);
+    }
+    
     pub(crate) fn rotate(&mut self, x: f32, y: f32, z: f32) {
         let rotation_quat = Quat::from_euler(
             glam::EulerRot::YXZ,
@@ -99,7 +115,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     ) {
         let mut name: String = name.into();
         name.push_str(" (Front)");
-        
+
         return self.quad(u, v, width, height, rot, flip, true, name);
     }
 
@@ -115,7 +131,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     ) {
         let mut name: String = name.into();
         name.push_str(" (Back)");
-        
+
         return self.quad(u, v, width, height, rot, flip, false, name);
     }
 
@@ -156,7 +172,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         name: impl Into<String>,
     ) {
         let z = if front_facing { 0.0 } else { 0.01 };
-        
+
         let pos = [0.0, 0.0, z];
         let size = [width as u32, height as u32, 0];
 
@@ -169,7 +185,11 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
                 _ => flip,
             };
         }
-
+        
+        if front_facing {
+            flip = flip.flip_horizontally();
+        }
+        
         let mut uvs = uv_from_pos_and_size(u, v, width, height);
 
         match rot {
@@ -190,16 +210,8 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             texture,
             pos,
             size,
-            if front_facing {
-                uvs.flip_horizontally()
-            } else {
-                uvs
-            },
-            if front_facing {
-                Vec3::NEG_Z
-            } else {
-                Vec3::Z
-            },
+            uvs,
+            if front_facing { Vec3::NEG_Z } else { Vec3::Z },
             Some(name.into()),
         );
 

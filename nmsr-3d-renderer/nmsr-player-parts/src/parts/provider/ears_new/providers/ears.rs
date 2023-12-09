@@ -149,12 +149,11 @@ fn ears_out<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, features:
     builder.stack(|b| {
         b.anchor_to(PlayerBodyPartType::Head);
         b.rotate_i(90, 0, 1, 0);
-        if features.ear_anchor == EarAnchor::Back {
-            b.translate_i(-16, 0, 0);
-        } else if features.ear_anchor == EarAnchor::Center {
-            b.translate_i(-8, 8, 0);
-        } else if features.ear_anchor == EarAnchor::Front {
-            b.translate_i(0, 0, 0);
+        
+        match features.ear_anchor {
+            EarAnchor::Back => b.translate_i(-16, 0, 0),
+            EarAnchor::Center => b.translate_i(-8, 8, 0),
+            _ => {}
         }
         
         b.quad_front(32, 0, 8, 8, TextureRotation::None, TextureFlip::None, "Ears Out Left");
@@ -171,11 +170,13 @@ fn ears_out<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, features:
 fn ears_cross<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, features: &EarsFeatures) {
     builder.stack(|b| {
         b.anchor_to(PlayerBodyPartType::Head);
-        if features.ear_anchor == EarAnchor::Center {
-            b.translate_i(0, 0, 4);
-        } else if features.ear_anchor == EarAnchor::Back {
-            b.translate_i(0, 0, 8);
+        
+        match features.ear_anchor {
+            EarAnchor::Center => b.translate_i(0, 0, 4),
+            EarAnchor::Back => b.translate_i(0, 0, 8),
+            _ => {}
         }
+        
         b.translate_i(4, 8, 0);
         
         b.stack(|b| {
@@ -198,10 +199,11 @@ fn ears_tall<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, features
     builder.stack(|b| {
         b.anchor_to(PlayerBodyPartType::Head);
         b.translate_i(0, 8, 0);
-        if features.ear_anchor == EarAnchor::Center {
-            b.translate_i(0, 0, 4);
-        } else if features.ear_anchor == EarAnchor::Back {
-            b.translate_i(0, 0, 8);
+        
+        match features.ear_anchor {
+            EarAnchor::Center => b.translate_i(0, 0, 4),
+            EarAnchor::Back => b.translate_i(0, 0, 8),
+            _ => {}
         }
         
         let ang = -6;
@@ -230,11 +232,13 @@ fn ears_tall<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, features
 fn ears_tall_cross<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, features: &EarsFeatures) {
     builder.stack(|b| {
         b.anchor_to(PlayerBodyPartType::Head);
-        if features.ear_anchor == EarAnchor::Center {
-            b.translate_i(0, 0, 4);
-        } else if features.ear_anchor == EarAnchor::Back {
-            b.translate_i(0, 0, 8);
+
+        match features.ear_anchor {
+            EarAnchor::Center => b.translate_i(0, 0, 4),
+            EarAnchor::Back => b.translate_i(0, 0, 8),
+            _ => {}
         }
+
         b.translate_i(4, 8, 0);
         
         b.stack(|b| {

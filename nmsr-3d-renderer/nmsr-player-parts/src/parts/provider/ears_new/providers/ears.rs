@@ -48,7 +48,10 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModEarsPartProvider<M> {
             EarMode::Floppy => ears_floppy(builder, features),
             EarMode::Cross => ears_cross(builder, features),
             EarMode::Out => ears_out(builder, features),
-            _ => (),
+            EarMode::Tall => ears_tall(builder, features),
+            EarMode::TallCross => ears_tall_cross(builder, features),
+            EarMode::Behind => unreachable!("Behind mode should have been replaced with Out mode w/ Back anchor"),
+            EarMode::None => {},
         }
     }
 }
@@ -187,6 +190,65 @@ fn ears_cross<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, feature
             b.translate_i(-4, 0, 0);
             b.quad_front(32, 0, 8, 8, TextureRotation::None, TextureFlip::None, "Ears Cross Right");
             b.quad_back(56, 36, 8, 8, TextureRotation::Clockwise, TextureFlip::None, "Ears Cross Right");
+        });
+    });
+}
+
+fn ears_tall<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, features: &EarsFeatures) {
+    builder.stack(|b| {
+        b.anchor_to(PlayerBodyPartType::Head);
+        b.translate_i(0, 8, 0);
+        if features.ear_anchor == EarAnchor::Center {
+            b.translate_i(0, 0, 4);
+        } else if features.ear_anchor == EarAnchor::Back {
+            b.translate_i(0, 0, 8);
+        }
+        
+        let ang = -6;
+        
+        b.rotate_i(ang/3, -1, 0, 0);
+        b.quad_front(24, 0, 8, 4, TextureRotation::Clockwise, TextureFlip::None, "Ears Tall 1");
+        b.quad_back(56, 40, 8, 4, TextureRotation::None, TextureFlip::None, "Ears Tall 1");
+        
+        b.translate_i(0, 4, 0);
+        b.rotate_i(ang, -1, 0, 0);
+        b.quad_front(28, 0, 8, 4, TextureRotation::Clockwise, TextureFlip::None, "Ears Tall 2");
+        b.quad_back(56, 36, 8, 4, TextureRotation::None, TextureFlip::None, "Ears Tall 2");
+        
+        b.translate_i(0, 4, 0);
+        b.rotate_i(ang/2, -1, 0, 0);
+        b.quad_front(32, 0, 8, 4, TextureRotation::Clockwise, TextureFlip::None, "Ears Tall 3");
+        b.quad_back(56, 32, 8, 4, TextureRotation::None, TextureFlip::None, "Ears Tall 3");
+        
+        b.translate_i(0, 4, 0);
+        b.rotate_i(ang, -1, 0, 0);
+        b.quad_front(36, 0, 8, 4, TextureRotation::Clockwise, TextureFlip::None, "Ears Tall 4");
+        b.quad_back(56, 28, 8, 4, TextureRotation::None, TextureFlip::None, "Ears Tall 4");
+    });
+}
+
+fn ears_tall_cross<M: ArmorMaterial>(builder: &mut EarsModPartBuilder<'_, M>, features: &EarsFeatures) {
+    builder.stack(|b| {
+        b.anchor_to(PlayerBodyPartType::Head);
+        if features.ear_anchor == EarAnchor::Center {
+            b.translate_i(0, 0, 4);
+        } else if features.ear_anchor == EarAnchor::Back {
+            b.translate_i(0, 0, 8);
+        }
+        b.translate_i(4, 8, 0);
+        
+        b.stack(|b| {
+            b.rotate_i(-45, 0, 1, 0);
+            b.translate_i(-4, 0, 0);
+            b.quad_front(24, 0, 8, 16, TextureRotation::Clockwise, TextureFlip::None, "Ears Tall Cross Left");
+            b.quad_back(56, 28, 8, 16, TextureRotation::None, TextureFlip::None, "Ears Tall Cross Left");
+        });
+        
+        b.stack(|b| {
+            b.rotate_i(45, 0, 1, 0);
+            b.translate_i(-4, 0, 0);
+            b.quad_front(24, 0, 8, 16, TextureRotation::Clockwise, TextureFlip::None, "Ears Tall Cross Right");
+            b.quad_back(56, 28, 8, 16, TextureRotation::None, TextureFlip::None, "Ears Tall Cross Right");
         });
     });
 }

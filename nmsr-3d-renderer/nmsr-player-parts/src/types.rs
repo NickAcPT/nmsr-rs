@@ -35,6 +35,7 @@ impl PlayerBodyPartType {
         matches!(self, Self::HeadLayer)
     }
 
+    #[inline]
     pub fn get_non_layer_part(&self) -> Self {
         match self {
             Self::HeadLayer => Self::Head,
@@ -61,6 +62,10 @@ impl PlayerBodyPartType {
 
     pub fn is_arm(&self) -> bool {
         matches!(self.get_non_layer_part(), Self::LeftArm | Self::RightArm)
+    }
+    
+    pub fn is_leg(&self) -> bool {
+        matches!(self.get_non_layer_part(), Self::LeftLeg | Self::RightLeg)
     }
 }
 

@@ -188,9 +188,9 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         front_facing: bool,
         name: impl Into<String>,
     ) {
-        let z = if front_facing { 0.0 } else { 0.01 };
+        let z = if front_facing { 0.0 } else { -0.05 };
 
-        let pos = [0.0, 0.0, z];
+        let pos = [0.0, 0.0, 0.0];
         let size = [width as u32, height as u32, 0];
 
         if rot.is_transposed() {
@@ -233,6 +233,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             Some(name.into()),
         );
 
+        quad.transform_affine(Affine3A::from_translation(Vec3::new(0.0, 0.0, z)));
         quad.transform_affine(self.current_transformation());
 
         self.parts.push(quad);

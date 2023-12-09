@@ -49,7 +49,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
         let mut builder = EarsModPartBuilder::new(&mut parts, &context);
 
-        provider.provide_parts(&features, context, &mut builder);
+        provider.provide_parts(&features, context, &mut builder, body_part);
 
         parts
     }
@@ -69,6 +69,7 @@ trait EarsModPartProvider<M: ArmorMaterial> {
         feature: &EarsFeatures,
         context: &PlayerPartProviderContext<M>,
         builder: &mut EarsModPartBuilder<'_, M>,
+        body_part: PlayerBodyPartType,
     );
 }
 

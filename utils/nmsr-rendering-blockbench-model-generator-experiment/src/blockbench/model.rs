@@ -1,5 +1,6 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
 use glam::{Vec2, Vec3};
+use itertools::Itertools;
 use nmsr_rendering::{
     high_level::{
         model::ArmorMaterial,
@@ -92,35 +93,46 @@ impl RawProjectElement {
         let texture_id = project.get_texture_id(texture)?;
 
         let vertices = converted.get_vertices_grouped();
-
+        
         let mut faces = json!({});
         let mut vertices_map = json!({});
 
-        for vertex in vertices {
-            let [mut va, vb, mut vc] = vertex;
+        for (t_1, t_2) in vertices.into_iter().tuples() {
+            let [vc, va, vd] = t_1;
+            let [_, vb, _] = t_2;
             
-            let [a, b, c] = [va.position, vb.position, vc.position];
+            let [a, b, c, d] = [
+                va.position,
+                vb.position,
+                vc.position,
+                vd.position,
+            ];
 
-            let ((va_name, vb_name), (vc_name, _)) =
-                (random_names("a", "b"), random_names("c", "d"));
+            let ((va_name, vb_name), (vc_name, vd_name)) = (
+                random_names("a", "b"),
+                random_names("c", "d"),
+            );
 
             vertices_map[&va_name] = json!([a.x, a.y, a.z]);
             vertices_map[&vb_name] = json!([b.x, b.y, b.z]);
             vertices_map[&vc_name] = json!([c.x, c.y, c.z]);
-
+            vertices_map[&vd_name] = json!([d.x, d.y, d.z]);
+            
             let uv_size = texture.get_texture_size();
             let uv_size = Vec2::new(uv_size.0 as f32, uv_size.1 as f32);
 
-            let [va_uv, vb_uv, vc_uv] = [
+            let [va_uv, vb_uv, vc_uv, vd_uv] = [
                 project.handle_single_coordinate(texture, va.uv * uv_size),
                 project.handle_single_coordinate(texture, vb.uv * uv_size),
                 project.handle_single_coordinate(texture, vc.uv * uv_size),
+                project.handle_single_coordinate(texture, vd.uv * uv_size),
             ];
 
             let uv = json!({
                 &va_name: [va_uv.x, va_uv.y],
-                &vb_name: [vb_uv.x, vb_uv.y],
                 &vc_name: [vc_uv.x, vc_uv.y],
+                &vb_name: [vb_uv.x, vb_uv.y],
+                &vd_name: [vd_uv.x, vd_uv.y],
             });
 
             let face = json!({
@@ -128,8 +140,9 @@ impl RawProjectElement {
                 "uv": uv,
                 "vertices": [
                     &va_name,
-                    &vb_name,
                     &vc_name,
+                    &vd_name,
+                    &vb_name,
                 ]
             });
 

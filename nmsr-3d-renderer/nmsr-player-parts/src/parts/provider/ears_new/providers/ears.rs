@@ -41,6 +41,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModEarsPartProvider<M> {
         features: &EarsFeatures,
         context: &PlayerPartProviderContext<M>,
         builder: &mut EarsModPartBuilder<'_, M>,
+        _body_part: PlayerBodyPartType,
     ) {
         match features.ear_mode {
             EarMode::Above | EarMode::Around => ears_around_or_above(builder, features),

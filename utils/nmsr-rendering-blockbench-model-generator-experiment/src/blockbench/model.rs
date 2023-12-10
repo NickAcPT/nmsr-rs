@@ -1,11 +1,11 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
-use glam::{Vec2, Vec3};
+use glam::{Vec2, Vec3, Affine3A};
 use itertools::Itertools;
 use nmsr_rendering::{
     high_level::{
         model::ArmorMaterial,
-        parts::uv::{CubeFaceUvs, FaceUv},
-        types::PlayerPartTextureType,
+        parts::{uv::{CubeFaceUvs, FaceUv}, part::Part},
+        types::PlayerPartTextureType, utils::parts::primitive_convert,
     },
     low_level::primitives::{mesh::PrimitiveDispatch, part_primitive::PartPrimitive},
 };
@@ -80,7 +80,7 @@ impl RawProjectElement {
 
     pub fn new_primitive<M: ArmorMaterial, I: ModelProjectImageIO>(
         name: String,
-        converted: PrimitiveDispatch,
+        part: &Part,
         texture: PlayerPartTextureType,
         project: &ModelGenerationProject<M, I>,
     ) -> Result<Self> {
@@ -89,7 +89,28 @@ impl RawProjectElement {
 
             (format!("{a}{a_new:x}"), format!("{b}{b_new:x}"))
         }
-
+        let converted = primitive_convert(&part);
+        let part_pos = part.get_position();
+        
+        let affine = Affine3A::from_mat4(part.get_rotation_matrix());
+        let (_, rotation, translation) = affine.to_scale_rotation_translation();
+        
+        let affine_inv = Affine3A::from_rotation_translation(rotation, translation).inverse();
+        
+        let (r_x, r_y, r_z) = rotation.to_euler(glam::EulerRot::YXZ);
+            
+        let origin = json!([
+            translation.x,
+            translation.y,
+            translation.z,
+        ]);
+        
+        let rotation = json!([
+            r_y.to_degrees(),
+            r_x.to_degrees(),
+            r_z.to_degrees(),
+        ]);
+        
         let texture_id = project.get_texture_id(texture)?;
 
         let vertices = converted.get_vertices_grouped();
@@ -102,10 +123,10 @@ impl RawProjectElement {
             let [_, vb, _] = t_2;
             
             let [a, b, c, d] = [
-                va.position,
-                vb.position,
-                vc.position,
-                vd.position,
+                affine_inv.transform_point3(va.position),
+                affine_inv.transform_point3(vb.position),
+                affine_inv.transform_point3(vc.position),
+                affine_inv.transform_point3(vd.position),
             ];
 
             let ((va_name, vb_name), (vc_name, vd_name)) = (
@@ -155,8 +176,8 @@ impl RawProjectElement {
                 "name": name,
                 "box_uv": false,
                 "type": "mesh",
-                "origin": Vec3::ZERO,
-                "rotation": Vec3::ZERO,
+                "origin": origin,
+                "rotation": rotation,
                 "vertices": vertices_map,
                 "faces": faces,
             })

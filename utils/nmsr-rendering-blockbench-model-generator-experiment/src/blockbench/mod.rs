@@ -71,9 +71,7 @@ fn convert_to_raw_elements<M: ArmorMaterial, I: ModelProjectImageIO>(
                 part => {
                     let name = project.get_part_name(name, index);
 
-                    let primitive = primitive_convert(&part);
-
-                    RawProjectElement::new_primitive(name, primitive.into(), part.get_texture(), project)?
+                    RawProjectElement::new_primitive(name, &part, part.get_texture(), project)?
                 }
             };
 

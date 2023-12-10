@@ -2,7 +2,6 @@ pub mod model;
 
 use std::{collections::HashMap, vec::Vec};
 
-use glam::Vec3;
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
     model::ArmorMaterial, parts::part::Part, types::PlayerPartTextureType,
@@ -15,7 +14,7 @@ use crate::{
     generator::{ModelGenerationProject, ModelProjectImageIO},
 };
 
-use self::model::{ProjectTextureResolution, RawProjectElement, RawProjectElementFaces};
+use self::model::{ProjectTextureResolution, RawProjectElement};
 
 #[cfg(not(feature = "wasm"))]
 pub type ProjectOutput = String;
@@ -67,13 +66,10 @@ fn convert_to_raw_elements<M: ArmorMaterial, I: ModelProjectImageIO>(
             let markers = part.part_tracking_data().markers().to_vec();
 
             let name = part.part_tracking_data().name().map(|s| s.as_str());
-            let last_rotation = part.part_tracking_data().last_rotation().copied();
 
             let element = match &part {
                 part => {
-                    let name = name
-                        .to_owned()
-                        .map_or_else(|| format!("part-{index}"), |s| s.to_string());
+                    let name = project.get_part_name(name, index);
 
                     let primitive = primitive_convert(&part);
 

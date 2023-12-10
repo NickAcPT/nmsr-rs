@@ -1,4 +1,5 @@
-use super::part::{MinecraftPosition, PartAnchorInfo};
+#[cfg(feature = "markers")]
+use super::part::MinecraftPosition;
 
 #[cfg(feature = "markers")]
 #[derive(Debug, Clone)]
@@ -19,8 +20,6 @@ pub struct PartTrackingData {
     #[cfg(feature = "part_tracker")]
     name: Option<String>,
     #[cfg(feature = "part_tracker")]
-    last_rotation: Option<(MinecraftPosition, PartAnchorInfo)>,
-    #[cfg(feature = "part_tracker")]
     group: Vec<String>,
     #[cfg(feature = "markers")]
     markers: Vec<Marker>,
@@ -32,7 +31,6 @@ impl PartTrackingData {
     ) -> Self {
         Self {
             name,
-            last_rotation: None,
             group: Vec::new(),
             #[cfg(feature = "markers")]
             markers: Vec::new(),
@@ -45,14 +43,6 @@ impl PartTrackingData {
     
     pub fn name_mut(&mut self) -> &mut Option<String> {
         &mut self.name
-    }
-
-    pub fn last_rotation(&self) -> Option<&(MinecraftPosition, PartAnchorInfo)> {
-        self.last_rotation.as_ref()
-    }
-    
-    pub fn last_rotation_mut(&mut self) -> &mut Option<(MinecraftPosition, PartAnchorInfo)> {
-        &mut self.last_rotation
     }
 
     pub fn group(&self) -> &[String] {

@@ -1,14 +1,20 @@
+use std::marker::PhantomData;
+
 use ears_rs::features::{
     data::ear::{EarAnchor, EarMode},
     EarsFeatures,
 };
+use strum::{EnumIter, IntoEnumIterator};
 
 use crate::{
     model::ArmorMaterial,
     parts::{
         part::Part,
         provider::{
-            ears::providers::{builder::EarsModPartBuilder, ears::EarsModEarsPartProvider, protrusions::EarsModProtrusionsPartProvider},
+            ears::providers::{
+                builder::EarsModPartBuilder, ears::EarsModEarsPartProvider,
+                protrusions::EarsModProtrusionsPartProvider, snouts::EarsModSnoutsPartProvider,
+            },
             PartsProvider,
         },
     },
@@ -31,27 +37,83 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
     ) -> Vec<Part> {
         let empty = Vec::with_capacity(0);
 
-        let provider = EarsModProtrusionsPartProvider::<M>::default();
-
-        let Some(mut features) = context.ears_features.filter(|f| {
-            provider.provides_for_part(body_part) && provider.provides_for_feature(f, context)
-        }) else {
+        let Some(mut features) = context.ears_features else {
             return empty;
         };
-
+        
         // Replace Behind mode with Out mode w/ Back anchor
         if features.ear_mode == EarMode::Behind {
             features.ear_mode = EarMode::Out;
             features.ear_anchor = EarAnchor::Back;
         }
-
+        
         let mut parts = Vec::new();
-
         let mut builder = EarsModPartBuilder::new(&mut parts, &context);
 
-        provider.provide_parts(&features, context, &mut builder, body_part);
+        for provider in EarsModPartStaticDispatch::iter() {
+            if !provider.provides_for_part(body_part) || !provider.provides_for_feature(&features, context) {
+                continue;
+            }
+            
+            provider.provide_parts(&features, context, &mut builder, body_part);
+        }
 
         parts
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, EnumIter)]
+enum EarsModPartStaticDispatch<M: ArmorMaterial> {
+    Ears(PhantomData<M>),
+    Protrusions(PhantomData<M>),
+    Snouts(PhantomData<M>),
+}
+
+impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
+    fn provides_for_part(&self, body_part: PlayerBodyPartType) -> bool {
+        match self {
+            Self::Ears(_) => EarsModEarsPartProvider::<M>::default().provides_for_part(body_part),
+            Self::Protrusions(_) => {
+                EarsModProtrusionsPartProvider::<M>::default().provides_for_part(body_part)
+            }
+            Self::Snouts(_) => {
+                EarsModSnoutsPartProvider::<M>::default().provides_for_part(body_part)
+            }
+        }
+    }
+
+    fn provides_for_feature(
+        &self,
+        feature: &EarsFeatures,
+        context: &PlayerPartProviderContext<M>,
+    ) -> bool {
+        match self {
+            Self::Ears(_) => {
+                EarsModEarsPartProvider::<M>::default().provides_for_feature(feature, context)
+            }
+            Self::Protrusions(_) => EarsModProtrusionsPartProvider::<M>::default()
+                .provides_for_feature(feature, context),
+            Self::Snouts(_) => {
+                EarsModSnoutsPartProvider::<M>::default().provides_for_feature(feature, context)
+            }
+        }
+    }
+
+    fn provide_parts(
+        &self,
+        feature: &EarsFeatures,
+        context: &PlayerPartProviderContext<M>,
+        builder: &mut EarsModPartBuilder<'_, M>,
+        body_part: PlayerBodyPartType,
+    ) {
+        match self {
+            Self::Ears(_) => EarsModEarsPartProvider::<M>::default()
+                .provide_parts(feature, context, builder, body_part),
+            Self::Protrusions(_) => EarsModProtrusionsPartProvider::<M>::default()
+                .provide_parts(feature, context, builder, body_part),
+            Self::Snouts(_) => EarsModSnoutsPartProvider::<M>::default()
+                .provide_parts(feature, context, builder, body_part),
+        }
     }
 }
 

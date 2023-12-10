@@ -1,4 +1,4 @@
-use strum::{Display, EnumIter, IntoStaticStr};
+use strum::{EnumIter, IntoStaticStr};
 
 #[derive(Debug, Copy, Clone, EnumIter, Eq, PartialEq, Hash)]
 pub enum PlayerBodyPartType {

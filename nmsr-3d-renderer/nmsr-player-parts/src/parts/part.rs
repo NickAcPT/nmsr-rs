@@ -229,36 +229,6 @@ impl Part {
         }
     }
 
-    #[cfg(feature = "part_tracker")]
-    pub fn last_rotation(&self) -> Option<(MinecraftPosition, PartAnchorInfo)> {
-        match self {
-            Self::Cube {
-                part_tracking_data, ..
-            } => part_tracking_data.last_rotation().copied(),
-            Self::Quad {
-                part_tracking_data, ..
-            } => part_tracking_data.last_rotation().copied(),
-            Self::Group {
-                part_tracking_data, ..
-            } => part_tracking_data.last_rotation().copied(),
-        }
-    }
-
-    #[cfg(feature = "part_tracker")]
-    fn last_rotation_mut(&mut self) -> &mut Option<(MinecraftPosition, PartAnchorInfo)> {
-        match self {
-            Self::Cube {
-                part_tracking_data, ..
-            } => part_tracking_data.last_rotation_mut(),
-            Self::Quad {
-                part_tracking_data, ..
-            } => part_tracking_data.last_rotation_mut(),
-            Self::Group {
-                part_tracking_data, ..
-            } => part_tracking_data.last_rotation_mut(),
-        }
-    }
-
     pub fn translate(&mut self, translation: MinecraftPosition) {
         *self.position_mut() += translation;
     }

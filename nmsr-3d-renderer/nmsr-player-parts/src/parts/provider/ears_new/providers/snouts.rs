@@ -127,6 +127,33 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModSnoutsPartProvider<M> {
                     );
                 }
             });
+            
+            b.stack(|b| {
+                b.rotate_i(90, 0, 1, 0);
+                // left
+                b.stack(|b| {
+                    b.translate_i(-1, 0, 0);
+                    b.quad_front(7, 0, 1, snout_height as u16, TextureRotation::None, TextureFlip::None, "Snout Left (A)");
+                    
+                    if snout_depth_minus_one > 0 {
+                        b.translate_i(-snout_depth_minus_one, 0, 0);
+                        b.scale_i(snout_depth_minus_one, 1, 1);
+                        b.quad_front(7, 4, 1, snout_height as u16, TextureRotation::None, TextureFlip::None, "Snout Left (B)");
+                    }
+                });
+                
+                // right
+                b.stack(|b| {
+                    b.translate_i(-1, 0, 0);
+                    b.quad_front(7, 0, 1, snout_height as u16, TextureRotation::None, TextureFlip::None, "Snout Right (A)");
+                    
+                    if snout_depth_minus_one > 0 {
+                        b.translate_i(-snout_depth_minus_one, 0, 0);
+                        b.scale_i(snout_depth_minus_one, 1, 1);
+                        b.quad_front(7, 4, 1, snout_height as u16, TextureRotation::None, TextureFlip::None, "Snout Right (B)");
+                    }
+                });
+            });
         });
     }
 }

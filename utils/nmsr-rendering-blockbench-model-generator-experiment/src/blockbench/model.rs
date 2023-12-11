@@ -7,7 +7,7 @@ use nmsr_rendering::{
         parts::{uv::{CubeFaceUvs, FaceUv}, part::Part},
         types::PlayerPartTextureType, utils::parts::primitive_convert,
     },
-    low_level::primitives::{mesh::PrimitiveDispatch, part_primitive::PartPrimitive},
+    low_level::primitives::part_primitive::PartPrimitive,
 };
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -94,14 +94,17 @@ impl RawProjectElement {
         let affine = part.get_transformation();
         let (_, rotation, translation) = affine.to_scale_rotation_translation();
         
-        let affine_inv = Affine3A::from_rotation_translation(rotation, translation).inverse();
+        let rotation_anchor = part.part_tracking_data().last_rotation_origin().unwrap_or(translation);
+        let origin = rotation_anchor;
+        
+        let affine_inv = Affine3A::from_rotation_translation(rotation, origin).inverse();
         
         let (r_x, r_y, r_z) = rotation.to_euler(glam::EulerRot::YXZ);
-            
+        
         let origin = json!([
-            translation.x,
-            translation.y,
-            translation.z,
+            origin.x,
+            origin.y,
+            origin.z,
         ]);
         
         let rotation = json!([

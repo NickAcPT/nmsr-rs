@@ -1,4 +1,4 @@
-use glam::{Mat4, Affine3A};
+use glam::Affine3A;
 
 use crate::low_level::primitives::part_primitive::PartPrimitive;
 use crate::low_level::primitives::vertex::Vertex;

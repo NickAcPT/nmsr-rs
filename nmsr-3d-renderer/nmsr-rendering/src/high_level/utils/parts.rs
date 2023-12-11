@@ -1,4 +1,4 @@
-use glam::{Vec2, Vec3, Affine3A};
+use glam::{Vec2, Vec3};
 use itertools::Itertools;
 use nmsr_player_parts::parts::{part::Part, uv::FaceUv};
 

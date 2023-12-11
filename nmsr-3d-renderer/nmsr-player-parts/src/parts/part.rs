@@ -232,14 +232,20 @@ impl Part {
         if let Some(anchor) = anchor {
             result *= Affine3A::from_translation(anchor.translation_anchor);
             result *= Affine3A::from_translation(anchor.rotation_anchor);
+            
+            
+            #[cfg(feature = "part_tracker")]
+            {
+                self.part_tracking_data_mut().set_last_rotation_origin(anchor.rotation_anchor);
+            }
         }
-
+        
         result *= Affine3A::from_quat(rotation_quat);
 
         if let Some(anchor) = anchor {
             result *= Affine3A::from_translation(-anchor.rotation_anchor);
         }
-
+        
         self.transform_affine(result)
     }
 

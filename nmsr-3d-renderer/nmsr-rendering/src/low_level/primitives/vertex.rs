@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use glam::{Vec2, Vec3, Mat4, Affine3A};
+use glam::{Vec2, Vec3, Affine3A};
 
 pub type VertexUvCoordinates = Vec2;
 

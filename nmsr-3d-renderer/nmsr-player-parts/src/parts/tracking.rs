@@ -1,3 +1,5 @@
+use glam::Vec3;
+
 #[cfg(feature = "markers")]
 use super::part::MinecraftPosition;
 
@@ -15,16 +17,17 @@ impl Marker {
     }
 }
 
+#[cfg(feature = "part_tracker")]
 #[derive(Debug, Clone)]
 pub struct PartTrackingData {
-    #[cfg(feature = "part_tracker")]
     name: Option<String>,
-    #[cfg(feature = "part_tracker")]
     group: Vec<String>,
+    last_rotation_origin: Option<Vec3>,
     #[cfg(feature = "markers")]
     markers: Vec<Marker>,
 }
 
+#[cfg(feature = "part_tracker")]
 impl PartTrackingData {
     pub fn new(
         name: Option<String>,
@@ -32,6 +35,7 @@ impl PartTrackingData {
         Self {
             name,
             group: Vec::new(),
+            last_rotation_origin: None,
             #[cfg(feature = "markers")]
             markers: Vec::new(),
         }
@@ -55,6 +59,14 @@ impl PartTrackingData {
     
     pub fn push_groups(&mut self, groups: Vec<String>) {
         self.group.extend(groups);
+    }
+    
+    pub fn last_rotation_origin(&self) -> Option<Vec3> {
+        self.last_rotation_origin
+    }
+    
+    pub fn set_last_rotation_origin(&mut self, origin: Vec3) {
+        self.last_rotation_origin = Some(origin);
     }
 
     #[cfg(feature = "markers")]

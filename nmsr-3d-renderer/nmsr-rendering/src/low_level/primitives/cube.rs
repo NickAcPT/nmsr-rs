@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec3, Affine3A};
+use glam::{Vec3, Affine3A};
 
 use crate::low_level::primitives::mesh::Mesh;
 use crate::low_level::primitives::part_primitive::PartPrimitive;

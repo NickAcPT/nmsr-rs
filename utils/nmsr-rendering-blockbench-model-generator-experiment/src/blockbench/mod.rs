@@ -5,7 +5,6 @@ use std::{collections::HashMap, vec::Vec};
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
     model::ArmorMaterial, parts::part::Part, types::PlayerPartTextureType,
-    utils::parts::primitive_convert,
 };
 
 use crate::{

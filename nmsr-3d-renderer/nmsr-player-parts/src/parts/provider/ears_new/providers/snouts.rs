@@ -103,7 +103,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModSnoutsPartProvider<M> {
             // Bottom
             b.stack(|b| {
                 b.rotate_i(90, 1, 0, 0);
-                b.quad_front(
+                b.quad_back(
                     0,
                     (2 + snout_height) as u16,
                     snout_width as u16,
@@ -116,7 +116,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModSnoutsPartProvider<M> {
                 if snout_depth_minus_one > 0 {
                     b.translate_i(0, 1, 0);
                     b.scale_i(1, snout_depth_minus_one, 1);
-                    b.quad_front(
+                    b.quad_back(
                         0,
                         (2 + snout_height + 1) as u16,
                         snout_width as u16,
@@ -146,12 +146,12 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModSnoutsPartProvider<M> {
                 // right
                 b.stack(|b| {
                     b.translate_i(-1, 0, snout_width);
-                    b.quad_front(7, 0, 1, snout_height as u16, TextureRotation::None, TextureFlip::None, "Snout Right (A)");
+                    b.quad_back(7, 0, 1, snout_height as u16, TextureRotation::None, TextureFlip::None, "Snout Right (A)");
                     
                     if snout_depth_minus_one > 0 {
                         b.translate_i(-snout_depth_minus_one, 0, 0);
                         b.scale_i(snout_depth_minus_one, 1, 1);
-                        b.quad_front(7, 4, 1, snout_height as u16, TextureRotation::None, TextureFlip::None, "Snout Right (B)");
+                        b.quad_back(7, 4, 1, snout_height as u16, TextureRotation::None, TextureFlip::None, "Snout Right (B)");
                     }
                 });
             });

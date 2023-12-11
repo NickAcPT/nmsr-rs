@@ -197,6 +197,10 @@ impl Part {
 
     pub fn transform_affine(&mut self, t: Affine3A) {
         *self.transformation_mut() = t * self.get_transformation();
+        
+        if let Self::Quad { normal, .. } = self {
+            *normal = t.transform_vector3(*normal);
+        }
     }
 
     pub fn get_transformation(&self) -> Affine3A {

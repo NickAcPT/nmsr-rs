@@ -1,4 +1,4 @@
-use glam::{Mat4, Vec3};
+use glam::{Mat4, Vec3, Affine3A};
 
 use crate::low_level::primitives::mesh::Mesh;
 use crate::low_level::primitives::part_primitive::PartPrimitive;
@@ -32,7 +32,7 @@ impl Cube {
     pub fn new(
         center: Vec3,
         size: Vec3,
-        model_transform: Mat4,
+        model_transform: Affine3A,
         front_face_uv: [VertexUvCoordinates; 4],
         back_face_uv: [VertexUvCoordinates; 4],
         top_face_uv: [VertexUvCoordinates; 4],

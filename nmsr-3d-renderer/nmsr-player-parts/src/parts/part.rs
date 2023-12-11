@@ -2,7 +2,7 @@ use super::provider::minecraft::compute_base_part;
 use crate::parts::part::Part::{Cube, Quad};
 use crate::parts::uv::{CubeFaceUvs, FaceUv};
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
-use glam::{Affine3A, Mat4, Quat, Vec3};
+use glam::{Affine3A, Quat, Vec3};
 
 #[cfg(feature = "part_tracker")]
 use super::tracking::PartTrackingData;
@@ -63,9 +63,7 @@ impl Default for PartAnchorInfo {
 pub enum Part {
     /// Represents a cube as a part of a player model.
     Cube {
-        position: MinecraftPosition,
-        size: MinecraftPosition,
-        rotation_matrix: Mat4,
+        transformation: Affine3A,
         face_uvs: CubeFaceUvs,
         texture: PlayerPartTextureType,
         #[cfg(feature = "part_tracker")]
@@ -73,9 +71,8 @@ pub enum Part {
     },
     /// Represents a quad as a part of a player model.
     Quad {
-        position: MinecraftPosition,
-        size: MinecraftPosition,
-        rotation_matrix: Mat4,
+        transformation: Affine3A,
+        size: Vec3,
         face_uv: FaceUv,
         normal: Vec3,
         texture: PlayerPartTextureType,
@@ -86,7 +83,7 @@ pub enum Part {
     /// This is used to group parts together so that they can be rotated together.
     Group {
         parts: Vec<Part>,
-        rotation_matrix: Mat4,
+        transformation: Affine3A,
         texture: PlayerPartTextureType,
         #[cfg(feature = "part_tracker")]
         part_tracking_data: PartTrackingData,
@@ -112,10 +109,14 @@ impl Part {
         uvs: CubeFaceUvs,
         #[cfg(feature = "part_tracker")] name: Option<String>,
     ) -> Self {
+        let transform = Affine3A::from_scale_rotation_translation(
+            Vec3::new(size[0] as f32, size[1] as f32, size[2] as f32),
+            Quat::IDENTITY,
+            Vec3::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),
+        );
+
         Cube {
-            position: MinecraftPosition::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),
-            size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
-            rotation_matrix: Mat4::IDENTITY,
+            transformation: transform,
             face_uvs: uvs,
             texture,
             #[cfg(feature = "part_tracker")]
@@ -131,10 +132,15 @@ impl Part {
         normal: Vec3,
         #[cfg(feature = "part_tracker")] name: Option<String>,
     ) -> Self {
+        let transform = Affine3A::from_scale_rotation_translation(
+            Vec3::ONE,
+            Quat::IDENTITY,
+            Vec3::new(pos[0] as f32, pos[1] as f32, pos[2] as f32),
+        );
+
         Quad {
-            position: MinecraftPosition::new(pos[0], pos[1], pos[2]),
-            size: MinecraftPosition::new(size[0] as f32, size[1] as f32, size[2] as f32),
-            rotation_matrix: Mat4::IDENTITY,
+            transformation: transform,
+            size: Vec3::new(size[0] as f32, size[1] as f32, size[2] as f32),
             face_uv: uvs,
             normal,
             texture,
@@ -150,7 +156,7 @@ impl Part {
     ) -> Self {
         Self::Group {
             parts,
-            rotation_matrix: Mat4::IDENTITY,
+            transformation: Affine3A::IDENTITY,
             texture,
             #[cfg(feature = "part_tracker")]
             part_tracking_data: PartTrackingData::new(name),
@@ -163,32 +169,26 @@ impl Part {
 
     pub fn expand(&self, amount: Vec3) -> Self {
         let mut new_part = self.clone();
-        let amount = amount * 2.0;
+        let amount_doubled = amount * 2.0;
 
         match new_part {
-            Self::Cube {
-                ref mut size,
-                ref mut position,
+            Quad { ref mut size, .. } => {
+                *size += amount_doubled;
+            }
+            Part::Group {
+                ref mut transformation,
+                ..
+            }
+            | Part::Cube {
+                ref mut transformation,
                 ..
             } => {
-                // Increase the size of the cube by the amount specified.
-                *size += amount;
+                let (mut scale, rot, mut trans) = transformation.to_scale_rotation_translation();
 
-                // Fix the position of the cube so that it is still centered.
-                *position -= amount / 2.0;
-            }
-            Self::Quad {
-                ref mut size,
-                ref mut position,
-                ..
-            } => {
-                // Increase the size of the quad by the amount specified.
-                *size += amount;
-            }
-            Self::Group { ref mut parts, .. } => {
-                for part in parts {
-                    *part = part.expand(amount);
-                }
+                scale += amount_doubled;
+                trans -= amount;
+
+                *new_part.transformation_mut() = Affine3A::from_scale_rotation_translation(scale, rot, trans);
             }
         }
 
@@ -196,41 +196,27 @@ impl Part {
     }
 
     pub fn transform_affine(&mut self, t: Affine3A) {
-        let t: Mat4 = t.into();
-
-        *self.rotation_matrix_mut() = t * self.get_rotation_matrix();
+        *self.transformation_mut() = t * self.get_transformation();
     }
 
-    pub fn get_rotation_matrix(&self) -> Mat4 {
+    pub fn get_transformation(&self) -> Affine3A {
         match self {
-            Self::Cube {
-                rotation_matrix, ..
-            } => *rotation_matrix,
-            Self::Quad {
-                rotation_matrix, ..
-            } => *rotation_matrix,
-            Self::Group {
-                rotation_matrix, ..
-            } => *rotation_matrix,
+            Self::Cube { transformation, .. } => *transformation,
+            Self::Quad { transformation, .. } => *transformation,
+            Self::Group { transformation, .. } => *transformation,
         }
     }
 
-    fn rotation_matrix_mut(&mut self) -> &mut Mat4 {
+    fn transformation_mut(&mut self) -> &mut Affine3A {
         match self {
-            Self::Cube {
-                rotation_matrix, ..
-            } => rotation_matrix,
-            Self::Quad {
-                rotation_matrix, ..
-            } => rotation_matrix,
-            Self::Group {
-                rotation_matrix, ..
-            } => rotation_matrix,
+            Self::Cube { transformation, .. } => transformation,
+            Self::Quad { transformation, .. } => transformation,
+            Self::Group { transformation, .. } => transformation,
         }
     }
 
     pub fn translate(&mut self, translation: MinecraftPosition) {
-        *self.position_mut() += translation;
+        self.transform_affine(Affine3A::from_translation(translation));
     }
 
     pub fn rotate(&mut self, rotation: MinecraftPosition, anchor: Option<PartAnchorInfo>) {
@@ -259,7 +245,7 @@ impl Part {
 
     pub fn get_size(&self) -> MinecraftPosition {
         match self {
-            Self::Cube { size, .. } => *size,
+            Self::Cube { transformation, .. } => transformation.to_scale_rotation_translation().0,
             Self::Quad { size, .. } => *size,
             Self::Group { parts, .. } => {
                 let mut min = MinecraftPosition::new(f32::MAX, f32::MAX, f32::MAX);
@@ -278,27 +264,11 @@ impl Part {
         }
     }
 
-    pub fn size_mut(&mut self) -> &mut MinecraftPosition {
-        match self {
-            Cube { size, .. } => size,
-            Quad { size, .. } => size,
-            Self::Group { .. } => unreachable!("Cannot get mutable size on a group"),
-        }
-    }
-
     pub fn get_position(&self) -> MinecraftPosition {
         match self {
-            Cube { position, .. } => *position,
-            Quad { position, .. } => *position,
+            Self::Cube { transformation, .. } => transformation.to_scale_rotation_translation().2,
+            Self::Quad { transformation, .. } => transformation.to_scale_rotation_translation().2,
             Self::Group { .. } => unreachable!("Cannot get position on a group"),
-        }
-    }
-
-    pub fn position_mut(&mut self) -> &mut MinecraftPosition {
-        match self {
-            Cube { position, .. } => position,
-            Quad { position, .. } => position,
-            Self::Group { .. } => unreachable!("Cannot get mutable position on a group"),
         }
     }
 

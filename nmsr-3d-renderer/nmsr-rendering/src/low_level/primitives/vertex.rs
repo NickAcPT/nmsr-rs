@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use glam::{Vec2, Vec3, Mat4};
+use glam::{Vec2, Vec3, Mat4, Affine3A};
 
 pub type VertexUvCoordinates = Vec2;
 
@@ -18,8 +18,8 @@ impl Vertex {
         Vertex { position, uv, normal }
     }
     
-    pub(crate) fn transform(&self, model_transform: Mat4) -> Self {
-        if model_transform == Mat4::IDENTITY {
+    pub(crate) fn transform(&self, model_transform: Affine3A) -> Self {
+        if model_transform == Affine3A::IDENTITY {
             return *self;
         }
         

@@ -90,9 +90,8 @@ impl RawProjectElement {
             (format!("{a}{a_new:x}"), format!("{b}{b_new:x}"))
         }
         let converted = primitive_convert(&part);
-        let part_pos = part.get_position();
         
-        let affine = Affine3A::from_mat4(part.get_rotation_matrix());
+        let affine = part.get_transformation();
         let (_, rotation, translation) = affine.to_scale_rotation_translation();
         
         let affine_inv = Affine3A::from_rotation_translation(rotation, translation).inverse();

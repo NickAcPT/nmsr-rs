@@ -1,21 +1,21 @@
-use glam::Mat4;
+use glam::{Mat4, Affine3A};
 
 use crate::low_level::primitives::part_primitive::PartPrimitive;
 use crate::low_level::primitives::vertex::Vertex;
 
 pub struct Mesh {
     primitives: Vec<PrimitiveDispatch>,
-    model_transform: Mat4,
+    model_transform: Affine3A,
 }
 
 impl Mesh {
     pub fn new(primitives: Vec<PrimitiveDispatch>) -> Self {
         Mesh {
             primitives,
-            model_transform: Mat4::IDENTITY,
+            model_transform: Affine3A::IDENTITY,
         }
     }
-    pub fn new_with_transform(primitives: Vec<PrimitiveDispatch>, model_transform: Mat4) -> Self {
+    pub fn new_with_transform(primitives: Vec<PrimitiveDispatch>, model_transform: Affine3A) -> Self {
         Mesh {
             primitives,
             model_transform,

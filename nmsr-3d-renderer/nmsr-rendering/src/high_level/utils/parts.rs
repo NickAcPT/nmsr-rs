@@ -1,4 +1,4 @@
-use glam::{Vec2, Vec3};
+use glam::{Vec2, Vec3, Affine3A};
 use itertools::Itertools;
 use nmsr_player_parts::parts::{part::Part, uv::FaceUv};
 
@@ -9,18 +9,18 @@ use crate::low_level::primitives::{
 };
 
 pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
-    let position = part.get_position();
-    let center = position + part.get_size() / 2.0;
+    let position = Vec3::ZERO;
+    let center = position + Vec3::ONE / 2.0;
 
-    let model_transform = part.get_rotation_matrix();
+    let model_transform = part.get_transformation();
 
     match part {
-        Part::Cube { size, face_uvs, .. } => {
+        Part::Cube { face_uvs, .. } => {
             let texture_size = part.get_texture().get_texture_size();
 
             Cube::new(
                 center,
-                *size,
+                Vec3::ONE,
                 model_transform,
                 uv(&face_uvs.north, texture_size),
                 uv(&face_uvs.south, texture_size),
@@ -32,12 +32,13 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             .into()
         }
         Part::Quad {
-            size,
             face_uv,
             texture,
             normal,
             ..
         } => {
+            let size = part.get_size();
+            
             let x_left = position.x + size.x;
             let x_right = position.x;
 

@@ -4,7 +4,7 @@ use ears_rs::features::{
     data::ear::{EarAnchor, EarMode},
     EarsFeatures,
 };
-use strum::{EnumIter, IntoEnumIterator};
+use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 
 use crate::{
     model::ArmorMaterial,
@@ -40,33 +40,36 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
         let Some(mut features) = context.ears_features else {
             return empty;
         };
-        
+
         // Replace Behind mode with Out mode w/ Back anchor
         if features.ear_mode == EarMode::Behind {
             features.ear_mode = EarMode::Out;
             features.ear_anchor = EarAnchor::Back;
         }
-        
+
         let mut parts = Vec::new();
         let mut builder = EarsModPartBuilder::new(&mut parts, &context);
+        builder.stack_group("Ears", |builder| {
+            for provider in EarsModPartStaticDispatch::iter() {
+                if !provider.provides_for_part(body_part)
+                    || !provider.provides_for_feature(&features, context)
+                {
+                    continue;
+                }
 
-        for provider in EarsModPartStaticDispatch::iter() {
-            if !provider.provides_for_part(body_part) || !provider.provides_for_feature(&features, context) {
-                continue;
+                provider.provide_parts(&features, context, builder, body_part);
             }
-            
-            provider.provide_parts(&features, context, &mut builder, body_part);
-        }
+        });
 
         parts
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, EnumIter, IntoStaticStr)]
 enum EarsModPartStaticDispatch<M: ArmorMaterial> {
     Ears(PhantomData<M>),
     Protrusions(PhantomData<M>),
-    Snouts(PhantomData<M>),
+    Snout(PhantomData<M>),
 }
 
 impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
@@ -76,7 +79,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
             Self::Protrusions(_) => {
                 EarsModProtrusionsPartProvider::<M>::default().provides_for_part(body_part)
             }
-            Self::Snouts(_) => {
+            Self::Snout(_) => {
                 EarsModSnoutsPartProvider::<M>::default().provides_for_part(body_part)
             }
         }
@@ -93,7 +96,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
             }
             Self::Protrusions(_) => EarsModProtrusionsPartProvider::<M>::default()
                 .provides_for_feature(feature, context),
-            Self::Snouts(_) => {
+            Self::Snout(_) => {
                 EarsModSnoutsPartProvider::<M>::default().provides_for_feature(feature, context)
             }
         }
@@ -106,14 +109,16 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
         builder: &mut EarsModPartBuilder<'_, M>,
         body_part: PlayerBodyPartType,
     ) {
-        match self {
+        let name: &'static str = self.into();
+
+        builder.stack_group(name, |builder| match self {
             Self::Ears(_) => EarsModEarsPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
             Self::Protrusions(_) => EarsModProtrusionsPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
-            Self::Snouts(_) => EarsModSnoutsPartProvider::<M>::default()
+            Self::Snout(_) => EarsModSnoutsPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
-        }
+        });
     }
 }
 

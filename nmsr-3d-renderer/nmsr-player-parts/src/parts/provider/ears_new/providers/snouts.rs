@@ -54,7 +54,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModSnoutsPartProvider<M> {
 
         let snout_depth_minus_one = snout_depth - 1;
 
-        builder.stack(|b| {
+        builder.stack_mesh("Snout", |b| {
             b.anchor_to(PlayerBodyPartType::Head);
             b.translate(
                 (8.0 - snout_width as f32) / 2f32,

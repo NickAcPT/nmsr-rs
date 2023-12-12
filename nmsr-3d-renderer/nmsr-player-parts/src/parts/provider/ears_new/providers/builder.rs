@@ -16,6 +16,8 @@ use crate::{
 
 pub(crate) struct EarsModPartBuilder<'a, M: ArmorMaterial> {
     transformation_stack: Vec<Affine3A>,
+    mesh_stack: Vec<Vec<Part>>,
+    group_stack: Vec<String>,
     parts: &'a mut Vec<Part>,
     context: &'a PlayerPartProviderContext<M>,
 }
@@ -27,11 +29,13 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     ) -> Self {
         Self {
             transformation_stack: vec![Affine3A::IDENTITY],
+            group_stack: vec![],
+            mesh_stack: vec![],
             parts: target,
             context,
         }
     }
-    
+
     fn last_transformation(&self) -> &Affine3A {
         self.transformation_stack
             .last()
@@ -51,6 +55,22 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
 
     pub(crate) fn push(&mut self) {
         self.transformation_stack.push(Affine3A::IDENTITY);
+    }
+
+    pub(crate) fn push_group(&mut self, name: impl Into<String>) {
+        self.group_stack.push(name.into());
+    }
+
+    pub(crate) fn pop_group(&mut self) {
+        self.group_stack
+            .pop()
+            .expect("Expected group stack to not be empty");
+    }
+    
+    pub(crate) fn stack_group<F: FnOnce(&mut Self) -> ()>(&mut self, name: impl Into<String>, action: F) {
+        self.push_group(name);
+        action(self);
+        self.pop_group();
     }
 
     pub(crate) fn pop(&mut self) {
@@ -74,11 +94,38 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         self.pop();
     }
 
+    pub(crate) fn stack_mesh<F: FnOnce(&mut Self) -> ()>(
+        &mut self,
+        name: impl Into<String>,
+        action: F,
+    ) {
+        let parts = vec![];
+        self.mesh_stack.push(parts);
+
+        self.stack(action);
+
+        let parts = self
+            .mesh_stack
+            .pop()
+            .expect("Expected mesh stack to not be empty");
+
+        let part = Part::new_group(
+            parts
+                .first()
+                .map(|p| p.get_texture())
+                .unwrap_or(PlayerPartTextureType::Skin),
+            parts,
+            Some(name.into()),
+        );
+
+        self.parts.push(part);
+    }
+
     #[inline(always)]
     pub(crate) fn translate_i(&mut self, x: i32, y: i32, z: i32) {
         self.translate(x as f32, y as f32, z as f32);
     }
-    
+
     pub(crate) fn translate(&mut self, x: f32, y: f32, z: f32) {
         let translation = Affine3A::from_translation([x, y, z].into());
 
@@ -89,7 +136,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     pub(crate) fn rotate_i(&mut self, value: i32, x: i32, y: i32, z: i32) {
         self.rotate((value * x) as f32, (value * y) as f32, (value * z) as f32);
     }
-    
+
     pub(crate) fn rotate(&mut self, x: f32, y: f32, z: f32) {
         let rotation_quat = Quat::from_euler(
             glam::EulerRot::YXZ,
@@ -102,13 +149,13 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
 
         *self.last_transformation_mut() *= Affine3A::from_quat(rotation_quat);
     }
-    
+
     pub(crate) fn scale(&mut self, x: f32, y: f32, z: f32) {
         let scale = Affine3A::from_scale([x, y, z].into());
 
         *self.last_transformation_mut() *= scale;
     }
-    
+
     #[inline(always)]
     pub(crate) fn scale_i(&mut self, x: i32, y: i32, z: i32) {
         self.scale(x as f32, y as f32, z as f32);
@@ -126,11 +173,13 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         name: impl Into<String>,
     ) {
         let name: String = name.into();
-        
-        self.quad_front(u, v, width, height, rot, flip, &name);
-        self.quad_back(u, v, width, height, rot, flip.flip_horizontally(), name);
+
+        self.stack_mesh(name.clone(), move |b| {
+            b.quad_front(u, v, width, height, rot, flip, &name);
+            b.quad_back(u, v, width, height, rot, flip.flip_horizontally(), name);
+        });
     }
-    
+
     pub(crate) fn quad_front(
         &mut self,
         u: u16,
@@ -211,11 +260,11 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
                 _ => flip,
             };
         }
-        
+
         if front_facing {
             flip = flip.flip_horizontally();
         }
-        
+
         let mut uvs = uv_from_pos_and_size(u, v, width, height);
 
         match rot {
@@ -243,11 +292,17 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         );
 
         quad.transform_affine(self.current_transformation());
-        
-        if let (Part::Quad {normal, ..}, true) = (&quad, !front_facing) {
+
+        quad.push_groups(&self.group_stack);
+
+        if let (Part::Quad { normal, .. }, true) = (&quad, !front_facing) {
             quad.transform_affine(Affine3A::from_translation(*normal * 0.01));
         }
 
-        self.parts.push(quad);
+        if let Some(current_mesh) = self.mesh_stack.first_mut() {
+            current_mesh.push(quad);
+        } else {
+            self.parts.push(quad);
+        }
     }
 }

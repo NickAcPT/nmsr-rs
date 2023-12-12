@@ -99,7 +99,7 @@ impl RawProjectElement {
         
         let affine_inv = Affine3A::from_rotation_translation(rotation, origin).inverse();
         
-        let (r_x, r_y, r_z) = rotation.to_euler(glam::EulerRot::YXZ);
+        let (r_x, r_y, r_z) = rotation.to_euler(glam::EulerRot::XYZ);
         
         let origin = json!([
             origin.x,
@@ -108,8 +108,8 @@ impl RawProjectElement {
         ]);
         
         let rotation = json!([
-            r_y.to_degrees(),
             r_x.to_degrees(),
+            r_y.to_degrees(),
             r_z.to_degrees(),
         ]);
         

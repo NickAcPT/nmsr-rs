@@ -37,9 +37,10 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             context,
         }
     }
-    
+
     fn current_texture(&self) -> PlayerPartTextureType {
-        *self.texture_stack
+        *self
+            .texture_stack
             .last()
             .expect("Expected texture stack to not be empty")
     }
@@ -68,14 +69,18 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     pub(crate) fn push_group(&mut self, name: impl Into<String>) {
         self.group_stack.push(name.into());
     }
-    
+
     pub(crate) fn pop_group(&mut self) {
         self.group_stack
             .pop()
             .expect("Expected group stack to not be empty");
     }
-    
-    pub(crate) fn stack_group<F: FnOnce(&mut Self) -> ()>(&mut self, name: impl Into<String>, action: F) {
+
+    pub(crate) fn stack_group<F: FnOnce(&mut Self) -> ()>(
+        &mut self,
+        name: impl Into<String>,
+        action: F,
+    ) {
         self.push_group(name);
         action(self);
         self.pop_group();
@@ -101,7 +106,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         action(self);
         self.pop();
     }
-    
+
     pub(crate) fn stack_texture<F: FnOnce(&mut Self) -> ()>(
         &mut self,
         texture: PlayerPartTextureType,
@@ -135,10 +140,13 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             parts,
             Some(name.into()),
         );
-        
+
         part.transform_affine(self.current_transformation());
 
-        part.push_groups(&self.group_stack);
+        #[cfg(feature = "part_tracker")]
+        {
+            part.push_groups(&self.group_stack);
+        }
 
         self.parts.push(part);
     }
@@ -158,7 +166,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     pub(crate) fn rotate_i(&mut self, value: i32, x: i32, y: i32, z: i32) {
         self.rotate((value * x) as f32, (value * y) as f32, (value * z) as f32);
     }
-    
+
     #[inline(always)]
     pub(crate) fn rotate_f(&mut self, value: f32, x: i32, y: i32, z: i32) {
         self.rotate(value * x as f32, value * y as f32, value * z as f32);
@@ -213,7 +221,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             name,
         );
     }
-    
+
     #[inline(always)]
     pub(crate) fn quad_double_sided_complete(
         &mut self,
@@ -232,7 +240,9 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         let name: String = name.into();
 
         self.stack_group(name.clone(), move |b| {
-            b.quad_front(u_front, v_front, width, height, rot_front, flip_front, &name);
+            b.quad_front(
+                u_front, v_front, width, height, rot_front, flip_front, &name,
+            );
             b.quad_back(u_back, v_back, width, height, rot_back, flip_back, name);
         });
     }
@@ -350,7 +360,10 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
 
         quad.transform_affine(self.current_transformation());
 
-        quad.push_groups(&self.group_stack);
+        #[cfg(feature = "part_tracker")]
+        {
+            quad.push_groups(&self.group_stack);
+        }
 
         if let (Part::Quad { normal, .. }, true) = (&quad, !front_facing) {
             quad.transform_affine(Affine3A::from_translation(*normal * 0.01));

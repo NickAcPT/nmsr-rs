@@ -5,3 +5,4 @@ pub(crate) mod ears;
 pub(crate) mod protrusions;
 pub(crate) mod snouts;
 pub(crate) mod tails;
+pub(crate) mod wings;

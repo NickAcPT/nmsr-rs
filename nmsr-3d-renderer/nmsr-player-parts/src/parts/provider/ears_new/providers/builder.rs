@@ -17,6 +17,7 @@ use crate::{
 pub(crate) struct EarsModPartBuilder<'a, M: ArmorMaterial> {
     transformation_stack: Vec<Affine3A>,
     mesh_stack: Vec<Vec<Part>>,
+    texture_stack: Vec<PlayerPartTextureType>,
     group_stack: Vec<String>,
     parts: &'a mut Vec<Part>,
     context: &'a PlayerPartProviderContext<M>,
@@ -28,12 +29,19 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         context: &'a PlayerPartProviderContext<M>,
     ) -> Self {
         Self {
+            texture_stack: vec![PlayerPartTextureType::Skin],
             transformation_stack: vec![Affine3A::IDENTITY],
             group_stack: vec![],
             mesh_stack: vec![],
             parts: target,
             context,
         }
+    }
+    
+    fn current_texture(&self) -> PlayerPartTextureType {
+        *self.texture_stack
+            .last()
+            .expect("Expected texture stack to not be empty")
     }
 
     fn last_transformation(&self) -> &Affine3A {
@@ -93,6 +101,16 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         action(self);
         self.pop();
     }
+    
+    pub(crate) fn stack_texture<F: FnOnce(&mut Self) -> ()>(
+        &mut self,
+        texture: PlayerPartTextureType,
+        action: F,
+    ) {
+        self.texture_stack.push(texture);
+        self.stack(action);
+        self.texture_stack.pop();
+    }
 
     pub(crate) fn stack_mesh<F: FnOnce(&mut Self) -> ()>(
         &mut self,
@@ -113,7 +131,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             parts
                 .first()
                 .map(|p| p.get_texture())
-                .unwrap_or(PlayerPartTextureType::Skin),
+                .unwrap_or(self.current_texture()),
             parts,
             Some(name.into()),
         );
@@ -262,7 +280,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             v,
             width,
             height,
-            PlayerPartTextureType::Skin,
+            self.current_texture(),
             rot,
             flip,
             front_facing,

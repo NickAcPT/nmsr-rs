@@ -13,7 +13,7 @@ use crate::{
         provider::{
             ears::providers::{
                 builder::EarsModPartBuilder, ears::EarsModEarsPartProvider,
-                protrusions::EarsModProtrusionsPartProvider, snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider, wings::EarsModWingsPartProvider,
+                protrusions::EarsModProtrusionsPartProvider, snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider, wings::EarsModWingsPartProvider, chest::EarsModChestPartProvider,
             },
             PartsProvider,
         },
@@ -72,6 +72,7 @@ enum EarsModPartStaticDispatch<M: ArmorMaterial> {
     Snout(PhantomData<M>),
     Tail(PhantomData<M>),
     Wings(PhantomData<M>),
+    Chest(PhantomData<M>),
 }
 
 impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
@@ -89,6 +90,9 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
             }
             Self::Wings(_) => {
                 EarsModWingsPartProvider::<M>::default().provides_for_part(body_part)
+            }
+            Self::Chest(_) => {
+                EarsModChestPartProvider::<M>::default().provides_for_part(body_part)
             }
         }
     }
@@ -113,6 +117,9 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
             Self::Wings(_) => {
                 EarsModWingsPartProvider::<M>::default().provides_for_feature(feature, context)
             }
+            Self::Chest(_) => {
+                EarsModChestPartProvider::<M>::default().provides_for_feature(feature, context)
+            }
         }
     }
 
@@ -135,6 +142,8 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
             Self::Tail(_) => EarsModTailsPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
             Self::Wings(_) => EarsModWingsPartProvider::<M>::default()
+                .provide_parts(feature, context, builder, body_part),
+            Self::Chest(_) => EarsModChestPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
         });
     }

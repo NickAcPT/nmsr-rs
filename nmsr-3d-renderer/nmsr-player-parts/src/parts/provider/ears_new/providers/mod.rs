@@ -6,3 +6,4 @@ pub(crate) mod protrusions;
 pub(crate) mod snouts;
 pub(crate) mod tails;
 pub(crate) mod wings;
+pub(crate) mod chest;

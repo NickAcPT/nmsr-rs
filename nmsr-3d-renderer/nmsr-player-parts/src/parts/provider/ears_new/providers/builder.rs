@@ -158,6 +158,11 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     pub(crate) fn rotate_i(&mut self, value: i32, x: i32, y: i32, z: i32) {
         self.rotate((value * x) as f32, (value * y) as f32, (value * z) as f32);
     }
+    
+    #[inline(always)]
+    pub(crate) fn rotate_f(&mut self, value: f32, x: i32, y: i32, z: i32) {
+        self.rotate(value * x as f32, value * y as f32, value * z as f32);
+    }
 
     pub(crate) fn rotate(&mut self, x: f32, y: f32, z: f32) {
         let rotation_quat = Quat::from_euler(

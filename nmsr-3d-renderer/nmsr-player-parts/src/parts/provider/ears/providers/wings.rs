@@ -1,5 +1,5 @@
 use ears_rs::features::{
-    data::wing::{WingMode, WingData},
+    data::wing::WingMode,
     EarsFeatures,
 };
 

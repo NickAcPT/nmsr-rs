@@ -6,15 +6,8 @@ use crate::types::PlayerBodyPartType;
 #[cfg(feature = "ears")]
 use ears_rs::features::EarsFeatures;
 
-#[cfg(all(feature = "ears", feature = "old-ears-provider"))]
-pub mod ears_old;
-#[cfg(all(feature = "ears", feature = "old-ears-provider"))]
-pub use self::ears_old as ears;
-
-#[cfg(all(feature = "ears", feature = "new-ears-provider"))]
-pub mod ears_new;
-#[cfg(all(feature = "ears", feature = "new-ears-provider"))]
-pub use self::ears_new as ears;
+#[cfg(feature = "ears")]
+pub mod ears;
 
 #[cfg(all(feature = "ears"))]
 use self::ears::EarsPlayerPartsProvider;

@@ -130,36 +130,50 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
     }
 }
 
+#[cfg(feature = "part_tracker")]
+pub fn get_part_group_name(non_layer_body_part_type: PlayerBodyPartType) -> &'static str {
+    match non_layer_body_part_type {
+        Head => "Head",
+        Body => "Body",
+        LeftArm => "Left Arm",
+        RightArm => "Right Arm",
+        LeftLeg => "Left Leg",
+        RightLeg => "Right Leg",
+        _ => unreachable!(
+            "Tried to compute group name for unknown part {:?}",
+            non_layer_body_part_type
+        ),
+    }
+}
+
 pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_arms: bool) -> Part {
     match non_layer_body_part_type {
         Head => body_part! {
             pos: [-4, 24, -4],
             size: [8, 8, 8],
             box_uv_start: (8, 8),
-            name: "Head"
+            name: get_part_group_name(Head)
         },
         Body => body_part! {
             pos: [-4, 12, -2],
             size: [8, 12, 4],
             box_uv_start: (20, 20),
-            name: "Body"
+            name: get_part_group_name(Body)
         },
         LeftArm => {
             if is_slim_arms {
                 body_part! {
-                    //pos: [0, 0, 0],
                     pos: [-7, 12, -2],
                     size: [3, 12, 4],
                     box_uv_start: (36, 52),
-                    name: "Left Arm"
+                    name: get_part_group_name(LeftArm)
                 }
             } else {
                 body_part! {
-                    //pos: [0, 0, 0],
                     pos: [-8, 12, -2],
                     size: [4, 12, 4],
                     box_uv_start: (36, 52),
-                    name: "Left Arm"
+                    name: get_part_group_name(LeftArm)
                 }
             }
         }
@@ -169,14 +183,14 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
                     pos: [4, 12, -2],
                     size: [3, 12, 4],
                     box_uv_start: (44, 20),
-                    name: "Right Arm"
+                    name: get_part_group_name(RightArm)
                 }
             } else {
                 body_part! {
                     pos: [4, 12, -2],
                     size: [4, 12, 4],
                     box_uv_start: (44, 20),
-                    name: "Right Arm"
+                    name: get_part_group_name(RightArm)
                 }
             }
         }
@@ -184,13 +198,13 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
             pos: [-4, 0, -2],
             size: [4, 12, 4],
             box_uv_start: (20, 52),
-            name: "Left Leg"
+            name: get_part_group_name(LeftLeg)
         },
         RightLeg => body_part! {
             pos: [0, 0, -2],
             size: [4, 12, 4],
             box_uv_start: (4, 20),
-            name: "Right Leg"
+            name: get_part_group_name(RightLeg)
         },
         _ => unreachable!("Got layer body part type when getting non-layer body part type."),
     }

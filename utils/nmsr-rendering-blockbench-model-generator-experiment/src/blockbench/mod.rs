@@ -6,7 +6,8 @@ use itertools::Itertools;
 use nmsr_rendering::high_level::{
     model::ArmorMaterial, parts::part::Part, types::PlayerPartTextureType,
 };
-use serde_json::json;
+use serde_json::{json, Value};
+use uuid::Uuid;
 
 use crate::{
     blockbench::{
@@ -59,10 +60,33 @@ pub fn generate_project<M: ArmorMaterial, I: ModelProjectImageIO>(
 }
 
 fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
-    _project: &ModelGenerationProject<M, I>,
-    _parts: &[Part],
+    project: &ModelGenerationProject<M, I>,
+    parts: &[Part],
 ) -> serde_json::Value {
-    json!([])
+    // First, let's store our parts in the following structure:
+    let mut root_group = BlockbenchGroupEntry::new_root();
+
+    for (index, part) in parts
+        .into_iter()
+        .enumerate()
+        .sorted_by_key(|(_, p)| p.get_group().len())
+    {
+        let part_id: Uuid = str_to_uuid(&project.get_part_name(part.get_name(), index));
+        // Part groups is a vector of strings, each string being a group name - The last group name is the parent group
+        let part_groups: Vec<String> = part.get_group().to_vec();
+
+        // Group our part names in a tree-like structure
+        let mut current_group = &mut root_group;
+        for group in part_groups {
+            // Find our current group in the tree
+            current_group = current_group.add_or_get_group(group);
+        }
+        
+        // Add our part to the group
+        current_group.add_entry(part_id);
+    }
+
+    root_group.to_value()
 }
 
 fn convert_to_raw_elements<M: ArmorMaterial, I: ModelProjectImageIO>(

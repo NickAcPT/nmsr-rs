@@ -49,7 +49,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
         let mut parts = Vec::new();
         let mut builder = EarsModPartBuilder::new(&mut parts, &context);
-        builder.stack_group("Ears", |builder| {
+        builder.stack_group("EarsMod", |builder| {
             for provider in EarsModPartStaticDispatch::iter() {
                 if !provider.provides_for_part(body_part)
                     || !provider.provides_for_feature(&features, context)

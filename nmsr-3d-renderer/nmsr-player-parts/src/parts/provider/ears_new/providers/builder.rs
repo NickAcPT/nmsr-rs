@@ -60,7 +60,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     pub(crate) fn push_group(&mut self, name: impl Into<String>) {
         self.group_stack.push(name.into());
     }
-
+    
     pub(crate) fn pop_group(&mut self) {
         self.group_stack
             .pop()
@@ -109,7 +109,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             .pop()
             .expect("Expected mesh stack to not be empty");
 
-        let part = Part::new_group(
+        let mut part = Part::new_group(
             parts
                 .first()
                 .map(|p| p.get_texture())
@@ -117,6 +117,8 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             parts,
             Some(name.into()),
         );
+        
+        part.push_groups(&self.group_stack);
 
         self.parts.push(part);
     }
@@ -172,11 +174,41 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         flip: TextureFlip,
         name: impl Into<String>,
     ) {
+        self.quad_double_sided_complete(
+            u,
+            v,
+            u,
+            v,
+            width,
+            height,
+            rot,
+            flip,
+            rot,
+            flip.flip_horizontally(),
+            name,
+        );
+    }
+    
+    #[inline(always)]
+    pub(crate) fn quad_double_sided_complete(
+        &mut self,
+        u_front: u16,
+        v_front: u16,
+        u_back: u16,
+        v_back: u16,
+        width: u16,
+        height: u16,
+        rot_front: TextureRotation,
+        flip_front: TextureFlip,
+        rot_back: TextureRotation,
+        flip_back: TextureFlip,
+        name: impl Into<String>,
+    ) {
         let name: String = name.into();
 
         self.stack_mesh(name.clone(), move |b| {
-            b.quad_front(u, v, width, height, rot, flip, &name);
-            b.quad_back(u, v, width, height, rot, flip.flip_horizontally(), name);
+            b.quad_front(u_front, v_front, width, height, rot_front, flip_front, &name);
+            b.quad_back(u_back, v_back, width, height, rot_back, flip_back, name);
         });
     }
 

@@ -274,7 +274,7 @@ pub struct RawProject {
     resolution: ProjectTextureResolution,
     elements: Vec<RawProjectElement>,
     textures: Vec<RawProjectTexture>,
-    outliner: Vec<Value>,
+    outliner: Value,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -294,7 +294,7 @@ impl RawProject {
         resolution: ProjectTextureResolution,
         elements: Vec<RawProjectElement>,
         textures: Vec<RawProjectTexture>,
-        outliner: Vec<Value>,
+        outliner: Value,
     ) -> Self {
         Self {
             meta: ProjectMeta::default(),

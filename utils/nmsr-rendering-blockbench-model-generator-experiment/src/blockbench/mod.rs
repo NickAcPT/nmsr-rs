@@ -6,14 +6,20 @@ use itertools::Itertools;
 use nmsr_rendering::high_level::{
     model::ArmorMaterial, parts::part::Part, types::PlayerPartTextureType,
 };
+use serde_json::json;
 
 use crate::{
-    blockbench::model::{RawProject, RawProjectTexture},
+    blockbench::{
+        group_logic::BlockbenchGroupEntry,
+        model::{str_to_uuid, RawProject, RawProjectTexture},
+    },
     error::Result,
     generator::{ModelGenerationProject, ModelProjectImageIO},
 };
 
 use self::model::{ProjectTextureResolution, RawProjectElement};
+
+mod group_logic;
 
 #[cfg(not(feature = "wasm"))]
 pub type ProjectOutput = String;
@@ -28,10 +34,11 @@ pub fn generate_project<M: ArmorMaterial, I: ModelProjectImageIO>(
 ) -> ProjectOutputResult {
     let parts = project.generate_parts();
 
+    let outliner_groups = generate_outliner_groups(&project, &parts);
+
     let texture_grouped_parts = group_by_texture(parts);
     project.filter_textures(&texture_grouped_parts.keys().copied().collect_vec());
 
-    let outliner_groups = vec![];
     let (resolution, raw_textures) =
         convert_to_raw_project_textures(&project, &texture_grouped_parts);
     let elements = convert_to_raw_elements(&project, texture_grouped_parts)?;
@@ -49,6 +56,13 @@ pub fn generate_project<M: ArmorMaterial, I: ModelProjectImageIO>(
     {
         serde_wasm_bindgen::to_value(&project).map_err(|e| e.into())
     }
+}
+
+fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
+    _project: &ModelGenerationProject<M, I>,
+    _parts: &[Part],
+) -> serde_json::Value {
+    json!([])
 }
 
 fn convert_to_raw_elements<M: ArmorMaterial, I: ModelProjectImageIO>(

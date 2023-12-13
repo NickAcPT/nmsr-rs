@@ -118,6 +118,8 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
             Some(name.into()),
         );
         
+        part.transform_affine(self.current_transformation());
+
         part.push_groups(&self.group_stack);
 
         self.parts.push(part);
@@ -206,7 +208,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
     ) {
         let name: String = name.into();
 
-        self.stack_mesh(name.clone(), move |b| {
+        self.stack_group(name.clone(), move |b| {
             b.quad_front(u_front, v_front, width, height, rot_front, flip_front, &name);
             b.quad_back(u_back, v_back, width, height, rot_back, flip_back, name);
         });

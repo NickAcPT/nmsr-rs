@@ -13,7 +13,7 @@ use crate::{
         provider::{
             ears::providers::{
                 builder::EarsModPartBuilder, ears::EarsModEarsPartProvider,
-                protrusions::EarsModProtrusionsPartProvider, snouts::EarsModSnoutsPartProvider,
+                protrusions::EarsModProtrusionsPartProvider, snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider,
             },
             PartsProvider,
         },
@@ -70,6 +70,7 @@ enum EarsModPartStaticDispatch<M: ArmorMaterial> {
     Ears(PhantomData<M>),
     Protrusions(PhantomData<M>),
     Snout(PhantomData<M>),
+    Tail(PhantomData<M>),
 }
 
 impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
@@ -81,6 +82,9 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
             }
             Self::Snout(_) => {
                 EarsModSnoutsPartProvider::<M>::default().provides_for_part(body_part)
+            }
+            Self::Tail(_) => {
+                EarsModTailsPartProvider::<M>::default().provides_for_part(body_part)
             }
         }
     }
@@ -98,6 +102,9 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
                 .provides_for_feature(feature, context),
             Self::Snout(_) => {
                 EarsModSnoutsPartProvider::<M>::default().provides_for_feature(feature, context)
+            }
+            Self::Tail(_) => {
+                EarsModTailsPartProvider::<M>::default().provides_for_feature(feature, context)
             }
         }
     }
@@ -117,6 +124,8 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
             Self::Protrusions(_) => EarsModProtrusionsPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
             Self::Snout(_) => EarsModSnoutsPartProvider::<M>::default()
+                .provide_parts(feature, context, builder, body_part),
+            Self::Tail(_) => EarsModTailsPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
         });
     }

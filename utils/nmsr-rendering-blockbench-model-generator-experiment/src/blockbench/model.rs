@@ -178,6 +178,7 @@ impl RawProjectElement {
                 "name": name,
                 "box_uv": false,
                 "type": "mesh",
+                "render_order": "in_front",
                 "origin": origin,
                 "rotation": rotation,
                 "vertices": vertices_map,

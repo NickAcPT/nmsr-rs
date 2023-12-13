@@ -172,13 +172,19 @@ impl RawProjectElement {
             faces[va_name] = face;
         }
 
+        let render_order = if name.contains("Layer") {
+            "in_front"
+        } else {
+            "behind"
+        };
+        
         Ok(Self(
             json!({
                 "uuid": str_to_uuid(&name),
                 "name": name,
                 "box_uv": false,
                 "type": "mesh",
-                "render_order": "in_front",
+                "render_order": render_order,
                 "origin": origin,
                 "rotation": rotation,
                 "vertices": vertices_map,

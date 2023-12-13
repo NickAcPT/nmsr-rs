@@ -138,6 +138,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
                 .map(|p| p.get_texture())
                 .unwrap_or(self.current_texture()),
             parts,
+            #[cfg(feature = "part_tracker")]
             Some(name.into()),
         );
 

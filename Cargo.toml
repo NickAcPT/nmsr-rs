@@ -19,6 +19,7 @@ members = [
     "utils/nmsr-rendering-palette-extractor",
     "utils/nmsr-multi-parts-organizer",
     "utils/nmsr-backfaces-optimizer",
+    "utils/nmsr-software-rasterizer",
     "nmsr-3d-renderer/nmsr-player-parts",
     "nmsr-3d-renderer/nmsr-rendering",
     "nmsr-3d-renderer/nmsr-wgpu-windowed",

@@ -1,5 +1,5 @@
 [package]
-name = "nmsr-rasterizer-test"
+name = "nmsr-software-rasterizer"
 version = "0.1.0"
 edition = "2021"
 

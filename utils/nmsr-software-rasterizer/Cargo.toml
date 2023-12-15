@@ -1,0 +1,35 @@
+[package]
+name = "nmsr-rasterizer-test"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+doc = false
+
+[lib]
+name = "nmsr_rasterizer_test"
+path = "src/lib.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
+glam = { version = "0" }
+nmsr-rendering = { version = "0.1.0", git = "https://github.com/NickAcPT/nmsr-rs", features = [
+    "ears",
+], default-features = false }
+image = { version = "0", default-features = false, features = ["png"] }
+arrayvec = "0.7.4"
+
+[dev-dependencies]
+criterion = { version = "0.4", features = ["html_reports"] }
+
+[profile.release]
+strip = false
+debug = true
+
+[[bench]]
+name = "my_benchmark"
+harness = false

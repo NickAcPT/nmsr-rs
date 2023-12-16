@@ -1,15 +1,19 @@
 use std::{collections::HashMap, iter::repeat};
 
 use anyhow::Ok;
-use ears_rs::{features::{
-    data::{
-        ear::{EarAnchor, EarMode},
-        snout::SnoutData,
-        tail::{TailData, TailMode},
+use ears_rs::{
+    features::{
+        data::{
+            ear::{EarAnchor, EarMode},
+            snout::SnoutData,
+            tail::{TailData, TailMode},
+        },
+        EarsFeatures,
     },
-    EarsFeatures,
-}, parser::EarsFeaturesWriter};
-use glam::Vec2;
+    parser::EarsFeaturesWriter,
+};
+use glam::{Vec2, Vec3};
+use hsl::HSL;
 use image::RgbaImage;
 use itertools::Itertools;
 use nmsr_player_parts::{
@@ -21,7 +25,73 @@ use nmsr_player_parts::{
     types::{PlayerBodyPartType, PlayerPartTextureType},
     IntoEnumIterator,
 };
-use rand::seq::SliceRandom;
+use rand::{seq::SliceRandom, Rng};
+use strum::EnumIter;
+
+#[derive(Debug, Copy, Clone, Eq, Hash, PartialEq, EnumIter, Default)]
+enum FaceOrientation {
+    Up,
+    Down,
+    North,
+    
+    #[default]
+    South,
+    East,
+    West,
+}
+
+impl FaceOrientation {
+    pub fn from_normal(normal: Vec3) -> Self {
+        // North is -Z / South is +Z
+        // East is +X / West is -X
+        // Up is +Y / Down is -Y
+        let normalized = normal.normalize();
+        let (x, y, z) = (normalized.x, normalized.y, normalized.z);
+
+        if y > 0.5 {
+            Self::Up
+        } else if y < -0.5 {
+            Self::Down
+        } else if z > 0.5 {
+            Self::North
+        } else if z < -0.5 {
+            Self::South
+        } else if x > 0.5 {
+            Self::East
+        } else if x < -0.5 {
+            Self::West
+        } else {
+            println!("Unknown face orientation: {:?}", normal);
+            Self::North
+        }
+    }
+}
+
+#[derive(Debug)]
+struct PartTemplateGeneratorContext {
+    colors: HashMap<FaceOrientation, HSL>,
+}
+
+impl PartTemplateGeneratorContext {
+    pub fn new() -> Self {
+        let mut rng = rand::thread_rng();
+
+        let colors = FaceOrientation::iter()
+            .map(|f| {
+                (
+                    f,
+                    hsl::HSL {
+                        h: rng.gen_range(0.0..=360.0),
+                        s: 0.75,
+                        l: 0.7,
+                    },
+                )
+            })
+            .collect();
+
+        Self { colors }
+    }
+}
 
 fn main() -> anyhow::Result<()> {
     let ears_features = EarsFeatures {
@@ -45,6 +115,7 @@ fn main() -> anyhow::Result<()> {
         cape_enabled: false,
         emissive: false,
     };
+    
     let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {
         model: nmsr_player_parts::model::PlayerModel::Alex,
         has_hat_layer: true,
@@ -57,7 +128,7 @@ fn main() -> anyhow::Result<()> {
         ears_features: Some(ears_features),
     };
 
-    let parts = [PlayerPartsProvider::Minecraft, PlayerPartsProvider::Ears]
+    let parts = [PlayerPartsProvider::Ears]
         .iter()
         .flat_map(|provider| {
             PlayerBodyPartType::iter()
@@ -79,12 +150,14 @@ fn main() -> anyhow::Result<()> {
         });
 
         for (part, body_part) in parts {
-            handle_part_texture(body_part, part, part_texture);
+            let part_template_context = PartTemplateGeneratorContext::new();
+            
+            handle_part_texture(&part_template_context, body_part, part, part_texture);
         }
 
         if texture == PlayerPartTextureType::Skin {
             ears_rs::utils::strip_alpha(part_texture);
-            
+
             ears_rs::parser::v1::writer::EarsWriterV1::write(part_texture, &ears_features)?;
         }
     }
@@ -97,66 +170,107 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-const COLORS: [u32; 5] = [0x011627FF, 0x087CA7FF, 0x2EC4B6FF, 0xE71D36FF, 0xFF9F1CFF];
-
-fn handle_part_face(part: PlayerBodyPartType, face: FaceUv, part_texture: &mut RgbaImage) {
-    union ColorUnion {
-        rgba: u32,
-        bytes: [u8; 4],
-    }
-
+fn handle_part_face(
+    part_template_context: &PartTemplateGeneratorContext,
+    part: PlayerBodyPartType,
+    face: FaceUv,
+    orientation: FaceOrientation,
+    part_texture: &mut RgbaImage,
+) {
     let top_left = Vec2::new(face.top_left.x as f32, face.top_left.y as f32);
     let bottom_right = Vec2::new(face.bottom_right.x as f32, face.bottom_right.y as f32);
 
     let min = top_left.min(bottom_right);
     let max = top_left.max(bottom_right);
 
-    let mut rng = rand::thread_rng();
 
-    let Some(color) = COLORS.choose(&mut rng) else {
+    let Some(mut color) = part_template_context.colors.get(&orientation).copied() else {
         return;
     };
-
+    
+    let is_layer = part.is_layer() || part.is_hat_layer() || true;
+    
+    if is_layer {
+        color.s = 1.0;
+        color.l = 0.5;
+    }
+    
     let min_x = min.x as u32;
     let max_x = max.x as u32;
     let min_y = min.y as u32;
     let max_y = max.y as u32;
     for x in min_x..max_x {
         for y in min_y..max_y {
-            if part.is_layer() && (x != min_x && x != max_x - 1 && y != min_y && y != max_y - 1) {
+            if is_layer && (x != min_x && x != max_x - 1 && y != min_y && y != max_y - 1) {
                 continue;
             }
+            
+            let (r, g, b) = color.to_rgb();
+            let a = if is_layer { 127 } else { 255 };
 
-            let color = ColorUnion {
-                rgba: (*color).reverse_bits(),
-            };
-            let mut color = image::Rgba(unsafe { color.bytes });
-
-            if part.is_layer() {
-                color.0[3] = 0x7F;
-            }
+            let color = image::Rgba([r, g, b, a]);
 
             part_texture.put_pixel(x, y, color);
         }
     }
 }
 
-fn handle_part_texture(body_part: PlayerBodyPartType, part: Part, part_texture: &mut RgbaImage) {
+fn handle_part_texture(
+    part_template_context: &PartTemplateGeneratorContext,
+    body_part: PlayerBodyPartType,
+    part: Part,
+    part_texture: &mut RgbaImage,
+) {
     match part {
         Part::Cube { face_uvs, .. } => {
-            handle_part_face(body_part, face_uvs.up, part_texture);
-            handle_part_face(body_part, face_uvs.down, part_texture);
-            handle_part_face(body_part, face_uvs.north, part_texture);
-            handle_part_face(body_part, face_uvs.south, part_texture);
-            handle_part_face(body_part, face_uvs.east, part_texture);
-            handle_part_face(body_part, face_uvs.west, part_texture);
+            let uvs = [
+                face_uvs.north,
+                face_uvs.south,
+                face_uvs.east,
+                face_uvs.west,
+                face_uvs.up,
+                face_uvs.down,
+            ];
+            
+            let orientations = [
+                FaceOrientation::North,
+                FaceOrientation::South,
+                FaceOrientation::East,
+                FaceOrientation::West,
+                FaceOrientation::Up,
+                FaceOrientation::Down,
+            ];
+
+            for (face_uv, orientation) in uvs.iter().zip(orientations.iter()) {
+                handle_part_face(
+                    part_template_context,
+                    body_part,
+                    *face_uv,
+                    *orientation,
+                    part_texture,
+                );
+            }
         }
-        Part::Quad { face_uv, .. } => {
-            handle_part_face(body_part, face_uv, part_texture);
+        Part::Quad {
+            face_uv,
+            normal,
+            transformation,
+            ..
+        } => {
+            let orientation =
+                FaceOrientation::from_normal(transformation.transform_vector3(normal));
+
+            handle_part_face(
+                part_template_context,
+                body_part,
+                face_uv,
+                orientation,
+                part_texture,
+            );
         }
         Part::Group { parts, .. } => {
             for part in parts {
-                handle_part_texture(body_part, part, part_texture);
+                handle_part_texture(part_template_context, body_part, part, part_texture);
             }
         }
     }

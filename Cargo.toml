@@ -11,15 +11,22 @@ members = [
     "nmsr-lib",
     #"nmsr-jni",
     "nmsr-aas",
+    "utils/nmsr-skin-template-generator-experiment",
+    
     "utils/nmsr-rendering-blockbench-model-generator-experiment",
-    "utils/nmsr-rendering-blockbench-model-generator-experiment-cli",
     #"utils/nmsr-rendering-blockbench-model-generator-experiment-wasm",
+    "utils/nmsr-rendering-blockbench-model-generator-experiment-cli",
+    
     "utils/nmsr-rendering-parts-generator-experiment",
     "utils/nmsr-rendering-parts-generator-experiment-cli",
+    
     "utils/nmsr-rendering-palette-extractor",
+    
     "utils/nmsr-multi-parts-organizer",
     "utils/nmsr-backfaces-optimizer",
+    
     "utils/nmsr-software-rasterizer",
+    
     "nmsr-3d-renderer/nmsr-player-parts",
     "nmsr-3d-renderer/nmsr-rendering",
     "nmsr-3d-renderer/nmsr-wgpu-windowed",

@@ -1,0 +1,17 @@
+[package]
+name = "nmsr-skin-template-generator-experiment"
+version = "0.1.0"
+edition = "2021"
+authors.workspace = true
+homepage.workspace = true
+
+[dependencies]
+ears-rs = { workspace = true }
+nmsr-player-parts = { path = "../../nmsr-3d-renderer/nmsr-player-parts", features = [
+    "ears",
+] }
+itertools = { workspace = true }
+image = { workspace = true, default-features = false, features = ["png"] }
+anyhow = { version = "1" }
+rand = { version = "0.8" }
+glam = { workspace = true }

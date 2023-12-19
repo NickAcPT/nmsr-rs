@@ -1,3 +1,5 @@
+#![feature(portable_simd)]
+
 pub use vfs;
 
 pub mod errors;

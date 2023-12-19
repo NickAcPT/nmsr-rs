@@ -4,7 +4,6 @@ use crate::uv::uv_magic::UvImage;
 use image::RgbaImage;
 use std::borrow::BorrowMut;
 
-#[inline(always)]
 pub fn apply_uv_map(input: &RgbaImage, uv: &UvImage, render_shading: bool) -> Result<RgbaImage> {
     // Generate a new image
     let mut image = image::ImageBuffer::new(uv.size.0, uv.size.1);

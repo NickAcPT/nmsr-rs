@@ -27,6 +27,7 @@ impl UvImage {
         }
     }
 
+    #[inline(always)]
     pub fn apply(&self, original_image: &RgbaImage, render_shading: bool) -> Result<RgbaImage> {
         apply_uv_map(original_image, self, render_shading)
     }

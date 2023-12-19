@@ -6,20 +6,39 @@ use rayon::prelude::*;
 use tracing::instrument;
 use vfs::VfsPath;
 
-use crate::errors::{NMSRError, Result};
 use crate::utils::{into_par_iter_if_enabled, open_image_from_vfs};
+use crate::{
+    errors::{NMSRError, Result},
+    parts::speedy_uv::SpeedyUvImage,
+};
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage};
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serializable_parts", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serializable_parts_rkyv", derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize))]
+#[cfg_attr(
+    feature = "serializable_parts",
+    derive(serde::Serialize, serde::Deserialize)
+)]
+#[cfg_attr(
+    feature = "serializable_parts_rkyv",
+    derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)
+)]
 pub struct PartsManager {
     pub all_parts: Vec<UvImage>,
     pub model_parts: Vec<UvImage>,
     pub model_overlays: Vec<UvImage>,
     pub environment_background: Option<UvImage>,
-    #[cfg(feature = "ears")]
-    pub ears_parts_manager: Option<Box<PartsManager>>,
+}
+
+#[derive(Debug)]
+pub struct SpeedyUvImagePlayerModel {
+    pub alex: SpeedyUvImage,
+    pub steve: SpeedyUvImage,
+
+}
+#[derive(Debug)]
+pub struct SpeedyPartsManager {
+    pub no_layers: SpeedyUvImagePlayerModel,
+    pub with_layers: SpeedyUvImagePlayerModel,
 }
 
 impl PartsManager {
@@ -31,30 +50,17 @@ impl PartsManager {
         Ok(path.is_file()? && name != PartsManager::ENVIRONMENT_BACKGROUND_NAME)
     }
 
-    #[instrument(level = "trace", skip(root))]
-    pub fn new(root: &VfsPath) -> Result<PartsManager> {
-        let mut all_parts = Vec::<UvImage>::with_capacity(8);
-        let mut model_parts = Vec::<UvImage>::with_capacity(8);
-        let mut model_overlays = Vec::<UvImage>::with_capacity(16);
+    pub fn new(root: &VfsPath) -> Result<SpeedyPartsManager> {
+        Ok(SpeedyPartsManager {
+            no_layers: SpeedyUvImagePlayerModel {
+                alex: Self::load_as_parts(&root.join("Alex")?, "", false)?,
+                steve: Self::load_as_parts(&root.join("Steve")?, "", false)?,
+            },
 
-        Self::load_as_parts(root, &mut all_parts, "", false)?;
-        Self::load_model_specific_parts(root, &mut model_parts, false)?;
-
-        let overlays_root = root.join("overlays")?;
-        if overlays_root.exists()? {
-            Self::load_as_parts(&overlays_root, &mut model_overlays, "", true)?;
-            Self::load_model_specific_parts(&overlays_root, &mut model_overlays, true)?;
-        }
-
-        let environment_background = Self::load_environment_background(root)?;
-
-        Ok(PartsManager {
-            all_parts,
-            model_parts,
-            model_overlays,
-            environment_background,
-            #[cfg(feature = "ears")]
-            ears_parts_manager: Self::load_ears_parts_manager(root)?,
+            with_layers: SpeedyUvImagePlayerModel {
+                alex: Self::load_as_parts(&root.join("Alex-Layer")?, "", false)?,
+                steve: Self::load_as_parts(&root.join("Steve-Layer")?, "", false)?,
+            },
         })
     }
 
@@ -73,19 +79,17 @@ impl PartsManager {
                 continue;
             }
 
-            Self::load_as_parts(&model_parts_dir, model_parts, dir_name, store_raw_pixels)?;
+            Self::load_as_parts(&model_parts_dir, dir_name, store_raw_pixels)?;
         }
 
         Ok(())
     }
 
-    #[instrument(level = "trace", skip(dir, parts_map))]
     fn load_as_parts(
         dir: &VfsPath,
-        parts_map: &mut Vec<UvImage>,
         path_prefix: &str,
         store_raw_pixels: bool,
-    ) -> Result<()> {
+    ) -> Result<SpeedyUvImage> {
         let directory = dir
             .read_dir()
             .map_err(|e| NMSRError::IoError(e, format!("Unable to read {:?}", &dir)))?;
@@ -102,9 +106,7 @@ impl PartsManager {
             let name: String = dir_entry
                 .filename()
                 .chars()
-                .take_while(|p| {
-                    *p != '.'
-                })
+                .take_while(|p| *p != '.')
                 .collect();
 
             let name = format!("{path_prefix}{name}");
@@ -112,23 +114,21 @@ impl PartsManager {
             part_entries.push((name, dir_entry));
         }
 
-        let loaded_parts: Vec<_> = into_par_iter_if_enabled!(part_entries)
+        let mut loaded_parts: Vec<_> = into_par_iter_if_enabled!(part_entries)
             .map(|(name, entry)| Ok((name, open_image_from_vfs(&entry)?)))
-            .map(|result: Result<(String, RgbaImage)>| -> Result<UvImage> {
-                let (name, image) = result?;
-                let uv_image = UvImage::new(name, image, store_raw_pixels);
-                Ok(uv_image)
-            })
+            .filter_map(|f: Result<(String, RgbaImage)>| f.ok())
             .collect();
-        
-        for part in loaded_parts {
-            let part = part?;
-            parts_map.push(part);
-        }
-        
-        parts_map.sort_by(|a, b| a.name.cmp(&b.name));
-        
-        Ok(())
+
+        loaded_parts.sort_by(|(a, _), (b, _)| a.cmp(&b));
+
+        let layers = loaded_parts
+            .into_iter()
+            .map(|(_, image)| image)
+            .collect::<Vec<_>>();
+
+        let part = SpeedyUvImage::new(&layers);
+
+        Ok(part)
     }
 
     fn load_environment_background(root: &VfsPath) -> Result<Option<UvImage>> {
@@ -145,16 +145,5 @@ impl PartsManager {
         } else {
             Ok(None)
         }
-    }
-
-    #[cfg(feature = "ears")]
-    fn load_ears_parts_manager(root: &VfsPath) -> Result<Option<Box<PartsManager>>> {
-        let ears_dir = root.join("ears")?;
-        Ok(if ears_dir.exists()? {
-            let ears_parts_manager = PartsManager::new(&ears_dir)?;
-            Some(Box::new(ears_parts_manager))
-        } else {
-            None
-        })
     }
 }

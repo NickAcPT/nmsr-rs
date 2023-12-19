@@ -1,10 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use nmsr_lib::parts::manager::PartsManager;
+use nmsr_lib::parts::manager::{PartsManager, SpeedyPartsManager};
 use rust_embed::RustEmbed;
 use vfs::{EmbeddedFS, VfsPath};
 
 #[derive(RustEmbed, Debug)]
-#[folder = "benches/renders/"]
+#[folder = "benches/renders-simd/"]
 struct FullBodyParts;
 
 fn bench(c: &mut Criterion) {
@@ -16,7 +16,7 @@ fn bench(c: &mut Criterion) {
     group.finish();
 }
 
-fn load_parts(root: &VfsPath) -> PartsManager {
+fn load_parts(root: &VfsPath) -> SpeedyPartsManager {
     PartsManager::new(root).unwrap()
 }
 

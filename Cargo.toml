@@ -71,11 +71,13 @@ opt-level = 3
 [profile.release.package."*"]
 opt-level = "s"
 codegen-units = 1
-strip = true
+strip = false
+debug = true
 
 [profile.release]
 opt-level = "s"
 codegen-units = 1
-strip = true
+strip = false
+debug = true
 lto = true
 panic = "abort"

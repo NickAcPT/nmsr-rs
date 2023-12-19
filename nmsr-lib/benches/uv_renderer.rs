@@ -14,7 +14,7 @@ fn bench(c: &mut Criterion) {
         .unwrap()
         .into_rgba8();
 
-    let request = RenderingEntry::new(skin, true, true, true).unwrap();
+    let request = RenderingEntry::new(skin, true, false, true).unwrap();
 
     let mut group = c.benchmark_group("nmsr-rs");
     group.sampling_mode(SamplingMode::Flat);
@@ -23,6 +23,9 @@ fn bench(c: &mut Criterion) {
     });
     group.finish();
 }
+
+criterion_group!(benches, bench);
+criterion_main!(benches);
 
 /*
 fn main() {

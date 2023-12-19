@@ -49,6 +49,7 @@ impl PartsManager {
 
         Ok(path.is_file()? && name != PartsManager::ENVIRONMENT_BACKGROUND_NAME)
     }
+    
     #[instrument(level = "trace", skip(root))]
     pub fn new(root: &VfsPath) -> Result<PartsManager> {
         let mut all_parts = Vec::<UvImage>::with_capacity(8);
@@ -154,7 +155,7 @@ impl PartsManager {
                 continue;
             }
 
-            Self::load_as_parts_speedy(&model_parts_dir, dir_name, store_raw_pixels)?;
+            Self::load_as_parts(&model_parts_dir, model_parts, dir_name, store_raw_pixels)?;
         }
 
         Ok(())

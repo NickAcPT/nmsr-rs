@@ -3,7 +3,7 @@ use std::{
     simd::{u32x4, u8x16, u8x4, SimdUint, SimdPartialEq},
 };
 
-use image::{GenericImage, RgbaImage};
+use image::{GenericImage, RgbaImage, Pixel};
 use rust_embed::RustEmbed;
 
 use crate::errors::Result;
@@ -21,7 +21,7 @@ pub fn apply_uv_map(
     render_shading: bool,
 ) -> Result<RgbaImage> {
     // Generate a new image
-    let mut image = image::ImageBuffer::new(uv.width, uv.height);
+    let mut image: RgbaImage = image::ImageBuffer::new(uv.width, uv.height);
 
     let data_in_layer_count = (uv.width) as usize;
 
@@ -31,9 +31,46 @@ pub fn apply_uv_map(
             let pixels = &uv.pixels[row_start..(row_start + data_in_layer_count * 2)];
 
             //let pixels: &[u32] = unsafe { std::mem::transmute(pixels) };
-            println!("{:?}", pixels.len());
+            //println!("{:?}", pixels.len());
             
+            fn owo(pixel: u8x4) -> u8x4 {
+                let rgba = u32::from_le_bytes(pixel.to_array());
+                
+                let u = (rgba & 0x3F) as u8;
+                let v = ((rgba >> 6) & 0x3F) as u8;
+                let shading = ((rgba >> 12) & 0xFF) as u8;
+                
+                u8x4::from_array([
+                    u,
+                    v,
+                    shading,
+                    0xFF,
+                ])
+            }
             
+            for pixel_pos in (0..pixels.len()).step_by(2) {
+                let pixel_layer_1 = pixels[pixel_pos];
+                let pixel_layer_2 = pixels[pixel_pos + 1];
+                
+                if pixel_layer_1.simd_eq(u8x4::splat(0)).all() || pixel_layer_2.simd_eq(u8x4::splat(0)).all() {
+                    continue;
+                }
+                
+                let actual_pixel_y = y / (data_in_layer_count * uv.layers);
+                let actual_pixel_x = pixel_pos % data_in_layer_count;
+                
+                //println!("{:?} -> {:?}", owo(pixel_layer_1), owo(pixel_layer_2));
+                
+                let (pixel_uv, _) = owo(pixel_layer_1).interleave(owo(pixel_layer_2));
+                
+                let [pixel_u_1, pixel_u_2, pixel_v_1, pixel_v_2] = pixel_uv.to_array();
+                
+                let p_1 = input.get_pixel(pixel_u_1 as u32, pixel_v_1 as u32);
+                let p_2 = input.get_pixel(pixel_u_2 as u32, pixel_v_2 as u32);
+                
+                image.get_pixel_mut(actual_pixel_x as u32, actual_pixel_y as u32).blend(p_1);
+                image.get_pixel_mut(((pixel_pos + 1) % data_in_layer_count) as u32, actual_pixel_y as u32).blend(p_2);
+            }
 
             //let layer_1 = u32x4::from_slice(&pixels[0..data_in_layer_count]);
             //let layer_2 = u32x4::from_slice(&pixels[data_in_layer_count..]);
@@ -203,7 +240,7 @@ mod test {
             out_img.save(format!("layer-{}.png", layer)).unwrap();
         } */
 
-        let input = image::load_from_memory(include_bytes!("../../../../nickac-skin.png"))
+        let input = image::load_from_memory(include_bytes!("../../../../aaaa.png"))
             .unwrap()
             .to_rgba8();
 

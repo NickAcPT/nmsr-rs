@@ -2,7 +2,7 @@ use image::{GenericImage, ImageBuffer, Pixel, Rgba, RgbaImage};
 #[cfg(feature = "parallel_iters")]
 use rayon::prelude::*;
 
-use crate::errors::NMSRError;
+use crate::{errors::NMSRError, parts::{manager::SpeedyPartsManager, player_model::PlayerModel, speedy_uv::apply_uv_map}};
 use crate::errors::Result;
 use crate::parts::manager::PartsManager;
 use crate::rendering::entry::RenderingEntry;
@@ -10,6 +10,17 @@ use crate::utils::par_iterator_if_enabled;
 use crate::uv::part::UvImagePixel;
 
 impl RenderingEntry {
+    pub fn render_speedy(&self, parts_manager: &SpeedyPartsManager) -> Result<RgbaImage> {
+           let image = match (&self.model, self.render_layers) {
+            (&PlayerModel::Steve, true) => &parts_manager.with_layers.steve,
+            (&PlayerModel::Steve, false) => &parts_manager.no_layers.steve,
+            (&PlayerModel::Alex, true) => &parts_manager.with_layers.alex,
+            (&PlayerModel::Alex, false) => &parts_manager.no_layers.alex,
+        };
+        
+        apply_uv_map(&self.skin, image, self.render_shading)
+    }
+        
     pub fn render(&self, parts_manager: &PartsManager) -> Result<RgbaImage> {
         // Compute all the parts needed to be rendered
         let all_parts = parts_manager.get_parts(self);

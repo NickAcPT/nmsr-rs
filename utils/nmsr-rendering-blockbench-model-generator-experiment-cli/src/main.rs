@@ -18,7 +18,7 @@ struct Args {
     #[arg(short, long, required = false, value_enum)]
     model: PlayerModelArg,
 
-    #[arg(long, default_value = "true")]
+    #[arg(long)]
     layers: bool,
 
     #[arg(long)]

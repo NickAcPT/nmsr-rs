@@ -127,6 +127,10 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModChestPartProvider<M> {
                 b.stack(|b| {
                     do_chest_grow(body_part, b);
                     
+                    if body_part == PlayerBodyPartType::BodyLayer {
+                        b.translate(0.25, 0., 0.);
+                    }
+                    
                     b.quad_front(
                         u,
                         v,

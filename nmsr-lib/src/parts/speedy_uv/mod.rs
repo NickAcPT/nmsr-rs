@@ -1,15 +1,17 @@
 use std::{
     fmt::{Debug, Formatter},
-    simd::{u32x4, u8x16, u8x4, SimdUint, SimdPartialEq},
+    mem::transmute,
+    simd::{u32x4, u8x16, u8x4, SimdPartialEq, SimdPartialOrd, SimdUint},
 };
 
-use image::{GenericImage, RgbaImage, Pixel};
+use image::{imageops, GenericImage, ImageBuffer, Pixel, Rgba, RgbaImage};
+use itertools::Itertools;
 use rust_embed::RustEmbed;
 
 use crate::errors::Result;
 
 pub struct SpeedyUvImage {
-    pixels: Vec<u8x4>,
+    pixels: Vec<u32>,
     width: u32,
     height: u32,
     layers: usize,
@@ -21,69 +23,60 @@ pub fn apply_uv_map(
     render_shading: bool,
 ) -> Result<RgbaImage> {
     // Generate a new image
-    let mut image: RgbaImage = image::ImageBuffer::new(uv.width, uv.height);
+    fn owo(rgba: u32) -> (u8, u8, u8) {
+        let u = (rgba & 0x3F) as u8;
+        let v = ((rgba >> 6) & 0x3F) as u8;
+        let shading = ((rgba >> 12) & 0xFF) as u8;
 
-    let data_in_layer_count = (uv.width) as usize;
-
-    for y in (0..uv.pixels.len()).step_by(data_in_layer_count * uv.layers) {
-        for layer_count in (0..uv.layers).step_by(2) {
-            let row_start = y + (layer_count * data_in_layer_count);
-            let pixels = &uv.pixels[row_start..(row_start + data_in_layer_count * 2)];
-
-            //let pixels: &[u32] = unsafe { std::mem::transmute(pixels) };
-            //println!("{:?}", pixels.len());
-            
-            fn owo(pixel: u8x4) -> u8x4 {
-                let rgba = u32::from_le_bytes(pixel.to_array());
-                
-                let u = (rgba & 0x3F) as u8;
-                let v = ((rgba >> 6) & 0x3F) as u8;
-                let shading = ((rgba >> 12) & 0xFF) as u8;
-                
-                u8x4::from_array([
-                    u,
-                    v,
-                    shading,
-                    0xFF,
-                ])
-            }
-            
-            for pixel_pos in (0..pixels.len()).step_by(2) {
-                let pixel_layer_1 = pixels[pixel_pos];
-                let pixel_layer_2 = pixels[pixel_pos + 1];
-                
-                if pixel_layer_1.simd_eq(u8x4::splat(0)).all() || pixel_layer_2.simd_eq(u8x4::splat(0)).all() {
-                    continue;
-                }
-                
-                let actual_pixel_y = y / (data_in_layer_count * uv.layers);
-                let actual_pixel_x = pixel_pos % data_in_layer_count;
-                
-                //println!("{:?} -> {:?}", owo(pixel_layer_1), owo(pixel_layer_2));
-                
-                let (pixel_uv, _) = owo(pixel_layer_1).interleave(owo(pixel_layer_2));
-                
-                let [pixel_u_1, pixel_u_2, pixel_v_1, pixel_v_2] = pixel_uv.to_array();
-                
-                let p_1 = input.get_pixel(pixel_u_1 as u32, pixel_v_1 as u32);
-                let p_2 = input.get_pixel(pixel_u_2 as u32, pixel_v_2 as u32);
-                
-                image.get_pixel_mut(actual_pixel_x as u32, actual_pixel_y as u32).blend(p_1);
-                image.get_pixel_mut(((pixel_pos + 1) % data_in_layer_count) as u32, actual_pixel_y as u32).blend(p_2);
-            }
-
-            //let layer_1 = u32x4::from_slice(&pixels[0..data_in_layer_count]);
-            //let layer_2 = u32x4::from_slice(&pixels[data_in_layer_count..]);
-//
-            //if layer_1.simd_eq(u32x4::splat(0)).all() || layer_2.simd_eq(u32x4::splat(0)).all() {
-            //    continue;
-            //}
-            
-            //println!("{:?} & {:?}", layer_1, layer_2);
-        }
+        (u, v, shading)
     }
 
+    let mut pixels = uv
+        .pixels
+        .iter()
+        .flat_map(|p| {
+            if p == &0 {
+                return [0, 0, 0, 0];
+            }
+            
+            let (u, v, _) = owo(*p);
+
+            input.get_pixel_checked(u as u32, v as u32).unwrap_or(&Rgba([0, 0, 0, 0])).0
+        })
+        .collect_vec();
+
+    let pixels = pixels
+        .chunks_mut((uv.width * 4 * uv.height) as usize)
+        .reduce(|a: &mut [u8], b: &mut [u8]| -> &mut [u8] {
+            let mut a_img: ImageBuffer<Rgba<u8>, &mut [u8]> =
+                ImageBuffer::<Rgba<_>, _>::from_raw(uv.width, uv.height, a)
+                    .expect("Failed to create image a");
+                
+            let b_img = ImageBuffer::<Rgba<_>, _>::from_raw(uv.width, uv.height, b)
+                .expect("Failed to create image b");
+
+            imageops::overlay(&mut a_img, &b_img, 0, 0);
+
+            a_img.into_raw()
+        })
+        .expect("Failed to reduce");
+
+    let image =
+        RgbaImage::from_raw(uv.width, uv.height, pixels.to_vec()).expect("Failed to create image");
+
     Ok(image)
+}
+
+fn blend(dst: &mut u32x4, other: &u32x4) {
+    if other.simd_eq(u32x4::splat(0)).all() {
+        return;
+    }
+
+    // If other's alpha is 255, just copy it over
+    if other.simd_gt(u32x4::splat(0x000000FF)).all() {
+        *dst = *other;
+        return;
+    }
 }
 
 /*
@@ -161,40 +154,30 @@ impl Debug for SpeedyUvImage {
 
 impl SpeedyUvImage {
     pub fn new(layers: &[RgbaImage]) -> Self {
-        let layer_count_aligned = layers.len().next_multiple_of(2);
+        let layer_count = layers.len();
 
-        let real_layer_count = layers.len();
         let width = layers[0].width() as usize;
         let height = layers[0].height() as usize;
 
-        let mut pixels: Vec<u8x4> = Vec::with_capacity(layer_count_aligned * (height * (width * 4)));
-        pixels.resize(layer_count_aligned * (height * (width * 4)), u8x4::splat(0));
+        let pixels = layers
+            .into_iter()
+            .flat_map(|layer| {
+                let samples = layer.as_flat_samples();
 
-        for y in 0..height {
-            for l in 0..real_layer_count {
-                let data_in_layer_count: usize = (width * 4) as usize;
-                let layer = &layers[l];
-                let (_, row, _) = layer.as_flat_samples().samples[y * data_in_layer_count..(y + 1) * data_in_layer_count].as_simd::<4>();
+                samples.samples.chunks_exact(4)
+            })
+            .map(|f: &[u8]| -> [u8; 4] { f.try_into().unwrap() })
+            .map(|f| u32::from_le_bytes(f))
+            .collect::<Vec<_>>();
 
-                // Pixels should be in the following layout:
-                // [Layer 0 - Row 0][Layer 1 - Row 0][Layer 2 - Row 0]...
-                // [Layer 0 - Row 1][Layer 1 - Row 1][Layer 2 - Row 1]...
-
-                let data_in_layer_count: usize = (width) as usize;
-                
-                let dst_row_start =
-                    (y * data_in_layer_count * real_layer_count) + (l * data_in_layer_count);
-                let dst_row_end = dst_row_start + data_in_layer_count;
-
-                pixels[dst_row_start..dst_row_end].copy_from_slice(row);
-            }
-        }
+        // Make sure we have enough pixels to do 4 pixels at a time
+        //pixels.resize((layer_count * (height * (width * 4))).next_multiple_of(4), 0);
 
         Self {
             pixels,
             width: width as u32,
             height: height as u32,
-            layers: layer_count_aligned,
+            layers: layer_count,
         }
     }
 }
@@ -215,7 +198,7 @@ mod test {
 
     #[test]
     fn owo() {
-        let manager = PartsManager::new(&EmbeddedFS::<FullBodyParts>::new().into()).unwrap();
+        let manager = PartsManager::new_speedy(&EmbeddedFS::<FullBodyParts>::new().into()).unwrap();
         println!("{:?}", manager);
 
         let image = manager.with_layers.alex;

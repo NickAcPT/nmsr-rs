@@ -7,7 +7,7 @@ RUN git clone https://github.com/NickAcPT/nmsr-rs/
 
 WORKDIR /tmp/nmsr-rs/
 
-RUN git checkout nmsr-aas/next
+RUN git checkout main
 
 RUN RUSTFLAGS="-Ctarget-cpu=native" cargo build --release --bin nmsr-aas --features ears --package nmsr-aas
 

@@ -1,4 +1,4 @@
-use std::simd::{f32x4, u32x4, SimdFloat, SimdPartialOrd, SimdUint};
+use std::simd::prelude::{f32x4, u32x4, SimdFloat, SimdPartialOrd, SimdUint};
 
 use arrayvec::ArrayVec;
 use glam::{Vec2, Vec3A, Vec4};

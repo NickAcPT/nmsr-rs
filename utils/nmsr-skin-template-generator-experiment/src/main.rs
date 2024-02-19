@@ -25,7 +25,7 @@ use nmsr_player_parts::{
     types::{PlayerBodyPartType, PlayerPartTextureType},
     IntoEnumIterator,
 };
-use rand::{seq::SliceRandom, Rng};
+use rand::Rng;
 use strum::EnumIter;
 
 #[derive(Debug, Copy, Clone, Eq, Hash, PartialEq, EnumIter, Default)]

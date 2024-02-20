@@ -84,6 +84,10 @@ pub struct MojankConfiguration {
 
     /// The rate limit to use for requests to the session server in a 1 second window.
     pub session_server_rate_limit: u64,
+    
+    /// Whether to enable the offline-mode UUIDs.
+    /// By enabling this, offline mode UUIDs (version 3) will be allowed.
+    pub allow_offline_mode_uuids: bool,
 }
 
 impl Default for MojankConfiguration {

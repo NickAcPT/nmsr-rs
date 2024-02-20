@@ -11,6 +11,7 @@ use crate::error::{RenderRequestError, RenderRequestResult};
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Deserialize, Serialize)]
 pub enum RenderRequestEntry {
     MojangPlayerUuid(Uuid),
+    MojangOfflinePlayerUuid(Uuid),
     GeyserPlayerUuid(Uuid),
     TextureHash(String),
     PlayerSkin(#[debug(skip)] Vec<u8>),
@@ -28,6 +29,8 @@ impl TryFrom<String> for RenderRequestEntry {
 
             if uuid_version == 4 {
                 Ok(Self::MojangPlayerUuid(uuid))
+            } else if uuid_version == 3 {
+                Ok(Self::MojangOfflinePlayerUuid(uuid))
             } else if uuid_version == 0 {
                 Ok(Self::GeyserPlayerUuid(uuid))
             } else {
@@ -73,6 +76,7 @@ impl TryFrom<RenderRequestEntry> for String {
     fn try_from(value: RenderRequestEntry) -> Result<Self, Self::Error> {
         match value {
             RenderRequestEntry::MojangPlayerUuid(uuid)
+            | RenderRequestEntry::MojangOfflinePlayerUuid(uuid)
             | RenderRequestEntry::GeyserPlayerUuid(uuid) => Ok(uuid.to_string()),
             RenderRequestEntry::TextureHash(hash) => Ok(hash),
             RenderRequestEntry::PlayerSkin(_) => Err(RenderRequestError::InvalidPlayerRequest(

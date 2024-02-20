@@ -225,7 +225,14 @@ impl RenderRequestResolver {
         let cape_texture: Option<MojangTexture>;
 
         match &entry {
-            RenderRequestEntry::MojangPlayerUuid(id) => {
+            RenderRequestEntry::MojangPlayerUuid(id) | RenderRequestEntry::MojangOfflinePlayerUuid(id) => {
+                if matches!(&entry, RenderRequestEntry::MojangOfflinePlayerUuid(_)) && !self.mojang_requests_client.mojank_config().allow_offline_mode_uuids {
+                    return Err(RenderRequestError::InvalidPlayerUuidRequest(
+                        id.to_string(),
+                        id.get_version_num(),
+                    ))?;                    
+                }
+                
                 let result = self
                     .mojang_requests_client
                     .resolve_uuid_to_game_profile(id)

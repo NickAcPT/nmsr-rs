@@ -60,6 +60,9 @@ session_server_rate_limit = 10
 # The URL to the Geyser API's server.
 # This is used to get the bedrock skin for a player based on their Floodgate UUID.
 geysermc_api_server = "https://api.geysermc.org/"
+# Whether to enable the offline-mode UUIDs.
+# By enabling this, offline mode UUIDs (version 3) will be allowed.
+allow_offline_mode_uuids = false
 
 # Rendering configuration.
 # This is used when setting up the rendering engine.

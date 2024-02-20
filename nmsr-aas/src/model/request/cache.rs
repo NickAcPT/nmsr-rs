@@ -263,9 +263,9 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         _config: &ModelCacheConfiguration,
     ) -> Result<Option<String>> {
         Ok(match entry {
-            RenderRequestEntry::MojangPlayerUuid(u) | RenderRequestEntry::GeyserPlayerUuid(u) => {
-                Some(u.to_string())
-            }
+            RenderRequestEntry::MojangPlayerUuid(u)
+            | RenderRequestEntry::MojangOfflinePlayerUuid(u)
+            | RenderRequestEntry::GeyserPlayerUuid(u) => Some(u.to_string()),
             RenderRequestEntry::TextureHash(hash) => Some(hash.clone()),
             RenderRequestEntry::PlayerSkin(_) => None,
         })

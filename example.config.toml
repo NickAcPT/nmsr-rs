@@ -63,6 +63,9 @@ geysermc_api_server = "https://api.geysermc.org/"
 # Whether to enable the offline-mode UUIDs.
 # By enabling this, offline mode UUIDs (version 3) will be allowed.
 allow_offline_mode_uuids = false
+# Whether to use dashless UUIDs when requesting the Mojang API.
+# By enabling this, the UUIDs will be sent to the Mojang API without dashes.
+use_dashless_uuids = false
 
 # Rendering configuration.
 # This is used when setting up the rendering engine.

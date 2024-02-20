@@ -44,8 +44,14 @@ impl MojangClient {
         &self,
         id: &Uuid,
     ) -> MojangRequestResult<GameProfile> {
+        let id_str = if self.mojank_config().use_dashless_uuids {
+            id.simple().to_string()
+        } else {
+            id.as_hyphenated().to_string()
+        };
+        
         let url = format!(
-            "{session_server}/session/minecraft/profile/{id}",
+            "{session_server}/session/minecraft/profile/{id_str}",
             session_server = self.mojank_config.session_server
         );
 

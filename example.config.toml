@@ -73,11 +73,8 @@ textures_server_cape_url_template = "{textures_server}/texture/{texture_id}"
 
 # Rendering configuration.
 # This is used when setting up the rendering engine.
-# Example:
-#  
-# [rendering]
-# # The number of MSAA samples to use when rendering.
-# sample_count = 1
-# # Whether to use SMAA.
-# use_smaa = true
 [rendering]
+# # The number of MSAA samples to use when rendering.
+sample_count = 1
+# # Whether to use SMAA (Anti-Aliasing) when rendering.
+use_smaa = true

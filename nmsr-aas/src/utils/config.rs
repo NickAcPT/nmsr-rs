@@ -79,6 +79,7 @@ pub struct MojankConfiguration {
     /// The textures server to use for downloading player textures.
     pub textures_server: String,
 
+    /// The GeyserMC API server to use for resolving Bedrock Edition player textures.
     pub geysermc_api_server: String,
 
     /// The rate limit to use for requests to the session server in a 1 second window.
@@ -105,6 +106,7 @@ pub struct ServerConfiguration {
     /// The static files directory to serve.
     pub static_files_directory: Option<PathBuf>,
 }
+
 impl Default for ServerConfiguration {
     fn default() -> Self {
         Self {

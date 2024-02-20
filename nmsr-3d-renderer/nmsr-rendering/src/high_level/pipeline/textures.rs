@@ -3,14 +3,24 @@ use super::{scene::Size, GraphicsContext};
 use image::RgbaImage;
 use tracing::instrument;
 use wgpu::{
-    Buffer, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+    BindGroup, Buffer, Sampler, Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView
 };
 
 #[derive(Debug)]
 pub struct SceneTexture {
+    pub(crate) _texture: Texture,
+    pub(crate) _view: TextureView,
+    pub(crate) _texture_sampler: Sampler,
+    pub(crate) texture_sampler_bind_group: BindGroup
+}
+
+#[derive(Debug)]
+pub struct SimpleSceneTexture {
     pub(crate) texture: Texture,
     pub(crate) view: TextureView,
 }
+
+
 #[derive(Debug, Clone)]
 pub struct BufferDimensions {
     pub height: usize,
@@ -41,9 +51,9 @@ impl BufferDimensions {
 
 #[derive(Debug)]
 pub(crate) struct SceneContextTextures {
-    pub(crate) depth_texture: SceneTexture,
-    pub(crate) output_texture: SceneTexture,
-    pub(crate) multisampled_output_texture: Option<SceneTexture>,
+    pub(crate) depth_texture: SimpleSceneTexture,
+    pub(crate) output_texture: SimpleSceneTexture,
+    pub(crate) multisampled_output_texture: Option<SimpleSceneTexture>,
     pub(crate) texture_output_buffer: Buffer,
     pub(crate) texture_output_buffer_dimensions: BufferDimensions,
     pub(crate) camera_size: Size,
@@ -79,7 +89,7 @@ pub fn create_texture(
     usage: TextureUsages,
     label: Option<&str>,
     sample_count: u32,
-) -> SceneTexture {
+) -> SimpleSceneTexture {
     let texture = context.device.create_texture(&TextureDescriptor {
         size: wgpu::Extent3d {
             width,
@@ -96,5 +106,5 @@ pub fn create_texture(
     });
     let view = texture.create_view(&Default::default());
 
-    SceneTexture { texture, view }
+    SimpleSceneTexture { texture, view }
 }

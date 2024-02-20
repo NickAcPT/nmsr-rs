@@ -14,13 +14,12 @@ use crate::{
 };
 
 use derive_more::{Debug, Deref, DerefMut, From};
-use glam::Mat4;
+use glam::{Mat4, Vec3};
 use image::{buffer::ConvertBuffer, RgbaImage};
 use smaa::SmaaTarget;
 use tracing::{instrument, trace_span};
 use wgpu::{
-    util::DeviceExt, BindGroup, Buffer, BufferDescriptor, BufferUsages, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsages,
+    util::DeviceExt, AddressMode, BindGroup, BindGroupDescriptor, BindGroupEntry, Buffer, BufferDescriptor, BufferUsages, FilterMode, Sampler, SamplerDescriptor, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages
 };
 
 #[derive(Debug)]
@@ -29,6 +28,8 @@ pub struct SceneContext {
     pub transform_bind_group: BindGroup,
     pub sun_information_buffer: Buffer,
     pub sun_information_bind_group: BindGroup,
+    pub fully_lit_sun_information_buffer: Buffer,
+    pub fully_lit_sun_information_bind_group: BindGroup,
     pub(crate) textures: Option<SceneContextTextures>,
     #[debug(skip)]
     pub(crate) smaa_target: Option<SmaaTarget>,
@@ -54,12 +55,21 @@ impl SceneContext {
             &context.layouts.sun_bind_group_layout,
             &[SunInformation::default()],
         );
+        
+        let (fully_lit_sun_information_buffer, fully_lit_sun_information_bind_group) = create_buffer_and_bind_group(
+            device,
+            "Sun - Fully Lit",
+            &context.layouts.sun_bind_group_layout,
+            &[SunInformation::new(Vec3::Y, 0.0, 1.0)],
+        );
 
         Self {
             transform_bind_group,
             transform_matrix_buffer,
             sun_information_buffer,
             sun_information_bind_group,
+            fully_lit_sun_information_buffer,
+            fully_lit_sun_information_bind_group,
             textures: None,
             smaa_target: None,
         }
@@ -232,6 +242,7 @@ impl SceneContext {
         context: &GraphicsContext,
         image: &RgbaImage,
         label: Option<&str>,
+        linear_filtering: bool,
     ) -> SceneTexture {
         let mut image: RgbaImage = image.convert();
 
@@ -263,7 +274,46 @@ impl SceneContext {
         );
         let view = texture.create_view(&Default::default());
 
-        SceneTexture { texture, view }
+        let filter = if linear_filtering {
+            FilterMode::Linear
+        } else {
+            FilterMode::Nearest
+        };
+
+        let device = &context.device;
+
+        // TODO: Reuse samplers if possible
+        let texture_sampler: Sampler = device.create_sampler(&SamplerDescriptor {
+            label,
+            address_mode_u: AddressMode::ClampToEdge,
+            address_mode_v: AddressMode::ClampToEdge,
+            address_mode_w: AddressMode::ClampToEdge,
+            mag_filter: filter,
+            min_filter: filter,
+            mipmap_filter: filter,
+            lod_min_clamp: 0.0,
+            lod_max_clamp: 0.0,
+            compare: None,
+            anisotropy_clamp: 1,
+            border_color: None,
+        });
+
+        let texture_sampler_bind_group: BindGroup = device.create_bind_group(&BindGroupDescriptor {
+            layout: &context.layouts.skin_sampler_bind_group_layout,
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&texture_sampler),
+                },
+            ],
+            label,
+        });
+
+        SceneTexture { _texture: texture, _view: view, _texture_sampler: texture_sampler, texture_sampler_bind_group }
     }
 
     pub(crate) fn try_textures(&self) -> Result<&SceneContextTextures> {

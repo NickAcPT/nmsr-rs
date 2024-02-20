@@ -12,6 +12,19 @@ use wgpu::{
     BufferUsages,
 };
 
+#[instrument(skip(device, value))]
+pub fn create_buffer<T: Pod>(
+    device: &wgpu::Device,
+    label: &str,
+    value: &[T],
+) -> Buffer {
+    device.create_buffer_init(&BufferInitDescriptor {
+        label: Some((label.to_owned() + " Buffer").as_str()),
+        contents: bytemuck::cast_slice(value),
+        usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+    })
+}
+
 #[instrument(skip(device, layout, value))]
 pub fn create_buffer_and_bind_group<T: Pod>(
     device: &wgpu::Device,
@@ -19,11 +32,7 @@ pub fn create_buffer_and_bind_group<T: Pod>(
     layout: &BindGroupLayout,
     value: &[T],
 ) -> (Buffer, BindGroup) {
-    let buffer = device.create_buffer_init(&BufferInitDescriptor {
-        label: Some((label.to_owned() + " Buffer").as_str()),
-        contents: bytemuck::cast_slice(value),
-        usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-    });
+    let buffer = create_buffer(device, label, value);
 
     let transform_bind_group = device.create_bind_group(&BindGroupDescriptor {
         label: Some((label.to_owned() + " Bind group").as_str()),

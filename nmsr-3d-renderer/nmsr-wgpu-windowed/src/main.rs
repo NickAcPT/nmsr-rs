@@ -6,22 +6,22 @@ use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 
 use nmsr_player_parts::parts::part::Part;
-use nmsr_rendering::high_level::pipeline::scene::{self, Scene, SunInformation, Size};
+use nmsr_rendering::high_level::pipeline::scene::{self, Scene, Size, SunInformation};
 use nmsr_rendering::high_level::pipeline::{
     GraphicsContext, GraphicsContextDescriptor, SceneContext, SceneContextWrapper,
 };
 use nmsr_rendering::high_level::utils::parts::primitive_convert;
-use nmsr_rendering::low_level::Vec3;
 use nmsr_rendering::low_level::primitives::part_primitive::PartPrimitive;
+use nmsr_rendering::low_level::Vec3;
 use strum::IntoEnumIterator;
 
-use wgpu::{Backends, Instance, Features};
+use wgpu::{Backends, Features, Instance};
 use winit::event;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
 
-use nmsr_player_parts::parts::provider::PlayerPartProviderContext;
 use nmsr_player_parts::model::PlayerModel;
+use nmsr_player_parts::parts::provider::PlayerPartProviderContext;
 use nmsr_player_parts::types::PlayerBodyPartType;
 use nmsr_rendering::high_level::camera::{
     Camera, CameraPositionParameters, CameraRotation, ProjectionParameters,
@@ -43,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
         renderdoc::RenderDoc::<renderdoc::V140>::new().expect("Failed to initialize RenderDoc");
 
     let mut showed_replay_ui = false;
-        
+
     let mut event_loop = EventLoop::new();
     let mut builder = winit::window::WindowBuilder::new();
     builder = builder.with_title("NMSR WGPU Windowed");
@@ -89,7 +89,7 @@ async fn main() -> anyhow::Result<()> {
     println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
     let sun = SunInformation::new([0.0, -1.0, 5.0].into(), 1.0, 0.35);
-    
+
     let camera = Camera::new_absolute(
         Vec3::new(0.0, 30.0, -20.0),
         CameraRotation {
@@ -113,7 +113,8 @@ async fn main() -> anyhow::Result<()> {
         shadow_y_pos: Some(0.0),
         shadow_is_square: false,
         armor_slots: None,
-        #[cfg(feature = "ears")] ears_features: None
+        #[cfg(feature = "ears")]
+        ears_features: None,
     };
 
     let mut scene = build_scene(&graphics, config, &mut ctx, camera, sun);
@@ -125,7 +126,11 @@ async fn main() -> anyhow::Result<()> {
     let start_time = Instant::now();
     let mut last_frame_time = Duration::ZERO;
 
-    let mut last_camera_stuff: Option<(CameraPositionParameters, CameraRotation, ProjectionParameters)> = None;
+    let mut last_camera_stuff: Option<(
+        CameraPositionParameters,
+        CameraRotation,
+        ProjectionParameters,
+    )> = None;
 
     let mut egui_rpass = RenderPass::new(device, *surface_view_format, 1);
 
@@ -136,7 +141,7 @@ async fn main() -> anyhow::Result<()> {
         font_definitions: FontDefinitions::default(),
         style: Default::default(),
     });
-    
+
     let mut last_computed_parts = scene.parts().to_vec();
 
     event_loop.run_return(|event, _, control_flow| {
@@ -226,7 +231,7 @@ async fn main() -> anyhow::Result<()> {
                                     .expect("Failed to launch RenderDoc replay UI");
                                 showed_replay_ui = true;
                             }
-                            
+
                             //println!("Triggering RenderDoc capture.");
                             println!("Last frame time: {:?}", last_frame_time);
                             renderdoc.trigger_capture();
@@ -259,7 +264,7 @@ async fn main() -> anyhow::Result<()> {
                                     &mut ctx,
                                     &mut needs_rebuild,
                                     &mut needs_skin_rebuild,
-                                    &last_computed_parts
+                                    &last_computed_parts,
                                 );
                             }
 
@@ -305,22 +310,7 @@ async fn main() -> anyhow::Result<()> {
                 }
 
                 if needs_skin_rebuild {
-                    let skin_bytes: Vec<u8> = match ctx.model {
-                        PlayerModel::Steve => include_bytes!("aaaa.png").to_vec(),
-                        PlayerModel::Alex => include_bytes!("6985d6a236558d495f25d57f15fa3851f2d6af5493bc408b8f627a7232a7fb (1).png").to_vec(),
-                    };
-                    let skin_image = image::load_from_memory(&skin_bytes).unwrap();
-                    let mut skin_rgba = skin_image.to_rgba8();
-
-                    ears_rs::utils::strip_alpha(&mut skin_rgba);
-
-                    // Upload skin and cape
-                    scene.set_texture(
-                        &graphics,
-                        nmsr_player_parts::types::PlayerPartTextureType::Skin,
-                        &skin_rgba,
-                    );
-                    
+                    scene = build_scene(&graphics, config, &mut ctx, camera, sun);
                 }
 
                 last_frame_time = start.elapsed();
@@ -339,25 +329,27 @@ fn build_scene(
     config: &wgpu::SurfaceConfiguration,
     ctx: &mut PlayerPartProviderContext,
     camera: Camera,
-    sun: SunInformation
+    sun: SunInformation,
 ) -> Scene<SceneContextWrapper> {
     macro_rules! load_image {
-        ($image: literal) => {
-            {
-                let skin_bytes = include_bytes!($image);
-                let skin_image = image::load_from_memory(skin_bytes).unwrap();
-                skin_image.to_rgba8()
-            }
-        };
+        ($image: literal) => {{
+            let skin_bytes = include_bytes!($image);
+            let skin_image = image::load_from_memory(skin_bytes).unwrap();
+            skin_image.to_rgba8()
+        }};
     }
-    
-    let mut skin_rgba = load_image!("download (19).png");
-    
+
+    let mut skin_rgba = if ctx.model.is_slim_arms() {
+        load_image!("392b6f75ff6b2b07.png")
+    } else {
+        load_image!("download (19).png")
+    };
+
     #[cfg(feature = "ears")]
     {
-        ctx.ears_features = ears_rs::parser::EarsParser::parse(&skin_rgba).unwrap();
+        ctx.ears_features = dbg!(ears_rs::parser::EarsParser::parse(&skin_rgba).unwrap());
     }
-        
+
     let mut scene = Scene::new(
         graphics,
         SceneContext::new(graphics).into(),
@@ -390,7 +382,21 @@ fn build_scene(
         nmsr_player_parts::types::PlayerPartTextureType::Cape,
         &cape_rgba,
     );
-    
+
+    if let Ok(Some(palette)) = ears_rs::utils::extract_emissive_palette(&skin_rgba) {
+        if let Ok(emissive_texture) = ears_rs::utils::apply_emissive_palette(
+            &mut skin_rgba,
+            &palette
+        ) {
+            // TODO: Emissive?!
+            scene.set_texture_emissive(
+                graphics,
+                nmsr_player_parts::types::PlayerPartTextureType::Skin,
+                &emissive_texture,
+            );
+        }
+    }
+
     scene
 }
 
@@ -399,18 +405,22 @@ fn debug_ui(
     ctx: &Context,
     camera: &mut Camera,
     sun: &mut SunInformation,
-    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation, ProjectionParameters)>,
+    last_camera_stuff: &mut Option<(
+        CameraPositionParameters,
+        CameraRotation,
+        ProjectionParameters,
+    )>,
     last_frame_time: Duration,
     part_ctx: &mut PlayerPartProviderContext,
     needs_rebuild: &mut bool,
     needs_skin_rebuild: &mut bool,
-    last_computed_parts: &[Part]
+    last_computed_parts: &[Part],
 ) {
     egui::Window::new("Camera").vscroll(true).show(ctx, |ui| {
         ui.label(format!("Last Frame time: {:?}", last_frame_time));
-        
+
         ui.separator();
-        
+
         ui.label("Presets");
 
         ui.horizontal(|ui| {
@@ -422,7 +432,11 @@ fn debug_ui(
             }
 
             if last_camera_stuff.is_some() && ui.button("Last").clicked() {
-                let current = (camera.get_position_parameters(), camera.get_rotation(), camera.get_projection());
+                let current = (
+                    camera.get_position_parameters(),
+                    camera.get_rotation(),
+                    camera.get_projection(),
+                );
 
                 let (position, rotation, projection) = last_camera_stuff.unwrap();
                 camera.set_position_parameters(position);
@@ -435,11 +449,8 @@ fn debug_ui(
 
         ui.horizontal(|ui| {
             if ui.button("NMSR (Full Body)").clicked() {
-
                 camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
-                    21.47,
-                    27.31,
-                    -46.48,
+                    21.47, 27.31, -46.48,
                 )));
 
                 camera.set_rotation(CameraRotation {
@@ -450,32 +461,27 @@ fn debug_ui(
 
                 camera.set_projection(ProjectionParameters::Perspective { fov: 37.677_284 });
             }
-            
+
             if ui.button("NMSR (Head)").clicked() {
                 camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
-                    10.16,
-                    33.5,
-                    -22.40,
+                    10.16, 33.5, -22.40,
                 )));
-                
+
                 camera.set_rotation(CameraRotation {
                     yaw: 25.26,
                     pitch: 14.95,
                     roll: 0.0,
                 });
-                
+
                 camera.set_projection(ProjectionParameters::Perspective { fov: 27.1 });
-                
             }
-            
         });
 
         ui.horizontal(|ui| {
             if ui.button("NMSR (Full Body) (Orbital)").clicked() {
-
-                camera.set_position_parameters(CameraPositionParameters::Orbital{
+                camera.set_position_parameters(CameraPositionParameters::Orbital {
                     distance: 53.0,
-                    look_at: [0.2, 16.5, 0.5].into()
+                    look_at: [0.2, 16.5, 0.5].into(),
                 });
 
                 camera.set_rotation(CameraRotation {
@@ -486,28 +492,26 @@ fn debug_ui(
 
                 camera.set_projection(ProjectionParameters::Perspective { fov: 37.5 });
             }
-            
+
             if ui.button("NMSR (Head) (Orbital)").clicked() {
                 camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
                     10.156_291,
                     33.734_36,
                     -22.408_844,
                 )));
-                
+
                 camera.set_rotation(CameraRotation {
                     yaw: 25.264_536,
                     pitch: 14.953_99,
                     roll: 0.0,
                 });
-                
+
                 camera.set_projection(ProjectionParameters::Perspective { fov: 23.444_515 });
-                
             }
-            
         });
-        
+
         ui.separator();
-        
+
         ui.label("Camera");
 
         {
@@ -533,7 +537,6 @@ fn debug_ui(
 
         if let CameraPositionParameters::Absolute(_) = camera.get_position_parameters() {
             ui.horizontal(|ui| {
-                    
                 ui.label("X");
                 ui.add(drag_value(
                     camera,
@@ -621,7 +624,6 @@ fn debug_ui(
                 Some(-180.0f32),
                 Some(180.0f32),
             ));
-            
         });
 
         ui.separator();
@@ -662,51 +664,51 @@ fn debug_ui(
                 None,
             ));
         }
-        
+
         if ui.button("Center isometric").clicked() {
-            
             // First thing we do is get our scene parts
-            let parts_pos: Vec<_> = last_computed_parts.iter()
+            let parts_pos: Vec<_> = last_computed_parts
+                .iter()
                 .map(primitive_convert)
                 .flat_map(|p| p.get_vertices())
                 .map(|v| v.position)
                 .collect();
-            
+
             let first = parts_pos.first().unwrap();
-            
+
             let min = parts_pos.iter().fold(*first, |acc, v| acc.min(*v));
             let max = parts_pos.iter().fold(*first, |acc, v| acc.max(*v));
-            
+
             let center = (min + max) / 2.0;
-            
+
             let center = center * Into::<Vec3>::into([-1.0, 1.0, -1.0]);
-            
+
             camera.set_position_parameters(CameraPositionParameters::Absolute(center));
-            
+
             // Isometric camera rotation
             camera.set_rotation(CameraRotation {
                 yaw: 45.0,
                 pitch: 30.0f32.to_radians().asin().to_degrees(),
                 roll: 0.0,
             });
-            
+
             let diameter = (max - min).length();
             let aspect = camera.get_aspect_ratio();
-            
+
             println!("max - min: {}", max - min);
             println!("aspect: {}", aspect);
             println!("diameter / 2.0 / aspect: {}", diameter / 2.0 / aspect);
             println!("diameter / 2.0 * aspect: {}", diameter / 2.0 * aspect);
             println!("diameter / 2.0: {}", diameter / 2.0);
-            
+
             let scale = if aspect > 1.0 {
                 diameter / 2.0
             } else {
                 diameter / 2.0 / aspect
             };
-            
+
             println!("Diameter: {diameter:?}, Min: {min:?}, Max: {max:?}, Center: {center:?}");
-            
+
             camera.set_projection(ProjectionParameters::Orthographic { aspect: scale })
         }
     });
@@ -742,73 +744,92 @@ fn debug_ui(
                 ))
                 .changed();
 
-            *needs_rebuild |= ui.checkbox(&mut part_ctx.has_layers, "Has Layers").changed();
+            *needs_rebuild |= ui
+                .checkbox(&mut part_ctx.has_layers, "Has Layers")
+                .changed();
 
-            *needs_rebuild |= ui.checkbox(&mut part_ctx.has_hat_layer, "Has Hat").changed();
-            
+            *needs_rebuild |= ui
+                .checkbox(&mut part_ctx.has_hat_layer, "Has Hat")
+                .changed();
+
             *needs_rebuild |= ui.checkbox(&mut part_ctx.has_cape, "Has Cape").changed();
         });
-        
-    egui::Window::new("Sun")
-    .vscroll(true)
-    .show(ctx, |ui| {
+
+    egui::Window::new("Sun").vscroll(true).show(ctx, |ui| {
         // sun direction
         // sun intensity
-        
+
         ui.label("Direction");
         ui.horizontal(|ui| {
             ui.label("X");
-            *needs_rebuild |= ui.add(drag_value(
-                sun,
-                |sun| sun.direction.x,
-                |sun, v| sun.direction.x = v,
-                None,
-                None,
-            )).changed();
+            *needs_rebuild |= ui
+                .add(drag_value(
+                    sun,
+                    |sun| sun.direction.x,
+                    |sun, v| sun.direction.x = v,
+                    None,
+                    None,
+                ))
+                .changed();
             ui.label("Y");
-            *needs_rebuild |= ui.add(drag_value(
-                sun,
-                |sun| sun.direction.y,
-                |sun, v| sun.direction.y = v,
-                None,
-                None,
-            )).changed();
+            *needs_rebuild |= ui
+                .add(drag_value(
+                    sun,
+                    |sun| sun.direction.y,
+                    |sun, v| sun.direction.y = v,
+                    None,
+                    None,
+                ))
+                .changed();
             ui.label("Z");
-            *needs_rebuild |= ui.add(drag_value(
-                sun,
-                |sun| sun.direction.z,
-                |sun, v| sun.direction.z = v,
-                None,
-                None,
-            )).changed();
+            *needs_rebuild |= ui
+                .add(drag_value(
+                    sun,
+                    |sun| sun.direction.z,
+                    |sun, v| sun.direction.z = v,
+                    None,
+                    None,
+                ))
+                .changed();
         });
-        
+
         ui.label("Intensity");
-        *needs_rebuild |= ui.add(drag_value(
-            sun,
-            |sun| sun.intensity,
-            |sun, v| sun.intensity = v,
-            None,
-            None,
-        )).changed();
-        
+        *needs_rebuild |= ui
+            .add(drag_value(
+                sun,
+                |sun| sun.intensity,
+                |sun, v| sun.intensity = v,
+                None,
+                None,
+            ))
+            .changed();
+
         ui.label("Ambient");
-        *needs_rebuild |= ui.add(drag_value(
-            sun,
-            |sun| sun.ambient,
-            |sun, v| sun.ambient = v,
-            None,
-            None,
-        )).changed();
-        
+        *needs_rebuild |= ui
+            .add(drag_value(
+                sun,
+                |sun| sun.ambient,
+                |sun, v| sun.ambient = v,
+                None,
+                None,
+            ))
+            .changed();
     });
 }
 
 fn visage_orbital(
     camera: &mut Camera,
-    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation, ProjectionParameters)>,
+    last_camera_stuff: &mut Option<(
+        CameraPositionParameters,
+        CameraRotation,
+        ProjectionParameters,
+    )>,
 ) {
-    last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation(), camera.get_projection()));
+    last_camera_stuff.replace((
+        camera.get_position_parameters(),
+        camera.get_rotation(),
+        camera.get_projection(),
+    ));
 
     camera.set_position_parameters(CameraPositionParameters::Orbital {
         look_at: [0.0, 16.65, 0.0].into(),
@@ -826,9 +847,17 @@ fn visage_orbital(
 
 fn visage(
     camera: &mut Camera,
-    last_camera_stuff: &mut Option<(CameraPositionParameters, CameraRotation, ProjectionParameters)>,
+    last_camera_stuff: &mut Option<(
+        CameraPositionParameters,
+        CameraRotation,
+        ProjectionParameters,
+    )>,
 ) {
-    last_camera_stuff.replace((camera.get_position_parameters(), camera.get_rotation(), camera.get_projection()));
+    last_camera_stuff.replace((
+        camera.get_position_parameters(),
+        camera.get_rotation(),
+        camera.get_projection(),
+    ));
 
     camera.set_position_parameters(CameraPositionParameters::Absolute(Vec3::new(
         14.85, 24.3, -40.85,

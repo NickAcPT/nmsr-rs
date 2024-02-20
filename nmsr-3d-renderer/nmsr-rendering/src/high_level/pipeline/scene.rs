@@ -24,9 +24,8 @@ use std::{
 use tracing::{instrument, trace_span};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    AddressMode, BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, Extent3d, FilterMode,
-    IndexFormat, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    SamplerDescriptor, StoreOp, TextureView,
+    Color, CommandEncoder, Extent3d, IndexFormat, LoadOp, Operations, RenderPassColorAttachment,
+    RenderPassDepthStencilAttachment, StoreOp, TextureView,
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
@@ -43,6 +42,7 @@ where
     viewport_size: Size,
     scene_context: T,
     textures: HashMap<PlayerPartTextureType, SceneTexture>,
+    emissive_textures: HashMap<PlayerPartTextureType, SceneTexture>,
     computed_body_parts: Vec<Part>,
     sun_information: SunInformation,
 }
@@ -126,6 +126,7 @@ where
             viewport_size,
             scene_context,
             textures: HashMap::new(),
+            emissive_textures: HashMap::new(),
             computed_body_parts,
             sun_information: sun,
         };
@@ -178,9 +179,30 @@ where
         texture_type: PlayerPartTextureType,
         texture: &RgbaImage,
     ) {
-        let texture =
-            SceneContext::upload_texture(graphics_context, texture, Some(texture_type.into()));
+        let texture = SceneContext::upload_texture(
+            graphics_context,
+            texture,
+            Some(texture_type.into()),
+            texture_type.is_shadow(),
+        );
+
         self.textures.insert(texture_type, texture);
+    }
+
+    pub fn set_texture_emissive(
+        &mut self,
+        graphics_context: &GraphicsContext,
+        texture_type: PlayerPartTextureType,
+        texture: &RgbaImage,
+    ) {
+        let texture = SceneContext::upload_texture(
+            graphics_context,
+            texture,
+            Some(texture_type.into()),
+            texture_type.is_shadow(),
+        );
+
+        self.emissive_textures.insert(texture_type, texture);
     }
 
     #[instrument(skip(part_provider_context))]
@@ -275,75 +297,33 @@ where
             .iter()
             .group_by(|p| p.get_texture())
         {
-            let _pass_span =
-                trace_span!("render_pass", texture = Into::<&str>::into(texture)).entered();
-
-            let texture_view = &self
+            let SceneTexture {
+                texture_sampler_bind_group,
+                ..
+            } = &self
                 .textures
                 .get(&texture)
-                .ok_or(NMSRRenderingError::SceneContextTextureNotSet(texture))?
-                .view;
+                .ok_or(NMSRRenderingError::SceneContextTextureNotSet(texture))?;
 
-            let filter = if texture.is_shadow() {
-                FilterMode::Linear
-            } else {
-                FilterMode::Nearest
-            };
-
-            let texture_sampler = device.create_sampler(&SamplerDescriptor {
-                label: Some(texture.into()),
-                address_mode_u: AddressMode::ClampToEdge,
-                address_mode_v: AddressMode::ClampToEdge,
-                address_mode_w: AddressMode::ClampToEdge,
-                mag_filter: filter,
-                min_filter: filter,
-                mipmap_filter: filter,
-                lod_min_clamp: 0.0,
-                lod_max_clamp: 0.0,
-                compare: None,
-                anisotropy_clamp: 1,
-                border_color: None,
-            });
-
-            let texture_sampler_bind_group = device.create_bind_group(&BindGroupDescriptor {
-                layout: &graphics_context.layouts.skin_sampler_bind_group_layout,
-                entries: &[
-                    BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(texture_view),
-                    },
-                    BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&texture_sampler),
-                    },
-                ],
-                label: Some(texture.into()),
-            });
-
-            let parts = parts.collect::<Vec<&Part>>();
-
-            let to_render: Vec<_> = trace_span!("part_convert")
-                .in_scope(|| parts.iter().map(|&p| primitive_convert(p)).collect());
+            let to_render: Vec<_> = parts.map(|p| primitive_convert(&p)).collect();
 
             let to_render = Mesh::new(to_render);
 
             let (vertex_data, index_data) = (to_render.get_vertices(), to_render.get_indices());
 
-            let vertex_buf = trace_span!("vertex_buffer_create").in_scope(|| {
-                device.create_buffer_init(&BufferInitDescriptor {
-                    label: Some("Vertex Buffer"),
-                    contents: bytemuck::cast_slice(&vertex_data),
-                    usage: wgpu::BufferUsages::VERTEX,
-                })
+            let vertex_buf = device.create_buffer_init(&BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(&vertex_data),
+                usage: wgpu::BufferUsages::VERTEX,
             });
 
-            let index_buf = trace_span!("index_buffer_create").in_scope(|| {
+            let index_buf = {
                 device.create_buffer_init(&BufferInitDescriptor {
                     label: Some("Index Buffer"),
                     contents: bytemuck::cast_slice(&index_data),
                     usage: wgpu::BufferUsages::INDEX,
                 })
-            });
+            };
 
             let store_depth = if !texture.is_shadow() {
                 StoreOp::Store
@@ -380,6 +360,16 @@ where
             rpass.set_index_buffer(index_buf.slice(..), IndexFormat::Uint16);
             rpass.set_vertex_buffer(0, vertex_buf.slice(..));
             rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
+
+            if let Some(SceneTexture {
+                texture_sampler_bind_group: emissive_sampler_bind_group,
+                ..
+            }) = &self.emissive_textures.get(&texture)
+            {
+                rpass.set_bind_group(1, &emissive_sampler_bind_group, &[]);
+                rpass.set_bind_group(2, &self.scene_context.fully_lit_sun_information_bind_group, &[]);
+                rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
+            }
 
             load_op = LoadOp::Load;
             if store_depth == StoreOp::Store {

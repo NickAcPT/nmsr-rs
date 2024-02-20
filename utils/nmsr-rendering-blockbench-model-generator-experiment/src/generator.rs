@@ -16,8 +16,6 @@ use nmsr_rendering::high_level::{
     types::{PlayerBodyPartType, PlayerPartTextureType},
     IntoEnumIterator,
 };
-use serde_json::Value;
-
 use crate::{
     blockbench::model::ModelFaceUv,
     error::{BlockbenchGeneratorError, Contextualizable, Result},

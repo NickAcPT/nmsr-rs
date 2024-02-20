@@ -66,6 +66,10 @@ allow_offline_mode_uuids = false
 # Whether to use dashless UUIDs when requesting the Mojang API.
 # By enabling this, the UUIDs will be sent to the Mojang API without dashes.
 use_dashless_uuids = false
+# The template to use for the player skin textures URL.
+textures_server_skin_url_template = "{textures_server}/texture/{texture_id}"
+# The template to use for the player cape textures URL.
+textures_server_cape_url_template = "{textures_server}/texture/{texture_id}"
 
 # Rendering configuration.
 # This is used when setting up the rendering engine.

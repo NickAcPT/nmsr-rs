@@ -92,6 +92,12 @@ pub struct MojankConfiguration {
     /// Whether to use dashless UUIDs when requesting the Mojang API.
     /// By enabling this, the UUIDs will be sent to the Mojang API without dashes.
     pub use_dashless_uuids: bool,
+    
+    /// The template to use for resolving player skin textures.
+    pub textures_server_skin_url_template: String,
+    
+    /// The template to use for resolving player cape textures.    
+    pub textures_server_cape_url_template: String,
 }
 
 impl Default for MojankConfiguration {
@@ -104,6 +110,8 @@ impl Default for MojankConfiguration {
             
             allow_offline_mode_uuids: false,
             use_dashless_uuids: false,
+            textures_server_skin_url_template: "{textures_server}/texture/{texture_id}".to_string(),
+            textures_server_cape_url_template: "{textures_server}/texture/{texture_id}".to_string(),
         }
     }
 }

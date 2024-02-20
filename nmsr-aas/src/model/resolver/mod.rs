@@ -7,7 +7,7 @@ use super::request::{
     entry::{RenderRequestEntry, RenderRequestEntryModel},
     RenderRequest,
 };
-use crate::error::{MojangRequestError, Result};
+use crate::{error::{MojangRequestError, RenderRequestError, Result}, model::resolver::mojang::client::MojangTextureRequestType};
 use derive_more::Debug;
 #[cfg(feature = "ears")]
 use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParser};
@@ -182,11 +182,12 @@ impl RenderRequestResolver {
     async fn fetch_game_profile_texture(
         &self,
         texture: Option<&GameProfileTexture>,
+        req_type: MojangTextureRequestType,
     ) -> Result<Option<MojangTexture>> {
         if let Some(texture) = texture {
             let texture_id = texture.hash()?;
 
-            let texture = self.fetch_texture_from_mojang(texture_id).await?;
+            let texture = self.fetch_texture_from_mojang(texture_id, req_type).await?;
 
             Ok(Some(texture))
         } else {
@@ -194,14 +195,14 @@ impl RenderRequestResolver {
         }
     }
 
-    async fn fetch_texture_from_mojang(&self, texture_id: &str) -> Result<MojangTexture> {
+    async fn fetch_texture_from_mojang(&self, texture_id: &str, req_type: MojangTextureRequestType) -> Result<MojangTexture> {
         if let Some(result) = self.model_cache.get_cached_texture(texture_id).await? {
             return Ok(result);
         }
 
         let bytes = self
             .mojang_requests_client
-            .fetch_texture_from_mojang(texture_id, &Span::current())
+            .fetch_texture_from_mojang(texture_id, req_type, &Span::current())
             .await?;
 
         let texture = MojangTexture::new_named(texture_id.to_owned(), bytes);
@@ -225,7 +226,14 @@ impl RenderRequestResolver {
         let cape_texture: Option<MojangTexture>;
 
         match &entry {
-            RenderRequestEntry::MojangPlayerUuid(id) => {
+            RenderRequestEntry::MojangPlayerUuid(id) | RenderRequestEntry::MojangOfflinePlayerUuid(id) => {
+                if matches!(&entry, RenderRequestEntry::MojangOfflinePlayerUuid(_)) && !self.mojang_requests_client.mojank_config().allow_offline_mode_uuids {
+                    return Err(RenderRequestError::InvalidPlayerUuidRequest(
+                        id.to_string(),
+                        id.get_version_num(),
+                    ))?;                    
+                }
+                
                 let result = self
                     .mojang_requests_client
                     .resolve_uuid_to_game_profile(id)
@@ -243,22 +251,22 @@ impl RenderRequestResolver {
                     Some(RenderRequestEntryModel::Steve)
                 };
 
-                skin_texture = self.fetch_game_profile_texture(textures.skin()).await?;
-                cape_texture = self.fetch_game_profile_texture(cape).await?;
+                skin_texture = self.fetch_game_profile_texture(textures.skin(), MojangTextureRequestType::Skin).await?;
+                cape_texture = self.fetch_game_profile_texture(cape, MojangTextureRequestType::Cape).await?;
             }
             RenderRequestEntry::GeyserPlayerUuid(id) => {
                 let (texture_id, player_model) =
                     resolve_geyser_uuid_to_texture_and_model(&self.mojang_requests_client, id)
                         .await?;
 
-                skin_texture = Some(self.fetch_texture_from_mojang(&texture_id).await?);
+                skin_texture = Some(self.fetch_texture_from_mojang(&texture_id, MojangTextureRequestType::Skin).await?);
                 cape_texture = None;
 
                 model = Some(player_model);
             }
             RenderRequestEntry::TextureHash(skin_hash) => {
                 // If the skin is not cached, we'll have to fetch it from Mojang.
-                skin_texture = Some(self.fetch_texture_from_mojang(skin_hash).await?);
+                skin_texture = Some(self.fetch_texture_from_mojang(skin_hash, MojangTextureRequestType::Skin).await?);
                 cape_texture = None;
                 model = None;
             }

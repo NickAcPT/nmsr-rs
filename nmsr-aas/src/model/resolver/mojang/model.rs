@@ -38,6 +38,7 @@ impl GameProfileTexture {
         self.url
             .split('/')
             .last()
+            .map(|s| s.strip_suffix(".png").unwrap_or(s))
             .ok_or_else(|| MojangRequestError::InvalidTextureUrlError(self.url.clone()))
     }
 }

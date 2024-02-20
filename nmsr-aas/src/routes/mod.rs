@@ -25,11 +25,10 @@ use nmsr_rendering::high_level::pipeline::{
     pools::SceneContextPoolManager, Backends, Features, GraphicsContext, GraphicsContextDescriptor,
     GraphicsContextPools,
 };
-pub use render::{render, render_post_warning, render_get_warning};
+pub use render::{render, render_get_warning, render_post_warning};
 use std::{borrow::Cow, hint::black_box, sync::Arc, time::Duration};
 use strum::IntoEnumIterator;
 use tracing::{debug_span, info, info_span, instrument, Instrument};
-use uuid::uuid;
 
 pub trait RenderRequestValidator {
     fn validate_mode(&self, mode: &RenderRequestMode) -> bool;
@@ -174,9 +173,6 @@ impl NMSRState {
         info!("Pre-loading our cache biases.");
         self.preload_cache_biases().await?;
 
-        info!("Pre-warming model renderer.");
-        self.prewarm_renderer().await?;
-
         info!("Starting cache clean-up task");
         self.start_cache_cleanup_task();
 
@@ -219,17 +215,17 @@ impl NMSRState {
             );
 
             self.resolver.resolve(&request).await?;
+
+            self.prewarm_renderer(entry.clone()).await?;
         }
 
         Ok(())
     }
 
     #[instrument(skip(self))]
-    async fn prewarm_renderer(&self) -> Result<()> {
+    async fn prewarm_renderer(&self, entry: RenderRequestEntry) -> Result<()> {
         // Prewarm our renderer by actually rendering a few requests.
         // This will ensure that the renderer is initialized and ready to go when we start serving requests.
-        let entry =
-            RenderRequestEntry::MojangPlayerUuid(uuid!("ad4569f3-7576-4376-a7c7-8e8cfcd9b832"));
         let mut request = RenderRequest::new_from_excluded_features(
             RenderRequestMode::FullBody,
             entry,

@@ -14,9 +14,10 @@ pub struct MojangClient {
     mojank_config: Arc<MojankConfiguration>,
 }
 
-#[test]
-fn owo() {
-    println!(env!("CARGO_PKG_AUTHORS"));
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum MojangTextureRequestType {
+    Skin,
+    Cape,
 }
 
 impl MojangClient {
@@ -44,8 +45,14 @@ impl MojangClient {
         &self,
         id: &Uuid,
     ) -> MojangRequestResult<GameProfile> {
+        let id_str = if self.mojank_config().use_dashless_uuids {
+            id.simple().to_string()
+        } else {
+            id.as_hyphenated().to_string()
+        };
+        
         let url = format!(
-            "{session_server}/session/minecraft/profile/{id}",
+            "{session_server}/session/minecraft/profile/{id_str}",
             session_server = self.mojank_config.session_server
         );
 
@@ -62,12 +69,10 @@ impl MojangClient {
     pub async fn fetch_texture_from_mojang(
         &self,
         texture_id: &str,
+        req_type: MojangTextureRequestType,
         parent_span: &Span,
     ) -> MojangRequestResult<Vec<u8>> {
-        let url = format!(
-            "{textures_server}/texture/{texture_id}",
-            textures_server = self.mojank_config.textures_server
-        );
+        let url = self.build_request_url(req_type, texture_id);
 
         let bytes = self
             .do_request(&url, Method::GET, &Span::current(), || {
@@ -82,5 +87,20 @@ impl MojangClient {
 
     pub fn mojank_config(&self) -> &MojankConfiguration {
         self.mojank_config.as_ref()
+    }
+
+    fn build_request_url(&self, req_type: MojangTextureRequestType, texture_id: &str) -> String {
+        let mojank = self.mojank_config();
+
+        match req_type {
+            MojangTextureRequestType::Skin => mojank
+                .textures_server_skin_url_template
+                .replace("{textures_server}", &mojank.textures_server)
+                .replace("{texture_id}", texture_id),
+            MojangTextureRequestType::Cape => mojank
+                .textures_server_cape_url_template
+                .replace("{textures_server}", &mojank.textures_server)
+                .replace("{texture_id}", texture_id),
+        }
     }
 }

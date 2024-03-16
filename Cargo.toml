@@ -36,21 +36,21 @@ members = [
 [workspace.dependencies]
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
 thiserror = "1.0"
-strum = { version = "0.25", features = ["derive"] }
-itertools = { version = "0.11" }
+strum = { version = "0.26", features = ["derive"] }
+itertools = { version = "0.12" }
 paste = "1.0"
-wgpu = "0.18"
-wgpu-types = "0.18"
-bytemuck = { version = "1.14", features = ["derive"] }
-glam = { version = "0.24", features = ["bytemuck"] }
+wgpu = "0.19"
+wgpu-types = "0.19"
+bytemuck = { version = "1.15", features = ["derive"] }
+glam = { version = "0.25", features = ["bytemuck"] }
 image = { version = "0.25.0", default-features = false, features = ["png"] }
 
-tokio = { version = "1.32", features = ["sync"], default-features = false }
+tokio = { version = "1.36", features = ["sync"], default-features = false }
 
 tracing = "0.1"
 async-trait = "0.1"
 
-derive_more = { version = "1.0.0-beta.3", features = [
+derive_more = { version = "1.0.0-beta.6", features = [
     "deref",
     "deref_mut",
     "from",
@@ -62,8 +62,8 @@ anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
-uuid = { version = "1.4", features = ["serde"] }
+xxhash-rust = { version = "0.8.10", features = ["xxh3"] }
+uuid = { version = "1.7", features = ["serde"] }
 
 [profile.dev.package.image]
 opt-level = 3

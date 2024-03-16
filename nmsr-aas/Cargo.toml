@@ -31,7 +31,7 @@ http-body-util = "0.1"
 async-trait = { workspace = true }
 
 # Twelf - Configuration library
-twelf = { version = "0.12", default-features = false, features = [
+twelf = { version = "0.15", default-features = false, features = [
     "env",
     "toml",
     "default_trait",
@@ -41,13 +41,13 @@ twelf = { version = "0.12", default-features = false, features = [
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-base64 = "0.21"
+base64 = "0.22"
 
 # Hyper - HTTP client
-hyper = { version = "1.0", features = ["client"] }
+hyper = { version = "1.2.0", features = ["client"] }
 hyper-util = { version = "0.1", features = ["client", "client-legacy", "http1", "http2", "server-auto", "tokio"] }
 hyper-tls = "0.6"
-url = "2.4"
+url = "2.5"
 
 # Tokio - Async runtime
 tokio = { workspace = true, features = ["macros", "fs", "sync", "signal", "rt-multi-thread"] }
@@ -59,12 +59,12 @@ tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # OpenTelemetry - Tracing framework
-opentelemetry = { version = "0.21", features = [] }
-opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.14", default-features = true }
+opentelemetry = { version = "0.22", features = [] }
+opentelemetry_sdk = { version = "0.22", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.15", default-features = true }
 
 # Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
-tracing-opentelemetry = "0.22"
+tracing-opentelemetry = "0.23"
 
 # Strum - Enum helper library
 strum = { workspace = true }
@@ -94,9 +94,9 @@ mtpng = "0.3"
 
 chrono = "0.4"
 tokio-stream = { version = "0.1", features = ["fs"] }
-sync_wrapper = "0.1"
+sync_wrapper = "1.0"
 
-regex = "1.9"
+regex = "1.10"
 indoc = "2"
 
 xxhash-rust = { workspace = true }

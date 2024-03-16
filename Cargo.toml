@@ -30,7 +30,6 @@ members = [
     
     "nmsr-3d-renderer/nmsr-player-parts",
     "nmsr-3d-renderer/nmsr-rendering",
-    "nmsr-3d-renderer/nmsr-wgpu-windowed",
 ]
 
 [workspace.dependencies]

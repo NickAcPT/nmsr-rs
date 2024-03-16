@@ -43,7 +43,7 @@ wgpu = "0.18"
 wgpu-types = "0.18"
 bytemuck = { version = "1.14", features = ["derive"] }
 glam = { version = "0.24", features = ["bytemuck"] }
-image = { version = "0.24", default-features = false, features = ["png"] }
+image = { version = "0.25.0", default-features = false, features = ["png"] }
 
 tokio = { version = "1.32", features = ["sync"], default-features = false }
 

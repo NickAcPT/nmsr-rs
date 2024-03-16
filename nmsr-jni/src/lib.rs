@@ -1,6 +1,6 @@
 use std::io::{BufWriter, Cursor};
 
-use image::ImageOutputFormat::Png;
+use image::ImageFormat::Png;
 use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jboolean, jlong, JNI_TRUE};
 use jni::JNIEnv;

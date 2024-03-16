@@ -7,7 +7,7 @@ authors.workspace = true
 homepage.workspace = true
 
 [dependencies]
-image = { version = "0.24.7", default-features = false, features = ["png"]}
+image = { workspace = true, default-features = false, features = ["png"]}
 qoi = "0.4"
 thiserror = "1.0.40"
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }

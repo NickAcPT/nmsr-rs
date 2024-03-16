@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.75"
 heck = "0.4.1"
-image = { version = "0.24.7", default-features = false, features = ["png"] }
+image = { workspace = true, default-features = false, features = ["png"] }
 

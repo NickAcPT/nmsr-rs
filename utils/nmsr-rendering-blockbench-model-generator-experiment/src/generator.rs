@@ -41,7 +41,7 @@ impl ModelProjectImageIO for DefaultImageIO {
         {
             let mut writer = BufWriter::new(&mut bytes);
             image
-                .write_to(&mut writer, image::ImageOutputFormat::Png)
+                .write_to(&mut writer, image::ImageFormat::Png)
                 .context("Failed to write empty image to buffer")?;
         }
 

@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 walkdir = "2.3.2"
 anyhow = "1.0.66"
-image = { version = "0.24.5", features = ["png"], default-features = false }
+image = { workspace = true, features = ["png"], default-features = false }

@@ -9,7 +9,7 @@ homepage.workspace = true
 [dependencies]
 nmsr-lib = { path = "../nmsr-lib" }
 jni = "0.21.1"
-image = { version = "0.24.6", features = ["png"], default-features = false }
+image = { workspace = true, features = ["png"], default-features = false }
 
 [lib]
 crate_type = ["cdylib"]

@@ -111,7 +111,5 @@ ears = [
 ]
 
 [build-dependencies]
-vergen = { version = "8.2.4", default-features = false, features = [
-    "git",
-    "gitcl",
-] }
+vergen = { version = "9.0.0-beta.2", features = [] }
+vergen-gitcl = { version = "1.0.0-beta.2", features = [] }

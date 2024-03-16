@@ -38,16 +38,16 @@ pub trait RenderRequestValidator {
 }
 
 #[derive(Clone)]
-pub struct NMSRState {
+pub struct NMSRState<'a> {
     pub resolver: Arc<RenderRequestResolver>,
     pub armor_manager: Arc<VanillaMinecraftArmorManager>,
-    pub graphics_context: Arc<GraphicsContext>,
-    pools: Arc<GraphicsContextPools>,
+    pub graphics_context: Arc<GraphicsContext<'a>>,
+    pools: Arc<GraphicsContextPools<'a>>,
     cache_config: ModelCacheConfiguration,
     features_config: FeaturesConfiguration,
 }
 
-impl RenderRequestValidator for NMSRState {
+impl<'a> RenderRequestValidator for NMSRState<'a> {
     fn validate_mode(&self, mode: &RenderRequestMode) -> bool {
         !self.features_config.disabled_modes.contains(mode)
     }
@@ -66,7 +66,7 @@ impl RenderRequestValidator for NMSRState {
     }
 }
 
-impl NMSRState {
+impl<'a> NMSRState<'a> {
     const ONE_YEAR_DURATION: Duration = Duration::from_secs(
         60 /* seconds */ * 60 /* minutes */ * 24 /* hours */ * 365, /* days */
     );
@@ -109,7 +109,7 @@ impl NMSRState {
         })
     }
 
-    pub async fn create_scene_context(&self) -> Result<Object<SceneContextPoolManager>> {
+    pub async fn create_scene_context(&self) -> Result<Object<SceneContextPoolManager<'a>>> {
         Ok(self.pools.create_scene_context().await?)
     }
 

@@ -118,7 +118,7 @@ impl SceneContext {
                 viewport_size.height as usize,
                 graphics_context
                     .texture_format
-                    .block_size(None)
+                    .block_copy_size(None)
                     .unwrap_or(4) as usize,
             );
 
@@ -259,6 +259,7 @@ impl SceneContext {
                 label,
                 view_formats: &[],
             },
+            wgpu::util::TextureDataOrder::LayerMajor,
             image.as_raw(),
         );
         let view = texture.create_view(&Default::default());
@@ -274,7 +275,7 @@ impl SceneContext {
 
     pub async fn copy_output_texture(
         &self,
-        graphics_context: &GraphicsContext,
+        graphics_context: &GraphicsContext<'_>,
         cleanup_alpha: bool,
     ) -> Result<Vec<u8>> {
         let textures = self.try_textures()?;

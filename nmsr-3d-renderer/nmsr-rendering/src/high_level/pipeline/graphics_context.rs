@@ -26,11 +26,11 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct GraphicsContext {
+pub struct GraphicsContext<'a> {
     pub instance: Instance,
     pub device: Device,
     pub queue: Queue,
-    pub surface: Option<Surface>,
+    pub surface: Option<Surface<'a>>,
     pub surface_config: Result<Option<SurfaceConfiguration>>,
     pub texture_format: TextureFormat,
     pub adapter: Adapter,
@@ -72,29 +72,29 @@ pub struct GraphicsContextLayouts {
 }
 
 #[derive(Debug)]
-pub struct GraphicsContextPools {
-    scene_context_pool: Pool<SceneContextPoolManager>,
+pub struct GraphicsContextPools<'a> {
+    scene_context_pool: Pool<SceneContextPoolManager<'a>>,
 }
 
-impl GraphicsContextPools {
-    pub fn new(context: Arc<GraphicsContext>) -> Result<Self> {
+impl<'a> GraphicsContextPools<'a> {
+    pub fn new(context: Arc<GraphicsContext<'a>>) -> Result<Self> {
         let scene_context_pool = Pool::builder(SceneContextPoolManager::new(context)).build()?;
 
         Ok(Self { scene_context_pool })
     }
 
-    pub async fn create_scene_context(&self) -> Result<Object<SceneContextPoolManager>> {
+    pub async fn create_scene_context(&self) -> Result<Object<SceneContextPoolManager<'a>>> {
         Ok(self.scene_context_pool.get().await?)
     }
 }
 
-impl GraphicsContext {
+impl<'a> GraphicsContext<'a> {
     pub fn get_pipeline(&self) -> &RenderPipeline {
         &self.pipeline
     }
 }
 
-pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface> + 'a + Send;
+pub type ServiceProvider<'a> = dyn FnOnce(&Instance) -> Option<Surface<'a>> + 'a + Send;
 
 pub struct GraphicsContextDescriptor<'a> {
     pub backends: Option<Backends>,
@@ -145,11 +145,11 @@ impl<'a> GraphicsContextDescriptor<'a> {
     }
 }
 
-impl GraphicsContext {
+impl<'a> GraphicsContext<'a> {
     pub const DEFAULT_TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8Unorm;
     pub const DEPTH_TEXTURE_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
-    pub async fn new(descriptor: GraphicsContextDescriptor<'_>) -> Result<Self> {
+    pub async fn new(descriptor: GraphicsContextDescriptor<'a>) -> Result<Self> {
         Self::new_with_shader(
             descriptor,
             wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
@@ -159,7 +159,7 @@ impl GraphicsContext {
 
     #[inline]
     pub async fn new_with_shader(
-        descriptor: GraphicsContextDescriptor<'_>,
+        descriptor: GraphicsContextDescriptor<'a>,
         shader: ShaderSource<'_>,
     ) -> Result<Self> {
         let backends = wgpu::util::backend_bits_from_env()
@@ -185,8 +185,8 @@ impl GraphicsContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: descriptor.features,
-                    limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default())
+                    required_features: descriptor.features,
+                    required_limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default())
                 },
                 None,
             )

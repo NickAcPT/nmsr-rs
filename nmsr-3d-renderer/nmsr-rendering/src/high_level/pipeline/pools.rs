@@ -7,24 +7,24 @@ use crate::errors::NMSRRenderingError;
 
 use super::{scene_context::SceneContext, GraphicsContext};
 
-pub struct SceneContextPoolManager {
-    graphics_context: Arc<GraphicsContext>,
+pub struct SceneContextPoolManager<'a> {
+    graphics_context: Arc<GraphicsContext<'a>>,
 }
 
-impl SceneContextPoolManager {
-    pub fn new(graphics_context: Arc<GraphicsContext>) -> Self {
+impl<'a> SceneContextPoolManager<'a> {
+    pub fn new(graphics_context: Arc<GraphicsContext<'a>>) -> Self {
         Self { graphics_context }
     }
 }
 
-impl std::fmt::Debug for SceneContextPoolManager {
+impl<'a> std::fmt::Debug for SceneContextPoolManager<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SceneContextPoolManager").finish()
     }
 }
 
 #[async_trait]
-impl Manager for SceneContextPoolManager {
+impl<'a> Manager for SceneContextPoolManager<'a> {
     type Type = SceneContext;
     type Error = Box<NMSRRenderingError>;
 

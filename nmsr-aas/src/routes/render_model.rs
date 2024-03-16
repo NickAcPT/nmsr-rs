@@ -21,9 +21,9 @@ use crate::{
     utils::png::create_png_from_bytes,
 };
 
-pub(crate) async fn internal_render_model(
+pub(crate) async fn internal_render_model<'a>(
     request: &RenderRequest,
-    state: &NMSRState,
+    state: &NMSRState<'a>,
     resolved: &ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
     let scene_context = state.create_scene_context().await?;
@@ -83,12 +83,12 @@ fn load_ears_features(
 }
 
 #[instrument(skip_all)]
-async fn load_textures(
+async fn load_textures<'a>(
     resolved: &ResolvedRenderRequest,
-    state: &NMSRState,
+    state: &NMSRState<'a>,
     request: &RenderRequest,
     part_provider: &mut PlayerPartProviderContext<VanillaMinecraftArmorMaterialData>,
-    scene: &mut Scene<Object<SceneContextPoolManager>>,
+    scene: &mut Scene<Object<SceneContextPoolManager<'a>>>,
 ) -> Result<()> {
     for (&texture_type, texture_bytes) in &resolved.textures {
         let mut image_buffer = load_image(texture_bytes)?;

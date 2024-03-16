@@ -56,7 +56,7 @@ impl ModelProjectImageIO for NMSRaaSImageIO {
 #[axum::debug_handler]
 #[instrument(skip(state, method))]
 pub(crate) async fn internal_bbmodel_export(
-    state: State<NMSRState>,
+    state: State<NMSRState<'static>>,
     method: Method,
     request: RenderRequest,
 ) -> Result<Response> {

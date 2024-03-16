@@ -448,7 +448,7 @@ where
 
     pub async fn copy_output_texture(
         &self,
-        graphics_context: &GraphicsContext,
+        graphics_context: &GraphicsContext<'_>,
         cleanup_alpha: bool,
     ) -> Result<Vec<u8>> {
         self.scene_context

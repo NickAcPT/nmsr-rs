@@ -123,7 +123,7 @@ impl VanillaMinecraftArmorManager {
 
                 if !layer_path.exists() {
                     let url = format!(
-                        "https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.20.1/assets/minecraft/textures/trims/models/armor/{name}",
+                        "https://raw.githubusercontent.com/NickAcPT/minecraft-assets/24w11a/assets/minecraft/textures/trims/models/armor/{name}",
                         name = &layer
                     );
 

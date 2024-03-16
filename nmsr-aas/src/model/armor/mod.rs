@@ -60,9 +60,11 @@ impl VanillaMinecraftArmorMaterial {
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq, strum::IntoStaticStr, strum::EnumIter)]
 pub enum VanillaMinecraftArmorTrim {
+    Bolt,
     Coast,
     Dune,
     Eye,
+    Flow,
     Host,
     Raiser,
     Rib,

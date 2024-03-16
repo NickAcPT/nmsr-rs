@@ -28,10 +28,6 @@ ears = ["nmsr-rendering/ears"]
 [dev-dependencies]
 criterion = { version = "0.4", features = ["html_reports"] }
 
-[profile.release]
-strip = false
-debug = true
-
 [[bench]]
 name = "my_benchmark"
 harness = false

@@ -1,3 +1,5 @@
+use strum::Display;
+
 use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -24,7 +26,7 @@ pub trait ArmorMaterial {
 
 impl ArmorMaterial for () {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum PlayerArmorSlot {
     Helmet,
     Chestplate,

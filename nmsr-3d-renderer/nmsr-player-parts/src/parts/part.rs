@@ -386,6 +386,11 @@ impl Part {
     pub fn get_name(&self) -> Option<&str> {
         self.part_tracking_data().name().map(String::as_str)
     }
+    
+    #[cfg(feature = "part_tracker")]
+    pub fn get_name_mut(&mut self) -> &mut Option<String> {
+        self.part_tracking_data_mut().name_mut()
+    }
 
     #[cfg(feature = "part_tracker")]
     pub fn get_group(&self) -> &[String] {

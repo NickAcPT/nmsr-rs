@@ -118,6 +118,15 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
                         {
                             armor_part = armor_part.expand([0.0, 0.0, 0.05].into());
                         }
+                        
+                        #[cfg(feature = "part_tracker")]
+                        {
+                            let name = armor_part.get_name_mut();
+                            
+                            if let Some(old_name) = name.take() {
+                                name.replace(format!("{} {}", old_name, slot));
+                            }
+                        }
 
                         armor_part.set_texture(texture);
                         result.push(armor_part);

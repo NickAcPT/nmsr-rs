@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use axum::response::IntoResponse;
 use hyper::StatusCode;
 use thiserror::Error;
+use tower_http::BoxError;
 use uuid::Uuid;
 
 #[derive(Error, Debug)]
@@ -110,7 +111,7 @@ pub enum MojangRequestError {
     #[error("Http error: {0}")]
     HttpRequestError(#[from] hyper::http::Error),
     #[error("Request error: {0}")]
-    BoxedRequestError(Box<dyn std::error::Error + Send + Sync>),
+    BoxedRequestError(BoxError),
     #[error("Request error: {0}")]
     RequestError(#[from] hyper_util::client::legacy::Error),
     #[error("Missing skin from game profile: {0}")]

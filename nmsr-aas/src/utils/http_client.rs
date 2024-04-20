@@ -1,19 +1,17 @@
-use axum::{
-    body::Body,
-    http::{HeaderName, HeaderValue},
-};
-use http_body_util::BodyExt;
-use hyper::{body::{Bytes, Incoming}, Method, Request, Response};
+use axum::http::{HeaderName, HeaderValue};
+use http_body_util::{BodyExt, Empty};
+use hyper::{body::Bytes, Method, Request};
 use hyper_tls::HttpsConnector;
-use hyper_util::{client::legacy::Client, rt::TokioExecutor};
+use hyper_util::{
+    client::legacy::{connect::HttpConnector, Client},
+    rt::TokioExecutor,
+};
 use std::time::Duration;
-use sync_wrapper::SyncWrapper;
-use tokio::sync::RwLock;
-use tower::{util::BoxService, Service, ServiceBuilder, ServiceExt};
+use tower::{buffer::Buffer, limit::RateLimit, Service, ServiceBuilder, ServiceExt};
 use tower_http::{
-    classify::{NeverClassifyEos, ServerErrorsFailureClass},
-    set_header::SetRequestHeaderLayer,
-    trace::{DefaultOnFailure, ResponseBody, TraceLayer},
+    classify::{ServerErrorsAsFailures, SharedClassifier},
+    set_header::{SetRequestHeader, SetRequestHeaderLayer},
+    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, Trace, TraceLayer},
 };
 use tracing::{instrument, Span};
 
@@ -25,12 +23,23 @@ const USER_AGENT: &str = concat!(
     " (Discord=@nickac; +https://nmsr.nickac.dev/)"
 );
 
-pub(crate) type TraceResponseBody =
-    ResponseBody<Incoming, NeverClassifyEos<ServerErrorsFailureClass>, (), (), DefaultOnFailure>;
-type BoxedTracedResponse = BoxService<Request<Body>, Response<TraceResponseBody>, hyper_util::client::legacy::Error>;
+pub(crate) type SyncBody =
+    http_body_util::combinators::BoxBody<Bytes, hyper_util::client::legacy::Error>;
+
+pub(crate) type SyncBodyClient = Client<HttpsConnector<HttpConnector>, SyncBody>;
+
+pub(crate) type NmsrTraceLayer = Trace<
+    SetRequestHeader<SyncBodyClient, HeaderValue>,
+    SharedClassifier<ServerErrorsAsFailures>,
+    DefaultMakeSpan,
+    DefaultOnRequest,
+    DefaultOnResponse,
+    (),
+    (),
+>;
 
 pub struct NmsrHttpClient {
-    inner: RwLock<SyncWrapper<BoxedTracedResponse>>,
+    inner: Buffer<RateLimit<NmsrTraceLayer>, Request<SyncBody>>,
 }
 
 impl NmsrHttpClient {
@@ -38,7 +47,6 @@ impl NmsrHttpClient {
         create_http_client(rate_limit_per_second)
     }
 
-    #[allow(clippy::significant_drop_tightening)] // Not worth making the code less readable
     #[instrument(skip(self, parent_span, on_error), parent = parent_span)]
     pub(crate) async fn do_request(
         &self,
@@ -50,13 +58,22 @@ impl NmsrHttpClient {
         let request = Request::builder()
             .method(method)
             .uri(url)
-            .body(Body::empty())?;
+            .body(SyncBody::new(Empty::new().map_err(|e| {
+                unreachable!("Empty body should not error: {}", e)
+            })))?;
 
         let response = {
-            let mut client = self.inner.write().await;
-            let service = client.get_mut().ready().await?;
+            let mut svc = self.inner.clone();
 
-            service.call(request).await?
+            let service = svc
+                .ready()
+                .await
+                .map_err(MojangRequestError::BoxedRequestError)?;
+
+            service
+                .call(request)
+                .await
+                .map_err(MojangRequestError::BoxedRequestError)?
         };
 
         if !response.status().is_success() {
@@ -76,13 +93,13 @@ impl NmsrHttpClient {
 
 fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
     let https = HttpsConnector::new();
-    
+
     // A new higher level client from hyper is in the works, so we gotta use the legacy one
     let client = Client::builder(TokioExecutor::new()).build(https);
 
     let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
     let service = ServiceBuilder::new()
-        .boxed()
+        .buffer(rate_limit_per_second.saturating_mul(2) as usize)
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))
         .layer(tracing)
         .layer(SetRequestHeaderLayer::overriding(
@@ -91,7 +108,5 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
         ))
         .service(client);
 
-    NmsrHttpClient {
-        inner: RwLock::new(SyncWrapper::new(service)),
-    }
+    NmsrHttpClient { inner: service }
 }

@@ -10,10 +10,9 @@ homepage.workspace = true
 [dependencies]
 anyhow = "1.0.75"
 clap = { version = "4", features = ["derive"] }
-nmsr-rendering-blockbench-model-generator-experiment = { path = "../nmsr-rendering-blockbench-model-generator-experiment", features = [
-    "ears",
-] }
+nmsr-rendering-blockbench-model-generator-experiment = { path = "../nmsr-rendering-blockbench-model-generator-experiment" }
 opener = "0.6.1"
 
 [features]
 default = []
+ears = ["nmsr-rendering-blockbench-model-generator-experiment/ears"]

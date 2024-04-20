@@ -1,6 +1,6 @@
 pub mod model;
 
-use std::{collections::HashMap, vec::Vec};
+use std::collections::HashMap;
 
 use itertools::Itertools;
 use nmsr_rendering::high_level::{

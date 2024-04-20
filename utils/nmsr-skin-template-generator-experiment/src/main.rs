@@ -1,6 +1,8 @@
 use std::{collections::HashMap, iter::repeat};
 
 use anyhow::Ok;
+
+#[cfg(feature = "ears")]
 use ears_rs::{
     features::{
         data::{
@@ -12,6 +14,7 @@ use ears_rs::{
     },
     parser::EarsFeaturesWriter,
 };
+
 use glam::{Vec2, Vec3};
 use hsl::HSL;
 use image::RgbaImage;
@@ -94,6 +97,7 @@ impl PartTemplateGeneratorContext {
 }
 
 fn main() -> anyhow::Result<()> {
+    #[cfg(feature = "ears")]
     let ears_features = EarsFeatures {
         ear_mode: EarMode::Around,
         ear_anchor: EarAnchor::Center,
@@ -125,10 +129,13 @@ fn main() -> anyhow::Result<()> {
         shadow_y_pos: None,
         shadow_is_square: false,
         armor_slots: None,
+        #[cfg(feature = "ears")]
         ears_features: Some(ears_features),
     };
 
-    let parts = [PlayerPartsProvider::Ears]
+    #[cfg(feature = "ears")] let parts = {[PlayerPartsProvider::Ears]};
+    #[cfg(not(feature = "ears"))] let parts = {[PlayerPartsProvider::Minecraft]};
+    let parts = parts
         .iter()
         .flat_map(|provider| {
             PlayerBodyPartType::iter()
@@ -158,6 +165,7 @@ fn main() -> anyhow::Result<()> {
         if texture == PlayerPartTextureType::Skin {
             ears_rs::utils::strip_alpha(part_texture);
 
+            #[cfg(feature = "ears")]
             ears_rs::parser::v1::writer::EarsWriterV1::write(part_texture, &ears_features)?;
         }
     }

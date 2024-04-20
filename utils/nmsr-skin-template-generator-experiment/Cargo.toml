@@ -8,7 +8,6 @@ homepage.workspace = true
 [dependencies]
 ears-rs = { workspace = true }
 nmsr-player-parts = { path = "../../nmsr-3d-renderer/nmsr-player-parts", features = [
-    "ears",
 ] }
 itertools = { workspace = true }
 image = { workspace = true, default-features = false, features = ["png"] }
@@ -17,3 +16,6 @@ rand = { version = "0.8" }
 glam = { workspace = true }
 hsl = "0"
 strum = { workspace = true }
+
+[features]
+ears = ["nmsr-player-parts/ears"]

@@ -1,15 +1,15 @@
 use axum::{
     extract::{ConnectInfo, MatchedPath},
-    http::{header::USER_AGENT, HeaderValue, Request},
+    http::{header::USER_AGENT, Request},
     http::{HeaderMap, HeaderName},
 };
 use derive_more::Debug;
 use opentelemetry::{
     global,
-    propagation::{Extractor, Injector},
+    propagation::Extractor,
     trace::TraceContextExt,
 };
-use std::{net::SocketAddr, string::ToString};
+use std::net::SocketAddr;
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
     trace::{DefaultOnBodyChunk, MakeSpan, OnFailure, OnRequest, OnResponse, TraceLayer},
@@ -77,7 +77,6 @@ impl<B> NmsrTracing<B> {
 }
 
 struct HeaderMapCarrier<'a>(&'a HeaderMap);
-struct MutableHeaderMapCarrier<'a>(&'a mut HeaderMap);
 
 impl Extractor for HeaderMapCarrier<'_> {
     fn get(&self, key: &str) -> Option<&str> {
@@ -86,15 +85,6 @@ impl Extractor for HeaderMapCarrier<'_> {
 
     fn keys(&self) -> Vec<&str> {
         self.0.keys().map(HeaderName::as_str).collect()
-    }
-}
-
-impl<'a> Injector for MutableHeaderMapCarrier<'a> {
-    fn set(&mut self, key: &str, value: String) {
-        self.0.insert(
-            HeaderName::from_lowercase(key.as_bytes()).expect("Invalid header name"),
-            HeaderValue::from_str(&value).expect("Invalid header value"),
-        );
     }
 }
 

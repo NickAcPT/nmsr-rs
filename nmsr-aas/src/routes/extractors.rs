@@ -17,7 +17,7 @@ use axum_extra::extract::Multipart;
 use hyper::Method;
 use is_empty::IsEmpty;
 use serde_json::{json, Value};
-use std::{borrow::ToOwned, collections::HashMap};
+use std::collections::HashMap;
 
 #[async_trait]
 impl<S> FromRequest<S> for RenderRequest

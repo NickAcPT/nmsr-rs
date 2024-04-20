@@ -96,6 +96,10 @@ fn from_properties<'de, D: Deserializer<'de>>(
     let mut map = HashMap::new();
 
     for property in value {
+        if property.name != GameProfile::TEXTURES_KEY {
+            continue;
+        }
+        
         let decoded = STANDARD
             .decode(property.value)
             .map_err(serde::de::Error::custom)?;
@@ -122,6 +126,19 @@ pub mod test {
             } ],
             "profileActions" : [ ]
           }"#;
+
+        let profile: super::GameProfile = serde_json::from_str(input).unwrap();
+
+        let textures = profile.textures().unwrap();
+
+        println!("{profile:?}");
+        println!("{:?}", textures.skin());
+        println!("{:?}", textures.cape());
+    }
+
+    #[test]
+    fn invalid_symbol() {
+        let input = r#"{"id":"297e3f89567945a594b9bcb0924f7582","name":"Iky_Max_","properties":[{"name":"textures","value":"eyJ0aW1lc3RhbXAiOjE3MTM2MTMxOTc0MDksInByb2ZpbGVJZCI6IjI5N2UzZjg5NTY3OTQ1YTU5NGI5YmNiMDkyNGY3NTgyIiwicHJvZmlsZU5hbWUiOiJJa3lfTWF4XyIsImlzUHVibGljIjp0cnVlLCJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHBzOi8vYXV0aHRlc3QubHNtcC5zaXRlL3RleHR1cmVzLzRlZjlkM2EwNDQzMzhiMzg1ZDdjOTI4MmNhNDAzNmE2MWM3ODdlY2U1OTBlZDgxMTI3NTE0OGMwZDZlNDFlZDQifSwiQ0FQRSI6eyJ1cmwiOiJodHRwczovL2F1dGh0ZXN0LmxzbXAuc2l0ZS90ZXh0dXJlcy9lZTQ3ZmI4NmRlNmQwZmU2OGQwZjAwNzhkODVhNjM4MWZmYzVmYmRlZTZjMmQ2MWQzN2ZiYzNlM2VjMTY1NzIwIn19fQ=="},{"name":"uploadableTextures","value":"skin,cape"}]}"#;
 
         let profile: super::GameProfile = serde_json::from_str(input).unwrap();
 

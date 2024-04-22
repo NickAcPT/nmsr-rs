@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use deadpool::managed::{Manager, RecycleResult,Metrics};
+use tracing::trace;
 
 use crate::errors::NMSRRenderingError;
 
@@ -29,6 +30,7 @@ impl<'a> Manager for SceneContextPoolManager<'a> {
     type Error = Box<NMSRRenderingError>;
 
     async fn create(&self) -> Result<Self::Type, Self::Error> {
+        trace!("Creating new scene context");
         Ok(SceneContext::new(&self.graphics_context))
     }
 
@@ -38,6 +40,8 @@ impl<'a> Manager for SceneContextPoolManager<'a> {
         if obj.smaa_target.is_none() {
             obj.textures.take();
         }
+        
+        trace!(metrics = ?_metrics, "Recycling existing scene context");
         
         Ok(())
     }

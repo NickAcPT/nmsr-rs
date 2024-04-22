@@ -11,7 +11,9 @@ use tower::{buffer::Buffer, limit::RateLimit, Service, ServiceBuilder, ServiceEx
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
     set_header::{SetRequestHeader, SetRequestHeaderLayer},
-    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, Trace, TraceLayer},
+    trace::{
+        DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, Trace, TraceLayer,
+    },
 };
 use tracing::{instrument, Span};
 
@@ -36,6 +38,7 @@ pub(crate) type NmsrTraceLayer = Trace<
     DefaultOnResponse,
     (),
     (),
+    DefaultOnFailure,
 >;
 
 pub struct NmsrHttpClient {
@@ -47,7 +50,7 @@ impl NmsrHttpClient {
         create_http_client(rate_limit_per_second)
     }
 
-    #[instrument(skip(self, parent_span, on_error), parent = parent_span)]
+    #[instrument(skip(self, parent_span, on_error), parent = parent_span, err)]
     pub(crate) async fn do_request(
         &self,
         url: &str,
@@ -97,7 +100,10 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
     // A new higher level client from hyper is in the works, so we gotta use the legacy one
     let client = Client::builder(TokioExecutor::new()).build(https);
 
-    let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
+    let tracing = TraceLayer::new_for_http()
+        .on_body_chunk(())
+        .on_eos(());
+    
     let service = ServiceBuilder::new()
         .buffer(rate_limit_per_second.saturating_mul(2) as usize)
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))

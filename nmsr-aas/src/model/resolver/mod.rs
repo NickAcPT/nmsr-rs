@@ -16,7 +16,7 @@ use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType
 use nmsr_rendering::high_level::types::PlayerPartTextureType;
 use std::{collections::HashMap, sync::Arc};
 use strum::EnumCount;
-use tracing::{instrument, Span};
+use tracing::{instrument, trace_span, Instrument, Span};
 
 pub mod geyser;
 pub mod mojang;
@@ -195,6 +195,7 @@ impl RenderRequestResolver {
         }
     }
 
+    #[instrument(skip(self), parent = &Span::current())]
     async fn fetch_texture_from_mojang(&self, texture_id: &str, req_type: MojangTextureRequestType) -> Result<MojangTexture> {
         if let Some(result) = self.model_cache.get_cached_texture(texture_id).await? {
             return Ok(result);
@@ -202,7 +203,7 @@ impl RenderRequestResolver {
 
         let bytes = self
             .mojang_requests_client
-            .fetch_texture_from_mojang(texture_id, req_type, &Span::current())
+            .fetch_texture_from_mojang(texture_id, req_type)
             .await?;
 
         let texture = MojangTexture::new_named(texture_id.to_owned(), bytes);
@@ -237,7 +238,9 @@ impl RenderRequestResolver {
                 let result = self
                     .mojang_requests_client
                     .resolve_uuid_to_game_profile(id)
+                    .instrument(trace_span!("resolve_uuid_to_game_profile", uuid = %id))
                     .await?;
+                
                 let textures = result.textures()?;
 
                 let skin = textures

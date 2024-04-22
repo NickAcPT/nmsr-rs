@@ -6,7 +6,7 @@ use nmsr_rendering::high_level::{
     pipeline::scene::Size,
     types::PlayerBodyPartType,
 };
-use strum::{EnumIter, EnumString, IntoEnumIterator, Display};
+use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use tracing::instrument;
 
 use crate::error::{RenderRequestError, Result};
@@ -61,7 +61,10 @@ impl RenderRequestMode {
     }
 
     pub(crate) const fn is_arms_open(self) -> bool {
-        matches!(self, Self::FullBody | Self::BodyBust | RenderRequestMode::BlockbenchExport)
+        matches!(
+            self,
+            Self::FullBody | Self::BodyBust | RenderRequestMode::BlockbenchExport
+        )
     }
 
     pub(crate) const fn is_head_or_face(self) -> bool {
@@ -86,11 +89,11 @@ impl RenderRequestMode {
     pub(crate) const fn is_skin(self) -> bool {
         matches!(self, Self::Skin)
     }
-    
+
     pub(crate) const fn is_blockbench_export(self) -> bool {
         matches!(self, Self::BlockbenchExport)
     }
-    
+
     pub(crate) const fn uses_rendering_pipeline(self) -> bool {
         !self.is_skin() && !self.is_blockbench_export()
     }
@@ -116,14 +119,14 @@ impl RenderRequestMode {
     }
 
     #[allow(unused_variables)]
-    pub fn validate_unit<T: PartialOrd + Debug>(
+    pub fn validate_unit<T: PartialOrd + Debug + Copy>(
         unit: &'static str,
         value: Option<T>,
-        min: &T,
-        max: &T,
+        min: T,
+        max: T,
     ) -> Result<()> {
         let check = value
-            .filter(|value| *value < *min || *value > *max)
+            .filter(|value| *value < min || *value > max)
             .map(|_| (unit, format!("between {min:?} and {max:?}")));
 
         if let Some((unit, bounds)) = check {
@@ -131,6 +134,14 @@ impl RenderRequestMode {
         }
 
         Ok(())
+    }
+
+    pub(crate) fn wrap_unit(value: Option<&mut f32>, min: f32, max: f32) -> Result<()> {
+        if let Some(value) = value {
+            *value = min + (*value - min + (max - min)) % (max - min)
+        }
+        
+        return Ok(())
     }
 
     pub(crate) const fn get_base_render_mode(self) -> Option<Self> {

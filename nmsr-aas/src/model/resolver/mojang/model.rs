@@ -46,6 +46,8 @@ impl GameProfileTexture {
 #[derive(Deserialize, Debug)]
 pub struct GameProfileTextures {
     textures: HashMap<String, GameProfileTexture>,
+    #[serde(rename = "profileName")]
+    profile_name: String
 }
 
 impl GameProfileTextures {
@@ -60,6 +62,11 @@ impl GameProfileTextures {
     #[must_use]
     pub fn cape(&self) -> Option<&GameProfileTexture> {
         self.textures.get(Self::CAPE_KEY)
+    }
+
+    #[must_use]
+    pub fn name(&self) -> Option<&String> {
+        Some(&self.profile_name)
     }
 }
 

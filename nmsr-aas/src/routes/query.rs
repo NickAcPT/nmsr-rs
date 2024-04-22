@@ -49,6 +49,7 @@ pub struct RenderRequestQueryParams {
 
     pub noshading: Option<String>,
     pub nolayers: Option<String>,
+    pub nooptifine: Option<String>,
 
     #[serde(alias = "y")]
     pub yaw: Option<f32>,
@@ -117,6 +118,10 @@ impl RenderRequestQueryParams {
 
         if self.process.is_some() {
             excluded |= RenderRequestFeatures::UnProcessedSkin;
+        }
+
+        if self.nooptifine.is_some() {
+            excluded |= RenderRequestFeatures::OptifineCape;
         }
 
         excluded

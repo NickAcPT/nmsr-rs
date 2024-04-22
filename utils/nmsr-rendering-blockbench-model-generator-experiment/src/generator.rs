@@ -67,6 +67,7 @@ pub fn new_model_generator_without_part_context<I: ModelProjectImageIO>(
         has_hat_layer: layers,
         has_layers: layers,
         has_cape: false,
+        is_optifine_cape: false,
         arm_rotation: 10.0,
         shadow_y_pos: None,
         shadow_is_square: false,

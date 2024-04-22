@@ -41,6 +41,7 @@ pub enum RenderRequestFeatures {
     Custom,
     #[cfg(feature = "ears")]
     Ears,
+    OptifineCape
 }
 
 #[derive(Debug, Clone, PartialEq, Default, IsEmpty)]
@@ -290,6 +291,7 @@ impl RenderRequest {
 
             request.features.remove(RenderRequestFeatures::BodyLayers);
             request.features.remove(RenderRequestFeatures::Cape);
+            request.features.remove(RenderRequestFeatures::OptifineCape);
         }
         
         // If the request is custom, we add the custom feature, otherwise we remove it

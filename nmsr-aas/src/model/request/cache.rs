@@ -355,6 +355,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape),
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Emissive),
+            ResolvedRenderEntryTextureType::OptifineCape
         ];
 
         for texture in textures_to_read {

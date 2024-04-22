@@ -1,3 +1,4 @@
+use std::error::Error;
 use super::model::GameProfile;
 use crate::{
     config::MojankConfiguration,
@@ -18,6 +19,7 @@ pub struct MojangClient {
 pub enum MojangTextureRequestType {
     Skin,
     Cape,
+    OptifineCape
 }
 
 impl MojangClient {
@@ -38,6 +40,16 @@ impl MojangClient {
     ) -> MojangRequestResult<Bytes> {
         self.client
             .do_request(url, method, parent_span, on_error)
+            .await
+    }
+
+    #[instrument(skip(self))]
+    pub(crate) async fn check_optifine_cape_status(
+        &self,
+        name: &str
+    ) -> Result<bool, Box<dyn Error>> {
+        let url = self.build_request_url(MojangTextureRequestType::OptifineCape, name);
+        self.client.check_status(&url)
             .await
     }
 
@@ -101,6 +113,11 @@ impl MojangClient {
                 .textures_server_cape_url_template
                 .replace("{textures_server}", &mojank.textures_server)
                 .replace("{texture_id}", texture_id),
+            MojangTextureRequestType::OptifineCape => {
+                let name = texture_id.replacen("OptifineCapeTexture_", "", 1);
+                "http://s.optifine.net/capes/{name}.png"
+                    .replace("{name}", &name)
+            }
         }
     }
 }

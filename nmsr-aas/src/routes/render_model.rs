@@ -56,6 +56,8 @@ pub(crate) async fn internal_render_model<'a>(
         &parts,
     );
 
+    //println!("Optifine Enabled: {} {}", part_context.is_optifine_cape, request.features.contains(RenderRequestFeatures::OptifineCape));
+
     load_textures(resolved, state, request, &mut part_context, &mut scene).await?;
 
     scene.render(&state.graphics_context)?;
@@ -97,7 +99,14 @@ async fn load_textures<'a>(
             image_buffer = NMSRState::process_skin(image_buffer, request.features)?;
         }
 
-        scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);
+        if texture_type == ResolvedRenderEntryTextureType::OptifineCape && request.features.contains(RenderRequestFeatures::OptifineCape) {
+            scene.set_texture(&state.graphics_context, ResolvedRenderEntryTextureType::Cape.into(), &image_buffer);
+        } else if !(texture_type == ResolvedRenderEntryTextureType::Cape &&
+            part_provider.is_optifine_cape &&
+            request.features.contains(RenderRequestFeatures::OptifineCape)
+        ) {
+            scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);
+        }
     }
 
     if let Some(armor_slots) = part_provider.armor_slots.as_ref() {
@@ -142,11 +151,20 @@ pub(crate) fn create_part_context(
     let has_hat_layer = request.features.contains(RenderRequestFeatures::HatLayer);
 
     #[allow(unused_variables)]
+    let has_optifine_cape = resolved
+        .textures
+        .contains_key(&ResolvedRenderEntryTextureType::OptifineCape);
+
+    //println!("Optifine Cape Available: {}", has_optifine_cape);
+
+    #[allow(unused_variables)]
     let has_cape = {
         let has_cape_feature = request.features.contains(RenderRequestFeatures::Cape);
         let has_cape = resolved
             .textures
             .contains_key(&ResolvedRenderEntryTextureType::Cape);
+
+        let has_optifine_cape_feature = request.features.contains(RenderRequestFeatures::OptifineCape);
 
         let has_ears_feature = false;
         let has_ears_cape = false;
@@ -161,7 +179,7 @@ pub(crate) fn create_part_context(
                 crate::model::resolver::ResolvedRenderEntryEarsTextureType::Cape,
             ));
 
-        has_cape_feature && (has_cape || (has_ears_feature && has_ears_cape))
+        has_cape_feature && (has_cape || (has_ears_feature && has_ears_cape) || (has_optifine_cape_feature && has_optifine_cape))
     };
 
     let shadow_y_pos = request.get_shadow_y_pos();
@@ -191,6 +209,7 @@ pub(crate) fn create_part_context(
         has_layers,
         has_hat_layer,
         has_cape,
+        is_optifine_cape: has_optifine_cape,
         arm_rotation,
         shadow_y_pos,
         shadow_is_square: request.mode.is_head() || request.mode.is_head_iso(),

@@ -1,3 +1,4 @@
+use std::error::Error;
 use axum::http::{HeaderName, HeaderValue};
 use http_body_util::{BodyExt, Empty};
 use hyper::{body::Bytes, Method, Request};
@@ -89,6 +90,37 @@ impl NmsrHttpClient {
             .map(|b| b.to_bytes())
             .map_err(|e| MojangRequestError::BoxedRequestError(Box::new(e)))
     }
+
+    #[instrument(skip(self))]
+    pub(crate) async fn check_status(&self, url: &str) -> Result<bool, Box<dyn Error>> {
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri(url)
+            .body(SyncBody::new(Empty::new().map_err(|e| {
+                unreachable!("Empty body should not error: {}", e)
+            })))?;
+
+        let response = {
+            let mut svc = self.inner.clone();
+
+            let service = svc
+                .ready()
+                .await
+                .unwrap();
+
+            service
+                .call(request)
+                .await
+                .unwrap()
+        };
+
+        if response.status().is_success() {
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
 }
 
 fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {

@@ -125,6 +125,7 @@ fn main() -> anyhow::Result<()> {
         has_hat_layer: true,
         has_layers: true,
         has_cape: false,
+        is_optifine_cape: false,
         arm_rotation: 0f32,
         shadow_y_pos: None,
         shadow_is_square: false,

@@ -37,6 +37,7 @@ fn main() {
         has_hat_layer: true,
         has_layers: true,
         has_cape: false,
+        is_optifine_cape: false,
         arm_rotation: 10.0,
         shadow_y_pos: None,
         shadow_is_square: false,

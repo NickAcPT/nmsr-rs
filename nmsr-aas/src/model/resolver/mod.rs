@@ -15,6 +15,7 @@ use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParse
 use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
 use nmsr_rendering::high_level::types::PlayerPartTextureType;
 use std::{collections::HashMap, sync::Arc};
+use image::{ImageBuffer, ImageEncoder, ImageFormat, Rgba};
 use strum::EnumCount;
 use tracing::{instrument, Span};
 
@@ -32,6 +33,7 @@ pub enum ResolvedRenderEntryTextureType {
     Skin,
     #[cfg(feature = "ears")]
     Ears(ResolvedRenderEntryEarsTextureType),
+    OptifineCape
 }
 
 impl From<ResolvedRenderEntryTextureType> for &'static str {
@@ -41,6 +43,7 @@ impl From<ResolvedRenderEntryTextureType> for &'static str {
             ResolvedRenderEntryTextureType::Skin => "Skin",
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ears) => ears.key(),
+            ResolvedRenderEntryTextureType::OptifineCape => "OptifineCape"
         }
     }
 }
@@ -91,6 +94,9 @@ impl From<ResolvedRenderEntryTextureType> for PlayerPartTextureType {
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ears) => {
                 PlayerPartEarsTextureType::from(ears).into()
+            }
+            ResolvedRenderEntryTextureType::OptifineCape => {
+                Self::Cape
             }
         }
     }
@@ -200,10 +206,26 @@ impl RenderRequestResolver {
             return Ok(result);
         }
 
-        let bytes = self
+        let mut bytes = self
             .mojang_requests_client
             .fetch_texture_from_mojang(texture_id, req_type, &Span::current())
             .await?;
+
+        if req_type == MojangTextureRequestType::OptifineCape {
+            let img = image::load_from_memory(&bytes).unwrap();
+
+            let thumbnail = img.thumbnail(46, 22);
+            let mut canvas = ImageBuffer::<Rgba<u8>, Vec<u8>>::new(64, 32);
+
+            image::imageops::overlay(&mut canvas, &thumbnail, 0, 0);
+            let mut cursor = std::io::Cursor::new(Vec::new());
+
+            let encoder = image::codecs::png::PngEncoder::new(&mut cursor);
+
+            encoder.write_image(&canvas, canvas.width(), canvas.height(), image::ExtendedColorType::Rgba8).unwrap();
+
+            bytes = cursor.into_inner();
+        }
 
         let texture = MojangTexture::new_named(texture_id.to_owned(), bytes);
 
@@ -224,6 +246,7 @@ impl RenderRequestResolver {
         let model: Option<RenderRequestEntryModel>;
         let skin_texture: Option<MojangTexture>;
         let cape_texture: Option<MojangTexture>;
+        let optifine_cape_texture: Option<MojangTexture>;
 
         match &entry {
             RenderRequestEntry::MojangPlayerUuid(id) | RenderRequestEntry::MojangOfflinePlayerUuid(id) => {
@@ -240,6 +263,18 @@ impl RenderRequestResolver {
                     .await?;
                 let textures = result.textures()?;
 
+                let name = textures.name().unwrap();
+
+                //println!("Optifine Request User: {}", name);
+
+                let has_optifine_cape = self
+                    .mojang_requests_client
+                    .check_optifine_cape_status(name)
+                    .await
+                    .unwrap();
+
+                //println!("Optifine Cape Available From Web: {}", has_optifine_cape);
+
                 let skin = textures
                     .skin()
                     .ok_or_else(|| MojangRequestError::MissingSkinPropertyError(*id))?;
@@ -253,6 +288,12 @@ impl RenderRequestResolver {
 
                 skin_texture = self.fetch_game_profile_texture(textures.skin(), MojangTextureRequestType::Skin).await?;
                 cape_texture = self.fetch_game_profile_texture(cape, MojangTextureRequestType::Cape).await?;
+                if has_optifine_cape {
+                    let texture_id = format!("OptifineCapeTexture_{}", name);
+                    optifine_cape_texture = Some(self.fetch_texture_from_mojang(&texture_id, MojangTextureRequestType::OptifineCape).await?);
+                } else {
+                    optifine_cape_texture = None;
+                }
             }
             RenderRequestEntry::GeyserPlayerUuid(id) => {
                 let (texture_id, player_model) =
@@ -261,6 +302,7 @@ impl RenderRequestResolver {
 
                 skin_texture = Some(self.fetch_texture_from_mojang(&texture_id, MojangTextureRequestType::Skin).await?);
                 cape_texture = None;
+                optifine_cape_texture = None;
 
                 model = Some(player_model);
             }
@@ -268,11 +310,13 @@ impl RenderRequestResolver {
                 // If the skin is not cached, we'll have to fetch it from Mojang.
                 skin_texture = Some(self.fetch_texture_from_mojang(skin_hash, MojangTextureRequestType::Skin).await?);
                 cape_texture = None;
+                optifine_cape_texture = None;
                 model = None;
             }
             RenderRequestEntry::PlayerSkin(bytes) => {
                 skin_texture = Some(MojangTexture::new_unnamed(bytes.clone()));
                 cape_texture = None;
+                optifine_cape_texture = None;
                 model = None;
             }
         }
@@ -281,6 +325,10 @@ impl RenderRequestResolver {
 
         if let Some(cape_texture) = cape_texture {
             textures.insert(ResolvedRenderEntryTextureType::Cape, cape_texture);
+        }
+
+        if let Some(optifine_cape_texture) = optifine_cape_texture {
+            textures.insert(ResolvedRenderEntryTextureType::OptifineCape, optifine_cape_texture);
         }
 
         if let Some(skin_texture) = skin_texture {

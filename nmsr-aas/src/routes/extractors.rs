@@ -161,8 +161,7 @@ mod tests {
 
     use crate::{
         model::request::{
-            entry::{RenderRequestEntry, RenderRequestEntryModel},
-            RenderRequest, RenderRequestFeatures, RenderRequestMode,
+            entry::{RenderRequestEntry, RenderRequestEntryModel}, RenderRequest, RenderRequestExtraSettings, RenderRequestFeatures, RenderRequestMode
         },
         routes::RenderRequestValidator,
     };
@@ -239,6 +238,58 @@ mod tests {
                     model: None,
                     features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape | RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::ExtraSettings)),
                     extra_settings: None
+                },
+            ),
+            (
+                "http://localhost:8621/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?yaw=181",
+                RenderRequest {
+                    mode: RenderRequestMode::FullBody,
+                    entry: entry.clone(),
+                    model: None,
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom)),
+                    extra_settings: Some(RenderRequestExtraSettings {
+                        yaw: Some(-179.0f32),
+                        ..Default::default()
+                    })
+                },
+            ),
+            (
+                "http://localhost:8621/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?yaw=-181",
+                RenderRequest {
+                    mode: RenderRequestMode::FullBody,
+                    entry: entry.clone(),
+                    model: None,
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom)),
+                    extra_settings: Some(RenderRequestExtraSettings {
+                        yaw: Some(179.0f32),
+                        ..Default::default()
+                    })
+                },
+            ),
+            (
+                "http://localhost:8621/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?yaw=360",
+                RenderRequest {
+                    mode: RenderRequestMode::FullBody,
+                    entry: entry.clone(),
+                    model: None,
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom)),
+                    extra_settings: Some(RenderRequestExtraSettings {
+                        yaw: Some(0.0f32),
+                        ..Default::default()
+                    })
+                },
+            ),
+            (
+                "http://localhost:8621/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?yaw=-365",
+                RenderRequest {
+                    mode: RenderRequestMode::FullBody,
+                    entry: entry.clone(),
+                    model: None,
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom)),
+                    extra_settings: Some(RenderRequestExtraSettings {
+                        yaw: Some(-5.0f32),
+                        ..Default::default()
+                    })
                 },
             ),
         ]);

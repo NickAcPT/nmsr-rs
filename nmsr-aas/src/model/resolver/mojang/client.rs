@@ -7,7 +7,7 @@ use crate::{
 };
 use hyper::{body::Bytes, Method};
 use std::sync::Arc;
-use tracing::{instrument, Span};
+use tracing::Span;
 use uuid::Uuid;
 
 pub struct MojangClient {
@@ -30,7 +30,6 @@ impl MojangClient {
         })
     }
 
-    #[instrument(skip(self, parent_span, on_error), parent = parent_span)]
     pub(crate) async fn do_request(
         &self,
         url: &str,
@@ -77,12 +76,10 @@ impl MojangClient {
         Ok(serde_json::from_slice(&bytes)?)
     }
 
-    #[instrument(skip(self, parent_span), parent = parent_span)]
     pub async fn fetch_texture_from_mojang(
         &self,
         texture_id: &str,
-        req_type: MojangTextureRequestType,
-        parent_span: &Span,
+        req_type: MojangTextureRequestType
     ) -> MojangRequestResult<Vec<u8>> {
         let url = self.build_request_url(req_type, texture_id);
 

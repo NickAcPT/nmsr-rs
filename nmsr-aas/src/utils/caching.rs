@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use derive_more::Debug;
 use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
-use tracing::{instrument, trace};
+use tracing::{instrument, trace, trace_span, Instrument};
 
 use crate::error::{ExplainableExt, Result};
 
@@ -225,6 +225,7 @@ where
         Ok(())
     }
 
+    #[instrument(name = "set_cache_entry", skip(self, value))]
     pub async fn set_cache_entry(
         &self,
         entry: &Key,
@@ -246,6 +247,7 @@ where
 
             self.handler
                 .write_cache(entry, value, &self.config, path)
+                .instrument(trace_span!("write_cache"))
                 .await?;
 
             self.handler

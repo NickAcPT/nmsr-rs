@@ -152,16 +152,16 @@ impl RenderRequestQueryParams {
 
         let [min_w, min_h, max_w, max_h] = mode.size_constraints();
 
-        RenderRequestMode::validate_unit("width", self.width, &min_w, &max_w)?;
-        RenderRequestMode::validate_unit("height", self.height, &min_h, &max_h)?;
+        RenderRequestMode::validate_unit("width", self.width, min_w, max_w)?;
+        RenderRequestMode::validate_unit("height", self.height, min_h, max_h)?;
 
-        RenderRequestMode::validate_unit("yaw", self.yaw, &-180.0, &180.0)?;
-        RenderRequestMode::validate_unit("pitch", self.pitch, &-90.0, &90.0)?;
-        RenderRequestMode::validate_unit("roll", self.roll, &-180.0, &360.0)?;
+        RenderRequestMode::wrap_unit(self.yaw.as_mut(), -180.0, 180.0)?;
+        RenderRequestMode::wrap_unit(self.pitch.as_mut(), -90.0, 90.0)?;
+        RenderRequestMode::wrap_unit(self.roll.as_mut(), -180.0, 360.0)?;
 
-        RenderRequestMode::validate_unit("arm", self.arms, &0.0, &180.0)?;
+        RenderRequestMode::validate_unit("arm", self.arms, 0.0, 180.0)?;
 
-        RenderRequestMode::validate_unit("distance", self.distance, &-5.0, &30.0)?;
+        RenderRequestMode::validate_unit("distance", self.distance, -15.0, 50.0)?;
 
         // Clamp yaw, pitch, roll so that there is no weirdness with the camera
         clamp(&mut self.yaw, -180.0, 180.0);
@@ -181,7 +181,7 @@ impl RenderRequestQueryParams {
         if !mode.is_custom() && (has_positions) {
             return Err(RenderRequestError::InvalidModeSettingSpecifiedError(
                 "camera positions",
-                "Switch to custom mode to make use of these.",
+                "To fix this, switch to custom mode to make use of these. An automatic switch isn't possible due to how the different modes are handled.",
             )
             .into());
         }
@@ -200,9 +200,9 @@ impl RenderRequestQueryParams {
             self.z_pos.replace(pos[2]);
         }
 
-        RenderRequestMode::validate_unit("xpos", self.x_pos, &-50.0, &50.0)?;
-        RenderRequestMode::validate_unit("ypos", self.y_pos, &-50.0, &50.0)?;
-        RenderRequestMode::validate_unit("zpos", self.z_pos, &-50.0, &50.0)?;
+        RenderRequestMode::validate_unit("xpos", self.x_pos, -50.0, 50.0)?;
+        RenderRequestMode::validate_unit("ypos", self.y_pos, -50.0, 50.0)?;
+        RenderRequestMode::validate_unit("zpos", self.z_pos, -50.0, 50.0)?;
 
         Ok(())
     }

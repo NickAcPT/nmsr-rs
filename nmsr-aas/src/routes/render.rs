@@ -37,8 +37,9 @@ pub async fn render(
     request: RenderRequest,
 ) -> Result<Response> {
     let resolved = state.resolver.resolve(&request).await?;
-
+    
     if request.mode.is_blockbench_export() {
+        // Blockbench export handles HEAD requests for itself, hence why it's before the HEAD method check
         return internal_bbmodel_export(state, method, request).await;
     }
     

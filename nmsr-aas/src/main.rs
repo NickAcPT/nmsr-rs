@@ -150,7 +150,7 @@ async fn main() -> anyhow::Result<()> {
 
 fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
     let base_filter = "info,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
-    let otel_filter = format!("{base_filter},nmsr_aas=trace,nmsr_rendering=trace");
+    let otel_filter = format!("{base_filter},nmsr_aas=trace,nmsr_rendering=trace,tower_http=trace");
 
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| base_filter.into());
     let otel_env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| otel_filter.into());

@@ -45,7 +45,7 @@ impl RenderEntry {
                 + vertices[b[2] as usize].position.z)
                 / 3.0;
 
-            a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal)
+            b.partial_cmp(&a).unwrap_or(std::cmp::Ordering::Equal)
         });
 
         for triangle_indices in grouped_vertices {

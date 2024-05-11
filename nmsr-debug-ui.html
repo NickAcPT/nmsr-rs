@@ -103,8 +103,14 @@
                 <input type="text" id="texture" value="ad4569f3-7576-4376-a7c7-8e8cfcd9b832">
             </div>
             <div class="inner-group">
-                <label for="texture-file-group">File Upload:</label>
-                <input type="file" id="skin-upload">
+                <div>
+                    <label for="texture-file-group">Skin Upload:</label>
+                    <input type="file" id="skin-upload">
+                </div>
+                <div>
+                    <label for="texture-file-group">Cape Upload:</label>
+                    <input type="file" id="cape-upload">
+                </div>
             </div>
         </div>
 
@@ -266,9 +272,11 @@
         let imagePreview = document.getElementById('preview-image');
         let imageError = document.getElementById('image-error');
         let skinUpload = document.getElementById('skin-upload');
+        let capeUpload = document.getElementById('cape-upload');
         let resolvedNames = {};
 
         let uploadedSkin = null;
+        let uploadedCape = null;
 
         skinUpload.addEventListener('change', () => {
             let file = skinUpload.files[0];
@@ -277,6 +285,19 @@
             let reader = new FileReader();
             reader.onload = async () => {
                 uploadedSkin = new Blob([/** @type {ArrayBuffer} */(reader.result)]);;
+                textureInput.value = '';
+                await updateImage();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        capeUpload.addEventListener('change', () => {
+            let file = capeUpload.files[0];
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = async () => {
+                uploadedCape = new Blob([/** @type {ArrayBuffer} */(reader.result)]);;
                 textureInput.value = '';
                 await updateImage();
             };
@@ -337,17 +358,18 @@
             if (excluded.length > 0) params.append('no', excluded.join(','));
 
             const url = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr`;
-            
+
             if (uploadedSkin && !textureInput.value) {
                 // Use POST if a skin was uploaded
 
                 const formData = new FormData();
-                
+
                 for (let name of params.keys()) {
                     formData.append(name, params.get(name));
                 }
 
                 formData.append('skin', uploadedSkin);
+                if (uploadedCape) formData.append('cape', uploadedCape);
 
                 // Request image and set it as the preview, or show an error
                 try {

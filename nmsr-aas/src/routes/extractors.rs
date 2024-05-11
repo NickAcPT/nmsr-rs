@@ -80,9 +80,9 @@ where
             let object = json!(data);
 
             let query = serde_json::from_value::<RenderRequestMultipartParams>(object.clone())
-                .map_err(|e| RenderRequestError::MultipartDecodeError(e, object.clone()))?;
+                .map_err(|e| RenderRequestError::multipart_decode_error(e, object.clone()))?;
 
-            let entry = RenderRequestEntry::try_from(query.skin)?;
+            let entry = RenderRequestEntry::new_from_skin_and_cape(query.skin, query.cape);
 
             (mode, entry, query.query)
         } else {
@@ -134,16 +134,11 @@ where
         })
         .filter(|s| !s.is_empty());
 
-        let mut request = Self::new_from_excluded_features(
-            mode,
-            entry,
-            model,
-            excluded_features,
-            extra_settings,
-        );
-        
+        let mut request =
+            Self::new_from_excluded_features(mode, entry, model, excluded_features, extra_settings);
+
         state.cleanup_request(&mut request);
-        
+
         Ok(request)
     }
 }
@@ -152,7 +147,7 @@ where
 mod tests {
     use std::collections::HashMap;
 
-    use axum::{debug_handler, extract::State, routing::get, Router, body::Body};
+    use axum::{body::Body, debug_handler, extract::State, routing::get, Router};
     use enumset::{enum_set, EnumSet};
     use hyper::Request;
     use tokio::sync::mpsc::Sender;
@@ -161,7 +156,8 @@ mod tests {
 
     use crate::{
         model::request::{
-            entry::{RenderRequestEntry, RenderRequestEntryModel}, RenderRequest, RenderRequestExtraSettings, RenderRequestFeatures, RenderRequestMode
+            entry::{RenderRequestEntry, RenderRequestEntryModel},
+            RenderRequest, RenderRequestExtraSettings, RenderRequestFeatures, RenderRequestMode,
         },
         routes::RenderRequestValidator,
     };

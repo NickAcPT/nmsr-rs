@@ -273,9 +273,9 @@ impl RenderRequestResolver {
                 cape_texture = None;
                 model = None;
             }
-            RenderRequestEntry::PlayerSkin(bytes) => {
-                skin_texture = Some(MojangTexture::new_unnamed(bytes.clone()));
-                cape_texture = None;
+            RenderRequestEntry::PlayerSkin(skin_bytes, cape_bytes) => {
+                skin_texture = Some(MojangTexture::new_unnamed(skin_bytes.clone()));
+                cape_texture = cape_bytes.to_owned().map(|b| MojangTexture::new_unnamed(b));
                 model = None;
             }
         }

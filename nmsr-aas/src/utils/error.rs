@@ -82,6 +82,28 @@ impl RenderRequestError {
                 | Self::WrongHttpMethodError(_, _)
         )
     }
+    
+    pub(crate) fn multipart_decode_error(e: serde_json::Error, mut object: serde_json::Value) -> Self {
+        /* Cleanup json object to replace all arrays with "<binary data>" */
+        fn clean_object(object: &mut serde_json::Value) {
+            match object {
+                serde_json::Value::Array(_) => {
+                    *object = serde_json::Value::String("<binary data>".to_string());
+                }
+                serde_json::Value::Object(map) => {
+                    for (_, value) in map.iter_mut() {
+                        clean_object(value);
+                    }
+                }
+                _ => {}
+            }
+        }
+        
+        clean_object(&mut object);
+        
+        
+        return Self::MultipartDecodeError(e, object);
+    }
 }
 
 #[derive(Error, Debug)]

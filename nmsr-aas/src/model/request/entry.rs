@@ -14,7 +14,13 @@ pub enum RenderRequestEntry {
     MojangOfflinePlayerUuid(Uuid),
     GeyserPlayerUuid(Uuid),
     TextureHash(String),
-    PlayerSkin(#[debug(skip)] Vec<u8>),
+    PlayerSkin(#[debug(skip)] Vec<u8>, #[debug(skip)] Option<Vec<u8>>),
+}
+
+impl RenderRequestEntry {
+    pub fn new_from_skin_and_cape(skin: Vec<u8>, cape: Option<Vec<u8>>) -> Self {
+        Self::PlayerSkin(skin, cape)
+    }
 }
 
 static VALID_TEXTURE_HASH_REGEX: OnceLock<regex::Regex> = OnceLock::new();
@@ -79,18 +85,10 @@ impl TryFrom<RenderRequestEntry> for String {
             | RenderRequestEntry::MojangOfflinePlayerUuid(uuid)
             | RenderRequestEntry::GeyserPlayerUuid(uuid) => Ok(uuid.to_string()),
             RenderRequestEntry::TextureHash(hash) => Ok(hash),
-            RenderRequestEntry::PlayerSkin(_) => Err(RenderRequestError::InvalidPlayerRequest(
+            RenderRequestEntry::PlayerSkin(_, _) => Err(RenderRequestError::InvalidPlayerRequest(
                 "Unable to convert PlayerSkin to String".to_string(),
             )),
         }
-    }
-}
-
-impl TryFrom<Vec<u8>> for RenderRequestEntry {
-    type Error = RenderRequestError;
-
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Ok(Self::PlayerSkin(value))
     }
 }
 

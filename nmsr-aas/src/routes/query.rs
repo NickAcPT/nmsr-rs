@@ -101,6 +101,7 @@ pub struct RenderRequestMultipartParams {
     pub query: RenderRequestQueryParams,
     #[serde(alias = "texture")]
     pub skin: Vec<u8>,
+    pub cape: Option<Vec<u8>>,
 }
 
 impl RenderRequestQueryParams {

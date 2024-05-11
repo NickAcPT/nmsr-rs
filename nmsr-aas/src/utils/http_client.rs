@@ -7,13 +7,11 @@ use hyper_util::{
     rt::TokioExecutor,
 };
 use std::time::Duration;
-use tower::{buffer::Buffer, limit::RateLimit, Service, ServiceBuilder, ServiceExt};
+use tower::{buffer::Buffer, limit::RateLimit, timeout::{Timeout, TimeoutLayer}, Service, ServiceBuilder, ServiceExt};
 use tower_http::{
-    classify::{ServerErrorsAsFailures, SharedClassifier},
-    set_header::{SetRequestHeader, SetRequestHeaderLayer},
-    trace::{
+    classify::{ServerErrorsAsFailures, SharedClassifier}, set_header::{SetRequestHeader, SetRequestHeaderLayer}, trace::{
         DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, Trace, TraceLayer,
-    },
+    }
 };
 use tracing::{instrument, Span};
 
@@ -42,7 +40,7 @@ pub(crate) type NmsrTraceLayer = Trace<
 >;
 
 pub struct NmsrHttpClient {
-    inner: Buffer<RateLimit<NmsrTraceLayer>, Request<SyncBody>>,
+    inner: Buffer<RateLimit<Timeout<NmsrTraceLayer>>, Request<SyncBody>>,
 }
 
 impl NmsrHttpClient {
@@ -107,11 +105,13 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
     let service = ServiceBuilder::new()
         .buffer(rate_limit_per_second.saturating_mul(2) as usize)
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))
+        .layer(TimeoutLayer::new(Duration::from_secs(5 * 60 /* 5 minutes */)))
         .layer(tracing)
         .layer(SetRequestHeaderLayer::overriding(
             HeaderName::from_static("user-agent"),
             HeaderValue::from_str(USER_AGENT).expect("Expected user-agent to be valid"),
         ))
+        .check_clone()
         .service(client);
 
     NmsrHttpClient { inner: service }

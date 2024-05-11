@@ -1,4 +1,5 @@
 use axum::http::{HeaderName, HeaderValue};
+use http::StatusCode;
 use http_body_util::{BodyExt, Empty};
 use hyper::{body::Bytes, Method, Request};
 use hyper_tls::HttpsConnector;
@@ -77,7 +78,7 @@ impl NmsrHttpClient {
                 .map_err(MojangRequestError::BoxedRequestError)?
         };
 
-        if !response.status().is_success() {
+        if response.status() != StatusCode::OK {
             if let Some(err) = on_error() {
                 return Err(err);
             }

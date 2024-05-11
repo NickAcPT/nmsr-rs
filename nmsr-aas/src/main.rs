@@ -115,14 +115,14 @@ async fn main() -> anyhow::Result<()> {
     > = NmsrTracing::new_trace_layer();
 
     let app = router
+        .layer(PropagateRequestIdLayer::new(HeaderName::from_static(
+            "x-request-id",
+        )))
+        .layer(trace_layer)
         .layer(SetRequestIdLayer::new(
             HeaderName::from_static("x-request-id"),
             MakeRequestUuid,
         ))
-        .layer(trace_layer)
-        .layer(PropagateRequestIdLayer::new(HeaderName::from_static(
-            "x-request-id",
-        )))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

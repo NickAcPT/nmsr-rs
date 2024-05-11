@@ -16,6 +16,8 @@ use crate::error::{RenderRequestError, Result};
 pub enum RenderRequestMode {
     #[strum(serialize = "skin", serialize = "texture")]
     Skin,
+    #[strum(serialize = "cape", serialize = "cloak")]
+    Cape,
     #[strum(serialize = "export", serialize = "bbmodel")]
     BlockbenchExport,
     #[strum(serialize = "fullbody", serialize = "full", serialize = "full_body")]
@@ -90,12 +92,16 @@ impl RenderRequestMode {
         matches!(self, Self::Skin)
     }
 
+    pub(crate) const fn is_cape(self) -> bool {
+        matches!(self, Self::Cape)
+    }
+
     pub(crate) const fn is_blockbench_export(self) -> bool {
         matches!(self, Self::BlockbenchExport)
     }
 
     pub(crate) const fn uses_rendering_pipeline(self) -> bool {
-        !self.is_skin() && !self.is_blockbench_export()
+        !self.is_skin() && !self.is_cape() && !self.is_blockbench_export()
     }
 
     // [min_w, min_h, max_w, max_h]
@@ -267,7 +273,7 @@ impl RenderRequestMode {
                     .filter(|m| !excluded.contains(&m.get_non_layer_part()))
                     .collect()
             }
-            Self::Skin | Self::BlockbenchExport => unreachable!(),
+            Self::Cape | Self::Skin | Self::BlockbenchExport => unreachable!(),
         }
     }
 }

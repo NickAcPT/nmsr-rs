@@ -18,7 +18,7 @@ pub enum NMSRaaSError {
     RenderError(#[from] nmsr_rendering::errors::NMSRRenderingError),
     #[error("Armor manager error: {0}")]
     ArmorManagerError(#[from] ArmorManagerError),
-    
+
     #[error("{0}")]
     ClonedError(String),
 
@@ -41,6 +41,8 @@ pub enum RenderRequestError {
     InvalidPlayerUuidRequest(String, usize),
     #[error("{0}")]
     InvalidPlayerRequest(String),
+    #[error("Missing {0} texture")]
+    MissingTexture(String),
     #[error("Io error: {0} ({1})")]
     ExplainedIoError(std::io::Error, String),
     #[error("Path Rejection Error: {0}")]
@@ -82,8 +84,11 @@ impl RenderRequestError {
                 | Self::WrongHttpMethodError(_, _)
         )
     }
-    
-    pub(crate) fn multipart_decode_error(e: serde_json::Error, mut object: serde_json::Value) -> Self {
+
+    pub(crate) fn multipart_decode_error(
+        e: serde_json::Error,
+        mut object: serde_json::Value,
+    ) -> Self {
         /* Cleanup json object to replace all arrays with "<binary data>" */
         fn clean_object(object: &mut serde_json::Value) {
             match object {
@@ -98,10 +103,9 @@ impl RenderRequestError {
                 _ => {}
             }
         }
-        
+
         clean_object(&mut object);
-        
-        
+
         return Self::MultipartDecodeError(e, object);
     }
 }
@@ -215,8 +219,18 @@ impl IntoResponse for NMSRaaSError {
             false
         };
 
+        #[rustfmt::skip]
+        let is_not_found = matches!(
+            self,
+            Self::MojangRequestError(MojangRequestError::GameProfileNotFound(_))
+                | Self::MojangRequestError(MojangRequestError::UnableToResolveRenderRequestEntity(_,_))
+                | Self::RenderRequestError(RenderRequestError::MissingTexture(_))
+        );
+
         let error = if is_bad_request {
             StatusCode::BAD_REQUEST
+        } else if is_not_found {
+            StatusCode::NOT_FOUND
         } else {
             StatusCode::INTERNAL_SERVER_ERROR
         };

@@ -3,7 +3,7 @@ use crate::{
     error::{Result, RenderRequestError},
     model::request::{RenderRequest, RenderRequestMode},
     routes::render_model::internal_render_model,
-    routes::render_skin::internal_render_skin,
+    routes::render_skin::internal_render_skin_or_cape,
 };
 use axum::{
     extract::State,
@@ -48,7 +48,7 @@ pub async fn render(
     }
 
     let result = match request.mode {
-        RenderRequestMode::Skin => internal_render_skin(&request, resolved).await,
+        RenderRequestMode::Skin | RenderRequestMode::Cape => internal_render_skin_or_cape(&request, resolved).await,
         _ => internal_render_model(&request, &state, &resolved).await,
     }?;
 

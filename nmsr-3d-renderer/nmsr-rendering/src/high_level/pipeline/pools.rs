@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use deadpool::managed::{Manager, RecycleResult,Metrics};
 use tracing::trace;
 
@@ -24,7 +23,6 @@ impl<'a> std::fmt::Debug for SceneContextPoolManager<'a> {
     }
 }
 
-#[async_trait]
 impl<'a> Manager for SceneContextPoolManager<'a> {
     type Type = SceneContext;
     type Error = Box<NMSRRenderingError>;

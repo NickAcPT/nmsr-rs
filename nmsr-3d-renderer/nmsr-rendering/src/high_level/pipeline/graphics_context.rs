@@ -320,6 +320,7 @@ impl<'a> GraphicsContext<'a> {
             vertex: VertexState {
                 module: &shader,
                 entry_point: "vs_main",
+                compilation_options: Default::default(),
                 buffers: &[vertex_buffer_layout],
             },
             primitive: PrimitiveState {
@@ -342,6 +343,7 @@ impl<'a> GraphicsContext<'a> {
             fragment: Some(FragmentState {
                 module: &shader,
                 entry_point: "fs_main",
+                compilation_options: Default::default(),
                 targets: &[Some(ColorTargetState {
                     format: texture_format,
                     blend,

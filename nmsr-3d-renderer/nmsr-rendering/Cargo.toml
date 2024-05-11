@@ -16,10 +16,10 @@ image = { workspace = true, default-features = false }
 tokio = { workspace = true, default-features = false }
 itertools = { workspace = true }
 tracing = { workspace = true }
-deadpool = {version = "0.10", optional = true }
+deadpool = { workspace = true, optional = true }
 async-trait = { workspace = true }
 derive_more = { workspace = true }
-smaa = { git = "https://github.com/NickAcPT/smaa-rs", branch = "nmsr", optional = true }
+smaa = { git = "https://github.com/NickAcPT/smaa-rs", branch = "nmsr-wgpu-0.20", optional = true }
 
 [features]
 default = ["pipeline"]

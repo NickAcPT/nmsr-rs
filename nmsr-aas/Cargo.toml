@@ -88,7 +88,7 @@ http = "1.0"
 symlink = "0.1"
 humantime-serde = "1.1"
 serde_with = "3.3"
-deadpool = "0.10"
+deadpool = { workspace = true }
 image = { workspace = true, default-features = false }
 mtpng = "0.3"
 

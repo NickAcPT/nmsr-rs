@@ -52,7 +52,7 @@ pub struct RenderRequestExtraSettings {
     pub yaw: Option<f32>,
     pub pitch: Option<f32>,
     pub roll: Option<f32>,
-    
+
     #[is_empty(if = "is_false")]
     pub show_back: bool,
 
@@ -166,7 +166,7 @@ impl RenderRequest {
                 if let Some(roll) = settings.roll {
                     camera.set_roll(roll);
                 }
-                
+
                 if settings.show_back {
                     *camera.get_yaw_as_mut() -= 180.0;
                 }
@@ -232,16 +232,8 @@ impl RenderRequest {
         }
 
         let camera = self.get_camera();
-        let one_eighty_diff = (camera.get_yaw().abs() - 180.0).abs();
-        let yaw = if one_eighty_diff < 0.01 {
-            camera.get_yaw().abs() + 90.0
-        } else if camera.get_yaw().is_sign_positive() || camera.get_yaw() <= -90.0 {
-            camera.get_yaw()
-        } else {
-            camera.get_yaw() + 90.0
-        };
 
-        let aligned_yaw = ((yaw + 180.0) / 90.0).floor() * 90.0;
+        let aligned_yaw = ((((camera.get_yaw() % 180.0) + 45.0) + 90.0) / 90.0).round() * 90.0;
 
         let rot_quat: Quat = Quat::from_euler(
             EulerRot::ZXY,
@@ -302,19 +294,23 @@ impl RenderRequest {
             request.features.remove(RenderRequestFeatures::BodyLayers);
             request.features.remove(RenderRequestFeatures::Cape);
         }
-        
+
         // If the request is custom, we add the custom feature, otherwise we remove it
         if request.mode.is_custom() {
             request.features.insert(RenderRequestFeatures::Custom);
         } else {
             request.features.remove(RenderRequestFeatures::Custom);
         }
-        
+
         // If the request has extra settings, we add the ExtraSettings feature, otherwise we remove it
         if request.extra_settings.is_some() {
-            request.features.insert(RenderRequestFeatures::ExtraSettings);
+            request
+                .features
+                .insert(RenderRequestFeatures::ExtraSettings);
         } else {
-            request.features.remove(RenderRequestFeatures::ExtraSettings);
+            request
+                .features
+                .remove(RenderRequestFeatures::ExtraSettings);
         }
 
         request

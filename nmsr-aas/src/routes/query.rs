@@ -142,9 +142,8 @@ impl RenderRequestQueryParams {
 
     pub fn validate(&mut self, mode: RenderRequestMode) -> Result<()> {
         fn clamp(value: &mut Option<f32>, min: f32, max: f32) {
-            let epsilon = 0.01;
             if let Some(value) = value {
-                *value = value.clamp(min + epsilon, max - epsilon);
+                *value = value.clamp(min, max);
             }
         }
 

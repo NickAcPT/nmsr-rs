@@ -233,7 +233,14 @@ impl RenderRequest {
 
         let camera = self.get_camera();
 
-        let aligned_yaw = ((((camera.get_yaw() % 180.0) + 45.0) + 90.0) / 90.0).round() * 90.0;
+        let offset = 90.0f32 + 45.0f32;
+        
+        let abs = (((camera.get_yaw().round()) % 360.0).abs() - 180.0).abs();
+        let is_one_eighty = abs < 0.01;
+        
+        let offset = if is_one_eighty { 1.0 } else { offset * camera.get_yaw().signum() };
+        
+        let aligned_yaw = (((camera.get_yaw() % 180.0) + offset) / 90.0).round() * 90.0;
 
         let rot_quat: Quat = Quat::from_euler(
             EulerRot::ZXY,

@@ -358,7 +358,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         ];
 
         for texture in textures_to_read {
-            let is_important_texture = matches!(texture, ResolvedRenderEntryTextureType::Skin | ResolvedRenderEntryTextureType::Cape);
+            let is_important_texture = matches!(texture, ResolvedRenderEntryTextureType::Skin);
 
             let texture_path = base.join(format!("{}{}", Into::<&str>::into(texture), ".png"));
 

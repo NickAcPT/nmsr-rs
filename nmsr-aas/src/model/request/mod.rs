@@ -43,11 +43,18 @@ pub enum RenderRequestFeatures {
     Ears,
 }
 
+fn is_false(value: &bool) -> bool {
+    !value
+}
+
 #[derive(Debug, Clone, PartialEq, Default, IsEmpty)]
 pub struct RenderRequestExtraSettings {
     pub yaw: Option<f32>,
     pub pitch: Option<f32>,
     pub roll: Option<f32>,
+    
+    #[is_empty(if = "is_false")]
+    pub show_back: bool,
 
     pub width: Option<u32>,
     pub height: Option<u32>,
@@ -158,6 +165,10 @@ impl RenderRequest {
 
                 if let Some(roll) = settings.roll {
                     camera.set_roll(roll);
+                }
+                
+                if settings.show_back {
+                    *camera.get_yaw_as_mut() -= 180.0;
                 }
             }
 

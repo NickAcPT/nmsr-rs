@@ -119,6 +119,8 @@ where
             yaw: query.yaw,
             pitch: query.pitch,
             roll: query.roll,
+            
+            show_back: query.back.is_some(),
 
             arm_rotation: query.arms,
             distance: query.distance,

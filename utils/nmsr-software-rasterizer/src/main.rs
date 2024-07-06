@@ -20,7 +20,7 @@ pub mod model;
 pub mod shader;
 
 fn main() {
-    let mut camera = camera::Camera::new_orbital(
+    let camera = camera::Camera::new_orbital(
         Vec3::new(0.0, 16.5 + 2.5, 0.0),
         5.0,
         CameraRotation {

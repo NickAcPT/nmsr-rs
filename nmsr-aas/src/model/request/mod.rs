@@ -232,15 +232,16 @@ impl RenderRequest {
         }
 
         let camera = self.get_camera();
+        let one_eighty_diff = (camera.get_yaw().abs() - 180.0).abs();
+        let yaw = if one_eighty_diff < 0.01 {
+            camera.get_yaw().abs() + 90.0
+        } else if camera.get_yaw().is_sign_positive() || camera.get_yaw() <= -90.0 {
+            camera.get_yaw()
+        } else {
+            camera.get_yaw() + 90.0
+        };
 
-        let offset = 90.0f32 + 45.0f32;
-        
-        let abs = (((camera.get_yaw().round()) % 360.0).abs() - 180.0).abs();
-        let is_one_eighty = abs < 0.01;
-        
-        let offset = if is_one_eighty { 1.0 } else { offset * camera.get_yaw().signum() };
-        
-        let aligned_yaw = (((camera.get_yaw() % 180.0) + offset) / 90.0).round() * 90.0;
+        let aligned_yaw = ((yaw + 180.0) / 90.0).floor() * 90.0;
 
         let rot_quat: Quat = Quat::from_euler(
             EulerRot::ZXY,

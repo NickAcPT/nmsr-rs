@@ -267,7 +267,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             | RenderRequestEntry::MojangOfflinePlayerUuid(u)
             | RenderRequestEntry::GeyserPlayerUuid(u) => Some(u.to_string()),
             RenderRequestEntry::TextureHash(hash) => Some(hash.clone()),
-            RenderRequestEntry::PlayerSkin(_, _) => None,
+            RenderRequestEntry::MojangPlayerName(_) | RenderRequestEntry::PlayerSkin(_, _) => None,
         })
     }
 

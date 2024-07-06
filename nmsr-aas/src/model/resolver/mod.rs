@@ -234,6 +234,11 @@ impl RenderRequestResolver {
         let cape_texture: Option<MojangTexture>;
 
         match &entry {
+            RenderRequestEntry::MojangPlayerName(name) => {
+                let id = self.mojang_requests_client.resolve_name_to_uuid(name).await?;
+                
+                return Box::pin(self.resolve_entry_textures(&RenderRequestEntry::MojangPlayerUuid(id))).await;
+            }
             RenderRequestEntry::MojangPlayerUuid(id)
             | RenderRequestEntry::MojangOfflinePlayerUuid(id) => {
                 if matches!(&entry, RenderRequestEntry::MojangOfflinePlayerUuid(_))

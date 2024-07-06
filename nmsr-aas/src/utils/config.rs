@@ -78,6 +78,9 @@ pub struct MojankConfiguration {
 
     /// The textures server to use for downloading player textures.
     pub textures_server: String,
+    
+    /// The Mojang API server to use for resolving player names.
+    pub mojang_api_server: String,
 
     /// The GeyserMC API server to use for resolving Bedrock Edition player textures.
     pub geysermc_api_server: String,
@@ -105,6 +108,7 @@ impl Default for MojankConfiguration {
         Self {
             session_server: "https://sessionserver.mojang.com/".to_string(),
             textures_server: "https://textures.minecraft.net".to_string(),
+            mojang_api_server: "https://api.mojang.com/".to_string(),
             geysermc_api_server: "https://api.geysermc.org/".to_string(),
             session_server_rate_limit: 10,
 

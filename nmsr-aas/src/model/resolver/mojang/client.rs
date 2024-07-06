@@ -2,6 +2,7 @@ use super::model::GameProfile;
 use crate::{
     config::MojankConfiguration,
     error::{MojangRequestError, MojangRequestResult},
+    model::resolver::mojang::model::UsernameToUuidResponse,
     utils::http_client::NmsrHttpClient,
 };
 use hyper::{body::Bytes, Method};
@@ -38,6 +39,27 @@ impl MojangClient {
         self.client
             .do_request(url, method, parent_span, on_error)
             .await
+    }
+
+    pub async fn resolve_name_to_uuid<'a>(&self, name: &'a str) -> MojangRequestResult<Uuid> {
+        let url = format!(
+            "{mojang_api_server}/users/profiles/minecraft/{encoded_name}",
+            mojang_api_server = self.mojank_config.mojang_api_server,
+            encoded_name = urlencoding::encode(name)
+        );
+
+        let bytes = self
+            .do_request(&url, Method::GET, &Span::current(), || {
+                Some(MojangRequestError::NamedGameProfileNotFound(
+                    name.to_owned(),
+                ))
+            })
+            .await?;
+
+        let result: UsernameToUuidResponse = serde_json::from_slice(&bytes)
+            .map_err(|_| MojangRequestError::NamedGameProfileNotFound(name.to_owned()))?;
+
+        Ok(result.id())
     }
 
     pub async fn resolve_uuid_to_game_profile(

@@ -157,6 +157,8 @@ pub enum MojangRequestError {
     InvalidTextureHashError(String),
     #[error("Unable to find a player with the UUID {0}")]
     GameProfileNotFound(Uuid),
+    #[error("Unable to find a player with the name \"{0}\"")]
+    NamedGameProfileNotFound(String),
 }
 
 #[derive(Error, Debug)]

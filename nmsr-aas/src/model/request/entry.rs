@@ -10,6 +10,7 @@ use crate::error::{RenderRequestError, RenderRequestResult};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Deserialize, Serialize)]
 pub enum RenderRequestEntry {
+    MojangPlayerName(String),
     MojangPlayerUuid(Uuid),
     MojangOfflinePlayerUuid(Uuid),
     GeyserPlayerUuid(Uuid),
@@ -63,6 +64,8 @@ impl TryFrom<String> for RenderRequestEntry {
             }
 
             Ok(Self::TextureHash(value))
+        } else if value.len() <= 16 && value.chars().all(|c| matches!(c, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_')) {
+            Ok(Self::MojangPlayerName(value))
         } else {
             Err(RenderRequestError::InvalidPlayerRequest(formatdoc! {"
                 You've provided an invalid player request ({value}).
@@ -81,6 +84,7 @@ impl TryFrom<RenderRequestEntry> for String {
 
     fn try_from(value: RenderRequestEntry) -> Result<Self, Self::Error> {
         match value {
+            RenderRequestEntry::MojangPlayerName(name) => Ok(name),
             RenderRequestEntry::MojangPlayerUuid(uuid)
             | RenderRequestEntry::MojangOfflinePlayerUuid(uuid)
             | RenderRequestEntry::GeyserPlayerUuid(uuid) => Ok(uuid.to_string()),

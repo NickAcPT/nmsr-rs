@@ -55,6 +55,8 @@ texture_cache_duration = "48h"
 session_server = "https://sessionserver.mojang.com"
 # The URL to the Mojang API's textures server.
 textures_server = "https://textures.minecraft.net"
+# The URL to the Mojang API's textures server.
+mojang_api_server = "https://api.mojang.com"
 # The rate limit to use for requests to the session server in a 1 second window.
 session_server_rate_limit = 10
 # The URL to the Geyser API's server.

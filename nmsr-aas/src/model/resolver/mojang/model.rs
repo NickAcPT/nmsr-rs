@@ -2,6 +2,7 @@ use crate::error::{MojangRequestError, MojangRequestResult};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
+use uuid::Uuid;
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
@@ -110,6 +111,18 @@ fn from_properties<'de, D: Deserializer<'de>>(
     }
 
     Ok(map)
+}
+
+
+#[derive(Deserialize, Debug)]
+pub struct UsernameToUuidResponse {
+    id: Uuid
+}
+
+impl UsernameToUuidResponse {
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
 }
 
 #[cfg(test)]

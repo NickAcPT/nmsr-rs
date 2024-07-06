@@ -27,13 +27,12 @@ fn main() -> Result<()> {
             .ok_or(anyhow!("Failed to convert file name to str"))?
             .to_upper_camel_case();
 
-        let mut pixels: Vec<_> = palette_img
-            .pixels()
-            .collect();
-        
+        let mut pixels: Vec<_> = palette_img.pixels().collect();
+
         pixels.sort_by_key(|f| f.0);
-        
-        let pixels = pixels.into_iter()
+
+        let pixels = pixels
+            .into_iter()
             .map(|x| format!("[0x{:02X}, 0x{:02X}, 0x{:02X}]", x[0], x[1], x[2]))
             .collect::<Vec<_>>()
             .join(", ");

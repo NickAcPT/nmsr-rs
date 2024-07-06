@@ -4,10 +4,15 @@ use criterion::{criterion_group, criterion_main, Criterion, SamplingMode};
 
 use ears_rs::parser::EarsParser;
 use glam::Vec3;
-pub use nmsr_rasterizer_test::{camera::CameraRotation, model::{RenderEntry, Size}, shader::ShaderState};
 use nmsr_rasterizer_test::shader;
-use nmsr_rendering::high_level::{parts::provider::PlayerPartProviderContext, types::PlayerBodyPartType, IntoEnumIterator};
-
+pub use nmsr_rasterizer_test::{
+    camera::CameraRotation,
+    model::{RenderEntry, Size},
+    shader::ShaderState,
+};
+use nmsr_rendering::high_level::{
+    parts::provider::PlayerPartProviderContext, types::PlayerBodyPartType, IntoEnumIterator,
+};
 
 fn bench(c: &mut Criterion) {
     let mut camera = nmsr_rasterizer_test::camera::Camera::new_orbital(
@@ -21,10 +26,9 @@ fn bench(c: &mut Criterion) {
         nmsr_rasterizer_test::camera::ProjectionParameters::Perspective { fov: 45f32 },
         Some(Size {
             width: 512,
-            height: 869
+            height: 869,
         }),
     );
-
 
     let mut texture = image::open("NickAc.png").unwrap().into_rgba8();
 
@@ -44,12 +48,17 @@ fn bench(c: &mut Criterion) {
     ears_rs::utils::process_erase_regions(&mut texture).expect("Failed to process erase regions");
     ears_rs::utils::strip_alpha(&mut texture);
 
-    let state = ShaderState::new(camera, Arc::new(texture), shader::SunInformation {
+    let state = ShaderState::new(
+        camera,
+        Arc::new(texture),
+        shader::SunInformation {
             direction: glam::Vec3A::new(0.0, -1.0, 1.0),
             intensity: 2.0,
             ambient: 0.621,
-        }, &context, &PlayerBodyPartType::iter().collect::<Vec<_>>());
-
+        },
+        &context,
+        &PlayerBodyPartType::iter().collect::<Vec<_>>(),
+    );
 
     let mut entry = RenderEntry::new(camera.get_size().unwrap());
     let mut group = c.benchmark_group("nmsr-rs");

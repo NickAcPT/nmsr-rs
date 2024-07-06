@@ -269,7 +269,7 @@ impl Camera {
     pub fn get_size(&self) -> Option<Size> {
         self.size
     }
-    
+
     pub fn set_size(&mut self, size: Option<Size>) {
         self.size = size;
         self.dirty = true;
@@ -299,7 +299,7 @@ impl Camera {
     pub fn get_distance(&self) -> f32 {
         self.position_parameters.get_distance().unwrap_or(0.0)
     }
-    
+
     pub fn get_distance_as_mut(&mut self) -> Option<&mut f32> {
         self.position_parameters.as_mut_distance()
     }
@@ -311,32 +311,32 @@ impl Camera {
     pub fn get_rotation_mut(&mut self) -> &mut CameraRotation {
         &mut self.rotation
     }
-    
+
     pub fn set_rotation(&mut self, rotation: CameraRotation) {
         *self.get_rotation_mut() = rotation;
     }
-    
+
     #[inline]
     pub fn get_rotation_as_mut(&mut self) -> &mut CameraRotation {
         self.get_rotation_mut()
     }
-    
+
     pub fn get_yaw(&self) -> f32 {
         self.get_rotation().yaw
     }
-    
+
     pub fn get_pitch(&self) -> f32 {
         self.get_rotation().pitch
     }
-    
+
     pub fn get_roll(&self) -> f32 {
         self.get_rotation().roll
     }
-    
+
     pub fn get_position_parameters_mut(&mut self) -> &mut CameraPositionParameters {
         &mut self.position_parameters
     }
-    
+
     pub fn get_projection_mut(&mut self) -> &mut ProjectionParameters {
         &mut self.projection
     }

@@ -15,10 +15,12 @@ fn bench(c: &mut Criterion) {
         .into_rgba8();
 
     let request = RenderingEntry::new(skin, true, true, true).unwrap();
-    
+
     let mut group = c.benchmark_group("nmsr-rs");
     group.sampling_mode(SamplingMode::Flat);
-    group.bench_function("render_entry", |b| b.iter(|| request.render(black_box(&manager))));
+    group.bench_function("render_entry", |b| {
+        b.iter(|| request.render(black_box(&manager)))
+    });
     group.finish();
 }
 

@@ -4,8 +4,14 @@ use crate::uv::utils::apply_uv_map;
 use image::RgbaImage;
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serializable_parts", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serializable_parts_rkyv", derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize))]
+#[cfg_attr(
+    feature = "serializable_parts",
+    derive(serde::Serialize, serde::Deserialize)
+)]
+#[cfg_attr(
+    feature = "serializable_parts_rkyv",
+    derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)
+)]
 pub struct UvImage {
     pub name: String,
     pub size: (u32, u32),

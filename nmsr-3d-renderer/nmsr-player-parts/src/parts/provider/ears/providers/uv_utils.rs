@@ -8,9 +8,12 @@ pub(crate) enum TextureRotation {
 
 impl TextureRotation {
     pub(crate) fn is_transposed(&self) -> bool {
-        matches!(self, TextureRotation::Clockwise | TextureRotation::CounterClockwise)
+        matches!(
+            self,
+            TextureRotation::Clockwise | TextureRotation::CounterClockwise
+        )
     }
-    
+
     pub(crate) fn cw(&self) -> TextureRotation {
         match self {
             TextureRotation::None => TextureRotation::Clockwise,
@@ -19,7 +22,7 @@ impl TextureRotation {
             TextureRotation::CounterClockwise => TextureRotation::None,
         }
     }
-    
+
     pub(crate) fn ccw(&self) -> TextureRotation {
         match self {
             TextureRotation::None => TextureRotation::CounterClockwise,
@@ -47,7 +50,7 @@ impl TextureFlip {
             TextureFlip::Vertical => TextureFlip::Both,
         }
     }
-    
+
     pub(crate) fn flip_vertically(&self) -> TextureFlip {
         match self {
             TextureFlip::Both => TextureFlip::Horizontal,

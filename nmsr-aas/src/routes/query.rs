@@ -56,7 +56,7 @@ pub struct RenderRequestQueryParams {
     pub pitch: Option<f32>,
     #[serde(alias = "r")]
     pub roll: Option<f32>,
-    
+
     pub back: Option<String>,
 
     #[serde(alias = "w")]

@@ -198,12 +198,11 @@ pub(crate) fn create_part_context(
         #[cfg(feature = "ears")]
         ears_features: None,
     };
-    
-    
+
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
         load_ears_features(&mut context, resolved);
     }
-    
+
     context
 }

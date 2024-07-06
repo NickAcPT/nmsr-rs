@@ -1,6 +1,6 @@
-pub mod generator;
 pub mod blockbench;
 pub mod error;
+pub mod generator;
 
-pub use nmsr_rendering as nmsr_rendering;
-pub use image as image;
+pub use image;
+pub use nmsr_rendering;

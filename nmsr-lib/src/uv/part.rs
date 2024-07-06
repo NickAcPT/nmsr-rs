@@ -6,8 +6,14 @@ use crate::geometry::Point;
 use crate::uv::part::UvImagePixel::{RawPixel, UvPixel};
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serializable_parts", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serializable_parts_rkyv", derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize))]
+#[cfg_attr(
+    feature = "serializable_parts",
+    derive(serde::Serialize, serde::Deserialize)
+)]
+#[cfg_attr(
+    feature = "serializable_parts_rkyv",
+    derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)
+)]
 pub enum UvImagePixel {
     RawPixel {
         position: Point<u16>,
@@ -22,14 +28,9 @@ pub enum UvImagePixel {
 }
 
 impl UvImagePixel {
-    pub(crate) fn new(
-        x: u32,
-        y: u32,
-        original_pixel: &Rgba<u8>,
-        store_raw_pixels: bool
-    ) -> Self {
+    pub(crate) fn new(x: u32, y: u32, original_pixel: &Rgba<u8>, store_raw_pixels: bool) -> Self {
         let channels = original_pixel.channels();
-        
+
         // Our Red channel is composed of the 6 bits of the u coordinate + 2 bits from the v coordinate
         // U is used as-is because our coordinates are 0-63
         // 1   2   3   4   5   6   7   8
@@ -55,21 +56,18 @@ impl UvImagePixel {
             );
 
             let rgba: u32 = r | (g << 8) | (b << 16) | (a << 24);
-            
+
             let u = (rgba & 0x3F) as u8;
             let v = ((rgba >> 6) & 0x3F) as u8;
             let shading = ((rgba >> 12) & 0xFF) as u8;
             //let depth = ((rgba >> 20) & 0x1FFF) as u16;
-            
+
             UvPixel {
                 position: Point {
                     x: x as u16,
                     y: y as u16,
                 },
-                uv: Point {
-                    x: u,
-                    y: v,
-                },
+                uv: Point { x: u, y: v },
                 /* depth, */
                 shading,
             }
@@ -108,17 +106,18 @@ fn test_uv_pixel() {
     // 1   2   3   4   5   6   7   8
     // [          -- d --          ]
 
-    let final_number: u32 = ((final_depth & 0x1FFF) << 20) | ((shading & 0xFF) << 12) | ((v & 0x3F) << 6) | (u & 0x3F);
+    let final_number: u32 =
+        ((final_depth & 0x1FFF) << 20) | ((shading & 0xFF) << 12) | ((v & 0x3F) << 6) | (u & 0x3F);
 
     union U {
         rgba: u32,
         channels: [u8; 4],
     }
-    
+
     let pixels = U { rgba: final_number };
     let mut channels = unsafe { pixels.channels };
     channels.reverse();
-    
+
     //println!("{:#10x}", final_number);
 
     let pixel = UvImagePixel::new(1, 1, &Rgba(channels), false);
@@ -127,7 +126,10 @@ fn test_uv_pixel() {
         pixel,
         (UvPixel {
             position: Point { x: 1, y: 1 },
-            uv: Point { x: u as u8, y: v as u8 },
+            uv: Point {
+                x: u as u8,
+                y: v as u8
+            },
             /* depth: final_depth as u16, */
             shading: shading as u8,
         })

@@ -1,7 +1,4 @@
-use ears_rs::features::{
-    data::wing::WingMode,
-    EarsFeatures,
-};
+use ears_rs::features::{data::wing::WingMode, EarsFeatures};
 
 use crate::{
     model::ArmorMaterial,
@@ -60,7 +57,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModWingsPartProvider<M> {
                 };
                 b.anchor_to(PlayerBodyPartType::Body);
                 b.translate_i(2, -2, 4);
-                
+
                 if wing_mode == WingMode::SymmetricDual || wing_mode == WingMode::AsymmetricL {
                     b.stack(|b| {
                         b.rotate(0.0, -120. + wiggle, 0.0);

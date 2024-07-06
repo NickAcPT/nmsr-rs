@@ -80,7 +80,7 @@ fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
             // Find our current group in the tree
             current_group = current_group.add_or_get_group(group);
         }
-        
+
         // Add our part to the group
         current_group.add_entry(part_id);
     }

@@ -27,7 +27,7 @@ impl Quad {
             bottom_right,
         }
     }
-    
+
     #[allow(clippy::too_many_arguments)]
     pub fn new_with_normal(
         top_left: Vec3,

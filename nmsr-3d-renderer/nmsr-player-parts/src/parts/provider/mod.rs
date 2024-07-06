@@ -1,4 +1,3 @@
-
 use self::minecraft::{perform_arm_part_rotation, MinecraftPlayerPartsProvider};
 use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
 use crate::parts::part::Part;
@@ -57,12 +56,14 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
         context: &PlayerPartProviderContext<M>,
         body_part: PlayerBodyPartType,
     ) -> Vec<Part> {
-        if (!context.has_layers && body_part.is_layer()) || (!context.has_hat_layer && body_part.is_hat_layer()) {
+        if (!context.has_layers && body_part.is_layer())
+            || (!context.has_hat_layer && body_part.is_hat_layer())
+        {
             // Handle the case where we're asked to provide parts for a layer, but the context has explicitly stated that
             // it doesn't want layers.
             return vec![];
         }
-        
+
         let mut parts = match self {
             Self::Minecraft => {
                 MinecraftPlayerPartsProvider::default().get_parts(context, body_part)

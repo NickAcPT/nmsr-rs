@@ -146,8 +146,8 @@ impl RenderRequestMode {
         if let Some(value) = value {
             *value = min + (*value - min + (max - min)) % (max - min)
         }
-        
-        return Ok(())
+
+        return Ok(());
     }
 
     pub(crate) const fn get_base_render_mode(self) -> Option<Self> {

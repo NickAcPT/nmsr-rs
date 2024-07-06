@@ -49,7 +49,7 @@ impl MojangClient {
         } else {
             id.as_hyphenated().to_string()
         };
-        
+
         let url = format!(
             "{session_server}/session/minecraft/profile/{id_str}",
             session_server = self.mojank_config.session_server
@@ -67,7 +67,7 @@ impl MojangClient {
     pub async fn fetch_texture_from_mojang(
         &self,
         texture_id: &str,
-        req_type: MojangTextureRequestType
+        req_type: MojangTextureRequestType,
     ) -> MojangRequestResult<Vec<u8>> {
         let url = self.build_request_url(req_type, texture_id);
 

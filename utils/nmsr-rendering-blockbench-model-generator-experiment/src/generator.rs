@@ -3,6 +3,10 @@ use std::{
     io::{BufWriter, Cursor},
 };
 
+use crate::{
+    blockbench::model::ModelFaceUv,
+    error::{BlockbenchGeneratorError, Contextualizable, Result},
+};
 use glam::Vec2;
 use image::RgbaImage;
 use itertools::Itertools;
@@ -15,10 +19,6 @@ use nmsr_rendering::high_level::{
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
     IntoEnumIterator,
-};
-use crate::{
-    blockbench::model::ModelFaceUv,
-    error::{BlockbenchGeneratorError, Contextualizable, Result},
 };
 
 pub trait ModelProjectImageIO {
@@ -116,7 +116,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
             {
                 use ears_rs::{alfalfa::AlfalfaDataKey, parser::EarsParser};
                 use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
-                
+
                 if texture_type == PlayerPartTextureType::Skin {
                     if let Ok(Some(alfalfa)) = ears_rs::alfalfa::read_alfalfa(&texture) {
                         if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
@@ -232,7 +232,11 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
         }
     }
 
-    pub(crate) fn handle_single_coordinate(&self, texture: PlayerPartTextureType, coordinate: Vec2) -> Vec2 {
+    pub(crate) fn handle_single_coordinate(
+        &self,
+        texture: PlayerPartTextureType,
+        coordinate: Vec2,
+    ) -> Vec2 {
         let resolution = texture.get_texture_size();
         let resolution = Vec2::new(resolution.0 as f32, resolution.1 as f32);
 
@@ -249,7 +253,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
 
         [x, y].into()
     }
-    
+
     pub(crate) fn get_texture_id(&self, texture: PlayerPartTextureType) -> Result<u32> {
         self.textures
             .keys()

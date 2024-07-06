@@ -1,4 +1,4 @@
-use glam::{Vec3, Affine3A};
+use glam::{Affine3A, Vec3};
 
 use crate::low_level::primitives::mesh::Mesh;
 use crate::low_level::primitives::part_primitive::PartPrimitive;
@@ -19,7 +19,7 @@ impl PartPrimitive for Cube {
     fn get_indices(&self) -> Vec<u16> {
         self.mesh.get_indices()
     }
-    
+
     fn get_vertices_grouped(&self) -> Vec<[Vertex; 3]> {
         self.mesh.get_vertices_grouped()
     }
@@ -131,14 +131,17 @@ impl Cube {
         );
 
         Cube {
-            mesh: Mesh::new_with_transform(vec![
-                back_quad.into(),
-                top_quad.into(),
-                bottom_quad.into(),
-                left_quad.into(),
-                right_quad.into(),
-                front_quad.into(),
-            ], model_transform),
+            mesh: Mesh::new_with_transform(
+                vec![
+                    back_quad.into(),
+                    top_quad.into(),
+                    bottom_quad.into(),
+                    left_quad.into(),
+                    right_quad.into(),
+                    front_quad.into(),
+                ],
+                model_transform,
+            ),
         }
     }
 }

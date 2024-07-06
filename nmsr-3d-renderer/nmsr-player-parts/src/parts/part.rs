@@ -188,7 +188,8 @@ impl Part {
                 scale += amount_doubled;
                 trans -= amount;
 
-                *new_part.transformation_mut() = Affine3A::from_scale_rotation_translation(scale, rot, trans);
+                *new_part.transformation_mut() =
+                    Affine3A::from_scale_rotation_translation(scale, rot, trans);
             }
         }
 
@@ -197,7 +198,7 @@ impl Part {
 
     pub fn transform_affine(&mut self, t: Affine3A) {
         *self.transformation_mut() = t * self.get_transformation();
-        
+
         if let Self::Quad { normal, .. } = self {
             *normal = t.transform_vector3(*normal);
         }
@@ -236,20 +237,20 @@ impl Part {
         if let Some(anchor) = anchor {
             result *= Affine3A::from_translation(anchor.translation_anchor);
             result *= Affine3A::from_translation(anchor.rotation_anchor);
-            
-            
+
             #[cfg(feature = "part_tracker")]
             {
-                self.part_tracking_data_mut().set_last_rotation_origin(anchor.rotation_anchor);
+                self.part_tracking_data_mut()
+                    .set_last_rotation_origin(anchor.rotation_anchor);
             }
         }
-        
+
         result *= Affine3A::from_quat(rotation_quat);
 
         if let Some(anchor) = anchor {
             result *= Affine3A::from_translation(-anchor.rotation_anchor);
         }
-        
+
         self.transform_affine(result)
     }
 
@@ -386,7 +387,7 @@ impl Part {
     pub fn get_name(&self) -> Option<&str> {
         self.part_tracking_data().name().map(String::as_str)
     }
-    
+
     #[cfg(feature = "part_tracker")]
     pub fn get_name_mut(&mut self) -> &mut Option<String> {
         self.part_tracking_data_mut().name_mut()

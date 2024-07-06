@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use deadpool::managed::{Manager, RecycleResult,Metrics};
+use deadpool::managed::{Manager, Metrics, RecycleResult};
 use tracing::trace;
 
 use crate::errors::NMSRRenderingError;
@@ -32,15 +32,19 @@ impl<'a> Manager for SceneContextPoolManager<'a> {
         Ok(SceneContext::new(&self.graphics_context))
     }
 
-    async fn recycle(&self, obj: &mut Self::Type, _metrics: &Metrics) -> RecycleResult<Self::Error> {
+    async fn recycle(
+        &self,
+        obj: &mut Self::Type,
+        _metrics: &Metrics,
+    ) -> RecycleResult<Self::Error> {
         // If for some reason the smaa target is is no longer present, we're gonna rip
         // the textures out of the scene context so that the smaa target can be recreated.
         if obj.smaa_target.is_none() {
             obj.textures.take();
         }
-        
+
         trace!(metrics = ?_metrics, "Recycling existing scene context");
-        
+
         Ok(())
     }
 }

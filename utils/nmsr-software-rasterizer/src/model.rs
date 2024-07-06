@@ -1,4 +1,3 @@
-
 use std::fmt::Debug;
 
 use image::{ImageBuffer, Luma, RgbaImage};
@@ -40,7 +39,6 @@ pub struct RenderEntry {
     pub textures: Textures,
 }
 
-
 impl Debug for RenderEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RenderEntry").finish()
@@ -66,7 +64,7 @@ impl RenderEntry {
                 output: RgbaImage::new(size.width, size.height),
             },
         }
-        
+
         /* let full_quad = Quad::new_with_normal(
             Vec3::new(-1.0, 0.0, 0.0),
             Vec3::new(1.0, 0.0, 0.0),
@@ -78,10 +76,10 @@ impl RenderEntry {
             VertexUvCoordinates::new(1.0, 0.0),
             Vec3::new(0.0, 0.0, 1.0),
         );
-        
+
         let depth_buffer = ImageBuffer::from_raw(size.width, size.height, [1.0].repeat((size.width * size.height) as usize)).unwrap();
-        
-        
+
+
         Self {
             size,
             textures: Textures {
@@ -91,7 +89,7 @@ impl RenderEntry {
             primitive: PrimitiveDispatch::Quad(full_quad)
         } */
     }
-        
+
     pub fn dump(&self) {
         self.textures.output.save("output.png").unwrap();
     }

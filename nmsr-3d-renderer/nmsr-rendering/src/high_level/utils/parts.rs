@@ -38,7 +38,7 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             ..
         } => {
             let size = part.get_size();
-            
+
             let x_left = position.x + size.x;
             let x_right = position.x;
 
@@ -64,10 +64,7 @@ pub fn primitive_convert(part: &Part) -> PrimitiveDispatch {
             )
             .into()
         }
-        Part::Group {
-            parts,
-            ..
-        } => PrimitiveDispatch::Mesh(Mesh::new_with_transform(
+        Part::Group { parts, .. } => PrimitiveDispatch::Mesh(Mesh::new_with_transform(
             parts.iter().map(primitive_convert).collect_vec(),
             model_transform,
         )),

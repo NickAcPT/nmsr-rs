@@ -1,11 +1,15 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
-use glam::{Vec2, Vec3, Affine3A};
+use glam::{Affine3A, Vec2, Vec3};
 use itertools::Itertools;
 use nmsr_rendering::{
     high_level::{
         model::ArmorMaterial,
-        parts::{uv::{CubeFaceUvs, FaceUv}, part::Part},
-        types::PlayerPartTextureType, utils::parts::primitive_convert,
+        parts::{
+            part::Part,
+            uv::{CubeFaceUvs, FaceUv},
+        },
+        types::PlayerPartTextureType,
+        utils::parts::primitive_convert,
     },
     low_level::primitives::part_primitive::PartPrimitive,
 };
@@ -90,40 +94,35 @@ impl RawProjectElement {
             (format!("{a}{a_new:x}"), format!("{b}{b_new:x}"))
         }
         let converted = primitive_convert(&part);
-        
+
         let affine = part.get_transformation();
         let (_, rotation, translation) = affine.to_scale_rotation_translation();
-        
-        let rotation_anchor = part.part_tracking_data().last_rotation_origin().unwrap_or(translation);
+
+        let rotation_anchor = part
+            .part_tracking_data()
+            .last_rotation_origin()
+            .unwrap_or(translation);
         let origin = rotation_anchor;
-        
+
         let affine_inv = Affine3A::from_rotation_translation(rotation, origin).inverse();
-        
+
         let (r_x, r_y, r_z) = rotation.to_euler(glam::EulerRot::XYZ);
-        
-        let origin = json!([
-            origin.x,
-            origin.y,
-            origin.z,
-        ]);
-        
-        let rotation = json!([
-            r_x.to_degrees(),
-            r_y.to_degrees(),
-            r_z.to_degrees(),
-        ]);
-        
+
+        let origin = json!([origin.x, origin.y, origin.z,]);
+
+        let rotation = json!([r_x.to_degrees(), r_y.to_degrees(), r_z.to_degrees(),]);
+
         let texture_id = project.get_texture_id(texture)?;
 
         let vertices = converted.get_vertices_grouped();
-        
+
         let mut faces = json!({});
         let mut vertices_map = json!({});
 
         for (t_1, t_2) in vertices.into_iter().tuples() {
             let [vc, va, vd] = t_1;
             let [_, vb, _] = t_2;
-            
+
             let [a, b, c, d] = [
                 affine_inv.transform_point3(va.position),
                 affine_inv.transform_point3(vb.position),
@@ -131,16 +130,14 @@ impl RawProjectElement {
                 affine_inv.transform_point3(vd.position),
             ];
 
-            let ((va_name, vb_name), (vc_name, vd_name)) = (
-                random_names("a", "b"),
-                random_names("c", "d"),
-            );
+            let ((va_name, vb_name), (vc_name, vd_name)) =
+                (random_names("a", "b"), random_names("c", "d"));
 
             vertices_map[&va_name] = json!([a.x, a.y, a.z]);
             vertices_map[&vb_name] = json!([b.x, b.y, b.z]);
             vertices_map[&vc_name] = json!([c.x, c.y, c.z]);
             vertices_map[&vd_name] = json!([d.x, d.y, d.z]);
-            
+
             let uv_size = texture.get_texture_size();
             let uv_size = Vec2::new(uv_size.0 as f32, uv_size.1 as f32);
 
@@ -177,7 +174,7 @@ impl RawProjectElement {
         } else {
             "behind"
         };
-        
+
         Ok(Self(
             json!({
                 "uuid": str_to_uuid(&name),

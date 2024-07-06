@@ -4,8 +4,8 @@ use std::f32::consts;
 pub(crate) static FLIP_X_AND_Z: Vec3 = Vec3::new(-1.0, 1.0, -1.0);
 
 pub(crate) fn minecraft_rotation_matrix(yaw: f32, pitch: f32, roll: f32) -> Mat4 {
-    Mat4::from_scale(FLIP_X_AND_Z) * 
-        Mat4::from_quat(Quat::from_euler(
+    Mat4::from_scale(FLIP_X_AND_Z)
+        * Mat4::from_quat(Quat::from_euler(
             glam::EulerRot::ZXY,
             roll.to_radians(),
             -pitch.to_radians(),

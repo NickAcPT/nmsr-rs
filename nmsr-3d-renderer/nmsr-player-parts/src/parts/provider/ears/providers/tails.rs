@@ -3,10 +3,7 @@ use ears_rs::features::{data::tail::TailMode, EarsFeatures};
 use crate::{
     model::ArmorMaterial,
     parts::provider::{
-        ears::{
-            providers::builder::EarsModPartBuilder,
-            EarsModPartProvider,
-        },
+        ears::{providers::builder::EarsModPartBuilder, EarsModPartProvider},
         PlayerPartProviderContext,
     },
     types::PlayerBodyPartType,
@@ -61,17 +58,17 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
         };
 
         let base_angle = tail.bends[0];
-        
+
         builder.stack(|b| {
             b.anchor_to(PlayerBodyPartType::Body);
             b.translate_i(0, 2, 4);
-            
+
             b.rotate_i(180, 0, 0, 1);
             b.translate_i(-8, 0, 0);
-            
+
             b.rotate_i(ang, 1, 0, 0);
             let vert = tail_mode == TailMode::Vertical;
-            
+
             if vert {
                 b.translate_i(4, 0, 0);
                 b.rotate_i(90, 0, 0, 1);
@@ -97,7 +94,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
             ];
 
             let seg_height = 12 / segments;
-            
+
             for i in 0..segments {
                 b.rotate(angles[i], 0., 0.);
                 b.quad_front(
@@ -107,7 +104,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
                     seg_height as u16,
                     TextureRotation::None,
                     TextureFlip::Vertical,
-                    format!("Tail Segment {}", i)
+                    format!("Tail Segment {}", i),
                 );
                 b.translate_i(0, seg_height as i32, 0);
             }

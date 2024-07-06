@@ -4,9 +4,11 @@ use anyhow::{Ok, Result};
 use nmsr_rendering_parts_generator_experiment::{
     nmsr_rendering::high_level::{
         camera::{Camera, CameraRotation, ProjectionParameters},
-        pipeline::scene::{Size, SunInformation}, types::PlayerBodyPartType, IntoEnumIterator,
+        pipeline::scene::{Size, SunInformation},
+        types::PlayerBodyPartType,
+        IntoEnumIterator,
     },
-    PartsGroupLogic, PartOutputFormat,
+    PartOutputFormat, PartsGroupLogic,
 };
 
 use nmsr_rendering_parts_generator_experiment::generate_parts;
@@ -35,7 +37,7 @@ async fn main() -> Result<()> {
     };
 
     let renders = PathBuf::from("renders");
-    
+
     generate_parts(
         camera,
         sun,
@@ -45,7 +47,7 @@ async fn main() -> Result<()> {
         None,
         10f32,
         &renders,
-        PartOutputFormat::Qoi
+        PartOutputFormat::Qoi,
     )
     .await?;
 

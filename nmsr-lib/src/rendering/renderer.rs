@@ -37,7 +37,8 @@ impl RenderingEntry {
                     .filter(|p| matches!(p, UvImagePixel::UvPixel { .. }))
                     .filter_map(move |pixel| match pixel {
                         UvImagePixel::UvPixel {
-                            /* depth, */ position, ..
+                            /* depth, */ position,
+                            ..
                         } => {
                             applied
                                 .as_ref()

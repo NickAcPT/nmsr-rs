@@ -11,8 +11,14 @@ use crate::utils::{into_par_iter_if_enabled, open_image_from_vfs};
 use crate::{parts::player_model::PlayerModel, uv::uv_magic::UvImage};
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serializable_parts", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serializable_parts_rkyv", derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize))]
+#[cfg_attr(
+    feature = "serializable_parts",
+    derive(serde::Serialize, serde::Deserialize)
+)]
+#[cfg_attr(
+    feature = "serializable_parts_rkyv",
+    derive(rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)
+)]
 pub struct PartsManager {
     pub all_parts: Vec<UvImage>,
     pub model_parts: Vec<UvImage>,
@@ -102,9 +108,7 @@ impl PartsManager {
             let name: String = dir_entry
                 .filename()
                 .chars()
-                .take_while(|p| {
-                    *p != '.'
-                })
+                .take_while(|p| *p != '.')
                 .collect();
 
             let name = format!("{path_prefix}{name}");
@@ -120,14 +124,14 @@ impl PartsManager {
                 Ok(uv_image)
             })
             .collect();
-        
+
         for part in loaded_parts {
             let part = part?;
             parts_map.push(part);
         }
-        
+
         parts_map.sort_by(|a, b| a.name.cmp(&b.name));
-        
+
         Ok(())
     }
 

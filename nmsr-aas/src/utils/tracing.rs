@@ -4,11 +4,7 @@ use axum::{
     http::{HeaderMap, HeaderName},
 };
 use derive_more::Debug;
-use opentelemetry::{
-    global,
-    propagation::Extractor,
-    trace::TraceContextExt,
-};
+use opentelemetry::{global, propagation::Extractor, trace::TraceContextExt};
 use std::net::SocketAddr;
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},

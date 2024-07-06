@@ -378,7 +378,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
                         Self,
                     >::invalidate_self(entry, base)
                     .await?;
-                
+
                     return Ok(None);
                 }
 

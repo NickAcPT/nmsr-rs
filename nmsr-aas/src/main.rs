@@ -29,20 +29,18 @@ use axum::routing::post;
 use axum::{routing::get, Router};
 use http::HeaderName;
 use opentelemetry::StringValue;
-use opentelemetry::{
-    global,
-    KeyValue,
-};
-use opentelemetry_sdk::{propagation::TraceContextPropagator, trace, Resource};
+use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::{new_exporter, WithExportConfig};
+use opentelemetry_sdk::{propagation::TraceContextPropagator, trace, Resource};
 use std::{net::SocketAddr, path::PathBuf};
 use tokio::{main, signal};
+use tower_http::request_id::MakeRequestUuid;
 use tower_http::{
     cors::{AllowMethods, Any, CorsLayer},
+    normalize_path::NormalizePathLayer,
     request_id::{PropagateRequestIdLayer, SetRequestIdLayer},
-    services::ServeDir, normalize_path::NormalizePathLayer,
+    services::ServeDir,
 };
-use tower_http::request_id::MakeRequestUuid;
 use tracing::info;
 use tracing::info_span;
 use tracing_subscriber::EnvFilter;

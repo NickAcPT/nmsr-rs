@@ -99,7 +99,7 @@ fn from_properties<'de, D: Deserializer<'de>>(
         if property.name != GameProfile::TEXTURES_KEY {
             continue;
         }
-        
+
         let decoded = STANDARD
             .decode(property.value)
             .map_err(serde::de::Error::custom)?;

@@ -15,7 +15,10 @@ impl Mesh {
             model_transform: Affine3A::IDENTITY,
         }
     }
-    pub fn new_with_transform(primitives: Vec<PrimitiveDispatch>, model_transform: Affine3A) -> Self {
+    pub fn new_with_transform(
+        primitives: Vec<PrimitiveDispatch>,
+        model_transform: Affine3A,
+    ) -> Self {
         Mesh {
             primitives,
             model_transform,
@@ -37,7 +40,9 @@ impl PartPrimitive for Mesh {
     fn get_indices(&self) -> Vec<u16> {
         // Go through all primitives, get their indices, and add them to the list
         // Be sure to offset the indices by the number of vertices we've already added
-        let mut indices = Vec::with_capacity(&self.primitives.len() * /* quad index count */ 6 * /* number of faces per cube */ 6);
+        let mut indices = Vec::with_capacity(
+            &self.primitives.len() * /* quad index count */ 6 * /* number of faces per cube */ 6,
+        );
         let mut offset = 0;
 
         for quad in &self.primitives {
@@ -48,13 +53,19 @@ impl PartPrimitive for Mesh {
 
         indices
     }
-    
+
     #[inline(always)]
     fn get_vertices_grouped(&self) -> Vec<[Vertex; 3]> {
         self.primitives
             .iter()
             .flat_map(|quad| quad.get_vertices_grouped())
-            .map(|v| [v[0].transform(self.model_transform), v[1].transform(self.model_transform), v[2].transform(self.model_transform)])
+            .map(|v| {
+                [
+                    v[0].transform(self.model_transform),
+                    v[1].transform(self.model_transform),
+                    v[2].transform(self.model_transform),
+                ]
+            })
             .collect()
     }
 }
@@ -99,7 +110,7 @@ impl PartPrimitive for PrimitiveDispatch {
             PrimitiveDispatch::Mesh(mesh) => mesh.get_indices(),
         }
     }
-    
+
     fn get_vertices_grouped(&self) -> Vec<[Vertex; 3]> {
         match self {
             PrimitiveDispatch::Cube(cube) => cube.get_vertices_grouped(),

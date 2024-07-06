@@ -23,7 +23,7 @@ pub fn apply_uv_map(input: &RgbaImage, uv: &UvImage, render_shading: bool) -> Re
             let mut pixel = *input
                 .get_pixel_checked(uv.x as u32, uv.y as u32)
                 .ok_or_else(|| NMSRError::InvalidUvPoint(*uv))?;
-            
+
             // Skip transparent pixels from the skin
             if pixel.0[3] == 0 {
                 continue;

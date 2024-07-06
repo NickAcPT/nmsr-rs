@@ -9,7 +9,10 @@ use hyper::{
     header::{CONTENT_DISPOSITION, CONTENT_TYPE},
     Method,
 };
-use nmsr_rendering::high_level::{pipeline::{scene::Scene, SceneContextWrapper}, types::PlayerPartTextureType};
+use nmsr_rendering::high_level::{
+    pipeline::{scene::Scene, SceneContextWrapper},
+    types::PlayerPartTextureType,
+};
 use nmsr_rendering_blockbench_model_generator_experiment::{
     blockbench::generate_project,
     error::BlockbenchGeneratorError,
@@ -71,11 +74,11 @@ pub(crate) async fn internal_bbmodel_export(
     }
 
     let mut part_context = create_part_context(&request, &resolved);
-    
+
     if let Some(pos) = part_context.shadow_y_pos {
         part_context.shadow_y_pos = Some(pos - 0.01);
     }
-    
+
     let mut textures = HashMap::new();
 
     for (texture_type, texture_bytes) in resolved.textures {
@@ -85,7 +88,9 @@ pub(crate) async fn internal_bbmodel_export(
     if request.features.contains(RenderRequestFeatures::Shadow) {
         textures.insert(
             PlayerPartTextureType::Shadow,
-            load_image(Scene::<SceneContextWrapper>::get_shadow_bytes(part_context.shadow_is_square))?,
+            load_image(Scene::<SceneContextWrapper>::get_shadow_bytes(
+                part_context.shadow_is_square,
+            ))?,
         );
     }
 
@@ -112,7 +117,7 @@ pub(crate) async fn internal_bbmodel_export(
         if texture_type == PlayerPartTextureType::Skin {
             texture = NMSRState::process_skin(texture, request.features)?;
         }
-        
+
         blockbench_project.add_texture(texture_type, texture, false)?;
     }
 

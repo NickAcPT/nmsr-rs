@@ -1,8 +1,18 @@
-use std::{sync::Arc, fmt::Debug};
+use std::{fmt::Debug, sync::Arc};
 
-use glam::{Vec2, Vec4, Vec3A};
+use glam::{Vec2, Vec3A, Vec4};
 use image::{Rgba, RgbaImage};
-use nmsr_rendering::{high_level::{parts::{provider::{PlayerPartProviderContext, PlayerPartsProvider, PartsProvider}, part::Part}, types::PlayerBodyPartType, utils::parts::primitive_convert}, low_level::primitives::mesh::{PrimitiveDispatch, Mesh}};
+use nmsr_rendering::{
+    high_level::{
+        parts::{
+            part::Part,
+            provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
+        },
+        types::PlayerBodyPartType,
+        utils::parts::primitive_convert,
+    },
+    low_level::primitives::mesh::{Mesh, PrimitiveDispatch},
+};
 
 use crate::camera::Camera;
 
@@ -102,7 +112,13 @@ pub struct SunInformation {
 }
 
 impl SunInformation {
-    pub fn new(direction: Vec3A, intensity: f32, ambient: f32) -> Self { Self { direction, intensity, ambient } }
+    pub fn new(direction: Vec3A, intensity: f32, ambient: f32) -> Self {
+        Self {
+            direction,
+            intensity,
+            ambient,
+        }
+    }
 }
 
 impl Debug for ShaderState {
@@ -120,7 +136,13 @@ pub struct ShaderState {
 }
 
 impl ShaderState {
-    pub fn new(camera: Camera, texture: Arc<RgbaImage>, sun: SunInformation, context: &PlayerPartProviderContext<()>, parts: &[PlayerBodyPartType]) -> Self {
+    pub fn new(
+        camera: Camera,
+        texture: Arc<RgbaImage>,
+        sun: SunInformation,
+        context: &PlayerPartProviderContext<()>,
+        parts: &[PlayerBodyPartType],
+    ) -> Self {
         let providers = [
             PlayerPartsProvider::Minecraft,
             #[cfg(feature = "ears")]
@@ -129,26 +151,38 @@ impl ShaderState {
 
         let parts = providers
             .iter()
-            .flat_map(|provider| { 
-                parts.iter().flat_map(|part| provider.get_parts(&context, *part))
-             })
+            .flat_map(|provider| {
+                parts
+                    .iter()
+                    .flat_map(|part| provider.get_parts(&context, *part))
+            })
             .collect::<Vec<Part>>();
-        
+
         let parts = parts
             .into_iter()
             .map(|p| primitive_convert(&p))
             .collect::<Vec<_>>();
-        
-        Self::new_with_primitive(camera, texture, sun, PrimitiveDispatch::Mesh(Mesh::new(parts)))
+
+        Self::new_with_primitive(
+            camera,
+            texture,
+            sun,
+            PrimitiveDispatch::Mesh(Mesh::new(parts)),
+        )
     }
-    
-    pub fn new_with_primitive(camera: Camera, texture: Arc<RgbaImage>, sun: SunInformation, primitive: PrimitiveDispatch) -> Self {
+
+    pub fn new_with_primitive(
+        camera: Camera,
+        texture: Arc<RgbaImage>,
+        sun: SunInformation,
+        primitive: PrimitiveDispatch,
+    ) -> Self {
         let mut result: ShaderState = Self {
             camera,
             texture_size: (texture.width() as f32, texture.height() as f32),
             texture,
             sun,
-            primitive
+            primitive,
         };
 
         result.update();
@@ -188,7 +222,7 @@ fn compute_sun_lighting(color: &[u8; 4], normal: Vec3A, state: &ShaderState) -> 
 
 pub fn fragment_shader(vertex: VertexOutput, state: &ShaderState) -> [u8; 4] {
     let (w, h) = state.texture_size;
-    
+
     let Some(color) = state.texture.get_pixel_checked(
         (vertex.tex_coord.x * w) as u32,
         (vertex.tex_coord.y * h) as u32,

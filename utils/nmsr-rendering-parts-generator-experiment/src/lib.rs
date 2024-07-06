@@ -422,11 +422,11 @@ async fn process_group_logic(
     } else {
         shader = shader.replace("//frontface:", "")
     }
-    
+
     if let ProjectionParameters::Orthographic { .. } = camera.get_projection() {
         shader = shader.replace("//iso:", "")
     }
-    
+
     let descriptor = GraphicsContextDescriptor {
         backends: Some(Backends::all()),
         surface_provider: Box::new(|_| None),

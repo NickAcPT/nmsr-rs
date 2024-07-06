@@ -1,4 +1,3 @@
-
 macro_rules! camera_getters_setters {
     ($name: ident: $_type: ty) => {
         paste::paste! {

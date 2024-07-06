@@ -1,6 +1,6 @@
-use super::{NMSRState, bbmodel_export::internal_bbmodel_export};
+use super::{bbmodel_export::internal_bbmodel_export, NMSRState};
 use crate::{
-    error::{Result, RenderRequestError},
+    error::{RenderRequestError, Result},
     model::request::{RenderRequest, RenderRequestMode},
     routes::render_model::internal_render_model,
     routes::render_skin::internal_render_skin_or_cape,
@@ -21,12 +21,12 @@ const IMAGE_PNG_MIME: &str = "image/png";
 
 #[axum::debug_handler]
 pub async fn render_post_warning() -> Result<Response> {
-    return Err(RenderRequestError::WrongHttpMethodError("POST", "GET").into())
+    return Err(RenderRequestError::WrongHttpMethodError("POST", "GET").into());
 }
 
 #[axum::debug_handler]
 pub async fn render_get_warning() -> Result<Response> {
-    return Err(RenderRequestError::WrongHttpMethodError("GET", "POST").into())
+    return Err(RenderRequestError::WrongHttpMethodError("GET", "POST").into());
 }
 
 #[axum::debug_handler]
@@ -37,18 +37,20 @@ pub async fn render(
     request: RenderRequest,
 ) -> Result<Response> {
     let resolved = state.resolver.resolve(&request).await?;
-    
+
     if request.mode.is_blockbench_export() {
         // Blockbench export handles HEAD requests for itself, hence why it's before the HEAD method check
         return internal_bbmodel_export(state, method, request).await;
     }
-    
+
     if method == Method::HEAD {
         return Ok(([(CONTENT_TYPE, HeaderValue::from_static(IMAGE_PNG_MIME))]).into_response());
     }
 
     let result = match request.mode {
-        RenderRequestMode::Skin | RenderRequestMode::Cape => internal_render_skin_or_cape(&request, resolved).await,
+        RenderRequestMode::Skin | RenderRequestMode::Cape => {
+            internal_render_skin_or_cape(&request, resolved).await
+        }
         _ => internal_render_model(&request, &state, &resolved).await,
     }?;
 

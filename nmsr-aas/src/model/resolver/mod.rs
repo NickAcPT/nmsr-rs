@@ -7,7 +7,10 @@ use super::request::{
     entry::{RenderRequestEntry, RenderRequestEntryModel},
     RenderRequest,
 };
-use crate::{error::{MojangRequestError, RenderRequestError, Result}, model::resolver::mojang::client::MojangTextureRequestType};
+use crate::{
+    error::{MojangRequestError, RenderRequestError, Result},
+    model::resolver::mojang::client::MojangTextureRequestType,
+};
 use derive_more::Debug;
 #[cfg(feature = "ears")]
 use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParser};
@@ -196,7 +199,11 @@ impl RenderRequestResolver {
     }
 
     #[instrument(skip(self), parent = &Span::current())]
-    async fn fetch_texture_from_mojang(&self, texture_id: &str, req_type: MojangTextureRequestType) -> Result<MojangTexture> {
+    async fn fetch_texture_from_mojang(
+        &self,
+        texture_id: &str,
+        req_type: MojangTextureRequestType,
+    ) -> Result<MojangTexture> {
         if let Some(result) = self.model_cache.get_cached_texture(texture_id).await? {
             return Ok(result);
         }
@@ -227,20 +234,26 @@ impl RenderRequestResolver {
         let cape_texture: Option<MojangTexture>;
 
         match &entry {
-            RenderRequestEntry::MojangPlayerUuid(id) | RenderRequestEntry::MojangOfflinePlayerUuid(id) => {
-                if matches!(&entry, RenderRequestEntry::MojangOfflinePlayerUuid(_)) && !self.mojang_requests_client.mojank_config().allow_offline_mode_uuids {
+            RenderRequestEntry::MojangPlayerUuid(id)
+            | RenderRequestEntry::MojangOfflinePlayerUuid(id) => {
+                if matches!(&entry, RenderRequestEntry::MojangOfflinePlayerUuid(_))
+                    && !self
+                        .mojang_requests_client
+                        .mojank_config()
+                        .allow_offline_mode_uuids
+                {
                     return Err(RenderRequestError::InvalidPlayerUuidRequest(
                         id.to_string(),
                         id.get_version_num(),
-                    ))?;                    
+                    ))?;
                 }
-                
+
                 let result = self
                     .mojang_requests_client
                     .resolve_uuid_to_game_profile(id)
                     .instrument(trace_span!("resolve_uuid_to_game_profile", uuid = %id))
                     .await?;
-                
+
                 let textures = result.textures()?;
 
                 let skin = textures
@@ -254,22 +267,32 @@ impl RenderRequestResolver {
                     Some(RenderRequestEntryModel::Steve)
                 };
 
-                skin_texture = self.fetch_game_profile_texture(textures.skin(), MojangTextureRequestType::Skin).await?;
-                cape_texture = self.fetch_game_profile_texture(cape, MojangTextureRequestType::Cape).await?;
+                skin_texture = self
+                    .fetch_game_profile_texture(textures.skin(), MojangTextureRequestType::Skin)
+                    .await?;
+                cape_texture = self
+                    .fetch_game_profile_texture(cape, MojangTextureRequestType::Cape)
+                    .await?;
             }
             RenderRequestEntry::GeyserPlayerUuid(id) => {
                 let (texture_id, player_model) =
                     resolve_geyser_uuid_to_texture_and_model(&self.mojang_requests_client, id)
                         .await?;
 
-                skin_texture = Some(self.fetch_texture_from_mojang(&texture_id, MojangTextureRequestType::Skin).await?);
+                skin_texture = Some(
+                    self.fetch_texture_from_mojang(&texture_id, MojangTextureRequestType::Skin)
+                        .await?,
+                );
                 cape_texture = None;
 
                 model = Some(player_model);
             }
             RenderRequestEntry::TextureHash(skin_hash) => {
                 // If the skin is not cached, we'll have to fetch it from Mojang.
-                skin_texture = Some(self.fetch_texture_from_mojang(skin_hash, MojangTextureRequestType::Skin).await?);
+                skin_texture = Some(
+                    self.fetch_texture_from_mojang(skin_hash, MojangTextureRequestType::Skin)
+                        .await?,
+                );
                 cape_texture = None;
                 model = None;
             }
@@ -307,10 +330,10 @@ impl RenderRequestResolver {
         skin_texture: &MojangTexture,
         textures: &mut HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
     ) -> Option<EarsFeatures> {
-        use std::borrow::Cow;
-        use image::DynamicImage;
-        use xxhash_rust::xxh3::xxh3_128;
         use crate::utils::png::create_png_from_bytes;
+        use image::DynamicImage;
+        use std::borrow::Cow;
+        use xxhash_rust::xxh3::xxh3_128;
 
         image::load_from_memory(skin_texture.data()).map_or(None, |image| {
             let image = image.into_rgba8();

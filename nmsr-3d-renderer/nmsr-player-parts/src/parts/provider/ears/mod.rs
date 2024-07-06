@@ -12,8 +12,10 @@ use crate::{
         part::Part,
         provider::{
             ears::providers::{
-                builder::EarsModPartBuilder, ears::EarsModEarsPartProvider,
-                protrusions::EarsModProtrusionsPartProvider, snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider, wings::EarsModWingsPartProvider, chest::EarsModChestPartProvider,
+                builder::EarsModPartBuilder, chest::EarsModChestPartProvider,
+                ears::EarsModEarsPartProvider, protrusions::EarsModProtrusionsPartProvider,
+                snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider,
+                wings::EarsModWingsPartProvider,
             },
             PartsProvider,
         },
@@ -85,15 +87,9 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
             Self::Snout(_) => {
                 EarsModSnoutsPartProvider::<M>::default().provides_for_part(body_part)
             }
-            Self::Tail(_) => {
-                EarsModTailsPartProvider::<M>::default().provides_for_part(body_part)
-            }
-            Self::Wings(_) => {
-                EarsModWingsPartProvider::<M>::default().provides_for_part(body_part)
-            }
-            Self::Chest(_) => {
-                EarsModChestPartProvider::<M>::default().provides_for_part(body_part)
-            }
+            Self::Tail(_) => EarsModTailsPartProvider::<M>::default().provides_for_part(body_part),
+            Self::Wings(_) => EarsModWingsPartProvider::<M>::default().provides_for_part(body_part),
+            Self::Chest(_) => EarsModChestPartProvider::<M>::default().provides_for_part(body_part),
         }
     }
 

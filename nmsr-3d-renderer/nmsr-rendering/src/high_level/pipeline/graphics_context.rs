@@ -11,8 +11,8 @@ use wgpu::{
     TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 pub use wgpu::{
-    Adapter, Backends, BlendState, Device, Features, Instance, Queue, ShaderSource, Surface,
-    SurfaceConfiguration, TextureFormat, Limits,
+    Adapter, Backends, BlendState, Device, Features, Instance, Limits, Queue, ShaderSource,
+    Surface, SurfaceConfiguration, TextureFormat,
 };
 
 use crate::{
@@ -186,7 +186,7 @@ impl<'a> GraphicsContext<'a> {
                 &wgpu::DeviceDescriptor {
                     label: None,
                     required_features: descriptor.features,
-                    required_limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default())
+                    required_limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default()),
                 },
                 None,
             )

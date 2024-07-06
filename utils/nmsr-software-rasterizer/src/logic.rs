@@ -156,7 +156,7 @@ pub fn draw_triangle(
 
             // If all pixels are behind the depth buffer, skip them
             let depth_cmp = f32x4::simd_ge(depth, buffer_depth);
-            
+
             let skip_mask = is_negative | depth_cmp;
             if skip_mask.all() {
                 continue;

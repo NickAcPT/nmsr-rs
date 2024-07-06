@@ -9,7 +9,7 @@ struct FullBodyParts;
 
 fn bench(c: &mut Criterion) {
     let fs: VfsPath = EmbeddedFS::<FullBodyParts>::new().into();
-    
+
     let mut group = c.benchmark_group("nmsr-rs");
     group.sampling_mode(criterion::SamplingMode::Flat);
     group.bench_function("uv_loading", |b| b.iter(|| black_box(load_parts(&fs))));

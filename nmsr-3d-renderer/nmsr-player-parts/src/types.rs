@@ -47,7 +47,7 @@ impl PlayerBodyPartType {
             _ => *self,
         }
     }
-    
+
     pub fn get_layer_part(&self) -> Self {
         match self {
             Self::Head => Self::HeadLayer,
@@ -63,7 +63,7 @@ impl PlayerBodyPartType {
     pub fn is_arm(&self) -> bool {
         matches!(self.get_non_layer_part(), Self::LeftArm | Self::RightArm)
     }
-    
+
     pub fn is_leg(&self) -> bool {
         matches!(self.get_non_layer_part(), Self::LeftLeg | Self::RightLeg)
     }
@@ -83,7 +83,7 @@ impl std::fmt::Display for PlayerPartTextureType {
             PlayerPartTextureType::Shadow => f.pad("Shadow"),
             PlayerPartTextureType::Cape => f.pad("Cape"),
             PlayerPartTextureType::Skin => f.pad("Skin"),
-            PlayerPartTextureType::Custom { key, .. } => f.pad(key)
+            PlayerPartTextureType::Custom { key, .. } => f.pad(key),
         }
     }
 }

@@ -18,7 +18,6 @@ pub enum BlockbenchGeneratorError {
     SerdeJsonError(#[from] serde_json::Error),
     #[error("{0}")]
     ExplainedError(String),
-    
 }
 
 pub trait Contextualizable<O> {

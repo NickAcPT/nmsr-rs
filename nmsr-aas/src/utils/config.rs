@@ -78,7 +78,7 @@ pub struct MojankConfiguration {
 
     /// The textures server to use for downloading player textures.
     pub textures_server: String,
-    
+
     /// The Mojang API server to use for resolving player names.
     pub mojang_api_server: String,
 
@@ -114,7 +114,7 @@ impl Default for MojankConfiguration {
             mojang_api_server: "https://api.mojang.com/".to_string(),
             geysermc_api_server: "https://api.geysermc.org/".to_string(),
             session_server_rate_limit: 10,
-            
+
             use_default_skins_when_missing: true,
 
             allow_offline_mode_uuids: false,

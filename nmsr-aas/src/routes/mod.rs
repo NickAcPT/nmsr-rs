@@ -10,10 +10,13 @@ use crate::{
     model::{
         armor::manager::VanillaMinecraftArmorManager,
         request::{
-            cache::{CacheBias, ModelCache}, entry::RenderRequestEntry, RenderRequest, RenderRequestFeatures,
-            RenderRequestMode,
+            cache::{CacheBias, ModelCache},
+            entry::RenderRequestEntry,
+            RenderRequest, RenderRequestFeatures, RenderRequestMode,
         },
-        resolver::{default_skins::DefaultSkin, mojang::client::MojangClient, RenderRequestResolver},
+        resolver::{
+            default_skins::DefaultSkin, mojang::client::MojangClient, RenderRequestResolver,
+        },
     },
 };
 use deadpool::managed::Object;

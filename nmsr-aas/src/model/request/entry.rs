@@ -30,10 +30,12 @@ impl RenderRequestEntry {
         // TODO: Move to CoW
         Self::TextureHash(DefaultSkinResolver::resolve_default_skin(skin, is_slim).to_string())
     }
-    
+
     pub(crate) fn default_skin_hash_for_uuid(uuid: Uuid, slim: Option<bool>) -> RenderRequestEntry {
         // TODO: Move to CoW
-        Self::TextureHash(DefaultSkinResolver::resolve_default_skin_for_uuid(uuid, slim).to_string())
+        Self::TextureHash(
+            DefaultSkinResolver::resolve_default_skin_for_uuid(uuid, slim).to_string(),
+        )
     }
 }
 
@@ -77,7 +79,11 @@ impl TryFrom<String> for RenderRequestEntry {
             }
 
             Ok(Self::TextureHash(value))
-        } else if value.len() <= 16 && value.chars().all(|c| matches!(c, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_')) {
+        } else if value.len() <= 16
+            && value
+                .chars()
+                .all(|c| matches!(c, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_'))
+        {
             Ok(Self::MojangPlayerName(value))
         } else {
             Err(RenderRequestError::InvalidPlayerRequest(formatdoc! {"

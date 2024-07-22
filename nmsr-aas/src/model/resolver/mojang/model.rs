@@ -2,8 +2,8 @@ use crate::error::{MojangRequestError, MojangRequestResult};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use uuid::Uuid;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 #[derive(Deserialize, Debug)]
 pub struct GameProfileTextureMetadata {
@@ -113,10 +113,9 @@ fn from_properties<'de, D: Deserializer<'de>>(
     Ok(map)
 }
 
-
 #[derive(Deserialize, Debug)]
 pub struct UsernameToUuidResponse {
-    id: Uuid
+    id: Uuid,
 }
 
 impl UsernameToUuidResponse {

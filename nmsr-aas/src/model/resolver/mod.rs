@@ -403,9 +403,7 @@ impl RenderRequestResolver {
             {
                 let new_entry = RenderRequestEntry::default_skin_hash_for_uuid(
                     *uuid,
-                    request
-                        .model
-                        .map(|m| m == RenderRequestEntryModel::Alex),
+                    request.model.map(|m| m == RenderRequestEntryModel::Alex),
                 );
 
                 // I didn't really want to clone the entire request, but I don't see a way around it.

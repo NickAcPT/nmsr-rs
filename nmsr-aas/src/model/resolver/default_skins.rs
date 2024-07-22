@@ -1,8 +1,9 @@
-use strum::EnumCount;
+use serde::Serialize;
+use strum::{EnumCount, EnumIter, FromRepr};
 use uuid::Uuid;
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, strum::EnumCount, strum::FromRepr, Default, strum::EnumIter,
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Default, EnumCount, FromRepr, EnumIter, Serialize,
 )]
 pub enum DefaultSkin {
     #[default]
@@ -20,17 +21,29 @@ pub enum DefaultSkin {
 pub struct DefaultSkinResolver;
 
 impl DefaultSkinResolver {
-    pub fn resolve_default_skin_for_uuid(uuid: Uuid, slim: Option<bool>) -> &'static str {
-        // The first half of the skins are slim, the second half are not
-        let is_slim = slim.unwrap_or_else(|| {
-            java_floor_mod(java_uuid_hash(uuid), DefaultSkin::COUNT as i32 * 2)
-                < DefaultSkin::COUNT as i32
-        });
+    pub fn is_default_skin_for_uuid_slim(uuid: Uuid) -> bool {
+        java_floor_mod(java_uuid_hash(uuid), DefaultSkin::COUNT as i32 * 2)
+            < DefaultSkin::COUNT as i32
+    }
 
+    pub fn get_default_skin_for_uuid(uuid: Uuid) -> DefaultSkin {
         let skin_idx = java_floor_mod(java_uuid_hash(uuid), DefaultSkin::COUNT as i32);
 
-        let default_skin = DefaultSkin::from_repr(skin_idx as usize).unwrap_or_default();
+        DefaultSkin::from_repr(skin_idx as usize).unwrap_or_default()
+    }
 
+    pub fn resolve_default_skin_for_uuid_parts(
+        uuid: Uuid,
+        slim: Option<bool>,
+    ) -> (DefaultSkin, bool) {
+        (
+            Self::get_default_skin_for_uuid(uuid),
+            slim.unwrap_or_else(|| Self::is_default_skin_for_uuid_slim(uuid)),
+        )
+    }
+    pub fn resolve_default_skin_for_uuid(uuid: Uuid, slim: Option<bool>) -> &'static str {
+        let (default_skin, is_slim) = Self::resolve_default_skin_for_uuid_parts(uuid, slim);
+        
         Self::resolve_default_skin(default_skin, is_slim)
     }
 

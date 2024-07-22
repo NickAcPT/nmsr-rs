@@ -30,13 +30,6 @@ impl RenderRequestEntry {
         // TODO: Move to CoW
         Self::TextureHash(DefaultSkinResolver::resolve_default_skin(skin, is_slim).to_string())
     }
-
-    pub(crate) fn default_skin_hash_for_uuid(uuid: Uuid, slim: Option<bool>) -> RenderRequestEntry {
-        // TODO: Move to CoW
-        Self::TextureHash(
-            DefaultSkinResolver::resolve_default_skin_for_uuid(uuid, slim).to_string(),
-        )
-    }
 }
 
 static VALID_TEXTURE_HASH_REGEX: OnceLock<regex::Regex> = OnceLock::new();

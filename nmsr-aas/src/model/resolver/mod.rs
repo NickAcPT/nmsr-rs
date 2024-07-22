@@ -9,7 +9,9 @@ use super::request::{
 };
 use crate::{
     error::{MojangRequestError, RenderRequestError, Result},
-    model::resolver::mojang::client::MojangTextureRequestType,
+    model::resolver::{
+        default_skins::DefaultSkinResolver, mojang::client::MojangTextureRequestType,
+    },
 };
 use derive_more::Debug;
 #[cfg(feature = "ears")]
@@ -21,6 +23,7 @@ use std::{collections::HashMap, sync::Arc};
 use strum::EnumCount;
 use tracing::{instrument, trace_span, Instrument, Span};
 
+pub mod default_skins;
 pub mod geyser;
 pub mod mojang;
 
@@ -235,9 +238,15 @@ impl RenderRequestResolver {
 
         match &entry {
             RenderRequestEntry::MojangPlayerName(name) => {
-                let id = self.mojang_requests_client.resolve_name_to_uuid(name).await?;
-                
-                return Box::pin(self.resolve_entry_textures(&RenderRequestEntry::MojangPlayerUuid(id))).await;
+                let id = self
+                    .mojang_requests_client
+                    .resolve_name_to_uuid(name)
+                    .await?;
+
+                return Box::pin(
+                    self.resolve_entry_textures(&RenderRequestEntry::MojangPlayerUuid(id)),
+                )
+                .await;
             }
             RenderRequestEntry::MojangPlayerUuid(id)
             | RenderRequestEntry::MojangOfflinePlayerUuid(id) => {
@@ -383,6 +392,34 @@ impl RenderRequestResolver {
     }
 
     pub async fn resolve(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {
+        let resolved = self.resolve_raw(request).await;
+
+        // TODO: Clean-up this code.
+        if let (Err(_), RenderRequestEntry::MojangPlayerUuid(uuid)) = (&resolved, &request.entry) {
+            if self
+                .mojang_requests_client
+                .mojank_config()
+                .use_default_skins_when_missing
+            {
+                let new_entry = RenderRequestEntry::default_skin_hash_for_uuid(
+                    *uuid,
+                    request
+                        .model
+                        .map(|m| m == RenderRequestEntryModel::Alex),
+                );
+
+                // I didn't really want to clone the entire request, but I don't see a way around it.
+                let mut new_request = request.clone();
+                new_request.entry = new_entry;
+
+                return self.resolve_raw(&new_request).await;
+            }
+        }
+
+        resolved
+    }
+
+    pub async fn resolve_raw(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {
         // First, we need to resolve the skin and cape textures.
         let resolved_textures = self
             .resolve_entry_textures(&request.entry)

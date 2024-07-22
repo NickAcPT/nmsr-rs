@@ -6,7 +6,10 @@ use std::sync::OnceLock;
 use strum::{Display, EnumCount, EnumString, FromRepr};
 use uuid::Uuid;
 
-use crate::error::{RenderRequestError, RenderRequestResult};
+use crate::{
+    error::{RenderRequestError, RenderRequestResult},
+    model::resolver::default_skins::{DefaultSkin, DefaultSkinResolver},
+};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Deserialize, Serialize)]
 pub enum RenderRequestEntry {
@@ -21,6 +24,16 @@ pub enum RenderRequestEntry {
 impl RenderRequestEntry {
     pub fn new_from_skin_and_cape(skin: Vec<u8>, cape: Option<Vec<u8>>) -> Self {
         Self::PlayerSkin(skin, cape)
+    }
+
+    pub(crate) fn default_skin_hash(skin: DefaultSkin, is_slim: bool) -> RenderRequestEntry {
+        // TODO: Move to CoW
+        Self::TextureHash(DefaultSkinResolver::resolve_default_skin(skin, is_slim).to_string())
+    }
+    
+    pub(crate) fn default_skin_hash_for_uuid(uuid: Uuid, slim: Option<bool>) -> RenderRequestEntry {
+        // TODO: Move to CoW
+        Self::TextureHash(DefaultSkinResolver::resolve_default_skin_for_uuid(uuid, slim).to_string())
     }
 }
 

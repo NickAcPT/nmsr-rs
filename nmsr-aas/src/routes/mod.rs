@@ -10,10 +10,10 @@ use crate::{
     model::{
         armor::manager::VanillaMinecraftArmorManager,
         request::{
-            cache::ModelCache, entry::RenderRequestEntry, RenderRequest, RenderRequestFeatures,
+            cache::{CacheBias, ModelCache}, entry::RenderRequestEntry, RenderRequest, RenderRequestFeatures,
             RenderRequestMode,
         },
-        resolver::{mojang::client::MojangClient, RenderRequestResolver},
+        resolver::{default_skins::DefaultSkin, mojang::client::MojangClient, RenderRequestResolver},
     },
 };
 use deadpool::managed::Object;
@@ -73,7 +73,7 @@ impl<'a> NMSRState<'a> {
 
     pub async fn new(config: &NmsrConfiguration) -> Result<Self> {
         let mojang_client = MojangClient::new(Arc::new(config.mojank.clone()))?;
-        let cache_config = config.caching.clone();
+        let cache_config = Self::setup_default_skin_cache_biases(config.caching.clone());
         let model_cache = ModelCache::new("cache".into(), cache_config).await?;
 
         let rendering_config = config.rendering.clone();
@@ -220,6 +220,22 @@ impl<'a> NMSRState<'a> {
         }
 
         Ok(())
+    }
+
+    fn setup_default_skin_cache_biases(
+        mut config: ModelCacheConfiguration,
+    ) -> ModelCacheConfiguration {
+        for skin in DefaultSkin::iter() {
+            for slim in [true, false].into_iter() {
+                let entry = RenderRequestEntry::default_skin_hash(skin, slim);
+
+                config
+                    .cache_biases
+                    .insert(entry, CacheBias::CacheIndefinitely);
+            }
+        }
+
+        return config;
     }
 
     #[instrument(skip(self))]

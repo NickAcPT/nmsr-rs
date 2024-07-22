@@ -10,6 +10,23 @@ provided on a best-effort basis, so please don't abuse it.
 NMSR supports custom render parameters, player armour, armour trims, many render
 modes, native Ears mod support and Minecraft capes.
 
+## Getting Started
+
+Moving off from a different avatar service? _We've got you covered._ Self-hosting NMSR is easy as _**1**, **2**, **3**_!
+
+### No Docker
+
+1. Clone the repository.
+2. Run `cargo run --release --bin nmsr-aas`
+3. You're done! The service is now running on `http://localhost:8080`.
+
+### Docker
+
+1. Clone the repository and rename the `example.config.toml` file to `config.toml`.
+2. Run `docker build -t nmsr .`
+3. Run `docker run -p 8080:8080 nmsr`
+
+
 ## Supported render modes
 
 <table>
@@ -84,6 +101,8 @@ modes, native Ears mod support and Minecraft capes.
         </tr>
     </tbody>
 </table>
+
+##### _Examples shown are of the author's skin, rendered using the `ears` feature enabled._
 
 ## Crates
 

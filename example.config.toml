@@ -7,11 +7,11 @@ port = 8080
 
 
 # Tracing configuration.
-[tracing]
+#[tracing]
 # The OpenTelemetry endpoint to send traces to.
-endpoint = "http://127.0.0.1:4317"
+#endpoint = "http://127.0.0.1:4317"
 # The service name to use for traces. (Optional, defaults to "nmsr-aas")
-service_name = "nmsr-aas"
+#service_name = "nmsr-aas"
 
 
 # Caching configuration.

@@ -16,6 +16,7 @@ use crate::{
         },
         resolver::{
             default_skins::DefaultSkin, mojang::client::MojangClient, RenderRequestResolver,
+            ResolvedRenderRequest,
         },
     },
 };
@@ -29,9 +30,10 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::{render, render_get_warning, render_post_warning};
-use std::{borrow::Cow, hint::black_box, sync::Arc, time::Duration};
+use std::{borrow::Cow, future::IntoFuture, hint::black_box, sync::Arc, thread, time::Duration};
 use strum::IntoEnumIterator;
-use tracing::{debug_span, info, info_span, instrument, Instrument};
+use tokio::{task::JoinSet, time::sleep};
+use tracing::{debug_span, info, info_span, instrument, span, Instrument, Span};
 
 pub trait RenderRequestValidator {
     fn validate_mode(&self, mode: &RenderRequestMode) -> bool;
@@ -206,21 +208,77 @@ impl<'a> NMSRState<'a> {
 
     #[instrument(skip(self))]
     async fn preload_cache_biases(&self) -> Result<()> {
-        for entry in self.cache_config.cache_biases.keys() {
-            let _guard = debug_span!("preload_cache_biases", entry = ?entry).entered();
-
+        #[inline]
+        async fn resolve_entry(
+            resolver: &RenderRequestResolver,
+            entry: RenderRequestEntry,
+        ) -> Result<ResolvedRenderRequest> {
             let request = RenderRequest::new_from_excluded_features(
                 RenderRequestMode::Skin,
-                entry.clone(),
+                entry,
                 None,
                 EnumSet::EMPTY,
                 None,
             );
 
-            self.resolver.resolve(&request).await?;
-
-            self.prewarm_renderer(entry.clone()).await?;
+            resolver.resolve(&request).await
         }
+
+        let resolve_cache_biases_span = info_span!("resolve_cache_biases");
+
+        let (entries, resolved_entries) = async_scoped::TokioScope::scope_and_block(|s| {
+            for entry in self.cache_config.cache_biases.keys() {
+                s.spawn(
+                    resolve_entry(&self.resolver, entry.clone())
+                        .instrument(Span::none())
+                        .instrument(resolve_cache_biases_span.clone()),
+                );
+            }
+
+            self.cache_config.cache_biases.keys().take(5).cloned()
+        });
+
+        info!("Resolved all cache biases, prewarming renderer now.");
+
+        let prewarm_renderer_span = info_span!("prewarm_renderer");
+
+        async_scoped::TokioScope::scope_and_block(|s| {
+            for result in resolved_entries.into_iter().zip(entries) {
+                let (Ok(Ok(resolved)), entry) = result else {
+                    continue;
+                };
+
+                s.spawn(
+                    async move {
+                        // Prewarm our renderer by actually rendering a few requests.
+                        // This will ensure that the renderer is initialized and ready to go when we start serving requests.
+                        let request = RenderRequest::new_from_excluded_features(
+                            RenderRequestMode::FullBody,
+                            entry,
+                            None,
+                            EnumSet::EMPTY,
+                            None,
+                        );
+
+                        for mode in
+                            RenderRequestMode::iter().filter(|m| m.uses_rendering_pipeline())
+                        {
+                            let mut req = request.clone();
+                            req.mode = mode;
+
+                            let resolved = resolved.clone();
+
+                            drop(
+                                render_model::internal_render_model(&req, &self, &resolved)
+                                    .instrument(Span::none())
+                                    .await,
+                            )
+                        }
+                    }
+                    .instrument(prewarm_renderer_span.clone()),
+                );
+            }
+        });
 
         Ok(())
     }
@@ -239,39 +297,6 @@ impl<'a> NMSRState<'a> {
         }
 
         return config;
-    }
-
-    #[instrument(skip(self))]
-    async fn prewarm_renderer(&self, entry: RenderRequestEntry) -> Result<()> {
-        // Prewarm our renderer by actually rendering a few requests.
-        // This will ensure that the renderer is initialized and ready to go when we start serving requests.
-        let mut request = RenderRequest::new_from_excluded_features(
-            RenderRequestMode::FullBody,
-            entry,
-            None,
-            EnumSet::EMPTY,
-            None,
-        );
-
-        let resolved = self.resolver.resolve(&request).await?;
-
-        for mode in RenderRequestMode::iter() {
-            if !mode.uses_rendering_pipeline() {
-                continue;
-            }
-
-            request.mode = mode;
-
-            let _ = black_box(
-                black_box(render_model::internal_render_model(
-                    &request, self, &resolved,
-                ))
-                .instrument(info_span!("prewarm_render", mode = ?mode))
-                .await?,
-            );
-        }
-
-        Ok(())
     }
 
     pub fn get_cache_control_for_request(&self, request: &RenderRequest) -> Cow<'_, str> {

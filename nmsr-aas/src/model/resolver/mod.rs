@@ -403,7 +403,6 @@ impl RenderRequestResolver {
             {
                 let optional_slim_model = request.model.map(|m| m == RenderRequestEntryModel::Alex);
                 
-                
                 let (default_skin, is_default_slim) = DefaultSkinResolver::resolve_default_skin_for_uuid_parts(*uuid, optional_slim_model);
                 
                 let new_entry = RenderRequestEntry::default_skin_hash(

@@ -52,6 +52,9 @@ url = "2.5"
 # Tokio - Async runtime
 tokio = { workspace = true, features = ["macros", "fs", "sync", "signal", "rt-multi-thread"] }
 
+# async-scoped - Scoped async tasks
+async-scoped = { version = "0.9", features = ["use-tokio"] }
+
 # Tracing - Logging framework
 tracing = { workspace = true }
 

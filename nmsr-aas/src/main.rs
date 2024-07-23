@@ -32,7 +32,7 @@ use opentelemetry::StringValue;
 use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::{new_exporter, WithExportConfig};
 use opentelemetry_sdk::{propagation::TraceContextPropagator, trace, Resource};
-use std::{net::SocketAddr, path::PathBuf};
+use std::{net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::{main, signal};
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::{
@@ -71,6 +71,8 @@ async fn main() -> anyhow::Result<()> {
     info!("Loaded configuration: {:#?}", config);
 
     let state = NMSRState::new(&config).await?;
+    
+    tokio::time::sleep(Duration::from_secs(10)).await;
 
     state.init().await?;
 

@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use derive_more::Debug;
 use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
-use tracing::{instrument, trace, trace_span, Instrument};
+use tracing::{instrument, trace, trace_span, Instrument, Span};
 
 use crate::error::{ExplainableExt, Result};
 
@@ -277,6 +277,7 @@ where
             if let Some(key) = self.handler.read_key_from_path(&self.config, &path).await? {
                 let _ = self
                     .get_marker_and_clean_expired_if_needed(&key, &path)
+                    .instrument(Span::none())
                     .await?;
             }
         }

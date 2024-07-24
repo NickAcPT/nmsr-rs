@@ -300,12 +300,12 @@ pub(crate) fn misc_part_set_origin(non_layer_part: PlayerBodyPartType, part: &mu
     
     let anchor = if matches!(
         non_layer_part,
-        PlayerBodyPartType::Body | PlayerBodyPartType::Head
+        PlayerBodyPartType::Head
     ) {
         if is_group_part {
-            None//Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 0.0, 0.5))
+            Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 0.0, 0.5))
         } else {
-            None//Some(part.get_position() + part.get_size() * Vec3::new(0.5, 0.0, 0.5))
+            Some(part.get_position() + part.get_size() * Vec3::new(0.5, 0.0, 0.5))
         }
     } else if non_layer_part.is_leg() {
         Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 1.0, 0.5))

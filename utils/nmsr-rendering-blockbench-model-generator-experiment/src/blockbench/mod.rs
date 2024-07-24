@@ -121,8 +121,8 @@ fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
 
                 println!("Rotation stack: {:?}", rotation_stack);
 
-                if parent_count == 0 {
-                    if group_has_no_rotation {
+                if group_has_no_rotation {
+                    if parent_count < 2 {
                         part.rotate(
                             -part_rotation,
                             Some(PartAnchorInfo::new_rotation_anchor_position(part_origin)),
@@ -130,12 +130,12 @@ fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
 
                         *origin = part_origin;
                         *rotation = part_rotation;
-                    } else {
-                        part.rotate(
-                            -rotation.to_owned(),
-                            Some(PartAnchorInfo::new_rotation_anchor_position(*origin)),
-                        );
                     }
+                } else {
+                    part.rotate(
+                        -rotation.to_owned(),
+                        Some(PartAnchorInfo::new_rotation_anchor_position(*origin)),
+                    );
                 }
             }
         }

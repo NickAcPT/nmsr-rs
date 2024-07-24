@@ -303,9 +303,9 @@ pub(crate) fn misc_part_set_origin(non_layer_part: PlayerBodyPartType, part: &mu
         PlayerBodyPartType::Body | PlayerBodyPartType::Head
     ) {
         if is_group_part {
-            Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 0.0, 0.5))
+            None//Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 0.0, 0.5))
         } else {
-            Some(part.get_position() + part.get_size() * Vec3::new(0.5, 0.0, 0.5))
+            None//Some(part.get_position() + part.get_size() * Vec3::new(0.5, 0.0, 0.5))
         }
     } else if non_layer_part.is_leg() {
         Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 1.0, 0.5))

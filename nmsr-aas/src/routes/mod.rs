@@ -141,6 +141,7 @@ impl<'a> NMSRState<'a> {
     pub fn apply_ears_camera_settings(
         features: &ears_rs::features::EarsFeatures,
         mode: RenderRequestMode,
+        request_features: &EnumSet<RenderRequestFeatures>,
         camera: &mut Camera,
     ) {
         use ears_rs::features::data::ear::EarMode;
@@ -164,6 +165,15 @@ impl<'a> NMSRState<'a> {
             if mode.is_isometric() && mode.is_full_body() {
                 distance_offset -= 1.0;
             }
+            
+            if mode.is_face() {
+                look_at_y_offset += 1.5;
+                distance_offset += 0.25;
+            }
+        }
+
+        if request_features.contains(RenderRequestFeatures::FlipUpsideDown) {
+            look_at_y_offset *= -1.0;
         }
 
         camera.set_look_at_y(camera.get_look_at_y() + look_at_y_offset);
@@ -174,11 +184,12 @@ impl<'a> NMSRState<'a> {
 
     pub fn apply_deadmau5ears_camera_settings(
         mode: RenderRequestMode,
+        request_features: &EnumSet<RenderRequestFeatures>,
         camera: &mut Camera,
     ) {
-        let look_at_y_offset: f32 = 2.5f32;
+        let mut look_at_y_offset: f32 = 2.5f32;
         let mut distance_offset: f32 = 3.5f32;
-        
+
         distance_offset += match mode {
             RenderRequestMode::Face => 0.75,
             RenderRequestMode::FullBodyIso | RenderRequestMode::FrontFull => -1.0,
@@ -186,13 +197,28 @@ impl<'a> NMSRState<'a> {
             RenderRequestMode::FullBody | RenderRequestMode::BodyBust => 2.0,
             RenderRequestMode::FrontBust => -2.5,
             RenderRequestMode::Head => 5.0,
-            _ => 0.0
+            _ => 0.0,
         };
-        
+
+        if request_features.contains(RenderRequestFeatures::FlipUpsideDown) {
+            look_at_y_offset *= -1.0;
+            look_at_y_offset += 1.0;
+        }
+
         camera.set_look_at_y(camera.get_look_at_y() + look_at_y_offset);
 
         camera.set_aspect(camera.get_aspect() + distance_offset);
         camera.set_distance(camera.get_distance() + distance_offset);
+    }
+    
+    fn apply_upside_down_camera_settings(mode: RenderRequestMode, camera: &mut Camera) {
+        if mode.is_bust() {
+            camera.set_look_at_y(camera.get_look_at_y() - 16.0);
+        } else if mode.is_head_or_face() {
+            camera.set_look_at_y(4.0);
+        } else {
+            camera.set_look_at_y(camera.get_look_at_y() - 1.0);
+        }
     }
 
     #[instrument(skip(self))]
@@ -291,7 +317,7 @@ impl<'a> NMSRState<'a> {
                             let resolved = resolved.clone();
 
                             drop(
-                                render_model::internal_render_model(&req, &self, &resolved)
+                                render_model::internal_render_model(&mut req, &self, &resolved)
                                     .instrument(Span::none())
                                     .await,
                             )

@@ -74,6 +74,9 @@ pub struct RenderRequestQueryParams {
     
     #[serde(alias = "deadmau5ears")]
     pub deadmau5_ears: Option<String>,
+    
+    #[serde(alias = "upsidedown")]
+    pub upside_down: Option<String>,
 
     #[serde(alias = "arm")]
     pub arms: Option<f32>,
@@ -128,6 +131,10 @@ impl RenderRequestQueryParams {
 
         if self.deadmau5_ears.is_none() {
             excluded |= RenderRequestFeatures::Deadmau5Ears;
+        }
+
+        if self.upside_down.is_none() {
+            excluded |= RenderRequestFeatures::FlipUpsideDown;
         }
 
         excluded

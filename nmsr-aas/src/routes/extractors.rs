@@ -234,7 +234,7 @@ mod tests {
                     mode: RenderRequestMode::FullBody,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape | RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::ExtraSettings | RenderRequestFeatures::Deadmau5Ears)),
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer | RenderRequestFeatures::Cape | RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::ExtraSettings | RenderRequestFeatures::Deadmau5Ears | RenderRequestFeatures::FlipUpsideDown)),
                     extra_settings: None
                 },
             ),
@@ -244,7 +244,7 @@ mod tests {
                     mode: RenderRequestMode::FullBody,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::ExtraSettings | RenderRequestFeatures::Deadmau5Ears)),
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::Deadmau5Ears | RenderRequestFeatures::FlipUpsideDown)),
                     extra_settings: Some(RenderRequestExtraSettings {
                         yaw: Some(-179.0f32),
                         ..Default::default()
@@ -257,7 +257,7 @@ mod tests {
                     mode: RenderRequestMode::FullBody,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::Deadmau5Ears)),
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::Deadmau5Ears | RenderRequestFeatures::FlipUpsideDown)),
                     extra_settings: Some(RenderRequestExtraSettings {
                         yaw: Some(179.0f32),
                         ..Default::default()
@@ -270,7 +270,7 @@ mod tests {
                     mode: RenderRequestMode::FullBody,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::Deadmau5Ears)),
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::Deadmau5Ears | RenderRequestFeatures::FlipUpsideDown)),
                     extra_settings: Some(RenderRequestExtraSettings {
                         yaw: Some(0.0f32),
                         ..Default::default()
@@ -283,7 +283,7 @@ mod tests {
                     mode: RenderRequestMode::FullBody,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::Deadmau5Ears)),
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::Deadmau5Ears | RenderRequestFeatures::FlipUpsideDown)),
                     extra_settings: Some(RenderRequestExtraSettings {
                         yaw: Some(-5.0f32),
                         ..Default::default()
@@ -296,7 +296,17 @@ mod tests {
                     mode: RenderRequestMode::FullBody,
                     entry: entry.clone(),
                     model: None,
-                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom)),
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::ExtraSettings | RenderRequestFeatures::FlipUpsideDown)),
+                    extra_settings: None
+                },
+            ),
+            (
+                "http://localhost:8621/fullbody/ad4569f3-7576-4376-a7c7-8e8cfcd9b832?upside_down",
+                RenderRequest {
+                    mode: RenderRequestMode::FullBody,
+                    entry: entry.clone(),
+                    model: None,
+                    features: EnumSet::all().difference(enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Custom | RenderRequestFeatures::ExtraSettings | RenderRequestFeatures::Deadmau5Ears)),
                     extra_settings: None
                 },
             ),

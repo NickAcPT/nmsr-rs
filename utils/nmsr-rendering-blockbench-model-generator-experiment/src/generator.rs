@@ -14,7 +14,7 @@ use nmsr_rendering::high_level::{
     model::{ArmorMaterial, PlayerModel},
     parts::{
         part::Part,
-        provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
+        provider::{PlayerPartProviderContext, PlayerPartsProvider},
         uv::{FaceUv, FaceUvPoint},
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
@@ -68,6 +68,7 @@ pub fn new_model_generator_without_part_context<I: ModelProjectImageIO>(
         has_layers: layers,
         has_cape: false,
         has_deadmau5_ears: false,
+        is_flipped_upside_down: false,
         arm_rotation: 10.0,
         shadow_y_pos: None,
         shadow_is_square: false,
@@ -174,14 +175,11 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
     }
 
     pub(crate) fn generate_parts(&self) -> Vec<Part> {
-        PlayerBodyPartType::iter()
+        let body_parts = PlayerBodyPartType::iter()
             .filter(|p| !(p.is_layer() || p.is_hat_layer()) || self.part_context.has_layers)
-            .flat_map(|p| {
-                self.providers
-                    .iter()
-                    .flat_map(move |provider| provider.get_parts(&self.part_context, p))
-            })
-            .collect_vec()
+            .collect_vec();
+    
+        self.part_context.get_parts(&self.providers, &body_parts)    
     }
 
     pub(crate) fn get_texture(&self, texture_type: PlayerPartTextureType) -> Option<&RgbaImage> {

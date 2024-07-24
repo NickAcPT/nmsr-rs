@@ -22,7 +22,7 @@ use crate::{
 };
 
 pub(crate) async fn internal_render_model<'a>(
-    request: &RenderRequest,
+    request: &mut RenderRequest,
     state: &NMSRState<'a>,
     resolved: &ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
@@ -38,18 +38,29 @@ pub(crate) async fn internal_render_model<'a>(
     let parts = mode.get_body_parts();
 
     let mut part_context = create_part_context(request, resolved);
+    
+    if request
+        .features
+        .contains(RenderRequestFeatures::FlipUpsideDown)
+    {
+        NMSRState::apply_upside_down_camera_settings(mode, &mut camera);
+    }
 
+    
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
         if let Some(features) = part_context.ears_features.as_ref() {
-            NMSRState::apply_ears_camera_settings(features, mode, &mut camera);
+            NMSRState::apply_ears_camera_settings(features, mode, &request.features, &mut camera);
         }
     }
-    
-    if request.features.contains(RenderRequestFeatures::Deadmau5Ears) {
-        NMSRState::apply_deadmau5ears_camera_settings(mode, &mut camera);
-    }
 
+    if request
+        .features
+        .contains(RenderRequestFeatures::Deadmau5Ears)
+    {
+        NMSRState::apply_deadmau5ears_camera_settings(mode, &request.features, &mut camera);
+    }
+    
     let mut scene = Scene::new(
         &state.graphics_context,
         scene_context,
@@ -135,7 +146,7 @@ pub(crate) fn load_image(texture: &[u8]) -> Result<RgbaImage> {
 }
 
 pub(crate) fn create_part_context(
-    request: &RenderRequest,
+    request: &mut RenderRequest,
     resolved: &ResolvedRenderRequest,
 ) -> PlayerPartProviderContext<VanillaMinecraftArmorMaterialData> {
     let arm_rotation = request.get_arm_rotation();
@@ -144,7 +155,14 @@ pub(crate) fn create_part_context(
 
     let has_layers = request.features.contains(RenderRequestFeatures::BodyLayers);
     let has_hat_layer = request.features.contains(RenderRequestFeatures::HatLayer);
-    let has_deadmau5_ears = request.features.contains(RenderRequestFeatures::Deadmau5Ears);
+
+    let has_deadmau5_ears = request
+        .features
+        .contains(RenderRequestFeatures::Deadmau5Ears);
+    
+    let is_flipped_upside_down = request
+        .features
+        .contains(RenderRequestFeatures::FlipUpsideDown);
 
     #[allow(unused_variables)]
     let has_cape = {
@@ -196,6 +214,7 @@ pub(crate) fn create_part_context(
         has_layers,
         has_hat_layer,
         has_deadmau5_ears,
+        is_flipped_upside_down,
         has_cape,
         arm_rotation,
         shadow_y_pos,
@@ -208,6 +227,12 @@ pub(crate) fn create_part_context(
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
         load_ears_features(&mut context, resolved);
+        
+        // Make sure that we don't mix Ears and Deadmau5Ears features
+        if context.ears_features.is_some() {
+            context.has_deadmau5_ears = false;
+            request.features.remove(RenderRequestFeatures::Deadmau5Ears);
+        }
     }
 
     context

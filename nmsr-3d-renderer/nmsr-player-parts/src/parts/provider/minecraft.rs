@@ -6,9 +6,8 @@ use itertools::Itertools;
 use crate::model::{ArmorMaterial, PlayerArmorSlot, PlayerArmorSlots};
 use crate::parts::part::{Part, PartAnchorInfo};
 use crate::parts::provider::{PartsProvider, PlayerPartProviderContext};
-use crate::parts::uv::uv_from_pos_and_size;
 use crate::types::PlayerBodyPartType::*;
-use crate::types::{PlayerBodyPartType, PlayerPartTextureType};
+use crate::types::PlayerBodyPartType;
 
 pub struct MinecraftPlayerPartsProvider<M>(PhantomData<[M; 4]>);
 
@@ -90,23 +89,6 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
 
         if body_part == Body && context.has_cape {
             append_cape_part(&mut result);
-        }
-
-        if body_part == Head {
-            if let Some(shadow_y_pos) = context.shadow_y_pos {
-                let shadow = Part::new_quad(
-                    PlayerPartTextureType::Shadow,
-                    [-8.0, shadow_y_pos, -8.0],
-                    [16, 0, 16],
-                    uv_from_pos_and_size(0, 0, 128, 128),
-                    Vec3::Y,
-                    #[cfg(feature = "part_tracker")]
-                    Some("Shadow".to_string()),
-                );
-                // TODO: Expand shadow if there's armor on the feet
-
-                result.push(shadow);
-            }
         }
 
         if let Some(armor_slots) = &context.armor_slots {

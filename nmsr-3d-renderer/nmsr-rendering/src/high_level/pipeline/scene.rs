@@ -12,7 +12,7 @@ use nmsr_player_parts::{
     model::ArmorMaterial,
     parts::{
         part::Part,
-        provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
+        provider::{PlayerPartProviderContext, PlayerPartsProvider},
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
@@ -194,15 +194,9 @@ where
             PlayerPartsProvider::Ears,
         ];
 
-        let mut parts = providers
-            .iter()
-            .flat_map(|provider| {
-                body_parts
-                    .iter()
-                    .flat_map(|part| provider.get_parts(part_provider_context, *part))
-            })
-            .collect::<Vec<Part>>();
-
+        
+        let mut parts = part_provider_context.get_parts(&providers, body_parts);
+        
         // Sort the parts by texture. This allows us to render all parts with the same texture in one go.
         parts.sort_by_key(|p| p.get_texture());
 

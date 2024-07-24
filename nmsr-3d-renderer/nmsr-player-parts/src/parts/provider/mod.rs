@@ -1,9 +1,12 @@
 use self::minecraft::{perform_arm_part_rotation, MinecraftPlayerPartsProvider};
-use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
-use crate::parts::part::Part;
+use crate::{parts::{part::Part, uv::uv_from_pos_and_size}, types::PlayerPartTextureType};
 use crate::types::PlayerBodyPartType;
+use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
 #[cfg(feature = "ears")]
 use ears_rs::features::EarsFeatures;
+use glam::Vec3;
+use itertools::Itertools;
+use strum::IntoEnumIterator;
 
 #[cfg(feature = "ears")]
 pub mod ears;
@@ -31,12 +34,63 @@ where
     pub has_layers: bool,
     pub has_cape: bool,
     pub has_deadmau5_ears: bool,
+    pub is_flipped_upside_down: bool,
     pub arm_rotation: f32,
     pub shadow_y_pos: Option<f32>,
     pub shadow_is_square: bool,
     pub armor_slots: Option<PlayerArmorSlots<M>>,
     #[cfg(feature = "ears")]
     pub ears_features: Option<EarsFeatures>,
+}
+
+impl<M> PlayerPartProviderContext<M>
+where
+    M: ArmorMaterial,
+{
+    pub fn get_all_parts(&self, providers: &[PlayerPartsProvider]) -> Vec<Part> {
+        self.get_parts(providers, &PlayerBodyPartType::iter().collect_vec())
+    }
+    
+    const MAX_PLAYER_HEIGHT: f32 = 32.0;
+    
+    pub fn get_parts(
+        &self,
+        providers: &[PlayerPartsProvider],
+        body_parts: &[PlayerBodyPartType],
+    ) -> Vec<Part> {
+        let mut parts = providers
+            .iter()
+            .flat_map(|provider| {
+                body_parts
+                    .iter()
+                    .flat_map(|part| provider.get_parts(self, *part))
+            })
+            .collect::<Vec<_>>();
+
+        if self.is_flipped_upside_down {
+            for part in &mut parts {
+                part.rotate(Vec3::new(0.0, 0.0, 180.0), None);
+                part.translate(Vec3::new(0.0, Self::MAX_PLAYER_HEIGHT, 0.0));
+            }
+        }
+        
+        if let Some(shadow_y_pos) = self.shadow_y_pos {
+            let shadow = Part::new_quad(
+                PlayerPartTextureType::Shadow,
+                [-8.0, shadow_y_pos, -8.0],
+                [16, 0, 16],
+                uv_from_pos_and_size(0, 0, 128, 128),
+                Vec3::Y,
+                #[cfg(feature = "part_tracker")]
+                Some("Shadow".to_string()),
+            );
+            // TODO: Expand shadow if there's armor on the feet
+
+            parts.push(shadow);
+        }
+
+        return parts;
+    }
 }
 
 pub trait PartsProvider<M: ArmorMaterial> {

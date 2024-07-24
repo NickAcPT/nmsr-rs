@@ -149,15 +149,8 @@ impl ShaderState {
             PlayerPartsProvider::Ears,
         ];
 
-        let parts = providers
-            .iter()
-            .flat_map(|provider| {
-                parts
-                    .iter()
-                    .flat_map(|part| provider.get_parts(&context, *part))
-            })
-            .collect::<Vec<Part>>();
-
+        let parts = context.get_parts(&providers, &parts);
+        
         let parts = parts
             .into_iter()
             .map(|p| primitive_convert(&p))

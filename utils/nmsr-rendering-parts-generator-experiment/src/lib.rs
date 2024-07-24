@@ -409,6 +409,7 @@ async fn process_group_logic(
         has_layers: parts.iter().any(|p| p.is_layer()),
         has_cape: false,
         has_deadmau5_ears: false,
+        is_flipped_upside_down: false,
         arm_rotation,
         shadow_y_pos,
         shadow_is_square: false,

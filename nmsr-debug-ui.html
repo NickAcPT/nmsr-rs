@@ -162,6 +162,7 @@
                 <label><input class="feature" type="checkbox" value="ears">Ears</label>
                 <label><input id="back-chk" type="checkbox" value="Back">Back</label>
                 <label><input id="deadmau5ears" type="checkbox" value="deadmau5ears">Deadmau5 Ears</label>
+                <label><input id="upsidedown" type="checkbox" value="upsidedown">Upside Down</label>
             </div>
         </div>
 
@@ -364,8 +365,13 @@
             if (document.getElementById('back-chk').checked) {
                 params.append('back', '');
             }
+            
             if (document.getElementById('deadmau5ears').checked) {
                 params.append('deadmau5ears', '');
+            }
+
+            if (document.getElementById('upsidedown').checked) {
+                params.append('upside_down', '');
             }
 
             const url = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr`;

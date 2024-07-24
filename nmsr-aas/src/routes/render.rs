@@ -34,7 +34,7 @@ pub async fn render_get_warning() -> Result<Response> {
 pub async fn render(
     state: State<NMSRState<'static>>,
     method: Method,
-    request: RenderRequest,
+    mut request: RenderRequest,
 ) -> Result<Response> {
     let resolved = state.resolver.resolve(&request).await?;
 
@@ -51,7 +51,7 @@ pub async fn render(
         RenderRequestMode::Skin | RenderRequestMode::Cape => {
             internal_render_skin_or_cape(&request, resolved).await
         }
-        _ => internal_render_model(&request, &state, &resolved).await,
+        _ => internal_render_model(&mut request, &state, &resolved).await,
     }?;
 
     let mut res = create_image_response(result, &state, &request);

@@ -61,7 +61,7 @@ impl ModelProjectImageIO for NMSRaaSImageIO {
 pub(crate) async fn internal_bbmodel_export(
     state: State<NMSRState<'static>>,
     method: Method,
-    request: RenderRequest,
+    mut request: RenderRequest,
 ) -> Result<Response> {
     let resolved = state.resolver.resolve(&request).await?;
 
@@ -73,7 +73,7 @@ pub(crate) async fn internal_bbmodel_export(
         .into_response());
     }
 
-    let mut part_context = create_part_context(&request, &resolved);
+    let mut part_context = create_part_context(&mut request, &resolved);
 
     if let Some(pos) = part_context.shadow_y_pos {
         part_context.shadow_y_pos = Some(pos - 0.01);

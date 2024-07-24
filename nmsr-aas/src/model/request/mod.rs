@@ -9,6 +9,7 @@ use nmsr_rendering::{
     low_level::{EulerRot, Quat, Vec3},
 };
 use strum::{Display, EnumString};
+use uuid::{uuid, Uuid};
 
 use self::entry::{RenderRequestEntry, RenderRequestEntryModel};
 
@@ -35,6 +36,8 @@ pub enum RenderRequestFeatures {
     HatLayer,
     #[strum(serialize = "deadmau5_ears")]
     Deadmau5Ears,
+    #[strum(serialize = "upside_down")]
+    FlipUpsideDown,
     Shadow,
     Shading,
     Cape,
@@ -142,7 +145,7 @@ impl RenderRequest {
         excluded_features: EnumSet<RenderRequestFeatures>,
         extra_settings: Option<RenderRequestExtraSettings>,
     ) -> Self {
-        Self::cleanup_request(Self {
+        Self::process_request(Self {
             mode,
             entry,
             model,
@@ -269,7 +272,7 @@ impl RenderRequest {
 
     pub(crate) fn get_shadow_y_pos(&self) -> Option<f32> {
         if self.features.contains(RenderRequestFeatures::Shadow) {
-            if self.mode.is_head() || self.mode.is_head_iso() {
+            if (self.mode.is_head() || self.mode.is_head_iso()) && !self.features.contains(RenderRequestFeatures::FlipUpsideDown) {
                 Some(24.0)
             } else {
                 Some(0.0)
@@ -277,6 +280,40 @@ impl RenderRequest {
         } else {
             None
         }
+    }
+
+    const DEADMAU5_ID: (&'static str, Uuid) =
+        ("deadmau5", uuid!("1e18d5ff-643d-45c8-b509-43b8461d8614"));
+    const GRUMM_ID: (&'static str, Uuid) = ("Grumm", uuid!("e6b5c088-0680-44df-9e1b-9bf11792291b"));
+    const DINNERBONE_ID: (&'static str, Uuid) =
+        ("Dinnerbone", uuid!("61699b2e-d327-4a01-9f1e-0ea8c3f06bc6"));
+
+    fn process_request(request: Self) -> Self {
+        let mut request = Self::cleanup_request(request);
+
+        fn check_id(entry: &RenderRequestEntry, (name, uuid): (&'static str, Uuid)) -> bool {
+            let is_name_match = match entry {
+                RenderRequestEntry::MojangPlayerName(entry_name) => entry_name.eq_ignore_ascii_case(name),
+                _ => false,
+            };
+
+            entry.eq(&RenderRequestEntry::MojangPlayerUuid(uuid)) || is_name_match
+        }
+
+        // Do custom features based on the request.
+        let is_deadmau5 = check_id(&request.entry, Self::DEADMAU5_ID);
+        let is_grumm = check_id(&request.entry, Self::GRUMM_ID);
+        let is_dinnerbone = check_id(&request.entry, Self::DINNERBONE_ID);
+        
+        if is_deadmau5 {
+            request.features |= enum_set!(RenderRequestFeatures::Deadmau5Ears);
+        } 
+        
+        if is_grumm || is_dinnerbone {
+            request.features |= enum_set!(RenderRequestFeatures::FlipUpsideDown);
+        }
+
+        return request;
     }
 
     fn cleanup_request(mut request: Self) -> Self {

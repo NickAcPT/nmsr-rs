@@ -71,8 +71,6 @@ async fn main() -> anyhow::Result<()> {
     info!("Loaded configuration: {:#?}", config);
 
     let state = NMSRState::new(&config).await?;
-    
-    tokio::time::sleep(Duration::from_secs(10)).await;
 
     state.init().await?;
 

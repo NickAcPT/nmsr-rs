@@ -1,7 +1,13 @@
 use self::minecraft::{perform_arm_part_rotation, MinecraftPlayerPartsProvider};
-use crate::{parts::{part::Part, uv::uv_from_pos_and_size}, types::PlayerPartTextureType};
+use crate::{model::{ArmorMaterial, PlayerArmorSlots, PlayerModel}};
+
+#[cfg(feature = "part_tracker")]
+use crate::parts::provider::minecraft::misc_part_set_origin;
 use crate::types::PlayerBodyPartType;
-use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
+use crate::{
+    parts::{part::Part, uv::uv_from_pos_and_size},
+    types::PlayerPartTextureType,
+};
 #[cfg(feature = "ears")]
 use ears_rs::features::EarsFeatures;
 use glam::Vec3;
@@ -50,9 +56,9 @@ where
     pub fn get_all_parts(&self, providers: &[PlayerPartsProvider]) -> Vec<Part> {
         self.get_parts(providers, &PlayerBodyPartType::iter().collect_vec())
     }
-    
+
     const MAX_PLAYER_HEIGHT: f32 = 32.0;
-    
+
     pub fn get_parts(
         &self,
         providers: &[PlayerPartsProvider],
@@ -73,7 +79,7 @@ where
                 part.translate(Vec3::new(0.0, Self::MAX_PLAYER_HEIGHT, 0.0));
             }
         }
-        
+
         if let Some(shadow_y_pos) = self.shadow_y_pos {
             let shadow = Part::new_quad(
                 PlayerPartTextureType::Shadow,
@@ -129,14 +135,19 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
                 .get_parts(context, body_part),
         };
 
-        if body_part.is_arm() {
-            for part in &mut parts {
+        for part in &mut parts {
+            if body_part.is_arm() {
                 perform_arm_part_rotation(
                     body_part.get_non_layer_part(),
                     part,
                     context.model.is_slim_arms(),
                     context.arm_rotation,
                 );
+            }
+            
+            #[cfg(feature = "part_tracker")]
+            {
+                misc_part_set_origin(body_part.get_non_layer_part(), part);
             }
         }
 

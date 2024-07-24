@@ -77,11 +77,25 @@ fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
         // Part groups is a vector of strings, each string being a group name - The last group name is the parent group
         let part_groups: Vec<String> = part.get_group().to_vec();
 
+        let parent_count = part_groups.len() - 1;
+
+        let mut rotation_stack = Vec::new();
+
         // Group our part names in a tree-like structure
         let mut current_group = &mut root_group;
         for group in part_groups {
             // Find our current group in the tree
             current_group = current_group.add_or_get_group(group);
+
+            if let BlockbenchGroupEntry::Group {
+                ref mut origin,
+                ref mut rotation,
+                name,
+                ..
+            } = current_group
+            {
+                rotation_stack.push((name.to_owned(), origin.to_owned(), rotation.to_owned()));
+            }
         }
 
         if let BlockbenchGroupEntry::Group {
@@ -91,34 +105,53 @@ fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
         } = current_group
         {
             if !matches!(part, Part::Group { .. }) {
-                let group_has_no_rotation =
-                    origin.to_owned().eq(&Vec3::ZERO) && rotation.to_owned().eq(&Vec3::ZERO);
+                let group_has_no_rotation = origin.abs_diff_eq(Vec3::ZERO, f32::EPSILON)
+                    && rotation.abs_diff_eq(Vec3::ZERO, f32::EPSILON);
 
                 let (part_origin, part_rotation) =
                     RawProjectElement::get_blockbench_part_origin_and_rotation(&part);
 
                 println!(
-                    "Part: {:?}, Origin: {:?}, Rotation: {:?}",
+                    "Part: {:?}, Origin: {:?}, Rotation: {:?} Parent count: {:?}",
                     part.get_name(),
                     part_origin,
-                    part_rotation
+                    part_rotation,
+                    parent_count
                 );
 
-                if group_has_no_rotation {
-                    part.rotate(
-                        -part_rotation,
-                        Some(PartAnchorInfo::new_rotation_anchor_position(part_origin)),
-                    );
+                println!("Rotation stack: {:?}", rotation_stack);
 
-                    *origin = part_origin;
-                    *rotation = part_rotation;
-                } else {
-                    part.rotate(
-                        -rotation.to_owned(),
-                        Some(PartAnchorInfo::new_rotation_anchor_position(*origin)),
-                    );
+                if parent_count == 0 {
+                    if group_has_no_rotation {
+                        part.rotate(
+                            -part_rotation,
+                            Some(PartAnchorInfo::new_rotation_anchor_position(part_origin)),
+                        );
+
+                        *origin = part_origin;
+                        *rotation = part_rotation;
+                    } else {
+                        part.rotate(
+                            -rotation.to_owned(),
+                            Some(PartAnchorInfo::new_rotation_anchor_position(*origin)),
+                        );
+                    }
                 }
             }
+        }
+
+        for (n, parent_origin, parent_rot) in rotation_stack.into_iter().rev().skip(1) {
+            println!(
+                "Part: {:?} Parent: {:?}, Origin: {:?}, Rotation: {:?}",
+                part.get_name(),
+                n,
+                parent_origin,
+                parent_rot
+            );
+            part.rotate(
+                -parent_rot,
+                Some(PartAnchorInfo::new_rotation_anchor_position(parent_origin)),
+            );
         }
 
         // Add our part to the group

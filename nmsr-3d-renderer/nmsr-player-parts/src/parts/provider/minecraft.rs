@@ -6,8 +6,8 @@ use itertools::Itertools;
 use crate::model::{ArmorMaterial, PlayerArmorSlot, PlayerArmorSlots};
 use crate::parts::part::{Part, PartAnchorInfo};
 use crate::parts::provider::{PartsProvider, PlayerPartProviderContext};
-use crate::types::PlayerBodyPartType::*;
 use crate::types::PlayerBodyPartType;
+use crate::types::PlayerBodyPartType::*;
 
 pub struct MinecraftPlayerPartsProvider<M>(PhantomData<[M; 4]>);
 
@@ -145,11 +145,10 @@ pub fn get_part_group_name(non_layer_body_part_type: PlayerBodyPartType) -> &'st
 }
 
 // Variable is mut when "part_tracker" feature is enabled
-#[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))] 
+#[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))]
 fn get_deadmau5_ears() -> [Part; 2] {
     let offset = 0.65f32;
     let mut left_ear = {
-
         let mut part = Part::new_cube(
             crate::types::PlayerPartTextureType::Skin,
             [-8, 30, -1],
@@ -179,7 +178,7 @@ fn get_deadmau5_ears() -> [Part; 2] {
         left_ear
             .get_name_mut()
             .replace("Left Deadmau5 Ear".to_string());
-        
+
         right_ear
             .get_name_mut()
             .replace("Right Deadmau5 Ear".to_string());
@@ -278,6 +277,50 @@ pub(crate) fn perform_arm_part_rotation(
             Some(PartAnchorInfo::new_rotation_anchor_position(anchor)),
         );
     }
+}
+
+#[cfg(feature = "part_tracker")]
+pub(crate) fn misc_part_set_origin(non_layer_part: PlayerBodyPartType, part: &mut Part) {
+    println!(
+        "Setting origin for part: {:?} -> {:?}",
+        part.get_name(),
+        part.part_tracking_data().last_rotation_origin()
+    );
+    
+    if let Some(rot) = part.part_tracking_data().last_rotation_origin() {
+        if !rot.abs_diff_eq(Vec3::ZERO, f32::EPSILON) {
+            return;
+        }
+    }
+
+    let normal_part = compute_base_part(non_layer_part, false);
+    let normal_part_size = normal_part.get_size();
+
+    let is_group_part = matches!(part, Part::Group { .. });
+    
+    let anchor = if matches!(
+        non_layer_part,
+        PlayerBodyPartType::Body | PlayerBodyPartType::Head
+    ) {
+        if is_group_part {
+            Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 0.0, 0.5))
+        } else {
+            Some(part.get_position() + part.get_size() * Vec3::new(0.5, 0.0, 0.5))
+        }
+    } else if non_layer_part.is_leg() {
+        Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 1.0, 0.5))
+    } else {
+        None
+    };
+    
+    
+
+    let Some(anchor) = anchor else {
+        return;
+    };
+
+    part.part_tracking_data_mut()
+        .set_last_rotation_origin(anchor);
 }
 
 fn append_cape_part(result: &mut Vec<Part>) {

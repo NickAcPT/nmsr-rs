@@ -17,6 +17,7 @@ use crate::{
                 snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider,
                 wings::EarsModWingsPartProvider,
             },
+            minecraft::get_part_group_name,
             PartsProvider,
         },
     },
@@ -51,17 +52,20 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
         let mut parts = Vec::new();
         let mut builder = EarsModPartBuilder::new(&mut parts, &context);
-        builder.stack_group("EarsMod", |builder| {
-            for provider in EarsModPartStaticDispatch::iter() {
-                if !provider.provides_for_part(body_part)
-                    || !provider.provides_for_feature(&features, context)
-                {
-                    continue;
-                }
+        builder.stack_group(
+            get_part_group_name(body_part.get_non_layer_part()),
+            |builder| {
+                for provider in EarsModPartStaticDispatch::iter() {
+                    if !provider.provides_for_part(body_part)
+                        || !provider.provides_for_feature(&features, context)
+                    {
+                        continue;
+                    }
 
-                provider.provide_parts(&features, context, builder, body_part);
-            }
-        });
+                    provider.provide_parts(&features, context, builder, body_part);
+                }
+            },
+        );
 
         parts
     }

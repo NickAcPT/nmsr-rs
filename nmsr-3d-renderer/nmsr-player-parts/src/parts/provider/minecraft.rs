@@ -144,6 +144,8 @@ pub fn get_part_group_name(non_layer_body_part_type: PlayerBodyPartType) -> &'st
     }
 }
 
+// Variable is mut when "part_tracker" feature is enabled
+#[cfg_attr(not(feature = "part_tracker"), allow(unused_mut))] 
 fn get_deadmau5_ears() -> [Part; 2] {
     let offset = 0.65f32;
     let mut left_ear = {

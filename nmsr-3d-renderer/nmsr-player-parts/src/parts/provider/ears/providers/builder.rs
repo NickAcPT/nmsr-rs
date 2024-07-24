@@ -183,7 +183,7 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
 
         let rotation = Affine3A::from_quat(rotation_quat);
 
-        *self.last_transformation_mut() *= Affine3A::from_quat(rotation_quat);
+        *self.last_transformation_mut() *= rotation;
     }
 
     pub(crate) fn scale(&mut self, x: f32, y: f32, z: f32) {

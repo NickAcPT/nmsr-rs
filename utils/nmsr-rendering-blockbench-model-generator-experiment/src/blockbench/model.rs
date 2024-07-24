@@ -81,6 +81,22 @@ impl RawProjectElement {
             .into(),
         )
     }
+    
+    pub fn get_blockbench_part_origin_and_rotation(part: &Part) -> (Vec3, Vec3) {
+        let affine = part.get_transformation();
+        let (_, rotation, translation) = affine.to_scale_rotation_translation();
+
+        let origin = part
+            .part_tracking_data()
+            .last_rotation_origin()
+            .unwrap_or(translation);
+
+        let (r_x, r_y, r_z) = rotation.to_euler(glam::EulerRot::XYZ);
+
+        let rotation = Vec3::from_array([r_x.to_degrees(), r_y.to_degrees(), r_z.to_degrees(),]);
+        
+        return (origin, rotation);
+    }
 
     pub fn new_primitive<M: ArmorMaterial, I: ModelProjectImageIO>(
         name: String,
@@ -96,21 +112,15 @@ impl RawProjectElement {
         let converted = primitive_convert(&part);
 
         let affine = part.get_transformation();
-        let (_, rotation, translation) = affine.to_scale_rotation_translation();
+        let (_, rotation, _) = affine.to_scale_rotation_translation();
 
-        let rotation_anchor = part
-            .part_tracking_data()
-            .last_rotation_origin()
-            .unwrap_or(translation);
-        let origin = rotation_anchor;
+        let (origin, rotation_vec3) = Self::get_blockbench_part_origin_and_rotation(&part);
 
         let affine_inv = Affine3A::from_rotation_translation(rotation, origin).inverse();
-
-        let (r_x, r_y, r_z) = rotation.to_euler(glam::EulerRot::XYZ);
-
+        
         let origin = json!([origin.x, origin.y, origin.z,]);
 
-        let rotation = json!([r_x.to_degrees(), r_y.to_degrees(), r_z.to_degrees(),]);
+        let rotation = json!([rotation_vec3.x, rotation_vec3.y, rotation_vec3.z,]);
 
         let texture_id = project.get_texture_id(texture)?;
 

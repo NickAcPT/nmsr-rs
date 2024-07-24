@@ -2,9 +2,12 @@ pub mod model;
 
 use std::collections::HashMap;
 
+use glam::Vec3;
 use itertools::Itertools;
 use nmsr_rendering::high_level::{
-    model::ArmorMaterial, parts::part::Part, types::PlayerPartTextureType,
+    model::ArmorMaterial,
+    parts::part::{Part, PartAnchorInfo},
+    types::PlayerPartTextureType,
 };
 use uuid::Uuid;
 
@@ -32,9 +35,9 @@ pub type ProjectOutputResult = Result<ProjectOutput>;
 pub fn generate_project<M: ArmorMaterial, I: ModelProjectImageIO>(
     mut project: ModelGenerationProject<M, I>,
 ) -> ProjectOutputResult {
-    let parts = project.generate_parts();
+    let mut parts = project.generate_parts();
 
-    let outliner_groups = generate_outliner_groups(&project, &parts);
+    let outliner_groups = generate_outliner_groups(&project, &mut parts);
 
     let texture_grouped_parts = group_by_texture(parts);
     project.filter_textures(&texture_grouped_parts.keys().copied().collect_vec());
@@ -60,7 +63,7 @@ pub fn generate_project<M: ArmorMaterial, I: ModelProjectImageIO>(
 
 fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
     project: &ModelGenerationProject<M, I>,
-    parts: &[Part],
+    parts: &mut [Part],
 ) -> serde_json::Value {
     // First, let's store our parts in the following structure:
     let mut root_group = BlockbenchGroupEntry::new_root();
@@ -79,6 +82,43 @@ fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
         for group in part_groups {
             // Find our current group in the tree
             current_group = current_group.add_or_get_group(group);
+        }
+
+        if let BlockbenchGroupEntry::Group {
+            ref mut origin,
+            ref mut rotation,
+            ..
+        } = current_group
+        {
+            if !matches!(part, Part::Group { .. }) {
+                let group_has_no_rotation =
+                    origin.to_owned().eq(&Vec3::ZERO) && rotation.to_owned().eq(&Vec3::ZERO);
+
+                let (part_origin, part_rotation) =
+                    RawProjectElement::get_blockbench_part_origin_and_rotation(&part);
+
+                println!(
+                    "Part: {:?}, Origin: {:?}, Rotation: {:?}",
+                    part.get_name(),
+                    part_origin,
+                    part_rotation
+                );
+
+                if group_has_no_rotation {
+                    part.rotate(
+                        -part_rotation,
+                        Some(PartAnchorInfo::new_rotation_anchor_position(part_origin)),
+                    );
+
+                    *origin = part_origin;
+                    *rotation = part_rotation;
+                } else {
+                    part.rotate(
+                        -rotation.to_owned(),
+                        Some(PartAnchorInfo::new_rotation_anchor_position(*origin)),
+                    );
+                }
+            }
         }
 
         // Add our part to the group

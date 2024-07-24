@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use glam::Vec3;
 use serde_json::{json, Value};
 use uuid::Uuid;
 
@@ -9,6 +10,8 @@ pub enum BlockbenchGroupEntry {
     },
     Group {
         name: String,
+        origin: Vec3,
+        rotation: Vec3,
         elements: HashMap<String, BlockbenchGroupEntry>,
     },
     Entry(Uuid),
@@ -26,8 +29,10 @@ impl BlockbenchGroupEntry {
                     .map(|(_, e)| e.to_value())
                     .collect::<Vec<_>>())
             }
-            BlockbenchGroupEntry::Group { name, elements } => json!({
+            BlockbenchGroupEntry::Group { name, elements, origin, rotation } => json!({
                 "name": name,
+                "origin": origin,
+                "rotation": rotation,
                 "children": elements.iter().map(|(_, e)| e.to_value()).collect::<Vec<_>>(),
             }),
         }
@@ -43,6 +48,8 @@ impl BlockbenchGroupEntry {
         Self::Group {
             name: name.into(),
             elements: HashMap::new(),
+            origin: Vec3::ZERO,
+            rotation: Vec3::ZERO,
         }
     }
 

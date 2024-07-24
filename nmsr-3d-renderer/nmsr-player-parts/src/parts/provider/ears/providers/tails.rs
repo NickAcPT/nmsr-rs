@@ -97,13 +97,13 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
 
             for i in 0..segments {
                 b.rotate(angles[i], 0., 0.);
-                b.quad_front(
+                b.quad_back(
                     56,
                     (16 + (i * seg_height)) as u16,
                     8,
                     seg_height as u16,
                     TextureRotation::None,
-                    TextureFlip::Vertical,
+                    TextureFlip::Both,
                     format!("Tail Segment {}", i),
                 );
                 b.translate_i(0, seg_height as i32, 0);

@@ -154,14 +154,15 @@
 
             <div class="inner-group" id="features-group">
                 <label for="features-group">Features:</label>
-                <label><input type="checkbox" checked value="layers">Layers</label>
-                <label><input type="checkbox" checked value="helmet">Helmet</label>
-                <label><input type="checkbox" checked value="shadow">Shadow</label>
-                <label><input type="checkbox" checked value="shading">Shading</label>
-                <label><input type="checkbox" checked value="cape">Cape</label>
-                <label><input type="checkbox" value="ears">Ears</label>
+                <label><input class="feature" type="checkbox" checked value="layers">Layers</label>
+                <label><input class="feature" type="checkbox" checked value="helmet">Helmet</label>
+                <label><input class="feature" type="checkbox" checked value="shadow">Shadow</label>
+                <label><input class="feature" type="checkbox" checked value="shading">Shading</label>
+                <label><input class="feature" type="checkbox" checked value="cape">Cape</label>
+                <label><input class="feature" type="checkbox" value="ears">Ears</label>
+                <label><input id="back-chk" type="checkbox" value="Back">Back</label>
+                <label><input id="deadmau5ears" type="checkbox" value="deadmau5ears">Deadmau5 Ears</label>
             </div>
-
         </div>
 
         <div class="outer-group" id="camera-group">
@@ -338,6 +339,8 @@
 
             // Create an object to store the values
             let values = {};
+            
+            values.t = /* Current time in milliseconds */ new Date().getTime();
 
             // Iterate over all inputs
             for (let input of inputs) {
@@ -351,12 +354,19 @@
 
             // Add the features
             let excluded = [];
-            for (let feature of featuresGroup.querySelectorAll('input')) {
+            for (let feature of featuresGroup.querySelectorAll('input.feature')) {
                 if (!feature.checked) {
                     excluded.push(feature.value);
                 }
             }
             if (excluded.length > 0) params.append('no', excluded.join(','));
+            
+            if (document.getElementById('back-chk').checked) {
+                params.append('back', '');
+            }
+            if (document.getElementById('deadmau5ears').checked) {
+                params.append('deadmau5ears', '');
+            }
 
             const url = `https://nickac-pc.werewolf-scala.ts.net/temp/nmsr`;
 

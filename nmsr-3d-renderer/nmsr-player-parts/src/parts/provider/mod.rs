@@ -30,6 +30,7 @@ where
     pub has_hat_layer: bool,
     pub has_layers: bool,
     pub has_cape: bool,
+    pub has_deadmau5_ears: bool,
     pub arm_rotation: f32,
     pub shadow_y_pos: Option<f32>,
     pub shadow_is_square: bool,

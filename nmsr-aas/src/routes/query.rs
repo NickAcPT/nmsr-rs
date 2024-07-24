@@ -26,6 +26,7 @@ use serde_with::{formats::CommaSeparator, serde_as, DisplayFromStr, StringWithSe
 ///  - `?alex`: set the model of the entry to alex [compatibility with old URLs]
 ///  - `?steve`: set the model of the entry to steve [compatibility with old URLs]
 ///  - `?process`: process the skin (upgrade skin to 1.8 format, strip alpha from the body regions, apply erase regions if Ears feature is enabled)
+///  - `?deadmau5ears`: enable deadmau5 ears
 ///  
 ///  - `?arms=<rotation>` or `arm=<rotation>`: set the rotation of the arms
 ///  - `?dist=<distance>` or `distance=<distance>`: set the distance of the camera
@@ -70,6 +71,9 @@ pub struct RenderRequestQueryParams {
     pub steve: Option<String>,
 
     pub process: Option<String>,
+    
+    #[serde(alias = "deadmau5ears")]
+    pub deadmau5_ears: Option<String>,
 
     #[serde(alias = "arm")]
     pub arms: Option<f32>,
@@ -120,6 +124,10 @@ impl RenderRequestQueryParams {
 
         if self.process.is_some() {
             excluded |= RenderRequestFeatures::UnProcessedSkin;
+        }
+
+        if self.deadmau5_ears.is_none() {
+            excluded |= RenderRequestFeatures::Deadmau5Ears;
         }
 
         excluded

@@ -42,6 +42,7 @@ fn main() {
         has_hat_layer: true,
         has_layers: true,
         has_cape: false,
+        has_deadmau5_ears: false,
         arm_rotation: 10.0,
         shadow_y_pos: None,
         shadow_is_square: false,

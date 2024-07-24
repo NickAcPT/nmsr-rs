@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use glam::Vec3;
+use itertools::Itertools;
 
 use crate::model::{ArmorMaterial, PlayerArmorSlot, PlayerArmorSlots};
 use crate::parts::part::{Part, PartAnchorInfo};
@@ -71,12 +72,18 @@ impl<M: ArmorMaterial> PartsProvider<M> for MinecraftPlayerPartsProvider<M> {
             let expand_offset = get_layer_expand_offset(non_layer_body_part_type);
             let box_uv_offset: (i32, i32) = get_body_part_layer_uv_offset(non_layer_body_part_type);
 
-            return vec![expand_player_body_part(
+            let parts = vec![expand_player_body_part(
                 non_layer_body_part_type,
                 part,
                 expand_offset,
                 box_uv_offset,
             )];
+
+            return if context.has_deadmau5_ears && body_part.is_hat_layer() {
+                parts.into_iter().chain(get_deadmau5_ears()).collect_vec()
+            } else {
+                parts
+            };
         }
 
         let mut result = vec![part];
@@ -153,6 +160,50 @@ pub fn get_part_group_name(non_layer_body_part_type: PlayerBodyPartType) -> &'st
             non_layer_body_part_type
         ),
     }
+}
+
+fn get_deadmau5_ears() -> [Part; 2] {
+    let offset = 0.65f32;
+    let mut left_ear = {
+
+        let mut part = Part::new_cube(
+            crate::types::PlayerPartTextureType::Skin,
+            [-8, 30, -1],
+            [6, 6, 1],
+            crate::parts::uv::box_uv(25, 1, [6, 6, 1]),
+            #[cfg(feature = "part_tracker")]
+            None,
+        );
+
+        part.translate(Vec3::new(-offset, offset, 0.0));
+
+        #[cfg(feature = "part_tracker")]
+        {
+            //part.part_tracking_data_mut().set_last_rotation_origin(Vec3::new(6.0, 0.0, 0.0));
+            part.with_group(get_part_group_name(Head))
+        }
+        #[cfg(not(feature = "part_tracker"))]
+        {
+            part
+        }
+    };
+
+    let mut right_ear = left_ear.clone();
+
+    #[cfg(feature = "part_tracker")]
+    {
+        left_ear
+            .get_name_mut()
+            .replace("Left Deadmau5 Ear".to_string());
+        
+        right_ear
+            .get_name_mut()
+            .replace("Right Deadmau5 Ear".to_string());
+    }
+
+    right_ear.translate(Vec3::new(11.3, 0.0, 0.0));
+
+    [left_ear, right_ear]
 }
 
 pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_arms: bool) -> Part {

@@ -32,7 +32,7 @@ use opentelemetry::StringValue;
 use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::{new_exporter, WithExportConfig};
 use opentelemetry_sdk::{propagation::TraceContextPropagator, trace, Resource};
-use std::{net::SocketAddr, path::PathBuf, time::Duration};
+use std::{net::SocketAddr, path::PathBuf};
 use tokio::{main, signal};
 use tower_http::request_id::MakeRequestUuid;
 use tower_http::{

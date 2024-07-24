@@ -45,6 +45,10 @@ pub(crate) async fn internal_render_model<'a>(
             NMSRState::apply_ears_camera_settings(features, mode, &mut camera);
         }
     }
+    
+    if request.features.contains(RenderRequestFeatures::Deadmau5Ears) {
+        NMSRState::apply_deadmau5ears_camera_settings(mode, &mut camera);
+    }
 
     let mut scene = Scene::new(
         &state.graphics_context,
@@ -140,6 +144,7 @@ pub(crate) fn create_part_context(
 
     let has_layers = request.features.contains(RenderRequestFeatures::BodyLayers);
     let has_hat_layer = request.features.contains(RenderRequestFeatures::HatLayer);
+    let has_deadmau5_ears = request.features.contains(RenderRequestFeatures::Deadmau5Ears);
 
     #[allow(unused_variables)]
     let has_cape = {
@@ -190,6 +195,7 @@ pub(crate) fn create_part_context(
         model: PlayerModel::from(final_model),
         has_layers,
         has_hat_layer,
+        has_deadmau5_ears,
         has_cape,
         arm_rotation,
         shadow_y_pos,

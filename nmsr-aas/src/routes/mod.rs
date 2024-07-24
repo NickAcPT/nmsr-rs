@@ -30,10 +30,9 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::{render, render_get_warning, render_post_warning};
-use std::{borrow::Cow, future::IntoFuture, hint::black_box, sync::Arc, thread, time::Duration};
+use std::{borrow::Cow, sync::Arc, time::Duration};
 use strum::IntoEnumIterator;
-use tokio::{task::JoinSet, time::sleep};
-use tracing::{debug_span, info, info_span, instrument, span, Instrument, Span};
+use tracing::{info, info_span, instrument, Instrument, Span};
 
 pub trait RenderRequestValidator {
     fn validate_mode(&self, mode: &RenderRequestMode) -> bool;
@@ -167,6 +166,29 @@ impl<'a> NMSRState<'a> {
             }
         }
 
+        camera.set_look_at_y(camera.get_look_at_y() + look_at_y_offset);
+
+        camera.set_aspect(camera.get_aspect() + distance_offset);
+        camera.set_distance(camera.get_distance() + distance_offset);
+    }
+
+    pub fn apply_deadmau5ears_camera_settings(
+        mode: RenderRequestMode,
+        camera: &mut Camera,
+    ) {
+        let look_at_y_offset: f32 = 2.5f32;
+        let mut distance_offset: f32 = 3.5f32;
+        
+        distance_offset += match mode {
+            RenderRequestMode::Face => 0.75,
+            RenderRequestMode::FullBodyIso | RenderRequestMode::FrontFull => -1.0,
+            RenderRequestMode::HeadIso => -0.5,
+            RenderRequestMode::FullBody | RenderRequestMode::BodyBust => 2.0,
+            RenderRequestMode::FrontBust => -2.5,
+            RenderRequestMode::Head => 5.0,
+            _ => 0.0
+        };
+        
         camera.set_look_at_y(camera.get_look_at_y() + look_at_y_offset);
 
         camera.set_aspect(camera.get_aspect() + distance_offset);

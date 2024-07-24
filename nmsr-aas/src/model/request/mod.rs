@@ -33,6 +33,8 @@ pub enum RenderRequestFeatures {
     BodyLayers,
     #[strum(serialize = "helmet", serialize = "hat", serialize = "hat_layer")]
     HatLayer,
+    #[strum(serialize = "deadmau5_ears")]
+    Deadmau5Ears,
     Shadow,
     Shading,
     Cape,

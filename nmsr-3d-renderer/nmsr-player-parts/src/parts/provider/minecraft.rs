@@ -281,12 +281,6 @@ pub(crate) fn perform_arm_part_rotation(
 
 #[cfg(feature = "part_tracker")]
 pub(crate) fn misc_part_set_origin(non_layer_part: PlayerBodyPartType, part: &mut Part) {
-    println!(
-        "Setting origin for part: {:?} -> {:?}",
-        part.get_name(),
-        part.part_tracking_data().last_rotation_origin()
-    );
-    
     if let Some(rot) = part.part_tracking_data().last_rotation_origin() {
         if !rot.abs_diff_eq(Vec3::ZERO, f32::EPSILON) {
             return;

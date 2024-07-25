@@ -10,11 +10,11 @@ ears-rs = { workspace = true, optional = true }
 thiserror = { workspace = true }
 glam = { workspace = true }
 strum = { workspace = true }
-itertools = { workspace = true, optional = true }
+itertools = { workspace = true }
 paste = { workspace = true }
 
 [features]
 default = []
 part_tracker = []
 markers = ["part_tracker"]
-ears = ["dep:ears-rs", "dep:itertools"]
+ears = ["dep:ears-rs"]

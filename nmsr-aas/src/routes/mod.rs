@@ -23,7 +23,6 @@ use crate::{
 use deadpool::managed::Object;
 use enumset::EnumSet;
 use image::RgbaImage;
-#[cfg(feature = "ears")]
 use nmsr_rendering::high_level::camera::Camera;
 use nmsr_rendering::high_level::pipeline::{
     pools::SceneContextPoolManager, Backends, Features, GraphicsContext, GraphicsContextDescriptor,

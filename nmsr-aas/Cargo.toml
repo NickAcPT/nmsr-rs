@@ -99,7 +99,6 @@ chrono = "0.4"
 tokio-stream = { version = "0.1", features = ["fs"] }
 sync_wrapper = "1.0"
 
-regex = "1.10"
 indoc = "2"
 
 xxhash-rust = { workspace = true }

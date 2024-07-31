@@ -32,8 +32,6 @@ impl RenderRequestEntry {
     }
 }
 
-static VALID_TEXTURE_HASH_REGEX: OnceLock<regex::Regex> = OnceLock::new();
-
 impl TryFrom<String> for RenderRequestEntry {
     type Error = RenderRequestError;
 

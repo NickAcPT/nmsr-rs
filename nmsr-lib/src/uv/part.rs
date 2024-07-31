@@ -85,9 +85,9 @@ impl UvImagePixel {
 
 #[test]
 fn test_uv_pixel() {
-    let u = 32u32;
-    let v = 23u32;
-    let shading = 255u32;
+    let u = 12u32;
+    let v = 16u32;
+    let shading = 165u32;
 
     let final_depth = 3621u32;
 
@@ -115,8 +115,7 @@ fn test_uv_pixel() {
     }
 
     let pixels = U { rgba: final_number };
-    let mut channels = unsafe { pixels.channels };
-    channels.reverse();
+    let channels = unsafe { pixels.channels };
 
     //println!("{:#10x}", final_number);
 

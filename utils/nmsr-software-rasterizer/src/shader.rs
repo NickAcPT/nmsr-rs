@@ -4,10 +4,7 @@ use glam::{Vec2, Vec3A, Vec4};
 use image::{Rgba, RgbaImage};
 use nmsr_rendering::{
     high_level::{
-        parts::{
-            part::Part,
-            provider::{PartsProvider, PlayerPartProviderContext, PlayerPartsProvider},
-        },
+        parts::provider::{PlayerPartProviderContext, PlayerPartsProvider},
         types::PlayerBodyPartType,
         utils::parts::primitive_convert,
     },
@@ -150,7 +147,7 @@ impl ShaderState {
         ];
 
         let parts = context.get_parts(&providers, &parts);
-        
+
         let parts = parts
             .into_iter()
             .map(|p| primitive_convert(&p))

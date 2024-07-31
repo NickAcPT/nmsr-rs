@@ -108,7 +108,7 @@ fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
                 let group_has_no_rotation = origin.abs_diff_eq(Vec3::ZERO, f32::EPSILON)
                     && rotation.abs_diff_eq(Vec3::ZERO, f32::EPSILON);
 
-                let (part_origin, part_rotation) =
+                let (part_origin, _) =
                     RawProjectElement::get_blockbench_part_origin_and_rotation(&part);
 
                 if group_has_no_rotation {

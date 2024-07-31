@@ -1,3 +1,4 @@
+#![allow(internal_features)] // the internal features used is the `core_intrinsics` feature
 #![feature(core_intrinsics)]
 #![feature(portable_simd)]
 

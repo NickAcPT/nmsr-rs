@@ -303,7 +303,7 @@ impl<'a> NMSRState<'a> {
                             RenderRequestMode::FullBody,
                             entry,
                             None,
-                            EnumSet::EMPTY,
+                            EnumSet::empty(),
                             None,
                         );
 

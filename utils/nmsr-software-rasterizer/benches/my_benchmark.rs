@@ -36,6 +36,8 @@ fn bench(c: &mut Criterion) {
         model: nmsr_rendering::high_level::model::PlayerModel::Alex,
         has_hat_layer: true,
         has_layers: true,
+        is_flipped_upside_down: false,
+        has_deadmau5_ears: false,
         has_cape: false,
         arm_rotation: 10.0,
         shadow_y_pos: None,

@@ -71,7 +71,7 @@ tracing-opentelemetry = "0.23"
 
 # Strum - Enum helper library
 strum = { workspace = true }
-enumset = { version = "1.1", features = ["serde", "alloc", "std"] }
+enumset = { version = "1.1", features = ["serde", "alloc"] }
 
 # Uuid - Uuid library
 uuid = { workspace = true }

@@ -264,7 +264,7 @@ impl<'a> NMSRState<'a> {
                 RenderRequestMode::Skin,
                 entry,
                 None,
-                EnumSet::EMPTY,
+                EnumSet::empty(),
                 None,
             );
 

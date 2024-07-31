@@ -115,7 +115,7 @@ pub struct RenderRequestMultipartParams {
 
 impl RenderRequestQueryParams {
     pub fn get_excluded_features(&self) -> EnumSet<RenderRequestFeatures> {
-        let mut excluded = self.exclude.unwrap_or(EnumSet::EMPTY);
+        let mut excluded = self.exclude.unwrap_or(EnumSet::empty());
 
         if self.nolayers.is_some() {
             excluded |= RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer;

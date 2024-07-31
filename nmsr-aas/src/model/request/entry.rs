@@ -2,7 +2,6 @@ use derive_more::Debug;
 use indoc::formatdoc;
 use nmsr_rendering::high_level::model::PlayerModel;
 use serde::{Deserialize, Serialize};
-use std::sync::OnceLock;
 use strum::{Display, EnumCount, EnumString, FromRepr};
 use uuid::Uuid;
 

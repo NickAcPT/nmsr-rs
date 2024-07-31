@@ -100,9 +100,9 @@ pub fn draw_triangle(
     }
 
     let barycentric_state = barycentric_coordinates_state(
-        Vec3A::from(va.position),
-        Vec3A::from(vb.position),
-        Vec3A::from(vc.position),
+        Vec3A::from_vec4(va.position),
+        Vec3A::from_vec4(vb.position),
+        Vec3A::from_vec4(vc.position),
     );
 
     let depth_buffer = &mut entry.textures.depth_buffer;

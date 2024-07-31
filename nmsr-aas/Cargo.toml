@@ -44,7 +44,7 @@ serde_json = { workspace = true }
 base64 = "0.22"
 
 # Hyper - HTTP client
-hyper = { version = "1.2.0", features = ["client"] }
+hyper = { version = "1.4", features = ["client"] }
 hyper-util = { version = "0.1", features = ["client", "client-legacy", "http1", "http2", "server-auto", "tokio"] }
 hyper-tls = "0.6"
 url = "2.5"
@@ -62,12 +62,12 @@ tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # OpenTelemetry - Tracing framework
-opentelemetry = { version = "0.22", features = [] }
-opentelemetry_sdk = { version = "0.22", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.15", default-features = true }
+opentelemetry = { version = "0.24", features = [] }
+opentelemetry_sdk = { version = "0.24", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.17", default-features = true }
 
 # Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
-tracing-opentelemetry = "0.23"
+tracing-opentelemetry = "0.25"
 
 # Strum - Enum helper library
 strum = { workspace = true }
@@ -83,17 +83,17 @@ thiserror = { workspace = true }
 derive_more = { workspace = true }
 
 # Tower - Service framework
-tower = { version = "0.4", features = ["limit"] }
+tower = { version = "0.4", features = ["limit", "timeout"] }
 tower-http = { version = "0.5", features = ["full"] }
-http = "1.0"
+http = "1.1"
 
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
 symlink = "0.1"
 humantime-serde = "1.1"
-serde_with = "3.3"
+serde_with = "3.9"
 deadpool = { workspace = true }
 image = { workspace = true, default-features = false }
-mtpng = "0.3"
+mtpng = "0.4"
 
 chrono = "0.4"
 tokio-stream = { version = "0.1", features = ["fs"] }

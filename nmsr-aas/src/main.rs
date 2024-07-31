@@ -28,10 +28,13 @@ use anyhow::Context;
 use axum::routing::post;
 use axum::{routing::get, Router};
 use http::HeaderName;
+use opentelemetry::trace::TracerProvider;
 use opentelemetry::StringValue;
 use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::{new_exporter, WithExportConfig};
-use opentelemetry_sdk::{propagation::TraceContextPropagator, trace, Resource};
+use opentelemetry_sdk::{
+    propagation::TraceContextPropagator, trace::Config as TracingConfig, Resource,
+};
 use std::{net::SocketAddr, path::PathBuf};
 use tokio::{main, signal};
 use tower_http::request_id::MakeRequestUuid;
@@ -169,13 +172,14 @@ fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
         let tracer = opentelemetry_otlp::new_pipeline()
             .tracing()
             .with_exporter(new_exporter().tonic().with_endpoint(&tracing.endpoint))
-            .with_trace_config(
-                trace::config().with_resource(Resource::new(vec![KeyValue::new(
+            .with_trace_config(TracingConfig::default().with_resource(Resource::new(vec![
+                KeyValue::new(
                     "service.name",
                     Into::<StringValue>::into(tracing.service_name.clone()),
-                )])),
-            )
-            .install_batch(opentelemetry_sdk::runtime::Tokio)?;
+                ),
+            ])))
+            .install_batch(opentelemetry_sdk::runtime::Tokio)?
+            .tracer("nmsr-aas");
 
         let otel_layer = tracing_subscriber::Layer::with_filter(
             tracing_opentelemetry::layer().with_tracer(tracer),

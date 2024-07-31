@@ -187,6 +187,7 @@ impl<'a> GraphicsContext<'a> {
                     label: None,
                     required_features: descriptor.features,
                     required_limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default()),
+                    memory_hints: Default::default(),
                 },
                 None,
             )
@@ -351,6 +352,7 @@ impl<'a> GraphicsContext<'a> {
                 })],
             }),
             multiview: None,
+            cache: None,
         });
 
         Ok(GraphicsContext {

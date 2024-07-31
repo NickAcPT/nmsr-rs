@@ -6,7 +6,7 @@ use crate::{
     utils::http_client::NmsrHttpClient,
 };
 use hyper::{body::Bytes, Method};
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 use tracing::Span;
 use uuid::Uuid;
 
@@ -89,9 +89,12 @@ impl MojangClient {
     pub async fn fetch_texture_from_mojang(
         &self,
         texture_id: &str,
+        texture_url: Option<&str>,
         req_type: MojangTextureRequestType,
     ) -> MojangRequestResult<Vec<u8>> {
-        let url = self.build_request_url(req_type, texture_id);
+        let url: Cow<str> = texture_url
+            .map(|u| u.into())
+            .unwrap_or_else(|| self.build_request_url(req_type, texture_id).into());
 
         let bytes = self
             .do_request(&url, Method::GET, &Span::current(), || {

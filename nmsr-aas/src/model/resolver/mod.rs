@@ -192,8 +192,9 @@ impl RenderRequestResolver {
     ) -> Result<Option<MojangTexture>> {
         if let Some(texture) = texture {
             let texture_id = texture.hash()?;
+            let texture_url = texture.url();
 
-            let texture = self.fetch_texture_from_mojang(texture_id, req_type).await?;
+            let texture = self.fetch_texture_from_mojang(texture_id, Some(texture_url), req_type).await?;
 
             Ok(Some(texture))
         } else {
@@ -205,6 +206,7 @@ impl RenderRequestResolver {
     async fn fetch_texture_from_mojang(
         &self,
         texture_id: &str,
+        texture_url: Option<&str>,
         req_type: MojangTextureRequestType,
     ) -> Result<MojangTexture> {
         if let Some(result) = self.model_cache.get_cached_texture(texture_id).await? {
@@ -213,7 +215,7 @@ impl RenderRequestResolver {
 
         let bytes = self
             .mojang_requests_client
-            .fetch_texture_from_mojang(texture_id, req_type)
+            .fetch_texture_from_mojang(texture_id, texture_url, req_type)
             .await?;
 
         let texture = MojangTexture::new_named(texture_id.to_owned(), bytes);
@@ -294,7 +296,7 @@ impl RenderRequestResolver {
                         .await?;
 
                 skin_texture = Some(
-                    self.fetch_texture_from_mojang(&texture_id, MojangTextureRequestType::Skin)
+                    self.fetch_texture_from_mojang(&texture_id, None, MojangTextureRequestType::Skin)
                         .await?,
                 );
                 cape_texture = None;
@@ -304,7 +306,7 @@ impl RenderRequestResolver {
             RenderRequestEntry::TextureHash(skin_hash) => {
                 // If the skin is not cached, we'll have to fetch it from Mojang.
                 skin_texture = Some(
-                    self.fetch_texture_from_mojang(skin_hash, MojangTextureRequestType::Skin)
+                    self.fetch_texture_from_mojang(skin_hash, None, MojangTextureRequestType::Skin)
                         .await?,
                 );
                 cape_texture = None;

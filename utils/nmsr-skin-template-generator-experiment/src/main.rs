@@ -153,7 +153,7 @@ fn main() -> anyhow::Result<()> {
     let grouped_parts = parts
         .into_iter()
         .sorted_by_key(|(p, _)| p.get_texture())
-        .group_by(|(p, _)| p.get_texture());
+        .chunk_by(|(p, _)| p.get_texture());
 
     for (texture, parts) in grouped_parts.into_iter() {
         let part_texture = out_textures.entry(texture).or_insert_with(|| {

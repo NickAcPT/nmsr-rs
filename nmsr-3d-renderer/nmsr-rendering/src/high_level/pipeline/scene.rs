@@ -266,7 +266,7 @@ where
         for (texture, parts) in &self
             .computed_body_parts
             .iter()
-            .group_by(|p| p.get_texture())
+            .chunk_by(|p| p.get_texture())
         {
             let _pass_span =
                 trace_span!("render_pass", texture = Into::<&str>::into(texture)).entered();

@@ -199,7 +199,7 @@ fn group_by_texture(parts: Vec<Part>) -> HashMap<PlayerPartTextureType, Vec<Part
     for (texture, parts) in &parts
         .into_iter()
         .sorted_by_key(|p| p.get_texture())
-        .group_by(|p| p.get_texture())
+        .chunk_by(|p| p.get_texture())
     {
         result.insert(texture, parts.collect());
     }

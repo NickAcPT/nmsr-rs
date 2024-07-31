@@ -29,7 +29,12 @@ impl BlockbenchGroupEntry {
                     .map(|(_, e)| e.to_value())
                     .collect::<Vec<_>>())
             }
-            BlockbenchGroupEntry::Group { name, elements, origin, rotation } => json!({
+            BlockbenchGroupEntry::Group {
+                name,
+                elements,
+                origin,
+                rotation,
+            } => json!({
                 "name": name,
                 "origin": origin,
                 "rotation": rotation,

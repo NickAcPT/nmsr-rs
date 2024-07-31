@@ -291,11 +291,8 @@ pub(crate) fn misc_part_set_origin(non_layer_part: PlayerBodyPartType, part: &mu
     let normal_part_size = normal_part.get_size();
 
     let is_group_part = matches!(part, Part::Group { .. });
-    
-    let anchor = if matches!(
-        non_layer_part,
-        PlayerBodyPartType::Head
-    ) {
+
+    let anchor = if matches!(non_layer_part, PlayerBodyPartType::Head) {
         if is_group_part {
             Some(normal_part.get_position() + normal_part_size * Vec3::new(0.5, 0.0, 0.5))
         } else {
@@ -306,8 +303,6 @@ pub(crate) fn misc_part_set_origin(non_layer_part: PlayerBodyPartType, part: &mu
     } else {
         None
     };
-    
-    
 
     let Some(anchor) = anchor else {
         return;

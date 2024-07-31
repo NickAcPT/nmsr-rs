@@ -178,8 +178,8 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
         let body_parts = PlayerBodyPartType::iter()
             .filter(|p| !(p.is_layer() || p.is_hat_layer()) || self.part_context.has_layers)
             .collect_vec();
-    
-        self.part_context.get_parts(&self.providers, &body_parts)    
+
+        self.part_context.get_parts(&self.providers, &body_parts)
     }
 
     pub(crate) fn get_texture(&self, texture_type: PlayerPartTextureType) -> Option<&RgbaImage> {

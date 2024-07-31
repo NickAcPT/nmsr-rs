@@ -62,7 +62,7 @@ impl PartTrackingData {
     pub fn last_rotation_origin(&self) -> Option<Vec3> {
         self.last_rotation_origin
     }
-    
+
     pub fn set_last_rotation_origin(&mut self, origin: Vec3) {
         self.last_rotation_origin = Some(origin);
     }

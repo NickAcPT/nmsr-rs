@@ -38,7 +38,7 @@ pub(crate) async fn internal_render_model<'a>(
     let parts = mode.get_body_parts();
 
     let mut part_context = create_part_context(request, resolved);
-    
+
     if request
         .features
         .contains(RenderRequestFeatures::FlipUpsideDown)
@@ -46,7 +46,6 @@ pub(crate) async fn internal_render_model<'a>(
         NMSRState::apply_upside_down_camera_settings(mode, &mut camera);
     }
 
-    
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
         if let Some(features) = part_context.ears_features.as_ref() {
@@ -60,7 +59,7 @@ pub(crate) async fn internal_render_model<'a>(
     {
         NMSRState::apply_deadmau5ears_camera_settings(mode, &request.features, &mut camera);
     }
-    
+
     let mut scene = Scene::new(
         &state.graphics_context,
         scene_context,
@@ -159,7 +158,7 @@ pub(crate) fn create_part_context(
     let has_deadmau5_ears = request
         .features
         .contains(RenderRequestFeatures::Deadmau5Ears);
-    
+
     let is_flipped_upside_down = request
         .features
         .contains(RenderRequestFeatures::FlipUpsideDown);
@@ -227,7 +226,7 @@ pub(crate) fn create_part_context(
     #[cfg(feature = "ears")]
     if request.features.contains(RenderRequestFeatures::Ears) {
         load_ears_features(&mut context, resolved);
-        
+
         // Make sure that we don't mix Ears and Deadmau5Ears features
         if context.ears_features.is_some() {
             context.has_deadmau5_ears = false;

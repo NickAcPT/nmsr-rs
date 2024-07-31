@@ -81,7 +81,7 @@ impl RawProjectElement {
             .into(),
         )
     }
-    
+
     pub fn get_blockbench_part_origin_and_rotation(part: &Part) -> (Vec3, Vec3) {
         let affine = part.get_transformation();
         let (_, rotation, translation) = affine.to_scale_rotation_translation();
@@ -93,8 +93,8 @@ impl RawProjectElement {
 
         let (r_x, r_y, r_z) = rotation.to_euler(glam::EulerRot::XYZ);
 
-        let rotation = Vec3::from_array([r_x.to_degrees(), r_y.to_degrees(), r_z.to_degrees(),]);
-        
+        let rotation = Vec3::from_array([r_x.to_degrees(), r_y.to_degrees(), r_z.to_degrees()]);
+
         return (origin, rotation);
     }
 
@@ -117,7 +117,7 @@ impl RawProjectElement {
         let (origin, rotation_vec3) = Self::get_blockbench_part_origin_and_rotation(&part);
 
         let affine_inv = Affine3A::from_rotation_translation(rotation, origin).inverse();
-        
+
         let origin = json!([origin.x, origin.y, origin.z,]);
 
         let rotation = json!([rotation_vec3.x, rotation_vec3.y, rotation_vec3.z,]);

@@ -164,7 +164,7 @@ impl<'a> NMSRState<'a> {
             if mode.is_isometric() && mode.is_full_body() {
                 distance_offset -= 1.0;
             }
-            
+
             if mode.is_face() {
                 look_at_y_offset += 1.5;
                 distance_offset += 0.25;
@@ -209,7 +209,7 @@ impl<'a> NMSRState<'a> {
         camera.set_aspect(camera.get_aspect() + distance_offset);
         camera.set_distance(camera.get_distance() + distance_offset);
     }
-    
+
     fn apply_upside_down_camera_settings(mode: RenderRequestMode, camera: &mut Camera) {
         if mode.is_bust() {
             camera.set_look_at_y(camera.get_look_at_y() - 16.0);

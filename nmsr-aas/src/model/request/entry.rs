@@ -52,9 +52,9 @@ impl TryFrom<String> for RenderRequestEntry {
                 ))
             }
         } else if value.len() > 36 {
-            let valid = value.len() >= 36 && value.len() <= 64 && value.chars().all(|c| {
-                c.is_ascii_hexdigit()
-            });
+            let valid = value.len() >= 36
+                && value.len() <= 64
+                && value.chars().all(|c| c.is_ascii_hexdigit());
 
             if !valid {
                 return Err(RenderRequestError::InvalidPlayerRequest(formatdoc! {"

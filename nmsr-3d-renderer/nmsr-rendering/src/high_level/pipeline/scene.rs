@@ -194,9 +194,8 @@ where
             PlayerPartsProvider::Ears,
         ];
 
-        
         let mut parts = part_provider_context.get_parts(&providers, body_parts);
-        
+
         // Sort the parts by texture. This allows us to render all parts with the same texture in one go.
         parts.sort_by_key(|p| p.get_texture());
 

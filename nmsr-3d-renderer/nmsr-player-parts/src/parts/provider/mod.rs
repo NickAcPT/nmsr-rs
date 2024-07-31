@@ -1,5 +1,5 @@
 use self::minecraft::{perform_arm_part_rotation, MinecraftPlayerPartsProvider};
-use crate::{model::{ArmorMaterial, PlayerArmorSlots, PlayerModel}};
+use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
 
 #[cfg(feature = "part_tracker")]
 use crate::parts::provider::minecraft::misc_part_set_origin;
@@ -144,7 +144,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
                     context.arm_rotation,
                 );
             }
-            
+
             #[cfg(feature = "part_tracker")]
             {
                 misc_part_set_origin(body_part.get_non_layer_part(), part);

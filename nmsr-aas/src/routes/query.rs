@@ -71,10 +71,10 @@ pub struct RenderRequestQueryParams {
     pub steve: Option<String>,
 
     pub process: Option<String>,
-    
+
     #[serde(alias = "deadmau5ears")]
     pub deadmau5_ears: Option<String>,
-    
+
     #[serde(alias = "upsidedown")]
     pub upside_down: Option<String>,
 

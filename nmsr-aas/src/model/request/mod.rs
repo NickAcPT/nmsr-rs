@@ -272,7 +272,11 @@ impl RenderRequest {
 
     pub(crate) fn get_shadow_y_pos(&self) -> Option<f32> {
         if self.features.contains(RenderRequestFeatures::Shadow) {
-            if (self.mode.is_head() || self.mode.is_head_iso()) && !self.features.contains(RenderRequestFeatures::FlipUpsideDown) {
+            if (self.mode.is_head() || self.mode.is_head_iso())
+                && !self
+                    .features
+                    .contains(RenderRequestFeatures::FlipUpsideDown)
+            {
                 Some(24.0)
             } else {
                 Some(0.0)
@@ -293,7 +297,9 @@ impl RenderRequest {
 
         fn check_id(entry: &RenderRequestEntry, (name, uuid): (&'static str, Uuid)) -> bool {
             let is_name_match = match entry {
-                RenderRequestEntry::MojangPlayerName(entry_name) => entry_name.eq_ignore_ascii_case(name),
+                RenderRequestEntry::MojangPlayerName(entry_name) => {
+                    entry_name.eq_ignore_ascii_case(name)
+                }
                 _ => false,
             };
 
@@ -304,11 +310,11 @@ impl RenderRequest {
         let is_deadmau5 = check_id(&request.entry, Self::DEADMAU5_ID);
         let is_grumm = check_id(&request.entry, Self::GRUMM_ID);
         let is_dinnerbone = check_id(&request.entry, Self::DINNERBONE_ID);
-        
+
         if is_deadmau5 {
             request.features |= enum_set!(RenderRequestFeatures::Deadmau5Ears);
-        } 
-        
+        }
+
         if is_grumm || is_dinnerbone {
             request.features |= enum_set!(RenderRequestFeatures::FlipUpsideDown);
         }

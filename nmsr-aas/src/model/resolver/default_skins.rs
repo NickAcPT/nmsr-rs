@@ -43,7 +43,7 @@ impl DefaultSkinResolver {
     }
     pub fn resolve_default_skin_for_uuid(uuid: Uuid, slim: Option<bool>) -> &'static str {
         let (default_skin, is_slim) = Self::resolve_default_skin_for_uuid_parts(uuid, slim);
-        
+
         Self::resolve_default_skin(default_skin, is_slim)
     }
 

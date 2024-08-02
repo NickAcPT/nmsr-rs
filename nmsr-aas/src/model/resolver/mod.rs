@@ -22,6 +22,7 @@ use nmsr_rendering::high_level::types::PlayerPartTextureType;
 use std::{collections::HashMap, sync::Arc};
 use strum::EnumCount;
 use tracing::{instrument, trace_span, Instrument, Span};
+use uuid::Uuid;
 
 pub mod default_skins;
 pub mod geyser;
@@ -403,36 +404,49 @@ impl RenderRequestResolver {
         let resolved = self.resolve_raw(request).await;
 
         // TODO: Clean-up this code.
-        if let (Err(_), RenderRequestEntry::MojangPlayerUuid(uuid)) = (&resolved, &request.entry) {
+        if let Err(_) = &resolved {
             if self
                 .mojang_requests_client
                 .mojank_config()
                 .use_default_skins_when_missing
             {
-                let optional_slim_model = request.model.map(|m| m == RenderRequestEntryModel::Alex);
-
-                let (default_skin, is_default_slim) =
-                    DefaultSkinResolver::resolve_default_skin_for_uuid_parts(
-                        *uuid,
-                        optional_slim_model,
-                    );
-
-                let new_entry =
-                    RenderRequestEntry::default_skin_hash(default_skin, is_default_slim);
-
-                // I didn't really want to clone the entire request, but I don't see a way around it.
-                let mut new_request = request.clone();
-                new_request.entry = new_entry;
-
-                let mut result = self.resolve_raw(&new_request).await?;
-                // Hijhack the model to be the same as the original request.
-                result.model = if is_default_slim {
-                    RenderRequestEntryModel::Alex
-                } else {
-                    RenderRequestEntryModel::Steve
+                let uuid = match &request.entry {
+                    RenderRequestEntry::GeyserPlayerUuid(u)
+                    | RenderRequestEntry::MojangOfflinePlayerUuid(u)
+                    | RenderRequestEntry::MojangPlayerUuid(u) => Some(*u),
+                    RenderRequestEntry::TextureHash(_) | RenderRequestEntry::PlayerSkin(_, _) => {
+                        None
+                    }
+                    RenderRequestEntry::MojangPlayerName(_) => Some(Uuid::new_v4()),
                 };
 
-                return Ok(result);
+                if let Some(uuid) = uuid {
+                    let optional_slim_model =
+                        request.model.map(|m| m == RenderRequestEntryModel::Alex);
+
+                    let (default_skin, is_default_slim) =
+                        DefaultSkinResolver::resolve_default_skin_for_uuid_parts(
+                            uuid,
+                            optional_slim_model,
+                        );
+
+                    let new_entry =
+                        RenderRequestEntry::default_skin_hash(default_skin, is_default_slim);
+
+                    // I didn't really want to clone the entire request, but I don't see a way around it.
+                    let mut new_request = request.clone();
+                    new_request.entry = new_entry;
+
+                    let mut result = self.resolve_raw(&new_request).await?;
+                    // Hijhack the model to be the same as the original request.
+                    result.model = if is_default_slim {
+                        RenderRequestEntryModel::Alex
+                    } else {
+                        RenderRequestEntryModel::Steve
+                    };
+
+                    return Ok(result);
+                }
             }
         }
 

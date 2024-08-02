@@ -7,10 +7,14 @@ use hyper_util::{
     client::legacy::{connect::HttpConnector, Client},
     rt::TokioExecutor,
 };
-use std::time::Duration;
+use std::{
+    future::{ready, Ready},
+    time::Duration,
+};
 use tower::{
     buffer::Buffer,
     limit::RateLimit,
+    retry::{Policy, Retry},
     timeout::{Timeout, TimeoutLayer},
     Service, ServiceBuilder, ServiceExt,
 };
@@ -48,12 +52,12 @@ pub(crate) type NmsrTraceLayer = Trace<
 >;
 
 pub struct NmsrHttpClient {
-    inner: Buffer<RateLimit<Timeout<NmsrTraceLayer>>, Request<SyncBody>>,
+    inner: Buffer<RateLimit<Retry<MojankRetryPolicy, Timeout<NmsrTraceLayer>>>, Request<SyncBody>>,
 }
 
 impl NmsrHttpClient {
-    pub fn new(rate_limit_per_second: u64) -> Self {
-        create_http_client(rate_limit_per_second)
+    pub fn new(rate_limit_per_second: u64, request_timeout_seconds: u64) -> Self {
+        create_http_client(rate_limit_per_second, request_timeout_seconds)
     }
 
     #[instrument(skip(self, parent_span, on_error), parent = parent_span, err)]
@@ -100,7 +104,7 @@ impl NmsrHttpClient {
     }
 }
 
-fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
+fn create_http_client(rate_limit_per_second: u64, request_timeout_seconds: u64) -> NmsrHttpClient {
     let https = HttpsConnector::new();
 
     // A new higher level client from hyper is in the works, so we gotta use the legacy one
@@ -111,8 +115,11 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
     let service = ServiceBuilder::new()
         .buffer(rate_limit_per_second.saturating_mul(2) as usize)
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))
+        .layer(CloneRetryLayer::new(MojankRetryPolicy::new(
+            5, /* Retry attempts */
+        )))
         .layer(TimeoutLayer::new(Duration::from_secs(
-            5 * 60, /* 5 minutes */
+            request_timeout_seconds,
         )))
         .layer(tracing)
         .layer(SetRequestHeaderLayer::overriding(
@@ -123,4 +130,76 @@ fn create_http_client(rate_limit_per_second: u64) -> NmsrHttpClient {
         .service(client);
 
     NmsrHttpClient { inner: service }
+}
+
+#[derive(Copy, Clone, Debug)]
+struct MojankRetryPolicy {
+    attempts: usize,
+}
+
+impl MojankRetryPolicy {
+    pub fn new(attempts: usize) -> Self {
+        Self { attempts }
+    }
+}
+
+impl<P, Res> Policy<Request<SyncBody>, Res, P> for MojankRetryPolicy {
+    type Future = Ready<MojankRetryPolicy>;
+
+    fn retry(&self, _req: &Request<SyncBody>, result: Result<&Res, &P>) -> Option<Self::Future> {
+        match result {
+            Ok(_) => None,
+            Err(_) => {
+                if self.attempts > 0 {
+                    Some(ready(Self {
+                        attempts: self.attempts - 1,
+                    }))
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    fn clone_request(&self, req: &Request<SyncBody>) -> Option<Request<SyncBody>> {
+        let method = req.method().clone();
+        let uri = req.uri().clone();
+
+        let mut builder = Request::builder().method(method).uri(uri);
+
+        for (key, value) in req.headers() {
+            builder = builder.header(key, value);
+        }
+
+        builder
+            .body(SyncBody::new(Empty::new().map_err(|e| {
+                unreachable!("Empty body should not error: {}", e)
+            })))
+            .ok()
+    }
+}
+
+/// Clone retry layer
+#[derive(Clone, Debug)]
+pub struct CloneRetryLayer<P> {
+    policy: P,
+}
+
+impl<P> CloneRetryLayer<P> {
+    /// Create a new [`CloneRetryLayer`] from a retry policy
+    pub fn new(policy: P) -> Self {
+        CloneRetryLayer { policy }
+    }
+}
+
+impl<P, S> tower::Layer<S> for CloneRetryLayer<P>
+where
+    P: Clone,
+{
+    type Service = Retry<P, S>;
+
+    fn layer(&self, service: S) -> Self::Service {
+        let policy = self.policy.clone();
+        Retry::new(policy, service)
+    }
 }

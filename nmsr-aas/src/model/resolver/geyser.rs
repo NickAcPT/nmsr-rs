@@ -1,4 +1,4 @@
-use super::mojang::client::MojangClient;
+use super::mojang::client::{MojangClient, MojangClientKind};
 use crate::{
     error::{MojangRequestError, MojangRequestResult},
     model::request::entry::RenderRequestEntryModel,
@@ -28,7 +28,7 @@ pub async fn resolve_geyser_uuid_to_texture_and_model(
     );
 
     let bytes = client
-        .do_request(&url, Method::GET, &Span::current(), || None)
+        .do_request(MojangClientKind::SessionServer, &url, Method::GET, &Span::current(), || None)
         .await?;
 
     let response: GeyserSkinResponse = serde_json::from_slice(&bytes)?;

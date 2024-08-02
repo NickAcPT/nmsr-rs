@@ -83,7 +83,7 @@ thiserror = { workspace = true }
 derive_more = { workspace = true }
 
 # Tower - Service framework
-tower = { version = "0.4", features = ["limit", "timeout"] }
+tower = { version = "0.4", features = ["limit", "timeout", "retry"] }
 tower-http = { version = "0.5", features = ["full"] }
 http = "1.1"
 

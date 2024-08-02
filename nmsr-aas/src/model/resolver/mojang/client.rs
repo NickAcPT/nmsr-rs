@@ -11,8 +11,15 @@ use tracing::Span;
 use uuid::Uuid;
 
 pub struct MojangClient {
-    client: NmsrHttpClient,
+    name_lookup_client: NmsrHttpClient,
+    session_server_client: NmsrHttpClient,
     mojank_config: Arc<MojankConfiguration>,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum MojangClientKind {
+    SessionServer,
+    NameLookup,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -24,21 +31,34 @@ pub enum MojangTextureRequestType {
 impl MojangClient {
     pub fn new(mojank: Arc<MojankConfiguration>) -> MojangRequestResult<Self> {
         Ok(Self {
-            client: NmsrHttpClient::new(mojank.session_server_rate_limit),
+            session_server_client: NmsrHttpClient::new(
+                mojank.session_server_rate_limit,
+                mojank.session_server_timeout,
+            ),
+            name_lookup_client: NmsrHttpClient::new(
+                mojank
+                    .username_resolve_rate_limit
+                    .unwrap_or(mojank.session_server_rate_limit),
+                mojank.session_server_timeout,
+            ),
             mojank_config: mojank,
         })
     }
 
     pub(crate) async fn do_request(
         &self,
+        kind: MojangClientKind,
         url: &str,
         method: Method,
         parent_span: &Span,
         on_error: impl FnOnce() -> Option<MojangRequestError>,
     ) -> MojangRequestResult<Bytes> {
-        self.client
-            .do_request(url, method, parent_span, on_error)
-            .await
+        let client = match kind {
+            MojangClientKind::SessionServer => &self.session_server_client,
+            MojangClientKind::NameLookup => &self.name_lookup_client,
+        };
+
+        client.do_request(url, method, parent_span, on_error).await
     }
 
     pub async fn resolve_name_to_uuid<'a>(&self, name: &'a str) -> MojangRequestResult<Uuid> {
@@ -49,11 +69,17 @@ impl MojangClient {
         );
 
         let bytes = self
-            .do_request(&url, Method::GET, &Span::current(), || {
-                Some(MojangRequestError::NamedGameProfileNotFound(
-                    name.to_owned(),
-                ))
-            })
+            .do_request(
+                MojangClientKind::NameLookup,
+                &url,
+                Method::GET,
+                &Span::current(),
+                || {
+                    Some(MojangRequestError::NamedGameProfileNotFound(
+                        name.to_owned(),
+                    ))
+                },
+            )
             .await?;
 
         let result: UsernameToUuidResponse = serde_json::from_slice(&bytes)
@@ -78,9 +104,13 @@ impl MojangClient {
         );
 
         let bytes = self
-            .do_request(&url, Method::GET, &Span::current(), || {
-                Some(MojangRequestError::GameProfileNotFound(id.to_owned()))
-            })
+            .do_request(
+                MojangClientKind::SessionServer,
+                &url,
+                Method::GET,
+                &Span::current(),
+                || Some(MojangRequestError::GameProfileNotFound(id.to_owned())),
+            )
             .await?;
 
         Ok(serde_json::from_slice(&bytes)?)
@@ -97,11 +127,17 @@ impl MojangClient {
             .unwrap_or_else(|| self.build_request_url(req_type, texture_id).into());
 
         let bytes = self
-            .do_request(&url, Method::GET, &Span::current(), || {
-                Some(MojangRequestError::InvalidTextureHashError(
-                    texture_id.to_string(),
-                ))
-            })
+            .do_request(
+                MojangClientKind::SessionServer,
+                &url,
+                Method::GET,
+                &Span::current(),
+                || {
+                    Some(MojangRequestError::InvalidTextureHashError(
+                        texture_id.to_string(),
+                    ))
+                },
+            )
             .await?;
 
         Ok(bytes.to_vec())
@@ -114,15 +150,12 @@ impl MojangClient {
     fn build_request_url(&self, req_type: MojangTextureRequestType, texture_id: &str) -> String {
         let mojank = self.mojank_config();
 
-        match req_type {
-            MojangTextureRequestType::Skin => mojank
-                .textures_server_skin_url_template
-                .replace("{textures_server}", &mojank.textures_server)
-                .replace("{texture_id}", texture_id),
-            MojangTextureRequestType::Cape => mojank
-                .textures_server_cape_url_template
-                .replace("{textures_server}", &mojank.textures_server)
-                .replace("{texture_id}", texture_id),
-        }
+        let url = match req_type {
+            MojangTextureRequestType::Skin => &mojank.textures_server_skin_url_template,
+            MojangTextureRequestType::Cape => &mojank.textures_server_cape_url_template,
+        };
+
+        url.replace("{textures_server}", &mojank.textures_server)
+            .replace("{texture_id}", texture_id)
     }
 }

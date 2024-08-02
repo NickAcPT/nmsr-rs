@@ -88,6 +88,13 @@ pub struct MojankConfiguration {
     /// The rate limit to use for requests to the session server in a 1 second window.
     pub session_server_rate_limit: u64,
 
+    /// The rate limit to use for requests to resolve usernames to UUIDs in a 1 second window.
+    /// Will default to the session server rate limit if not set.
+    pub username_resolve_rate_limit: Option<u64>,
+    
+    /// The timeout to use for requests to the session server in seconds.
+    pub session_server_timeout: u64,    
+
     /// Whether to output default skin when the player's skin is not found, or an error occurs.
     pub use_default_skins_when_missing: bool,
 
@@ -113,7 +120,10 @@ impl Default for MojankConfiguration {
             textures_server: "https://textures.minecraft.net".to_string(),
             mojang_api_server: "https://api.mojang.com/".to_string(),
             geysermc_api_server: "https://api.geysermc.org/".to_string(),
+            
             session_server_rate_limit: 10,
+            username_resolve_rate_limit: None,
+            session_server_timeout: 5 * 60 /* 5 minutes */,
 
             use_default_skins_when_missing: true,
 

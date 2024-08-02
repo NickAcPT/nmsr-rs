@@ -2,7 +2,7 @@ use axum::http::{HeaderName, HeaderValue};
 use http::StatusCode;
 use http_body_util::{BodyExt, Empty};
 use hyper::{body::Bytes, Method, Request};
-use hyper_tls::HttpsConnector;
+use hyper_tls::{native_tls::TlsConnector, HttpsConnector};
 use hyper_util::{
     client::legacy::{connect::HttpConnector, Client},
     rt::TokioExecutor,
@@ -105,7 +105,13 @@ impl NmsrHttpClient {
 }
 
 fn create_http_client(rate_limit_per_second: u64, request_timeout_seconds: u64) -> NmsrHttpClient {
-    let https = HttpsConnector::new();
+    let mut http = HttpConnector::new();
+    http.set_nodelay(true);
+    http.enforce_http(false);
+    
+    let tls = TlsConnector::new().expect("Expected TLS connector to be valid");
+    
+    let https = HttpsConnector::from((http, tls.into()));
 
     // A new higher level client from hyper is in the works, so we gotta use the legacy one
     let client = Client::builder(TokioExecutor::new()).build(https);

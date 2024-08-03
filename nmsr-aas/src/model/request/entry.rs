@@ -17,6 +17,7 @@ pub enum RenderRequestEntry {
     MojangOfflinePlayerUuid(Uuid),
     GeyserPlayerUuid(Uuid),
     TextureHash(String),
+    DefaultSkinTextureHash(String),
     PlayerSkin(#[debug(skip)] Vec<u8>, #[debug(skip)] Option<Vec<u8>>),
 }
 
@@ -27,7 +28,9 @@ impl RenderRequestEntry {
 
     pub(crate) fn default_skin_hash(skin: DefaultSkin, is_slim: bool) -> RenderRequestEntry {
         // TODO: Move to CoW
-        Self::TextureHash(DefaultSkinResolver::resolve_default_skin(skin, is_slim).to_string())
+        Self::DefaultSkinTextureHash(
+            DefaultSkinResolver::resolve_default_skin(skin, is_slim).to_string(),
+        )
     }
 }
 
@@ -98,7 +101,8 @@ impl TryFrom<RenderRequestEntry> for String {
             RenderRequestEntry::MojangPlayerUuid(uuid)
             | RenderRequestEntry::MojangOfflinePlayerUuid(uuid)
             | RenderRequestEntry::GeyserPlayerUuid(uuid) => Ok(uuid.to_string()),
-            RenderRequestEntry::TextureHash(hash) => Ok(hash),
+            RenderRequestEntry::TextureHash(hash)
+            | RenderRequestEntry::DefaultSkinTextureHash(hash) => Ok(hash),
             RenderRequestEntry::PlayerSkin(_, _) => Err(RenderRequestError::InvalidPlayerRequest(
                 "Unable to convert PlayerSkin to String".to_string(),
             )),

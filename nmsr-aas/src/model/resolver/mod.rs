@@ -319,6 +319,15 @@ impl RenderRequestResolver {
                 cape_texture = None;
                 model = None;
             }
+            RenderRequestEntry::DefaultSkinTextureHash(skin_hash) => {
+                // Handle default skin textures. These have to go straight to Mojang, whether or not the user changed the config.
+                skin_texture = Some(
+                    self.fetch_texture_from_mojang(skin_hash, None, MojangTextureRequestType::DefaultSkin)
+                        .await?,
+                );
+                cape_texture = None;
+                model = None;
+            }
             RenderRequestEntry::PlayerSkin(skin_bytes, cape_bytes) => {
                 skin_texture = Some(MojangTexture::new_unnamed(skin_bytes.clone()));
                 cape_texture = cape_bytes.to_owned().map(|b| MojangTexture::new_unnamed(b));
@@ -414,9 +423,9 @@ impl RenderRequestResolver {
                     RenderRequestEntry::GeyserPlayerUuid(u)
                     | RenderRequestEntry::MojangOfflinePlayerUuid(u)
                     | RenderRequestEntry::MojangPlayerUuid(u) => Some(*u),
-                    RenderRequestEntry::TextureHash(_) | RenderRequestEntry::PlayerSkin(_, _) => {
-                        None
-                    }
+                    RenderRequestEntry::TextureHash(_)
+                    | RenderRequestEntry::DefaultSkinTextureHash(_)
+                    | RenderRequestEntry::PlayerSkin(_, _) => None,
                     RenderRequestEntry::MojangPlayerName(_) => Some(Uuid::new_v4()),
                 };
 
@@ -453,7 +462,7 @@ impl RenderRequestResolver {
         resolved
     }
 
-    pub async fn resolve_raw(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {
+    async fn resolve_raw(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {
         // First, we need to resolve the skin and cape textures.
         let resolved_textures = self
             .resolve_entry_textures(&request.entry)

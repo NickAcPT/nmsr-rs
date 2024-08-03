@@ -1,6 +1,8 @@
 use super::model::GameProfile;
 use crate::{
-    config::MojankConfiguration,
+    config::{
+        MojankConfiguration, DEFAULT_TEXTURES_SERVER, DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE,
+    },
     error::{MojangRequestError, MojangRequestResult},
     model::resolver::mojang::model::UsernameToUuidResponse,
     utils::http_client::NmsrHttpClient,
@@ -24,6 +26,7 @@ pub enum MojangClientKind {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MojangTextureRequestType {
+    DefaultSkin,
     Skin,
     Cape,
 }
@@ -150,12 +153,24 @@ impl MojangClient {
     fn build_request_url(&self, req_type: MojangTextureRequestType, texture_id: &str) -> String {
         let mojank = self.mojank_config();
 
-        let url = match req_type {
-            MojangTextureRequestType::Skin => &mojank.textures_server_skin_url_template,
-            MojangTextureRequestType::Cape => &mojank.textures_server_cape_url_template,
+        let req_type_default_skin = (req_type, mojank.default_skins_use_official_textures_server);
+        
+        let url = match req_type_default_skin {
+            (MojangTextureRequestType::DefaultSkin, true) => {
+                DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE
+            }
+            (MojangTextureRequestType::Skin, _) | (MojangTextureRequestType::DefaultSkin, _) => {
+                &mojank.textures_server_skin_url_template
+            }
+            (MojangTextureRequestType::Cape, _) => &mojank.textures_server_cape_url_template,
         };
 
-        url.replace("{textures_server}", &mojank.textures_server)
+        let target_server = match req_type_default_skin {
+            (MojangTextureRequestType::DefaultSkin, true) => DEFAULT_TEXTURES_SERVER,
+            _ => &mojank.textures_server,
+        };
+
+        url.replace("{textures_server}", target_server)
             .replace("{texture_id}", texture_id)
     }
 }

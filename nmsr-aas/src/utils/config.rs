@@ -106,6 +106,10 @@ pub struct MojankConfiguration {
     /// By enabling this, the UUIDs will be sent to the Mojang API without dashes.
     pub use_dashless_uuids: bool,
 
+    /// Whether to redirect default skin requests to the official Mojang textures server.
+    /// Change this value if you want default skins to be fetched from the configured textures server.
+    pub default_skins_use_official_textures_server: bool,
+
     /// The template to use for resolving player skin textures.
     pub textures_server_skin_url_template: String,
 
@@ -113,11 +117,14 @@ pub struct MojankConfiguration {
     pub textures_server_cape_url_template: String,
 }
 
+pub const DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE: &str = "{textures_server}/texture/{texture_id}";
+pub const DEFAULT_TEXTURES_SERVER: &str = "https://textures.minecraft.net";
+
 impl Default for MojankConfiguration {
     fn default() -> Self {
         Self {
             session_server: "https://sessionserver.mojang.com/".to_string(),
-            textures_server: "https://textures.minecraft.net".to_string(),
+            textures_server: DEFAULT_TEXTURES_SERVER.to_string(),
             mojang_api_server: "https://api.mojang.com/".to_string(),
             geysermc_api_server: "https://api.geysermc.org/".to_string(),
             
@@ -126,11 +133,12 @@ impl Default for MojankConfiguration {
             session_server_timeout: 5 * 60 /* 5 minutes */,
 
             use_default_skins_when_missing: true,
+            default_skins_use_official_textures_server: true,
 
             allow_offline_mode_uuids: false,
             use_dashless_uuids: false,
-            textures_server_skin_url_template: "{textures_server}/texture/{texture_id}".to_string(),
-            textures_server_cape_url_template: "{textures_server}/texture/{texture_id}".to_string(),
+            textures_server_skin_url_template: DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE.to_string(),
+            textures_server_cape_url_template: DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE.to_string(),
         }
     }
 }

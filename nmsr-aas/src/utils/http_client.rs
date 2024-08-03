@@ -108,9 +108,9 @@ fn create_http_client(rate_limit_per_second: u64, request_timeout_seconds: u64) 
     let mut http = HttpConnector::new();
     http.set_nodelay(true);
     http.enforce_http(false);
-    
+
     let tls = TlsConnector::new().expect("Expected TLS connector to be valid");
-    
+
     let https = HttpsConnector::from((http, tls.into()));
 
     // A new higher level client from hyper is in the works, so we gotta use the legacy one

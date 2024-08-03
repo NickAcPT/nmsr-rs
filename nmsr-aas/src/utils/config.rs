@@ -91,9 +91,9 @@ pub struct MojankConfiguration {
     /// The rate limit to use for requests to resolve usernames to UUIDs in a 1 second window.
     /// Will default to the session server rate limit if not set.
     pub username_resolve_rate_limit: Option<u64>,
-    
+
     /// The timeout to use for requests to the session server in seconds.
-    pub session_server_timeout: u64,    
+    pub session_server_timeout: u64,
 
     /// Whether to output default skin when the player's skin is not found, or an error occurs.
     pub use_default_skins_when_missing: bool,
@@ -117,7 +117,8 @@ pub struct MojankConfiguration {
     pub textures_server_cape_url_template: String,
 }
 
-pub const DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE: &str = "{textures_server}/texture/{texture_id}";
+pub const DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE: &str =
+    "{textures_server}/texture/{texture_id}";
 pub const DEFAULT_TEXTURES_SERVER: &str = "https://textures.minecraft.net";
 
 impl Default for MojankConfiguration {
@@ -127,18 +128,20 @@ impl Default for MojankConfiguration {
             textures_server: DEFAULT_TEXTURES_SERVER.to_string(),
             mojang_api_server: "https://api.mojang.com/".to_string(),
             geysermc_api_server: "https://api.geysermc.org/".to_string(),
-            
+
             session_server_rate_limit: 10,
             username_resolve_rate_limit: None,
-            session_server_timeout: 5 * 60 /* 5 minutes */,
+            session_server_timeout: 5 * 60, /* 5 minutes */
 
             use_default_skins_when_missing: true,
             default_skins_use_official_textures_server: true,
 
             allow_offline_mode_uuids: false,
             use_dashless_uuids: false,
-            textures_server_skin_url_template: DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE.to_string(),
-            textures_server_cape_url_template: DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE.to_string(),
+            textures_server_skin_url_template: DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE
+                .to_string(),
+            textures_server_cape_url_template: DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE
+                .to_string(),
         }
     }
 }

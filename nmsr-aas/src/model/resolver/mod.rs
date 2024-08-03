@@ -322,8 +322,12 @@ impl RenderRequestResolver {
             RenderRequestEntry::DefaultSkinTextureHash(skin_hash) => {
                 // Handle default skin textures. These have to go straight to Mojang, whether or not the user changed the config.
                 skin_texture = Some(
-                    self.fetch_texture_from_mojang(skin_hash, None, MojangTextureRequestType::DefaultSkin)
-                        .await?,
+                    self.fetch_texture_from_mojang(
+                        skin_hash,
+                        None,
+                        MojangTextureRequestType::DefaultSkin,
+                    )
+                    .await?,
                 );
                 cape_texture = None;
                 model = None;

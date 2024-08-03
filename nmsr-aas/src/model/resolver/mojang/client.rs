@@ -154,7 +154,7 @@ impl MojangClient {
         let mojank = self.mojank_config();
 
         let req_type_default_skin = (req_type, mojank.default_skins_use_official_textures_server);
-        
+
         let url = match req_type_default_skin {
             (MojangTextureRequestType::DefaultSkin, true) => {
                 DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE

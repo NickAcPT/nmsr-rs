@@ -87,6 +87,8 @@ impl TryFrom<String> for RenderRequestEntry {
                 If it's a texture hash, make sure that it's a valid texture hash.
                 If you've provided a UUID, make sure that it's a valid UUID and isn't truncated.
                 Otherwise, if you're using a player name that doesn't pass the naive validation, you should resolve it to a UUID first.
+                
+                If you are migrating from Visage/Vzge or similar services, make sure that you're not including a file extension in the URL (.png, .jpeg, etc.).
             "}))
         }
     }

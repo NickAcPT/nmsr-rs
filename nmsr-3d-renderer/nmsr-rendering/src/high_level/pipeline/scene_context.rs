@@ -29,6 +29,8 @@ pub struct SceneContext {
     pub transform_bind_group: BindGroup,
     pub sun_information_buffer: Buffer,
     pub sun_information_bind_group: BindGroup,
+    pub emissive_sun_information_buffer: Buffer,
+    pub emissive_sun_information_bind_group: BindGroup,
     pub(crate) textures: Option<SceneContextTextures>,
     #[debug(skip)]
     pub(crate) smaa_target: Option<SmaaTarget>,
@@ -55,11 +57,21 @@ impl SceneContext {
             &[SunInformation::default()],
         );
 
+        let (emissive_sun_information_buffer, emissive_sun_information_bind_group) =
+            create_buffer_and_bind_group(
+                device,
+                "Emissive Sun",
+                &context.layouts.sun_bind_group_layout,
+                &[SunInformation::new([0.0; 3].into(), 0.0, 1.0f32)],
+        );
+
         Self {
             transform_bind_group,
             transform_matrix_buffer,
             sun_information_buffer,
             sun_information_bind_group,
+            emissive_sun_information_buffer,
+            emissive_sun_information_bind_group,
             textures: None,
             smaa_target: None,
         }

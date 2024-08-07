@@ -224,6 +224,7 @@ where
 
         let transform_bind_group = &self.scene_context.transform_bind_group;
         let sun_bind_group = &self.scene_context.sun_information_bind_group;
+        let emissive_sun_bind_group = &self.scene_context.emissive_sun_information_bind_group;
 
         let textures = self
             .scene_context
@@ -369,7 +370,13 @@ where
             rpass.set_pipeline(pipeline);
             rpass.set_bind_group(0, transform_bind_group, &[]);
             rpass.set_bind_group(1, &texture_sampler_bind_group, &[]);
-            rpass.set_bind_group(2, sun_bind_group, &[]);
+            
+            if !texture.is_emissive() {
+                rpass.set_bind_group(2, sun_bind_group, &[]);    
+            } else {
+                rpass.set_bind_group(2, emissive_sun_bind_group, &[]);
+            }
+            
             rpass.set_index_buffer(index_buf.slice(..), IndexFormat::Uint16);
             rpass.set_vertex_buffer(0, vertex_buf.slice(..));
             rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);

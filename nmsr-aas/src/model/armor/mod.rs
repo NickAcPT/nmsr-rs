@@ -158,11 +158,13 @@ impl VanillaMinecraftArmorMaterialData {
     pub const ARMOR_TEXTURE_ONE: PlayerPartTextureType = PlayerPartTextureType::Custom {
         key: "armor_1",
         size: (64, 64),
+        is_emissive: false
     };
 
     pub const ARMOR_TEXTURE_TWO: PlayerPartTextureType = PlayerPartTextureType::Custom {
         key: "armor_2",
         size: (64, 64),
+        is_emissive: false
     };
 
     #[must_use]

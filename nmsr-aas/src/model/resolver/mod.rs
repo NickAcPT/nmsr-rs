@@ -61,6 +61,8 @@ pub enum ResolvedRenderEntryEarsTextureType {
     Wings,
     /// The non-emissive remaining part of the skin texture.
     EmissiveProcessedSkin,
+    /// The non-emissive remaining part of the wings texture.
+    EmissiveProcessedWings,
     /// The emissive skin texture type.
     EmissiveSkin,
     /// The emissive wings texture type.
@@ -77,6 +79,9 @@ impl From<ResolvedRenderEntryEarsTextureType> for PlayerPartEarsTextureType {
             ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin => {
                 Self::EmissiveProcessedSkin
             }
+            ResolvedRenderEntryEarsTextureType::EmissiveProcessedWings => {
+                Self::EmissiveProcessedWings
+            }
             ResolvedRenderEntryEarsTextureType::EmissiveWings => Self::EmissiveWings,
         }
     }
@@ -88,7 +93,10 @@ impl ResolvedRenderEntryEarsTextureType {
         match self {
             Self::Cape => Some(AlfalfaDataKey::Cape),
             Self::Wings => Some(AlfalfaDataKey::Wings),
-            Self::EmissiveSkin | Self::EmissiveProcessedSkin | Self::EmissiveWings => None,
+            Self::EmissiveSkin
+            | Self::EmissiveProcessedSkin
+            | Self::EmissiveProcessedWings
+            | Self::EmissiveWings => None,
         }
     }
 
@@ -440,7 +448,7 @@ impl RenderRequestResolver {
                 ),
                 (
                     ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Wings),
-                    None,
+                    Some(ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveProcessedWings)),
                     ResolvedRenderEntryTextureType::Ears(
                         ResolvedRenderEntryEarsTextureType::EmissiveWings,
                     ),

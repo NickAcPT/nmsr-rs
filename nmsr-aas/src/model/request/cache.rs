@@ -1,6 +1,6 @@
 use std::{
     borrow::Cow,
-    collections::HashMap,
+    collections::BTreeMap,
     fs::Metadata,
     path::{Path, PathBuf},
     sync::Arc,
@@ -345,7 +345,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
         base: &Path,
         marker: &[u8; 1],
     ) -> Result<Option<ResolvedRenderEntryTextures>> {
-        let mut textures = HashMap::new();
+        let mut textures = BTreeMap::new();
 
         let textures_to_read = [
             ResolvedRenderEntryTextureType::Skin,
@@ -355,7 +355,11 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape),
             #[cfg(feature = "ears")]
-            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Emissive),
+            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin),
+            #[cfg(feature = "ears")]
+            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveSkin),
+            #[cfg(feature = "ears")]
+            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveWings),
         ];
 
         for texture in textures_to_read {

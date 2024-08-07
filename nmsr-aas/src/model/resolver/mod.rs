@@ -9,8 +9,9 @@ use super::request::{
 };
 use crate::{
     error::{MojangRequestError, RenderRequestError, Result},
-    model::resolver::{
-        default_skins::DefaultSkinResolver, mojang::client::MojangTextureRequestType,
+    model::{
+        request::RenderRequestFeatures,
+        resolver::{default_skins::DefaultSkinResolver, mojang::client::MojangTextureRequestType},
     },
 };
 use derive_more::Debug;
@@ -19,10 +20,11 @@ use ears_rs::{alfalfa::AlfalfaDataKey, features::EarsFeatures, parser::EarsParse
 #[cfg(feature = "ears")]
 use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
 use nmsr_rendering::high_level::types::PlayerPartTextureType;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::BTreeMap, sync::Arc};
 use strum::EnumCount;
 use tracing::{instrument, trace_span, Instrument, Span};
 use uuid::Uuid;
+use xxhash_rust::xxh3::xxh3_128;
 
 pub mod default_skins;
 pub mod geyser;
@@ -33,7 +35,7 @@ pub struct RenderRequestResolver {
     mojang_requests_client: Arc<MojangClient>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResolvedRenderEntryTextureType {
     Cape,
     Skin,
@@ -53,11 +55,16 @@ impl From<ResolvedRenderEntryTextureType> for &'static str {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ResolvedRenderEntryEarsTextureType {
     Cape,
     Wings,
-    Emissive,
+    /// The non-emissive remaining part of the skin texture.
+    EmissiveProcessedSkin,
+    /// The emissive skin texture type.
+    EmissiveSkin,
+    /// The emissive wings texture type.
+    EmissiveWings,
 }
 
 #[cfg(feature = "ears")]
@@ -66,7 +73,11 @@ impl From<ResolvedRenderEntryEarsTextureType> for PlayerPartEarsTextureType {
         match value {
             ResolvedRenderEntryEarsTextureType::Cape => Self::Cape,
             ResolvedRenderEntryEarsTextureType::Wings => Self::Wings,
-            ResolvedRenderEntryEarsTextureType::Emissive => Self::Emissive,
+            ResolvedRenderEntryEarsTextureType::EmissiveSkin => Self::EmissiveSkin,
+            ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin => {
+                Self::EmissiveProcessedSkin
+            }
+            ResolvedRenderEntryEarsTextureType::EmissiveWings => Self::EmissiveWings,
         }
     }
 }
@@ -77,7 +88,7 @@ impl ResolvedRenderEntryEarsTextureType {
         match self {
             Self::Cape => Some(AlfalfaDataKey::Cape),
             Self::Wings => Some(AlfalfaDataKey::Wings),
-            Self::Emissive => None,
+            Self::EmissiveSkin | Self::EmissiveProcessedSkin | Self::EmissiveWings => None,
         }
     }
 
@@ -91,10 +102,6 @@ impl From<ResolvedRenderEntryTextureType> for PlayerPartTextureType {
         match value {
             ResolvedRenderEntryTextureType::Skin => Self::Skin,
             ResolvedRenderEntryTextureType::Cape => Self::Cape,
-            #[cfg(feature = "ears")]
-            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape) => {
-                Self::Cape
-            }
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ears) => {
                 PlayerPartEarsTextureType::from(ears).into()
@@ -115,8 +122,18 @@ impl MojangTexture {
             data,
         }
     }
+
     pub(crate) fn new_unnamed(data: Vec<u8>) -> Self {
         Self { hash: None, data }
+    }
+
+    pub(crate) fn new_unnamed_hashed(data: Vec<u8>) -> Self {
+        let hash = format!("{:x}", xxh3_128(&data));
+
+        Self {
+            hash: Some(hash),
+            data,
+        }
     }
 
     #[must_use]
@@ -132,7 +149,7 @@ impl MojangTexture {
 
 pub struct ResolvedRenderEntryTextures {
     pub model: Option<RenderRequestEntryModel>,
-    pub textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
+    pub textures: BTreeMap<ResolvedRenderEntryTextureType, MojangTexture>,
 }
 
 pub struct ResolvedRenderEntryTexturesMarker {
@@ -152,7 +169,7 @@ impl From<ResolvedRenderEntryTextures> for ResolvedRenderEntryTexturesMarker {
 impl ResolvedRenderEntryTextures {
     #[must_use]
     pub const fn new(
-        textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
+        textures: BTreeMap<ResolvedRenderEntryTextureType, MojangTexture>,
         model: Option<RenderRequestEntryModel>,
     ) -> Self {
         Self { model, textures }
@@ -160,7 +177,7 @@ impl ResolvedRenderEntryTextures {
 
     #[must_use]
     pub fn new_from_marker_slice(
-        textures: HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
+        textures: BTreeMap<ResolvedRenderEntryTextureType, MojangTexture>,
         marker: &[u8],
     ) -> Self {
         let model = RenderRequestEntryModel::from_repr(marker[0] as usize);
@@ -339,7 +356,7 @@ impl RenderRequestResolver {
             }
         }
 
-        let mut textures = HashMap::new();
+        let mut textures = BTreeMap::new();
 
         if let Some(cape_texture) = cape_texture {
             textures.insert(ResolvedRenderEntryTextureType::Cape, cape_texture);
@@ -364,53 +381,130 @@ impl RenderRequestResolver {
     #[cfg(feature = "ears")]
     fn resolve_ears_textures(
         skin_texture: &MojangTexture,
-        textures: &mut HashMap<ResolvedRenderEntryTextureType, MojangTexture>,
+        textures: &mut BTreeMap<ResolvedRenderEntryTextureType, MojangTexture>,
     ) -> Option<EarsFeatures> {
         use crate::utils::png::create_png_from_bytes;
+        use ears_rs::utils::EarsEmissivePalette;
         use image::DynamicImage;
         use std::borrow::Cow;
         use xxhash_rust::xxh3::xxh3_128;
 
-        image::load_from_memory(skin_texture.data()).map_or(None, |image| {
-            let image = image.into_rgba8();
+        let skin_image = image::load_from_memory(skin_texture.data()).ok()?;
+        let skin_image = skin_image.into_rgba8();
 
-            let features = EarsParser::parse(&image).ok().flatten();
-            let alfalfa = ears_rs::alfalfa::read_alfalfa(&image).ok().flatten();
+        let features = EarsParser::parse(&skin_image).ok().flatten()?;
+        let alfalfa = ears_rs::alfalfa::read_alfalfa(&skin_image).ok().flatten();
 
-            if let Some(alfalfa) = alfalfa {
-                for texture_type in &[
-                    ResolvedRenderEntryEarsTextureType::Cape,
-                    ResolvedRenderEntryEarsTextureType::Wings,
-                ] {
-                    if let Some(alfalfa_key) = texture_type.alfalfa_key() {
-                        if let Some(data) = alfalfa.get_data(alfalfa_key) {
-                            let hash = format!("{:x}", xxh3_128(data));
+        if let Some(alfalfa) = alfalfa {
+            for texture_type in &[
+                ResolvedRenderEntryEarsTextureType::Cape,
+                ResolvedRenderEntryEarsTextureType::Wings,
+            ] {
+                if let Some(alfalfa_key) = texture_type.alfalfa_key() {
+                    if let Some(data) = alfalfa.get_data(alfalfa_key) {
+                        let hash = format!("{:x}", xxh3_128(data));
 
-                            let data = if alfalfa_key == AlfalfaDataKey::Cape {
-                                let image = image::load_from_memory(data)
-                                    .map(DynamicImage::into_rgba8)
-                                    .map(ears_rs::utils::convert_ears_cape_to_mojang_cape)
-                                    .ok()
-                                    .and_then(|i| {
-                                        create_png_from_bytes((i.width(), i.height()), &i).ok()
-                                    });
+                        let data = if alfalfa_key == AlfalfaDataKey::Cape {
+                            let image = image::load_from_memory(data)
+                                .map(DynamicImage::into_rgba8)
+                                .map(ears_rs::utils::convert_ears_cape_to_mojang_cape)
+                                .ok()
+                                .and_then(|i| {
+                                    create_png_from_bytes((i.width(), i.height()), &i).ok()
+                                });
 
-                                image.map_or(Cow::Borrowed(data), Cow::Owned)
-                            } else {
-                                Cow::Borrowed(data)
-                            };
+                            image.map_or(Cow::Borrowed(data), Cow::Owned)
+                        } else {
+                            Cow::Borrowed(data)
+                        };
 
-                            textures.insert(
-                                ResolvedRenderEntryTextureType::Ears(*texture_type),
-                                MojangTexture::new_named(hash, data.into_owned()),
-                            );
-                        }
+                        textures.insert(
+                            ResolvedRenderEntryTextureType::Ears(*texture_type),
+                            MojangTexture::new_named(hash, data.into_owned()),
+                        );
                     }
                 }
             }
+        }
 
-            features
-        })
+        if features.emissive {
+            let emissive_map = [
+                (
+                    ResolvedRenderEntryTextureType::Skin,
+                    Some(ResolvedRenderEntryTextureType::Ears(
+                        ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin,
+                    )),
+                    ResolvedRenderEntryTextureType::Ears(
+                        ResolvedRenderEntryEarsTextureType::EmissiveSkin,
+                    ),
+                ),
+                (
+                    ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Wings),
+                    None,
+                    ResolvedRenderEntryTextureType::Ears(
+                        ResolvedRenderEntryEarsTextureType::EmissiveWings,
+                    ),
+                ),
+            ];
+
+            fn apply_emissive(
+                textures: &mut BTreeMap<ResolvedRenderEntryTextureType, MojangTexture>,
+                source_texture: Option<&MojangTexture>,
+                source: ResolvedRenderEntryTextureType,
+                processed_target: Option<ResolvedRenderEntryTextureType>,
+                target: ResolvedRenderEntryTextureType,
+                palette: &EarsEmissivePalette,
+            ) -> Option<()> {
+                let texture = source_texture.or_else(|| textures.get(&source))?;
+
+                let mut original_img = image::load_from_memory(texture.data()).ok()?.into_rgba8();
+
+                let emissive_texture =
+                    ears_rs::utils::apply_emissive_palette(&mut original_img, palette).ok()?;
+
+                textures.insert(
+                    target,
+                    MojangTexture::new_unnamed_hashed(
+                        create_png_from_bytes(
+                            (emissive_texture.width(), emissive_texture.height()),
+                            &emissive_texture,
+                        )
+                        .ok()?,
+                    ),
+                );
+
+                if let Some(processed_target) = processed_target {
+                    textures.insert(
+                        processed_target,
+                        MojangTexture::new_unnamed_hashed(
+                            create_png_from_bytes(
+                                (original_img.width(), original_img.height()),
+                                &original_img,
+                            )
+                            .ok()?,
+                        ),
+                    );
+                }
+
+                Some(())
+            }
+
+            if let Ok(Some(palette)) = ears_rs::utils::extract_emissive_palette(&skin_image) {
+                for (source, processed_target, target) in &emissive_map {
+                    apply_emissive(
+                        textures,
+                        Some(skin_texture)
+                            .filter(|_| *source == ResolvedRenderEntryTextureType::Skin),
+                        *source,
+                        *processed_target,
+                        *target,
+                        &palette,
+                    );
+                }
+            }
+        }
+
+        Some(features)
     }
 
     pub async fn resolve(&self, request: &RenderRequest) -> Result<ResolvedRenderRequest> {
@@ -484,8 +578,17 @@ impl RenderRequestResolver {
             .unwrap_or_default();
 
         // Load the textures into memory.
-        let mut textures = HashMap::new();
+        let mut textures = BTreeMap::new();
         for (texture_type, texture) in resolved_textures.textures {
+            #[cfg(feature = "ears")]
+            {
+                if let ResolvedRenderEntryTextureType::Ears(_) = texture_type {
+                    if !request.features.contains(RenderRequestFeatures::Ears) {
+                        continue;
+                    }
+                }
+            }
+
             textures.insert(texture_type, texture.data);
         }
 
@@ -505,5 +608,5 @@ impl RenderRequestResolver {
 pub struct ResolvedRenderRequest {
     pub model: RenderRequestEntryModel,
     #[debug(skip)]
-    pub textures: HashMap<ResolvedRenderEntryTextureType, Vec<u8>>,
+    pub textures: BTreeMap<ResolvedRenderEntryTextureType, Vec<u8>>,
 }

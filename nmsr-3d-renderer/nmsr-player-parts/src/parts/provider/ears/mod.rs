@@ -173,14 +173,19 @@ trait EarsModPartProvider<M: ArmorMaterial> {
 pub enum PlayerPartEarsTextureType {
     Cape,
     Wings,
-    Emissive,
+    /// The non-emissive remaining part of the skin texture.
+    EmissiveProcessedSkin,
+    /// The emissive skin texture type.
+    EmissiveSkin,
+    /// The emissive wings texture type.
+    EmissiveWings,
 }
 
 impl PlayerPartEarsTextureType {
     pub fn size(&self) -> (u32, u32) {
         match self {
-            Self::Cape | Self::Wings => (20, 16),
-            Self::Emissive => (64, 64),
+            Self::Cape | Self::Wings | Self::EmissiveWings => (20, 16),
+            Self::EmissiveSkin | Self::EmissiveProcessedSkin => (64, 64),
         }
     }
 
@@ -188,7 +193,9 @@ impl PlayerPartEarsTextureType {
         match self {
             Self::Cape => "ears_cape",
             Self::Wings => "ears_wings",
-            Self::Emissive => "ears_emissive",
+            Self::EmissiveProcessedSkin => "ears_emissive_processed_skin",
+            Self::EmissiveSkin => "ears_emissive_skin",
+            Self::EmissiveWings => "ears_emissive_wings",
         }
     }
 }
@@ -197,6 +204,7 @@ impl From<PlayerPartEarsTextureType> for PlayerPartTextureType {
     fn from(value: PlayerPartEarsTextureType) -> Self {
         match value {
             PlayerPartEarsTextureType::Cape => PlayerPartTextureType::Cape,
+            PlayerPartEarsTextureType::EmissiveProcessedSkin => PlayerPartTextureType::Skin,
             ears => PlayerPartTextureType::Custom {
                 key: ears.key(),
                 size: ears.size(),

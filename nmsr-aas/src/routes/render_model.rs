@@ -107,7 +107,12 @@ async fn load_textures<'a>(
     for (&texture_type, texture_bytes) in &resolved.textures {
         let mut image_buffer = load_image(texture_bytes)?;
 
-        if texture_type == ResolvedRenderEntryTextureType::Skin {
+        let is_skin_texture = texture_type == ResolvedRenderEntryTextureType::Skin;
+
+        #[cfg(feature = "ears")]
+        let is_skin_texture = is_skin_texture || texture_type == ResolvedRenderEntryTextureType::Ears(crate::model::resolver::ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin);
+
+        if is_skin_texture {
             image_buffer = NMSRState::process_skin(image_buffer, request.features)?;
         }
 

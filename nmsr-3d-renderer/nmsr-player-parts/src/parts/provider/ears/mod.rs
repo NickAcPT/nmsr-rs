@@ -4,6 +4,7 @@ use ears_rs::features::{
     data::ear::{EarAnchor, EarMode},
     EarsFeatures,
 };
+use itertools::Itertools;
 use strum::{EnumIter, IntoEnumIterator, IntoStaticStr};
 
 use crate::{
@@ -17,7 +18,7 @@ use crate::{
                 snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider,
                 wings::EarsModWingsPartProvider,
             },
-            minecraft::get_part_group_name,
+            minecraft::{get_part_group_name, MinecraftPlayerPartsProvider},
             PartsProvider,
         },
     },
@@ -67,7 +68,47 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
             },
         );
 
+        if features.emissive {
+            handle_emissive(&mut parts, context, body_part);
+        }
+
         parts
+    }
+}
+
+fn handle_emissive<M: ArmorMaterial>(
+    parts: &mut Vec<Part>,
+    context: &PlayerPartProviderContext<M>,
+    body_part: PlayerBodyPartType,
+) {
+    let wing_texture = PlayerPartEarsTextureType::Wings.into();
+    let emissive_parts = parts
+        .iter()
+        // First, we take the parts we know we can change
+        .filter(|p| {
+            p.get_texture() == PlayerPartTextureType::Skin || p.get_texture() == wing_texture
+        })
+        // Then we clone them to take ownership of them (so we can mutate later)
+        .cloned()
+        // Then we also include the default parts from the player since Ears handles all emissives
+        .chain(MinecraftPlayerPartsProvider::default().get_parts(context, body_part))
+        // Then finally we collect them into a Vec
+        .collect_vec();
+
+    for mut emissive_part in emissive_parts {
+        let texture = if emissive_part.get_texture() == PlayerPartTextureType::Skin {
+            Some(PlayerPartEarsTextureType::EmissiveSkin)
+        } else if emissive_part.get_texture() == wing_texture {
+            Some(PlayerPartEarsTextureType::EmissiveWings)
+        } else {
+            None
+        };
+
+        let Some(texture) = texture else { continue };
+
+        emissive_part.set_texture(texture.into());
+
+        parts.push(emissive_part);
     }
 }
 
@@ -175,6 +216,8 @@ pub enum PlayerPartEarsTextureType {
     Wings,
     /// The non-emissive remaining part of the skin texture.
     EmissiveProcessedSkin,
+    /// The non-emissive remaining part of the wings texture.
+    EmissiveProcessedWings,
     /// The emissive skin texture type.
     EmissiveSkin,
     /// The emissive wings texture type.
@@ -184,7 +227,9 @@ pub enum PlayerPartEarsTextureType {
 impl PlayerPartEarsTextureType {
     pub fn size(&self) -> (u32, u32) {
         match self {
-            Self::Cape | Self::Wings | Self::EmissiveWings => (20, 16),
+            Self::Cape | Self::Wings | Self::EmissiveProcessedWings | Self::EmissiveWings => {
+                (20, 16)
+            }
             Self::EmissiveSkin | Self::EmissiveProcessedSkin => (64, 64),
         }
     }
@@ -194,9 +239,14 @@ impl PlayerPartEarsTextureType {
             Self::Cape => "ears_cape",
             Self::Wings => "ears_wings",
             Self::EmissiveProcessedSkin => "ears_emissive_processed_skin",
+            Self::EmissiveProcessedWings => "ears_emissive_processed_wings",
             Self::EmissiveSkin => "ears_emissive_skin",
             Self::EmissiveWings => "ears_emissive_wings",
         }
+    }
+
+    pub fn is_emissive(&self) -> bool {
+        matches!(self, Self::EmissiveSkin | Self::EmissiveWings)
     }
 }
 
@@ -205,9 +255,13 @@ impl From<PlayerPartEarsTextureType> for PlayerPartTextureType {
         match value {
             PlayerPartEarsTextureType::Cape => PlayerPartTextureType::Cape,
             PlayerPartEarsTextureType::EmissiveProcessedSkin => PlayerPartTextureType::Skin,
+            PlayerPartEarsTextureType::EmissiveProcessedWings => {
+                PlayerPartEarsTextureType::Wings.into()
+            }
             ears => PlayerPartTextureType::Custom {
                 key: ears.key(),
                 size: ears.size(),
+                is_emissive: ears.is_emissive(),
             },
         }
     }

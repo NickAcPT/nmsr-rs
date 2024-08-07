@@ -18,12 +18,15 @@ use crate::{
                 snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider,
                 wings::EarsModWingsPartProvider,
             },
-            minecraft::{get_part_group_name, MinecraftPlayerPartsProvider},
+            minecraft::MinecraftPlayerPartsProvider,
             PartsProvider,
         },
     },
     types::{PlayerBodyPartType, PlayerPartTextureType},
 };
+
+#[cfg(feature = "part_tracker")]
+use crate::parts::provider::minecraft::get_part_group_name;
 
 use super::PlayerPartProviderContext;
 
@@ -53,20 +56,27 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
 
         let mut parts = Vec::new();
         let mut builder = EarsModPartBuilder::new(&mut parts, &context);
-        builder.stack_group(
-            get_part_group_name(body_part.get_non_layer_part()),
-            |builder| {
-                for provider in EarsModPartStaticDispatch::iter() {
-                    if !provider.provides_for_part(body_part)
-                        || !provider.provides_for_feature(&features, context)
-                    {
-                        continue;
-                    }
-
-                    provider.provide_parts(&features, context, builder, body_part);
+        let action = |builder: &mut EarsModPartBuilder<M>| {
+            for provider in EarsModPartStaticDispatch::iter() {
+                if !provider.provides_for_part(body_part)
+                    || !provider.provides_for_feature(&features, context)
+                {
+                    continue;
                 }
-            },
-        );
+
+                provider.provide_parts(&features, context, builder, body_part);
+            }
+        };
+
+        #[cfg(feature = "part_tracker")]
+        {
+            builder.stack_group(get_part_group_name(body_part.get_non_layer_part()), action);
+        }
+        
+        #[cfg(not(feature = "part_tracker"))]
+        {
+            (action)(&mut builder);
+        }
 
         if features.emissive {
             handle_emissive(&mut parts, context, body_part);

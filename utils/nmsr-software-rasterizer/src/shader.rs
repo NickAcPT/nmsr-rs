@@ -127,6 +127,7 @@ impl Debug for ShaderState {
 pub struct ShaderState {
     pub camera: Camera,
     pub texture: Arc<RgbaImage>,
+    pub emissive_texture: bool,
     pub texture_size: (f32, f32),
     pub sun: SunInformation,
     pub primitive: PrimitiveDispatch,
@@ -156,6 +157,7 @@ impl ShaderState {
         Self::new_with_primitive(
             camera,
             texture,
+            false,
             sun,
             PrimitiveDispatch::Mesh(Mesh::new(parts)),
         )
@@ -164,12 +166,14 @@ impl ShaderState {
     pub fn new_with_primitive(
         camera: Camera,
         texture: Arc<RgbaImage>,
+        emissive_texture: bool,
         sun: SunInformation,
         primitive: PrimitiveDispatch,
     ) -> Self {
         let mut result: ShaderState = Self {
             camera,
             texture_size: (texture.width() as f32, texture.height() as f32),
+            emissive_texture,
             texture,
             sun,
             primitive,

@@ -370,13 +370,13 @@ where
             rpass.set_pipeline(pipeline);
             rpass.set_bind_group(0, transform_bind_group, &[]);
             rpass.set_bind_group(1, &texture_sampler_bind_group, &[]);
-            
+
             if !texture.is_emissive() {
-                rpass.set_bind_group(2, sun_bind_group, &[]);    
+                rpass.set_bind_group(2, sun_bind_group, &[]);
             } else {
                 rpass.set_bind_group(2, emissive_sun_bind_group, &[]);
             }
-            
+
             rpass.set_index_buffer(index_buf.slice(..), IndexFormat::Uint16);
             rpass.set_vertex_buffer(0, vertex_buf.slice(..));
             rpass.draw_indexed(0..(index_data.len() as u32), 0, 0..1);
@@ -387,41 +387,54 @@ where
             }
         }
 
-        queue.submit(Some(encoder.finish()));
+        {
+            let _pass_span = trace_span!("render_encoder_submit").entered();
+            queue.submit(Some(encoder.finish()));
+        }
 
-        // Explicitly drop the smaa frame so that it is resolved before we copy it to the output buffer.
-        drop(smaa_frame);
+        {
+            let _pass_span = trace_span!("smaa_frame_drop").entered();
 
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            // Explicitly drop the smaa frame so that it is resolved before we copy it to the output buffer.
+            drop(smaa_frame);
+        }
 
-        encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture {
-                aspect: wgpu::TextureAspect::All,
-                texture: &textures.output_texture.texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            wgpu::ImageCopyBuffer {
-                buffer: &textures.texture_output_buffer,
-                layout: wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(
-                        textures
-                            .texture_output_buffer_dimensions
-                            .padded_bytes_per_row,
-                    ),
-                    rows_per_image: None,
+        {
+            let _pass_span = trace_span!("copy_texture_to_buffer").entered();
+
+            let mut encoder =
+                device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+            encoder.copy_texture_to_buffer(
+                wgpu::ImageCopyTexture {
+                    aspect: wgpu::TextureAspect::All,
+                    texture: &textures.output_texture.texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
                 },
-            },
-            Extent3d {
-                width: textures.viewport_size.width,
-                height: textures.viewport_size.height,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        queue.submit(Some(encoder.finish()));
+                wgpu::ImageCopyBuffer {
+                    buffer: &textures.texture_output_buffer,
+                    layout: wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(
+                            textures
+                                .texture_output_buffer_dimensions
+                                .padded_bytes_per_row,
+                        ),
+                        rows_per_image: None,
+                    },
+                },
+                Extent3d {
+                    width: textures.viewport_size.width,
+                    height: textures.viewport_size.height,
+                    depth_or_array_layers: 1,
+                },
+            );
+            {
+                let _pass_span = trace_span!("copy_output_encoder_submit").entered();
+                queue.submit(Some(encoder.finish()));
+            }
+        }
 
         if let Some(extra_rendering) = extra_rendering {
             let mut extra_encoder =
@@ -438,6 +451,7 @@ where
         }
 
         if let Some(surface_texture) = surface_texture {
+            let _pass_span = trace_span!("present").entered();
             surface_texture.present();
         }
 

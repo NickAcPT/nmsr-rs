@@ -118,6 +118,7 @@ fn main() -> anyhow::Result<()> {
         chest_size: 0f32,
         cape_enabled: false,
         emissive: false,
+        ..Default::default()
     };
 
     let context: PlayerPartProviderContext<()> = PlayerPartProviderContext {

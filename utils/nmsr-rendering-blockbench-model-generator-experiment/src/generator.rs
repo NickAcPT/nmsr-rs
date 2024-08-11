@@ -53,6 +53,7 @@ pub struct ModelGenerationProject<M: ArmorMaterial, I: ModelProjectImageIO> {
     providers: Vec<PlayerPartsProvider>,
     part_context: PlayerPartProviderContext<M>,
     textures: HashMap<PlayerPartTextureType, RgbaImage>,
+    warnings: Vec<String>,
     max_resolution: Vec2,
     image_io: I,
 }
@@ -90,6 +91,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
             ]
             .to_vec(),
             part_context: context,
+            warnings: Vec::new(),
             textures: HashMap::new(),
             max_resolution: Vec2::ZERO,
             image_io,
@@ -120,7 +122,8 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                 use nmsr_rendering::high_level::parts::provider::ears::PlayerPartEarsTextureType;
 
                 if texture_type == PlayerPartTextureType::Skin {
-                    if let Ok(Some(alfalfa)) = ears_rs::alfalfa::read_alfalfa(&texture) {
+                    let alfalfa = ears_rs::alfalfa::read_alfalfa(&texture);
+                    if let Ok(Some(ref alfalfa)) = alfalfa {
                         if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
                             self.load_texture(
                                 PlayerPartEarsTextureType::Wings.into(),
@@ -128,7 +131,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                                 do_ears_processing,
                             )?;
                         }
-
+                    
                         if let Some(cape) = alfalfa.get_data(AlfalfaDataKey::Cape) {
                             self.load_texture(
                                 PlayerPartEarsTextureType::Cape.into(),
@@ -139,7 +142,22 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                     }
 
                     let features = EarsParser::parse(&texture)?;
-
+                    
+                    if let (Some(features), Ok(None)) = (features, alfalfa) {
+                        let wings_enabled = features.wing.is_some();
+                        let cape_enabled = features.cape_enabled;
+                        
+                        if wings_enabled {
+                            self.insert_empty_texture(PlayerPartEarsTextureType::Wings.into())?;
+                            self.warnings.push("Wings are enabled but no wings texture was found.".to_string());
+                        }
+                        
+                        if cape_enabled {
+                            self.insert_empty_texture(PlayerPartEarsTextureType::Cape.into())?;
+                            self.warnings.push("Cape is enabled but no cape texture was found.".to_string());
+                        }
+                    }
+                    
                     self.part_context.ears_features = features;
 
                     ears_rs::utils::process_erase_regions(&mut texture)?;
@@ -163,6 +181,15 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
         Ok(())
     }
 
+    fn insert_empty_texture(&mut self, texture_type: PlayerPartTextureType) -> Result<()> {
+        let (width, height) = texture_type.get_texture_size();
+        let texture = RgbaImage::new(width, height);
+        
+        self.add_texture(texture_type, texture, false)?;
+        
+        Ok(())
+    }
+    
     fn recompute_max_resolution(&mut self) {
         let max_resolution = self
             .textures
@@ -274,5 +301,9 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
 
     pub(crate) fn filter_textures(&mut self, keys: &[PlayerPartTextureType]) {
         self.textures.retain(|k, _| keys.contains(k));
+    }
+    
+    pub fn warnings(&self) -> &[String] {
+        &self.warnings
     }
 }

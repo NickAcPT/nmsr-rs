@@ -131,7 +131,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                                 do_ears_processing,
                             )?;
                         }
-                    
+
                         if let Some(cape) = alfalfa.get_data(AlfalfaDataKey::Cape) {
                             self.load_texture(
                                 PlayerPartEarsTextureType::Cape.into(),
@@ -142,22 +142,28 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                     }
 
                     let features = EarsParser::parse(&texture)?;
-                    
+
                     if let (Some(features), Ok(None)) = (features, alfalfa) {
                         let wings_enabled = features.wing.is_some();
                         let cape_enabled = features.cape_enabled;
-                        
+
                         if wings_enabled {
                             self.insert_empty_texture(PlayerPartEarsTextureType::Wings.into())?;
-                            self.warnings.push("Wings are enabled but no wings texture was found.".to_string());
+                            self.warnings.push(
+                                "Wings are enabled but no wings texture was found.\n\
+                                Please make sure you didn't paint over any semi-transparent pixels in your image editor.\n\n\
+                                If you haven't drawn your Wings yet, make sure to do so, then use the Ears Manipulator to set it up on your skin.".to_string());
                         }
-                        
+
                         if cape_enabled {
                             self.insert_empty_texture(PlayerPartEarsTextureType::Cape.into())?;
-                            self.warnings.push("Cape is enabled but no cape texture was found.".to_string());
+                            self.warnings.push(
+                                "Cape is enabled but no cape texture was found.\n\
+                                Please make sure you didn't paint over any semi-transparent pixels in your image editor.\n\n\
+                                If you haven't drawn your Cape yet, make sure to do so, then use the Ears Manipulator to set it up on your skin.".to_string());
                         }
                     }
-                    
+
                     self.part_context.ears_features = features;
 
                     ears_rs::utils::process_erase_regions(&mut texture)?;
@@ -184,12 +190,12 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
     fn insert_empty_texture(&mut self, texture_type: PlayerPartTextureType) -> Result<()> {
         let (width, height) = texture_type.get_texture_size();
         let texture = RgbaImage::new(width, height);
-        
+
         self.add_texture(texture_type, texture, false)?;
-        
+
         Ok(())
     }
-    
+
     fn recompute_max_resolution(&mut self) {
         let max_resolution = self
             .textures
@@ -302,7 +308,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
     pub(crate) fn filter_textures(&mut self, keys: &[PlayerPartTextureType]) {
         self.textures.retain(|k, _| keys.contains(k));
     }
-    
+
     pub fn warnings(&self) -> &[String] {
         &self.warnings
     }

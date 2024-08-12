@@ -3,6 +3,15 @@
 # NickAc's Minecraft Skin Renderer
 
 A speedy and fairly-accurate Minecraft avatar renderer service.
+<div>
+    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/NickAcPT/nmsr-rs/rust.yml?style=for-the-badge" height="28" />
+    <a href="https://ko-fi.com/H2H6KGD8W"><img alt="ko-fi" src="https://img.shields.io/badge/support_me-on_kofi-red?style=for-the-badge&logo=kofi" height="28" /></a>
+</div>
+<div>
+    <img alt="Built with Love" src="https://forthebadge.com/images/featured/featured-built-with-love.svg" height="28" />
+    <img alt="Works on my machine" src="https://forthebadge.com/images/badges/works-on-my-machine.svg" height="28"/>
+</div>
+
 
 A hosted version of NMSR is available [here](https://nmsr.nickac.dev/). It's
 provided on a best-effort basis, so please don't abuse it.

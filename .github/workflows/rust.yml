@@ -59,7 +59,7 @@ jobs:
         run: cargo build --target ${{ matrix.target }} --release --bin=nmsr-aas --package=nmsr-aas --features=ears
         
       - name: Archive
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: nmsr-aas-${{ matrix.build }}
           path: target/${{ matrix.target }}/release/nmsr-aas

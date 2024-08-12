@@ -32,34 +32,34 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
 
-  docker_build:
+  release_mac_build:
+    if: contains(github.event.head_commit.message, '[skip ci]') == false
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-    if: contains(github.event.head_commit.message, '[skip ci]') == false
+        build: [ "macos-arm", "macos-x86" ]
+        include:
+          - build: "macos-arm"
+            os: macos-latest
+            target: "aarch64-apple-darwin"
+          - build: "macos-x86"
+            os: macos-latest
+            target: "x86_64-apple-darwin"
+      
     runs-on: ${{ matrix.os }}
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Docker (Linux)
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      uses: crazy-max/ghaction-setup-docker@v3
-    
-    - name: Set up Docker
-      if: ${{ matrix.os == 'macos-latest' }}
-      run: |
-        brew install docker
-        colima start
-        # For testcontainers to find the Colima socket
-        # https://github.com/abiosoft/colima/blob/main/docs/FAQ.md#cannot-connect-to-the-docker-daemon-at-unixvarrundockersock-is-the-docker-daemon-running
-        sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build docker image
-      uses: docker/build-push-action@v6
-      with:
-        push: false
-        context: .
+      - uses: actions/checkout@v4
+      
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ""
+          target: ${{ matrix.target }}
+          
+      - name: Build
+        run: cargo build --release --bin=nmsr-aas --package=nmsr-aas --verbose
+        
+      - name: Archive
+        uses: actions/upload-artifact@v2
+        with:
+          name: nmsr-aas-${{ matrix.build }}
+          path: target/${{ matrix.target }}/release/nmsr-aas

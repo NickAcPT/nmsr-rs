@@ -77,7 +77,7 @@ fn generate_outliner_groups<M: ArmorMaterial, I: ModelProjectImageIO>(
         // Part groups is a vector of strings, each string being a group name - The last group name is the parent group
         let part_groups: Vec<String> = part.get_group().to_vec();
 
-        let parent_count = part_groups.len() - 1;
+        let parent_count = part_groups.len().saturating_sub(1);
 
         let mut rotation_stack = Vec::new();
 

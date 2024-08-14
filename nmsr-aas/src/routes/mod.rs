@@ -43,7 +43,7 @@ pub trait RenderRequestValidator {
 #[derive(Clone)]
 pub struct NMSRState<'a> {
     pub resolver: Arc<RenderRequestResolver>,
-    pub armor_manager: Arc<VanillaMinecraftArmorManager>,
+    pub armor_manager: Option<Arc<VanillaMinecraftArmorManager>>,
     pub graphics_context: Arc<GraphicsContext<'a>>,
     pools: Arc<GraphicsContextPools<'a>>,
     cache_config: ModelCacheConfiguration,
@@ -66,6 +66,13 @@ impl<'a> RenderRequestValidator for NMSRState<'a> {
         }
 
         request.features.remove_all(disabled_features);
+        
+        if let (None, Some(extra)) = (&self.armor_manager, &mut request.extra_settings) {
+            extra.helmet.take();
+            extra.chestplate.take();
+            extra.leggings.take();
+            extra.boots.take();
+        }
     }
 }
 
@@ -100,14 +107,18 @@ impl<'a> NMSRState<'a> {
 
         let pools = GraphicsContextPools::new(graphics_context.clone())?;
 
-        let armor_manager = VanillaMinecraftArmorManager::new("cache".into()).await?;
-
+        let armor_manager = if config.features.as_ref().is_some_and(|f| f.disable_armor_rendering) {
+            None
+        } else {
+            Some(Arc::new(VanillaMinecraftArmorManager::new("cache".into()).await?))
+        };
+        
         Ok(Self {
             resolver: Arc::new(resolver),
             graphics_context,
             pools: Arc::new(pools),
             cache_config: config.caching.clone(),
-            armor_manager: Arc::new(armor_manager),
+            armor_manager,
             features_config: config.features.clone().unwrap_or_default(),
         })
     }

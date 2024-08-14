@@ -186,11 +186,17 @@ pub struct RenderingConfiguration {
 #[serde_as]
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct FeaturesConfiguration {
+    #[serde(default)]
     #[serde_as(as = "Vec<DisplayFromStr>")]
     pub disabled_features: Vec<RenderRequestFeatures>,
 
+    #[serde(default)]
     #[serde_as(as = "Vec<DisplayFromStr>")]
     pub disabled_modes: Vec<RenderRequestMode>,
+    
+    /// Whether to disable downloading armor textures - this makes it so there is no armor rendering support.
+    #[serde(default)]
+    pub disable_armor_rendering: bool,
 }
 
 impl ModelCacheConfiguration {

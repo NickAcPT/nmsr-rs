@@ -94,8 +94,8 @@ pub(crate) async fn internal_bbmodel_export(
         );
     }
 
-    if let Some(slots) = &part_context.armor_slots {
-        let (armor_1, armor_2) = state.armor_manager.create_armor_texture(slots).await?;
+    if let (Some(armor_manager), Some(slots)) = (&state.armor_manager, &part_context.armor_slots) {
+        let (armor_1, armor_2) = armor_manager.create_armor_texture(slots).await?;
 
         textures.insert(
             VanillaMinecraftArmorMaterialData::ARMOR_TEXTURE_ONE,

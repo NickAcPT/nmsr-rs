@@ -119,11 +119,11 @@ async fn load_textures<'a>(
         scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);
     }
 
-    if let Some(armor_slots) = part_provider.armor_slots.as_ref() {
-        let (main_layer, second_armor_layer) = state
-            .armor_manager
-            .create_armor_texture(armor_slots)
-            .await?;
+    if let (Some(armor_manager), Some(armor_slots)) =
+        (&state.armor_manager, part_provider.armor_slots.as_ref())
+    {
+        let (main_layer, second_armor_layer) =
+            armor_manager.create_armor_texture(armor_slots).await?;
 
         scene.set_texture(
             &state.graphics_context,

@@ -163,7 +163,13 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                                 If you haven't drawn your Cape yet, make sure to do so, then use the Ears Manipulator to set it up on your skin.".to_string());
                         }
                     }
-
+                    
+                    if let Some(mut features) = features {
+                        // Harcode emissives to false - I believe blockbench supports emissive textures,
+                        // but Ears skins' emissives aren't separate textures, and instead are based off of specific colors.
+                        features.emissive = false;
+                    }
+                    
                     self.part_context.ears_features = features;
 
                     ears_rs::utils::process_erase_regions(&mut texture)?;

@@ -141,7 +141,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                         }
                     }
 
-                    let features = EarsParser::parse(&texture)?;
+                    let mut features = EarsParser::parse(&texture)?;
 
                     if let (Some(features), Ok(None)) = (features, alfalfa) {
                         let wings_enabled = features.wing.is_some();
@@ -164,7 +164,7 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                         }
                     }
                     
-                    if let Some(mut features) = features {
+                    if let Some(ref mut features) = features {
                         // Harcode emissives to false - I believe blockbench supports emissive textures,
                         // but Ears skins' emissives aren't separate textures, and instead are based off of specific colors.
                         features.emissive = false;

@@ -14,7 +14,7 @@ image = { workspace = true, default-features = false, features = ["png"] }
 anyhow = { version = "1" }
 rand = { version = "0.8" }
 glam = { workspace = true }
-hsl = "0"
+hsl = "0.1"
 strum = { workspace = true }
 
 [features]

@@ -8,10 +8,10 @@ homepage.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.75"
+anyhow = "1.0"
 clap = { version = "4", features = ["derive"] }
 nmsr-rendering-blockbench-model-generator-experiment = { path = "../nmsr-rendering-blockbench-model-generator-experiment" }
-opener = "0.6.1"
+opener = "0.7"
 
 [features]
 default = []

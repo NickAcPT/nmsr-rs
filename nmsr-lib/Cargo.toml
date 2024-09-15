@@ -14,7 +14,7 @@ ears-rs = { workspace = true }
 rayon = { version = "1.10", optional = true }
 vfs = { version = "0.12" }
 serde = { version = "1.0", features = ["derive"], optional = true }
-rkyv = { version = "0.7", optional = true }
+rkyv = { version = "0.8.3", optional = true }
 either = "1.13"
 tracing = "0.1"
 

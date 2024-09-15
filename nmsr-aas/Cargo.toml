@@ -18,13 +18,8 @@ nmsr-rendering-blockbench-model-generator-experiment = { path = "../utils/nmsr-r
 ears-rs = { workspace = true }
 
 anyhow = { workspace = true }
-axum = { version = "0.7", features = [
-    "macros",
-    "tokio"
-] }
-axum-extra = { version = "0.9", features = [
-    "multipart",
-] }
+axum = { version = "0.7", features = ["macros", "tokio"] }
+axum-extra = { version = "0.9", features = ["multipart"] }
 http-body-util = "0.1"
 
 # async-trait - Async trait support because Rust is bad at async
@@ -45,12 +40,25 @@ base64 = "0.22"
 
 # Hyper - HTTP client
 hyper = { version = "1.4", features = ["client"] }
-hyper-util = { version = "0.1", features = ["client", "client-legacy", "http1", "http2", "server-auto", "tokio"] }
+hyper-util = { version = "0.1", features = [
+    "client",
+    "client-legacy",
+    "http1",
+    "http2",
+    "server-auto",
+    "tokio",
+] }
 hyper-tls = "0.6"
 url = "2.5"
 
 # Tokio - Async runtime
-tokio = { workspace = true, features = ["macros", "fs", "sync", "signal", "rt-multi-thread"] }
+tokio = { workspace = true, features = [
+    "macros",
+    "fs",
+    "sync",
+    "signal",
+    "rt-multi-thread",
+] }
 
 # async-scoped - Scoped async tasks
 async-scoped = { version = "0.9", features = ["use-tokio"] }
@@ -83,8 +91,15 @@ thiserror = { workspace = true }
 derive_more = { workspace = true }
 
 # Tower - Service framework
-tower = { version = "0.4", features = ["limit", "timeout", "retry"] }
-tower-http = { version = "0.5", features = ["full"] }
+tower = { version = "0.5", features = ["buffer", "limit", "timeout", "retry"] }
+tower-http = { version = "0.5", features = [
+    "set-header",
+    "trace",
+    "request-id",
+    "cors",
+    "normalize-path",
+    "fs",
+] }
 http = "1.1"
 
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)

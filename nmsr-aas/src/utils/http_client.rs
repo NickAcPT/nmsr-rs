@@ -52,7 +52,7 @@ pub(crate) type NmsrTraceLayer = Trace<
 >;
 
 pub struct NmsrHttpClient {
-    inner: Buffer<RateLimit<Retry<MojankRetryPolicy, Timeout<NmsrTraceLayer>>>, Request<SyncBody>>,
+    inner: Buffer<Request<SyncBody>, <RateLimit<Retry<MojankRetryPolicy, Timeout<NmsrTraceLayer>>> as Service<Request<SyncBody>>>::Future>,
 }
 
 impl NmsrHttpClient {
@@ -150,16 +150,15 @@ impl MojankRetryPolicy {
 }
 
 impl<P, Res> Policy<Request<SyncBody>, Res, P> for MojankRetryPolicy {
-    type Future = Ready<MojankRetryPolicy>;
+    type Future = Ready<()>;
 
-    fn retry(&self, _req: &Request<SyncBody>, result: Result<&Res, &P>) -> Option<Self::Future> {
+    fn retry(&mut self, _req: &mut Request<SyncBody>, result: &mut Result<Res, P>) -> Option<Self::Future> {
         match result {
             Ok(_) => None,
             Err(_) => {
                 if self.attempts > 0 {
-                    Some(ready(Self {
-                        attempts: self.attempts - 1,
-                    }))
+                    self.attempts -= 1;
+                    Some(ready(()))
                 } else {
                     None
                 }
@@ -167,7 +166,7 @@ impl<P, Res> Policy<Request<SyncBody>, Res, P> for MojankRetryPolicy {
         }
     }
 
-    fn clone_request(&self, req: &Request<SyncBody>) -> Option<Request<SyncBody>> {
+    fn clone_request(&mut self, req: &Request<SyncBody>) -> Option<Request<SyncBody>> {
         let method = req.method().clone();
         let uri = req.uri().clone();
 

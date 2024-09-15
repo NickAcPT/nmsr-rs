@@ -1,7 +1,7 @@
 use image::{codecs::png::PngEncoder, ImageEncoder};
 use tracing::trace_span;
 
-use crate::error::{ExplainableExt, NMSRaaSError, Result};
+use crate::error::{NMSRaaSError, Result};
 
 pub(crate) fn create_png_from_bytes((width, height): (u32, u32), bytes: &[u8]) -> Result<Vec<u8>> {
     let mut out = Vec::new();

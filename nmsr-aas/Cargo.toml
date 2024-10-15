@@ -70,12 +70,12 @@ tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # OpenTelemetry - Tracing framework
-opentelemetry = { version = "0.24", features = [] }
-opentelemetry_sdk = { version = "0.24", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.17", default-features = true }
+opentelemetry = { version = "0.26", features = [] }
+opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.26", default-features = true }
 
 # Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
-tracing-opentelemetry = "0.25"
+tracing-opentelemetry = "0.27"
 
 # Strum - Enum helper library
 strum = { workspace = true }
@@ -92,7 +92,7 @@ derive_more = { workspace = true }
 
 # Tower - Service framework
 tower = { version = "0.5", features = ["buffer", "limit", "timeout", "retry"] }
-tower-http = { version = "0.5", features = [
+tower-http = { version = "0.6", features = [
     "set-header",
     "trace",
     "request-id",
@@ -105,10 +105,9 @@ http = "1.1"
 # symlink - Symbolic link library (because Rust's standard library doesn't handle that properly for us)
 symlink = "0.1"
 humantime-serde = "1.1"
-serde_with = "3.9"
+serde_with = "3.11"
 deadpool = { workspace = true }
 image = { workspace = true, default-features = false }
-mtpng = "0.4"
 
 chrono = "0.4"
 tokio-stream = { version = "0.1", features = ["fs"] }

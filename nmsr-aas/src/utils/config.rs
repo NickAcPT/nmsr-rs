@@ -94,6 +94,9 @@ pub struct MojankConfiguration {
 
     /// The timeout to use for requests to the session server in seconds.
     pub session_server_timeout: u64,
+    
+    /// The amount of retries for session server requests.
+    pub session_server_retries: usize,
 
     /// Whether to output default skin when the player's skin is not found, or an error occurs.
     pub use_default_skins_when_missing: bool,
@@ -132,6 +135,7 @@ impl Default for MojankConfiguration {
             session_server_rate_limit: 10,
             username_resolve_rate_limit: None,
             session_server_timeout: 5 * 60, /* 5 minutes */
+            session_server_retries: 5,
 
             use_default_skins_when_missing: true,
             default_skins_use_official_textures_server: true,

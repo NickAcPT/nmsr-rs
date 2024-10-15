@@ -56,8 +56,8 @@ pub struct NmsrHttpClient {
 }
 
 impl NmsrHttpClient {
-    pub fn new(rate_limit_per_second: u64, request_timeout_seconds: u64) -> Self {
-        create_http_client(rate_limit_per_second, request_timeout_seconds)
+    pub fn new(rate_limit_per_second: u64, request_timeout_seconds: u64, request_retries_count: usize) -> Self {
+        create_http_client(rate_limit_per_second, request_timeout_seconds, request_retries_count)
     }
 
     #[instrument(skip(self, parent_span, on_error), parent = parent_span, err)]
@@ -104,7 +104,7 @@ impl NmsrHttpClient {
     }
 }
 
-fn create_http_client(rate_limit_per_second: u64, request_timeout_seconds: u64) -> NmsrHttpClient {
+fn create_http_client(rate_limit_per_second: u64, request_timeout_seconds: u64, request_retries_count: usize) -> NmsrHttpClient {
     let mut http = HttpConnector::new();
     http.set_nodelay(true);
     http.enforce_http(false);
@@ -122,7 +122,7 @@ fn create_http_client(rate_limit_per_second: u64, request_timeout_seconds: u64) 
         .buffer(rate_limit_per_second.saturating_mul(2) as usize)
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))
         .layer(CloneRetryLayer::new(MojankRetryPolicy::new(
-            5, /* Retry attempts */
+            request_retries_count, /* Retry attempts */
         )))
         .layer(TimeoutLayer::new(Duration::from_secs(
             request_timeout_seconds,

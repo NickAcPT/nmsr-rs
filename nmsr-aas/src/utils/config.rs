@@ -1,8 +1,5 @@
 use std::{
-    collections::HashMap,
-    fs::Metadata,
-    path::PathBuf,
-    time::{Duration, SystemTime},
+    collections::HashMap, fs::Metadata, net::IpAddr, path::PathBuf, time::{Duration, SystemTime}
 };
 
 use chrono::{DateTime, Local};
@@ -69,6 +66,7 @@ impl Default for ModelCacheConfiguration {
         }
     }
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(default)]
 pub struct MojankConfiguration {
@@ -118,6 +116,9 @@ pub struct MojankConfiguration {
 
     /// The template to use for resolving player cape textures.    
     pub textures_server_cape_url_template: String,
+    
+    /// The outgoing addresses for load-balancing requests to Mojang servers. 
+    pub outgoing_addresses: Vec<IpAddr>,
 }
 
 pub const DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE: &str =
@@ -146,6 +147,8 @@ impl Default for MojankConfiguration {
                 .to_string(),
             textures_server_cape_url_template: DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE
                 .to_string(),
+                
+            outgoing_addresses: Vec::new(),
         }
     }
 }

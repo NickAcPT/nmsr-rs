@@ -9,11 +9,15 @@ use hyper_util::{
 };
 use std::{
     future::{ready, Ready},
+    net::IpAddr,
     time::Duration,
 };
 use tower::{
+    balance::p2c::Balance,
     buffer::Buffer,
+    discover::ServiceList,
     limit::RateLimit,
+    load::{CompleteOnResponse, PendingRequestsDiscover},
     retry::{Policy, Retry},
     timeout::{Timeout, TimeoutLayer},
     Service, ServiceBuilder, ServiceExt,
@@ -51,13 +55,42 @@ pub(crate) type NmsrTraceLayer = Trace<
     DefaultOnFailure,
 >;
 
-pub struct NmsrHttpClient {
-    inner: Buffer<Request<SyncBody>, <RateLimit<Retry<MojankRetryPolicy, Timeout<NmsrTraceLayer>>> as Service<Request<SyncBody>>>::Future>,
+pub(crate) type HttpClientInnerService =
+    Buffer<
+        Request<SyncBody>,
+        <RateLimit<Retry<MojankRetryPolicy, Timeout<NmsrTraceLayer>>> as Service<
+            Request<SyncBody>,
+        >>::Future,
+    >;
+
+pub enum NmsrHttpClient {
+    SingleIp {
+        inner: HttpClientInnerService,
+    },
+    LoadBalanced {
+        inner: Buffer<
+            Request<SyncBody>,
+            <Balance<
+                PendingRequestsDiscover<ServiceList<Vec<HttpClientInnerService>>>,
+                Request<SyncBody>,
+            > as Service<Request<SyncBody>>>::Future,
+        >,
+    },
 }
 
 impl NmsrHttpClient {
-    pub fn new(rate_limit_per_second: u64, request_timeout_seconds: u64, request_retries_count: usize) -> Self {
-        create_http_client(rate_limit_per_second, request_timeout_seconds, request_retries_count)
+    pub fn new(
+        rate_limit_per_second: u64,
+        request_timeout_seconds: u64,
+        request_retries_count: usize,
+        client_ips: &[IpAddr],
+    ) -> Self {
+        create_http_client(
+            rate_limit_per_second,
+            request_timeout_seconds,
+            request_retries_count,
+            client_ips,
+        )
     }
 
     #[instrument(skip(self, parent_span, on_error), parent = parent_span, err)]
@@ -75,8 +108,8 @@ impl NmsrHttpClient {
                 unreachable!("Empty body should not error: {}", e)
             })))?;
 
-        let response = {
-            let mut svc = self.inner.clone();
+        let response = if let NmsrHttpClient::SingleIp { inner } = self {
+            let mut svc = inner.clone();
 
             let service = svc
                 .ready()
@@ -87,6 +120,20 @@ impl NmsrHttpClient {
                 .call(request)
                 .await
                 .map_err(MojangRequestError::BoxedRequestError)?
+        } else if let NmsrHttpClient::LoadBalanced { inner } = self {
+            let mut svc = inner.clone();
+
+            let service = svc
+                .ready()
+                .await
+                .map_err(MojangRequestError::BoxedRequestError)?;
+
+            service
+                .call(request)
+                .await
+                .map_err(MojangRequestError::BoxedRequestError)?
+        } else {
+            unreachable!("Invalid NmsrHttpClient variant")
         };
 
         if response.status() != StatusCode::OK {
@@ -104,17 +151,78 @@ impl NmsrHttpClient {
     }
 }
 
-fn create_http_client(rate_limit_per_second: u64, request_timeout_seconds: u64, request_retries_count: usize) -> NmsrHttpClient {
+fn create_http_client(
+    rate_limit_per_second: u64,
+    request_timeout_seconds: u64,
+    request_retries_count: usize,
+    client_ips: &[IpAddr],
+) -> NmsrHttpClient {
+    if client_ips.is_empty() {
+        create_http_client_internal(
+            rate_limit_per_second,
+            request_timeout_seconds,
+            request_retries_count,
+            None,
+        )
+    } else if client_ips.len() == 1 {
+        create_http_client_internal(
+            rate_limit_per_second,
+            request_timeout_seconds,
+            request_retries_count,
+            Some(client_ips[0]),
+        )
+    } else {
+        let clients = client_ips
+            .into_iter()
+            .map(|ip| {
+                create_http_client_internal(
+                    rate_limit_per_second,
+                    request_timeout_seconds,
+                    request_retries_count,
+                    Some(*ip),
+                )
+            })
+            .flat_map(|svc| {
+                if let NmsrHttpClient::SingleIp { inner } = svc {
+                    Some(inner)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let discover = ServiceList::new(clients);
+        let load = PendingRequestsDiscover::new(discover, CompleteOnResponse::default());
+        let balanced = Balance::new(load);
+
+        let balanced = ServiceBuilder::new()
+            .buffer(rate_limit_per_second.saturating_mul(2) as usize)
+            .check_clone()
+            .service(balanced);
+
+        NmsrHttpClient::LoadBalanced { inner: balanced }
+    }
+}
+
+fn create_http_client_internal(
+    rate_limit_per_second: u64,
+    request_timeout_seconds: u64,
+    request_retries_count: usize,
+    client_ip: Option<IpAddr>,
+) -> NmsrHttpClient {
     let mut http = HttpConnector::new();
     http.set_nodelay(true);
     http.enforce_http(false);
+    http.set_local_address(client_ip);
 
     let tls = TlsConnector::new().expect("Expected TLS connector to be valid");
 
     let https = HttpsConnector::from((http, tls.into()));
 
     // A new higher level client from hyper is in the works, so we gotta use the legacy one
-    let client = Client::builder(TokioExecutor::new()).build(https);
+    let client = Client::builder(TokioExecutor::new())
+        .http2_keep_alive_while_idle(true)
+        .build(https);
 
     let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
 
@@ -135,11 +243,11 @@ fn create_http_client(rate_limit_per_second: u64, request_timeout_seconds: u64, 
         .check_clone()
         .service(client);
 
-    NmsrHttpClient { inner: service }
+    NmsrHttpClient::SingleIp { inner: service }
 }
 
 #[derive(Copy, Clone, Debug)]
-struct MojankRetryPolicy {
+pub(crate) struct MojankRetryPolicy {
     attempts: usize,
 }
 
@@ -152,7 +260,11 @@ impl MojankRetryPolicy {
 impl<P, Res> Policy<Request<SyncBody>, Res, P> for MojankRetryPolicy {
     type Future = Ready<()>;
 
-    fn retry(&mut self, _req: &mut Request<SyncBody>, result: &mut Result<Res, P>) -> Option<Self::Future> {
+    fn retry(
+        &mut self,
+        _req: &mut Request<SyncBody>,
+        result: &mut Result<Res, P>,
+    ) -> Option<Self::Future> {
         match result {
             Ok(_) => None,
             Err(_) => {

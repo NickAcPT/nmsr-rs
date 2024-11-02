@@ -71,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
 
     setup_tracing(config.tracing.as_ref())?;
 
+    info!("NickAc's Minecraft Skin Renderer - Git Commit {}", env!("VERGEN_IS_LITERALLY_TRASH__IT_DOES_NOT_WORK_AND_IT_ACTUALLY_BREAKS_EVERY_TIME_I_UPDATE_IT__LIKE_SERIOUSLY_HOW_IS_THAT_POSSIBLE___STOP_CHANGING_THE_DAMN_IMPLEMENTATION___I_JUST_WANT_A_STUPID_GIT_HASH"));
     info!("Loaded configuration: {:#?}", config);
 
     let state = NMSRState::new(&config).await?;

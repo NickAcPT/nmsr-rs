@@ -2,6 +2,8 @@ pub mod manager;
 
 use std::collections::VecDeque;
 
+use derive_more::derive::{Deref, From};
+use image::Rgb;
 use nmsr_rendering::high_level::{
     model::{ArmorMaterial, PlayerArmorSlot},
     types::PlayerPartTextureType,
@@ -18,10 +20,20 @@ pub enum VanillaMinecraftArmorMaterial {
     Diamond,
     Gold,
     Iron,
-    Leather(u64),
+    Leather(LeatherArmorColor),
     Netherite,
     Turtle,
 }
+
+#[derive(Debug, Deref, From, Copy, Clone, PartialEq, Eq)]
+pub struct LeatherArmorColor(Rgb<u8>);
+
+impl Default for LeatherArmorColor {
+    fn default() -> Self {
+        Self(Rgb([0xA0, 0x65, 0x40]))
+    }
+}
+
 
 impl VanillaMinecraftArmorMaterial {
     const fn layer_count() -> usize {
@@ -193,11 +205,15 @@ impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let mut split_values: VecDeque<_> = value.split('_').collect();
-        let material: VanillaMinecraftArmorMaterial = if split_values.is_empty() {
+        let mut material: VanillaMinecraftArmorMaterial = if split_values.is_empty() {
             return Err(ArmorManagerError::EmptyArmorSlotError);
         } else {
             partial_match(split_values.pop_front().unwrap_or_default())?
         };
+        
+        let dye_color = if split_values.back().is_some_and(|x| x.contains(',')) {
+            split_values.pop_back()
+        } else { None };
 
         let trims = if split_values.is_empty() {
             Vec::new()
@@ -217,6 +233,14 @@ impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
                 .filter_map(std::result::Result::ok)
                 .collect::<Vec<_>>()
         };
+        
+        if let (Some(dye_color), VanillaMinecraftArmorMaterial::Leather(_)) = (dye_color, material) {
+            let rgb = dye_color.split(',').map(|x| x.parse::<u8>()).collect::<Result<Vec<_>, _>>();
+            
+            if let Ok([r, g, b]) = rgb.as_deref() {
+                material = VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(Rgb([*r, *g, *b])));
+            }
+        }
 
         Ok(Self { material, trims })
     }

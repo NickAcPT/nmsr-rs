@@ -3,10 +3,13 @@ use std::path::PathBuf;
 use ears_rs::utils::upgrade_skin_if_needed;
 use hyper::Method;
 use image::{GenericImageView, RgbaImage};
-use nmsr_rendering::{high_level::{
-    model::{PlayerArmorSlot, PlayerArmorSlots},
-    parts::provider::minecraft::compute_base_part,
-}, low_level::Vec3};
+use nmsr_rendering::{
+    high_level::{
+        model::{PlayerArmorSlot, PlayerArmorSlots},
+        parts::provider::minecraft::compute_base_part,
+    },
+    low_level::Vec3,
+};
 use strum::IntoEnumIterator;
 use tokio::fs;
 use tracing::Span;
@@ -53,30 +56,43 @@ impl<'a> VanillaArmorApplicable<'a> {
                     continue;
                 }
 
-                let vec_color = Vec3::from([color[0] as f32, color[1] as f32, color[2] as f32]);
-                let skin_pixel = (Vec3::from([pixel[0] as f32, pixel[1] as f32, pixel[2] as f32]) / 255.0) * vec_color;
-                
-                pixel.0 = [skin_pixel.x as u8, skin_pixel.y as u8, skin_pixel.z as u8, pixel[3]];
-            }
-        }
+                let do_leather_logic = if let Self::Trim(
+                    armor_material,
+                    VanillaMinecraftArmorTrimData { material, .. },
+                ) = self
+                {
+                    let palette = material
+                        .get_palette_for_trim_armor_material(*armor_material)
+                        .get_palette_colors();
+                    let trim_palette = VanillaMinecraftArmorTrimPalette::get_trim_palette();
 
-        if let Self::Trim(armor_material, VanillaMinecraftArmorTrimData { material, .. }) = self {
-            let palette = material
-                .get_palette_for_trim_armor_material(*armor_material)
-                .get_palette_colors();
-            let trim_palette = VanillaMinecraftArmorTrimPalette::get_trim_palette();
+                    if let Ok(index) = trim_palette.binary_search(&[pixel[0], pixel[1], pixel[2]]) {
+                        let actual_color = palette[index];
 
-            for pixel in image.pixels_mut() {
-                if pixel[3] == 0 {
-                    continue;
-                }
+                        pixel[0] = actual_color[0];
+                        pixel[1] = actual_color[1];
+                        pixel[2] = actual_color[2];
 
-                if let Ok(index) = trim_palette.binary_search(&[pixel[0], pixel[1], pixel[2]]) {
-                    let actual_color = palette[index];
+                        false
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                };
 
-                    pixel[0] = actual_color[0];
-                    pixel[1] = actual_color[1];
-                    pixel[2] = actual_color[2];
+                if do_leather_logic {
+                    let vec_color = Vec3::from([color[0] as f32, color[1] as f32, color[2] as f32]);
+                    let skin_pixel =
+                        (Vec3::from([pixel[0] as f32, pixel[1] as f32, pixel[2] as f32]) / 255.0)
+                            * vec_color;
+
+                    pixel.0 = [
+                        skin_pixel.x as u8,
+                        skin_pixel.y as u8,
+                        skin_pixel.z as u8,
+                        pixel[3],
+                    ];
                 }
             }
         }

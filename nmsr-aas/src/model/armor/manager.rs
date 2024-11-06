@@ -48,18 +48,14 @@ impl<'a> VanillaArmorApplicable<'a> {
     }
 
     fn apply_modifications_if_needed(&self, image: &mut RgbaImage) {
-        if let Self::Armor(VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(color)))
-        | Self::Trim(VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(color)), _) = self
-        {
-            for pixel in image.pixels_mut() {
-                if pixel[3] == 0 {
-                    continue;
-                }
+        for pixel in image.pixels_mut() {
+            if pixel[3] == 0 {
+                continue;
+            }
 
-                let do_leather_logic = if let Self::Trim(
-                    armor_material,
-                    VanillaMinecraftArmorTrimData { material, .. },
-                ) = self
+            let do_leather_logic =
+                if let Self::Trim(armor_material, VanillaMinecraftArmorTrimData { material, .. }) =
+                    self
                 {
                     let palette = material
                         .get_palette_for_trim_armor_material(*armor_material)
@@ -81,19 +77,27 @@ impl<'a> VanillaArmorApplicable<'a> {
                     true
                 };
 
-                if do_leather_logic {
-                    let vec_color = Vec3::from([color[0] as f32, color[1] as f32, color[2] as f32]);
-                    let skin_pixel =
-                        (Vec3::from([pixel[0] as f32, pixel[1] as f32, pixel[2] as f32]) / 255.0)
-                            * vec_color;
+            if do_leather_logic {
+                let (Self::Armor(VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(color)))
+                | Self::Trim(
+                    VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(color)),
+                    _,
+                )) = self
+                else {
+                    return;
+                };
 
-                    pixel.0 = [
-                        skin_pixel.x as u8,
-                        skin_pixel.y as u8,
-                        skin_pixel.z as u8,
-                        pixel[3],
-                    ];
-                }
+                let vec_color = Vec3::from([color[0] as f32, color[1] as f32, color[2] as f32]);
+                let skin_pixel = (Vec3::from([pixel[0] as f32, pixel[1] as f32, pixel[2] as f32])
+                    / 255.0)
+                    * vec_color;
+
+                pixel.0 = [
+                    skin_pixel.x as u8,
+                    skin_pixel.y as u8,
+                    skin_pixel.z as u8,
+                    pixel[3],
+                ];
             }
         }
     }

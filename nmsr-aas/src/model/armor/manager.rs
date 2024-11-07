@@ -48,46 +48,36 @@ impl<'a> VanillaArmorApplicable<'a> {
     }
 
     fn apply_modifications_if_needed(&self, image: &mut RgbaImage) {
-        for pixel in image.pixels_mut() {
-            if pixel[3] == 0 {
-                continue;
+        if let VanillaArmorApplicable::Trim(
+            armor_material,
+            VanillaMinecraftArmorTrimData { material, .. },
+        ) = self
+        {
+            let palette = material
+                .get_palette_for_trim_armor_material(*armor_material)
+                .get_palette_colors();
+            let trim_palette = VanillaMinecraftArmorTrimPalette::get_trim_palette();
+
+            for pixel in image.pixels_mut() {
+                if pixel[3] == 0 {
+                    continue;
+                }
+
+                if let Ok(index) = trim_palette.binary_search(&[pixel[0], pixel[1], pixel[2]]) {
+                    let actual_color = palette[index];
+
+                    pixel[0] = actual_color[0];
+                    pixel[1] = actual_color[1];
+                    pixel[2] = actual_color[2];
+                }
             }
+        }
 
-            let do_leather_logic =
-                if let Self::Trim(armor_material, VanillaMinecraftArmorTrimData { material, .. }) =
-                    self
-                {
-                    let palette = material
-                        .get_palette_for_trim_armor_material(*armor_material)
-                        .get_palette_colors();
-                    let trim_palette = VanillaMinecraftArmorTrimPalette::get_trim_palette();
-
-                    if let Ok(index) = trim_palette.binary_search(&[pixel[0], pixel[1], pixel[2]]) {
-                        let actual_color = palette[index];
-
-                        pixel[0] = actual_color[0];
-                        pixel[1] = actual_color[1];
-                        pixel[2] = actual_color[2];
-
-                        false
-                    } else {
-                        true
-                    }
-                } else {
-                    true
-                };
-
-            if do_leather_logic {
-                let (Self::Armor(VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(color)))
-                | Self::Trim(
-                    VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(color)),
-                    _,
-                )) = self
-                else {
-                    return;
-                };
-
-                let vec_color = Vec3::from([color[0] as f32, color[1] as f32, color[2] as f32]);
+        if let Self::Armor(VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(color))) = self
+        {
+            let vec_color = Vec3::from([color[0] as f32, color[1] as f32, color[2] as f32]);
+            
+            for pixel in image.pixels_mut() {
                 let skin_pixel = (Vec3::from([pixel[0] as f32, pixel[1] as f32, pixel[2] as f32])
                     / 255.0)
                     * vec_color;

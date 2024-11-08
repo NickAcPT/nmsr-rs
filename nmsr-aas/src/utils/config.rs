@@ -1,5 +1,9 @@
 use std::{
-    collections::HashMap, fs::Metadata, net::IpAddr, path::PathBuf, time::{Duration, SystemTime}
+    collections::HashMap,
+    fs::Metadata,
+    net::IpAddr,
+    path::PathBuf,
+    time::{Duration, SystemTime},
 };
 
 use chrono::{DateTime, Local};
@@ -92,7 +96,7 @@ pub struct MojankConfiguration {
 
     /// The timeout to use for requests to the session server in seconds.
     pub session_server_timeout: u64,
-    
+
     /// The amount of retries for session server requests.
     pub session_server_retries: usize,
 
@@ -116,8 +120,8 @@ pub struct MojankConfiguration {
 
     /// The template to use for resolving player cape textures.    
     pub textures_server_cape_url_template: String,
-    
-    /// The outgoing addresses for load-balancing requests to Mojang servers. 
+
+    /// The outgoing addresses for load-balancing requests to Mojang servers.
     pub outgoing_addresses: Vec<IpAddr>,
 }
 
@@ -147,7 +151,7 @@ impl Default for MojankConfiguration {
                 .to_string(),
             textures_server_cape_url_template: DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE
                 .to_string(),
-                
+
             outgoing_addresses: Vec::new(),
         }
     }
@@ -200,7 +204,7 @@ pub struct FeaturesConfiguration {
     #[serde(default)]
     #[serde_as(as = "Vec<DisplayFromStr>")]
     pub disabled_modes: Vec<RenderRequestMode>,
-    
+
     /// Whether to disable downloading armor textures - this makes it so there is no armor rendering support.
     #[serde(default)]
     pub disable_armor_rendering: bool,

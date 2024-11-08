@@ -77,7 +77,7 @@ impl<'a> VanillaArmorApplicable<'a> {
         if let Self::Armor(VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(color))) = self
         {
             let vec_color = Vec3::from([color[0] as f32, color[1] as f32, color[2] as f32]);
-            
+
             for pixel in image.pixels_mut() {
                 let skin_pixel = (Vec3::from([pixel[0] as f32, pixel[1] as f32, pixel[2] as f32])
                     / 255.0)

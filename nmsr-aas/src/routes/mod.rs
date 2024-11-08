@@ -66,7 +66,7 @@ impl<'a> RenderRequestValidator for NMSRState<'a> {
         }
 
         request.features.remove_all(disabled_features);
-        
+
         if let (None, Some(extra)) = (&self.armor_manager, &mut request.extra_settings) {
             extra.helmet.take();
             extra.chestplate.take();
@@ -107,12 +107,18 @@ impl<'a> NMSRState<'a> {
 
         let pools = GraphicsContextPools::new(graphics_context.clone())?;
 
-        let armor_manager = if config.features.as_ref().is_some_and(|f| f.disable_armor_rendering) {
+        let armor_manager = if config
+            .features
+            .as_ref()
+            .is_some_and(|f| f.disable_armor_rendering)
+        {
             None
         } else {
-            Some(Arc::new(VanillaMinecraftArmorManager::new("cache".into()).await?))
+            Some(Arc::new(
+                VanillaMinecraftArmorManager::new("cache".into()).await?,
+            ))
         };
-        
+
         Ok(Self {
             resolver: Arc::new(resolver),
             graphics_context,

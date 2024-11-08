@@ -38,7 +38,7 @@ impl MojangClient {
                 mojank.session_server_rate_limit,
                 mojank.session_server_timeout,
                 mojank.session_server_retries,
-                &mojank.outgoing_addresses
+                &mojank.outgoing_addresses,
             ),
             name_lookup_client: NmsrHttpClient::new(
                 mojank
@@ -46,7 +46,7 @@ impl MojangClient {
                     .unwrap_or(mojank.session_server_rate_limit),
                 mojank.session_server_timeout,
                 mojank.session_server_retries,
-                &mojank.outgoing_addresses
+                &mojank.outgoing_addresses,
             ),
             mojank_config: mojank,
         })

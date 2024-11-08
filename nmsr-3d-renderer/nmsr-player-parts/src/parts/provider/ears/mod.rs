@@ -72,7 +72,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for EarsPlayerPartsProvider {
         {
             builder.stack_group(get_part_group_name(body_part.get_non_layer_part()), action);
         }
-        
+
         #[cfg(not(feature = "part_tracker"))]
         {
             (action)(&mut builder);

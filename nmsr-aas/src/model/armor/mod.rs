@@ -34,7 +34,6 @@ impl Default for LeatherArmorColor {
     }
 }
 
-
 impl VanillaMinecraftArmorMaterial {
     const fn layer_count() -> usize {
         2
@@ -172,13 +171,13 @@ impl VanillaMinecraftArmorMaterialData {
     pub const ARMOR_TEXTURE_ONE: PlayerPartTextureType = PlayerPartTextureType::Custom {
         key: "armor_1",
         size: (64, 64),
-        is_emissive: false
+        is_emissive: false,
     };
 
     pub const ARMOR_TEXTURE_TWO: PlayerPartTextureType = PlayerPartTextureType::Custom {
         key: "armor_2",
         size: (64, 64),
-        is_emissive: false
+        is_emissive: false,
     };
 
     #[must_use]
@@ -212,10 +211,12 @@ impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
         } else {
             partial_match(split_values.pop_front().unwrap_or_default())?
         };
-        
+
         let dye_color = if split_values.back().is_some_and(|x| x.contains(',')) {
             split_values.pop_back()
-        } else { None };
+        } else {
+            None
+        };
 
         let trims = if split_values.is_empty() {
             Vec::new()
@@ -235,12 +236,17 @@ impl TryFrom<String> for VanillaMinecraftArmorMaterialData {
                 .filter_map(std::result::Result::ok)
                 .collect::<Vec<_>>()
         };
-        
-        if let (Some(dye_color), VanillaMinecraftArmorMaterial::Leather(_)) = (dye_color, material) {
-            let rgb = dye_color.split(',').map(|x| x.parse::<u8>()).collect::<Result<Vec<_>, _>>();
-            
+
+        if let (Some(dye_color), VanillaMinecraftArmorMaterial::Leather(_)) = (dye_color, material)
+        {
+            let rgb = dye_color
+                .split(',')
+                .map(|x| x.parse::<u8>())
+                .collect::<Result<Vec<_>, _>>();
+
             if let Ok([r, g, b]) = rgb.as_deref() {
-                material = VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(Rgb([*r, *g, *b])));
+                material =
+                    VanillaMinecraftArmorMaterial::Leather(LeatherArmorColor(Rgb([*r, *g, *b])));
             }
         }
 

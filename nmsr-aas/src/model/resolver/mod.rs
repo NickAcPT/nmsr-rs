@@ -261,13 +261,18 @@ impl RenderRequestResolver {
         #[cfg_attr(not(feature = "ears"), allow(unused_mut))]
         if let Some(mut result) = self.model_cache.get_cached_resolved_texture(entry).await? {
             #[cfg(feature = "ears")]
-            if let Some(skin) =  result.textures.remove(&ResolvedRenderEntryTextureType::Skin) {
+            if let Some(skin) = result
+                .textures
+                .remove(&ResolvedRenderEntryTextureType::Skin)
+            {
                 Self::resolve_ears_textures(&skin, &mut result.textures);
-                result.textures.insert(ResolvedRenderEntryTextureType::Skin, skin);
-                
+                result
+                    .textures
+                    .insert(ResolvedRenderEntryTextureType::Skin, skin);
+
                 return Ok(result);
             }
-            
+
             return Ok(result);
         }
 
@@ -457,7 +462,9 @@ impl RenderRequestResolver {
                 ),
                 (
                     ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Wings),
-                    Some(ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveProcessedWings)),
+                    Some(ResolvedRenderEntryTextureType::Ears(
+                        ResolvedRenderEntryEarsTextureType::EmissiveProcessedWings,
+                    )),
                     ResolvedRenderEntryTextureType::Ears(
                         ResolvedRenderEntryEarsTextureType::EmissiveWings,
                     ),

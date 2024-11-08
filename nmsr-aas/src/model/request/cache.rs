@@ -355,9 +355,13 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape),
             #[cfg(feature = "ears")]
-            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin),
+            ResolvedRenderEntryTextureType::Ears(
+                ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin,
+            ),
             #[cfg(feature = "ears")]
-            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveProcessedWings),
+            ResolvedRenderEntryTextureType::Ears(
+                ResolvedRenderEntryEarsTextureType::EmissiveProcessedWings,
+            ),
             #[cfg(feature = "ears")]
             ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveSkin),
             #[cfg(feature = "ears")]

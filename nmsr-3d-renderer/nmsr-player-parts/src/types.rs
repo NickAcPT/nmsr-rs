@@ -74,7 +74,11 @@ pub enum PlayerPartTextureType {
     Shadow,
     Cape,
     Skin,
-    Custom { key: &'static str, size: (u32, u32), is_emissive: bool },
+    Custom {
+        key: &'static str,
+        size: (u32, u32),
+        is_emissive: bool,
+    },
 }
 
 impl std::fmt::Display for PlayerPartTextureType {
@@ -95,7 +99,7 @@ impl PlayerPartTextureType {
             _ => false,
         }
     }
-    
+
     pub fn get_texture_size(&self) -> (u32, u32) {
         match self {
             Self::Skin => (64, 64),

@@ -63,7 +63,7 @@ impl SceneContext {
                 "Emissive Sun",
                 &context.layouts.sun_bind_group_layout,
                 &[SunInformation::new([0.0; 3].into(), 0.0, 1.0f32)],
-        );
+            );
 
         Self {
             transform_bind_group,

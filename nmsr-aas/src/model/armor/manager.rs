@@ -63,7 +63,8 @@ impl<'a> VanillaArmorApplicable<'a> {
                     continue;
                 }
 
-                if let Ok(index) = trim_palette.binary_search(&[pixel[0], pixel[1], pixel[2]]) {
+                // Although our trim image is RGBA in here, it's actually a grayscale image with an alpha channel
+                if let Ok(index) = trim_palette.binary_search(&pixel[0]) {
                     let actual_color = palette[index];
 
                     pixel[0] = actual_color[0];

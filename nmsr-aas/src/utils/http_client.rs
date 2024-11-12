@@ -29,7 +29,7 @@ use tower_http::{
         DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, Trace, TraceLayer,
     },
 };
-use tracing::{info, instrument, Span};
+use tracing::{instrument, trace, Span};
 
 use crate::error::{MojangRequestError, MojangRequestResult};
 
@@ -366,7 +366,7 @@ where
 
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
         if let Some(ip) = self.ip {
-            info!("Outgoing request from IP: {}", ip);
+            trace!("Outgoing request from IP: {}", ip);
         }
         self.inner.call(req)
     }

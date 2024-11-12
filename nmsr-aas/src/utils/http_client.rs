@@ -71,7 +71,7 @@ pub enum NmsrHttpClient {
         inner: Buffer<
             Request<SyncBody>,
             <Balance<
-                PendingRequestsDiscover<ServiceList<Vec<HttpClientInnerService>>>,
+            PeakEwmaDiscover<ServiceList<Vec<HttpClientInnerService>>>,
                 Request<SyncBody>,
             > as Service<Request<SyncBody>>>::Future,
         >,
@@ -192,7 +192,7 @@ fn create_http_client(
             .collect::<Vec<_>>();
 
         let discover = ServiceList::new(clients);
-        let load = PendingRequestsDiscover::new(discover, CompleteOnResponse::default());
+        let load = PeakEwmaDiscover::new(discover, Duration::from_secs(1), Duration::from_millis(50), CompleteOnResponse::default());
         let balanced = Balance::new(load);
 
         let balanced = ServiceBuilder::new()

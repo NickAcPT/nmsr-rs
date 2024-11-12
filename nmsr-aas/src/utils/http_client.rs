@@ -17,7 +17,7 @@ use tower::{
     buffer::Buffer,
     discover::ServiceList,
     limit::RateLimit,
-    load::{CompleteOnResponse, PendingRequestsDiscover},
+    load::{CompleteOnResponse, PeakEwmaDiscover},
     retry::{Policy, Retry},
     timeout::{Timeout, TimeoutLayer},
     Service, ServiceBuilder, ServiceExt,
@@ -29,7 +29,7 @@ use tower_http::{
         DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, Trace, TraceLayer,
     },
 };
-use tracing::{instrument, Span};
+use tracing::{info, instrument, Span};
 
 use crate::error::{MojangRequestError, MojangRequestResult};
 
@@ -45,7 +45,7 @@ pub(crate) type SyncBody =
 pub(crate) type SyncBodyClient = Client<HttpsConnector<HttpConnector>, SyncBody>;
 
 pub(crate) type NmsrTraceLayer = Trace<
-    SetRequestHeader<SyncBodyClient, HeaderValue>,
+    SetRequestHeader<LogRequestIpService<SyncBodyClient>, HeaderValue>,
     SharedClassifier<ServerErrorsAsFailures>,
     DefaultMakeSpan,
     DefaultOnRequest,
@@ -225,7 +225,8 @@ fn create_http_client_internal(
         .build(https);
 
     let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
-
+    let ip_layer = LogRequestIpLayer::new(client_ip);
+    
     let service = ServiceBuilder::new()
         .buffer(rate_limit_per_second.saturating_mul(2) as usize)
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))
@@ -240,6 +241,7 @@ fn create_http_client_internal(
             HeaderName::from_static("user-agent"),
             HeaderValue::from_str(USER_AGENT).expect("Expected user-agent to be valid"),
         ))
+        .layer(ip_layer)
         .check_clone()
         .service(client);
 
@@ -318,5 +320,54 @@ where
     fn layer(&self, service: S) -> Self::Service {
         let policy = self.policy.clone();
         Retry::new(policy, service)
+    }
+}
+
+
+#[derive(Clone, Debug, Copy)]
+pub struct LogRequestIpLayer {
+    ip: Option<IpAddr>,
+}
+
+impl LogRequestIpLayer {
+    pub fn new(ip: Option<IpAddr>) -> Self {
+        Self { ip }
+    }
+}
+
+impl<S> tower::Layer<S> for LogRequestIpLayer {
+    type Service = LogRequestIpService<S>;
+
+    fn layer(&self, service: S) -> Self::Service {
+        LogRequestIpService {
+            ip: self.ip,
+            inner: service,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct LogRequestIpService<S> {
+    ip: Option<IpAddr>,
+    inner: S,
+}
+
+impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for LogRequestIpService<S>
+where
+    S: Service<Request<ReqBody>, Response = http::Response<ResBody>>,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = S::Future;
+
+    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
+        if let Some(ip) = self.ip {
+            info!("Outgoing request from IP: {}", ip);
+        }
+        self.inner.call(req)
     }
 }

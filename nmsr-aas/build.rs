@@ -5,7 +5,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=build.rs");
 
     let result = process::Command::new("git")
-        .args(&["rev-parse", "--short", "HEAD"])
+        .args(&["rev-parse", "--short=12", "HEAD"])
         .output()
         .map_err(|e| format!("Failed to execute git: {}", e))?;
 

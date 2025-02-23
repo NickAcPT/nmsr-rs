@@ -5,7 +5,7 @@ use crate::{
     },
     error::{MojangRequestError, MojangRequestResult},
     model::resolver::mojang::model::UsernameToUuidResponse,
-    utils::http_client::NmsrHttpClient,
+    utils::http_client::{NmsrHttpClient, USER_AGENT},
 };
 use hyper::{body::Bytes, Method};
 use std::{borrow::Cow, sync::Arc};
@@ -33,12 +33,20 @@ pub enum MojangTextureRequestType {
 
 impl MojangClient {
     pub fn new(mojank: Arc<MojankConfiguration>) -> MojangRequestResult<Self> {
+        let mut user_agent = USER_AGENT.to_owned();
+        if let Some(contact) = &mojank.contact_info.as_ref().take_if(|s| !s.is_empty()) {
+            user_agent.push_str(" (");
+            user_agent.push_str(contact);
+            user_agent.push(')');
+        }
+
         Ok(Self {
             session_server_client: NmsrHttpClient::new(
                 mojank.session_server_rate_limit,
                 mojank.session_server_timeout,
                 mojank.session_server_retries,
                 &mojank.outgoing_addresses,
+                Some(&user_agent),
             ),
             name_lookup_client: NmsrHttpClient::new(
                 mojank
@@ -47,6 +55,7 @@ impl MojangClient {
                 mojank.session_server_timeout,
                 mojank.session_server_retries,
                 &mojank.outgoing_addresses,
+                Some(&user_agent),
             ),
             mojank_config: mojank,
         })

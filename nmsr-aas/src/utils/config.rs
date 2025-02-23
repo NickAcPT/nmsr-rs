@@ -123,6 +123,9 @@ pub struct MojankConfiguration {
 
     /// The outgoing addresses for load-balancing requests to Mojang servers.
     pub outgoing_addresses: Vec<IpAddr>,
+    
+    /// Extra useful contact information for outgoing requests
+    pub contact_info: Option<String>,
 }
 
 pub const DEFAULT_TEXTURES_SERVER_SKIN_URL_TEMPLATE: &str =
@@ -135,7 +138,7 @@ impl Default for MojankConfiguration {
             session_server: "https://sessionserver.mojang.com/".to_string(),
             textures_server: DEFAULT_TEXTURES_SERVER.to_string(),
             mojang_api_server: "https://api.mojang.com/".to_string(),
-            geysermc_api_server: "https://api.geysermc.org/".to_string(),
+            geysermc_api_server: "https://api.geysermc.org".to_string(),
 
             session_server_rate_limit: 10,
             username_resolve_rate_limit: None,
@@ -153,6 +156,8 @@ impl Default for MojankConfiguration {
                 .to_string(),
 
             outgoing_addresses: Vec::new(),
+            
+            contact_info: None,
         }
     }
 }

@@ -112,6 +112,13 @@ Moving off from a different avatar service? _We've got you covered._ Self-hostin
 
 ##### _Examples shown are of the author's skin, rendered using the `ears` feature enabled._
 
+
+> [!IMPORTANT]
+> If you are self-hosting an instance that you run in production, you should fill the contact information in the `config.toml` file (see example.config.toml).
+> 
+> This is used to provide contact information in the headers of outgoing requests to the various APIs, just in case they need to contact you.
+
+
 ## Crates
 
 Since this project contains a few crates, here's a short explanation for each.

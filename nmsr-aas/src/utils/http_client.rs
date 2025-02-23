@@ -33,10 +33,9 @@ use tracing::{instrument, trace, Span};
 
 use crate::error::{MojangRequestError, MojangRequestResult};
 
-const USER_AGENT: &str = concat!(
+pub const USER_AGENT: &str = concat!(
     "NMSR-as-a-Service/",
     env!("VERGEN_IS_LITERALLY_TRASH__IT_DOES_NOT_WORK_AND_IT_ACTUALLY_BREAKS_EVERY_TIME_I_UPDATE_IT__LIKE_SERIOUSLY_HOW_IS_THAT_POSSIBLE___STOP_CHANGING_THE_DAMN_IMPLEMENTATION___I_JUST_WANT_A_STUPID_GIT_HASH"),
-    " (Discord=@nickac; +https://nmsr.nickac.dev/)"
 );
 
 pub(crate) type SyncBody =
@@ -84,12 +83,14 @@ impl NmsrHttpClient {
         request_timeout_seconds: u64,
         request_retries_count: usize,
         client_ips: &[IpAddr],
+        user_agent: Option<&str>,
     ) -> Self {
         create_http_client(
             rate_limit_per_second,
             request_timeout_seconds,
             request_retries_count,
             client_ips,
+            user_agent,
         )
     }
 
@@ -156,6 +157,7 @@ fn create_http_client(
     request_timeout_seconds: u64,
     request_retries_count: usize,
     client_ips: &[IpAddr],
+    user_agent: Option<&str>,
 ) -> NmsrHttpClient {
     if client_ips.is_empty() {
         create_http_client_internal(
@@ -163,6 +165,7 @@ fn create_http_client(
             request_timeout_seconds,
             request_retries_count,
             None,
+            user_agent,
         )
     } else if client_ips.len() == 1 {
         create_http_client_internal(
@@ -170,6 +173,7 @@ fn create_http_client(
             request_timeout_seconds,
             request_retries_count,
             Some(client_ips[0]),
+            user_agent,
         )
     } else {
         let clients = client_ips
@@ -180,6 +184,7 @@ fn create_http_client(
                     request_timeout_seconds,
                     request_retries_count,
                     Some(*ip),
+                    user_agent,
                 )
             })
             .flat_map(|svc| {
@@ -209,6 +214,7 @@ fn create_http_client_internal(
     request_timeout_seconds: u64,
     request_retries_count: usize,
     client_ip: Option<IpAddr>,
+    user_agent: Option<&str>,
 ) -> NmsrHttpClient {
     let mut http = HttpConnector::new();
     http.set_nodelay(true);
@@ -239,7 +245,7 @@ fn create_http_client_internal(
         .layer(tracing)
         .layer(SetRequestHeaderLayer::overriding(
             HeaderName::from_static("user-agent"),
-            HeaderValue::from_str(USER_AGENT).expect("Expected user-agent to be valid"),
+            HeaderValue::from_str(user_agent.unwrap_or(USER_AGENT)).expect("Expected user-agent to be valid"),
         ))
         .layer(ip_layer)
         .check_clone()

@@ -110,7 +110,7 @@ impl VanillaMinecraftArmorManager {
             .explain("Unable to create armor cache folder".to_string())?;
 
         let manager = Self {
-            client: NmsrHttpClient::new(20, 5 * 60 /* 5 minutes */, 5, &[]),
+            client: NmsrHttpClient::new(20, 5 * 60 /* 5 minutes */, 5, &[], None),
             material_location,
             trims_location,
         };

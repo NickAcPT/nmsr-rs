@@ -61,7 +61,7 @@ mojang_api_server = "https://api.mojang.com"
 session_server_rate_limit = 10
 # The URL to the Geyser API's server.
 # This is used to get the bedrock skin for a player based on their Floodgate UUID.
-geysermc_api_server = "https://api.geysermc.org/"
+geysermc_api_server = "https://api.geysermc.org"
 # Whether to enable the offline-mode UUIDs.
 # By enabling this, offline mode UUIDs (version 3) will be allowed.
 allow_offline_mode_uuids = false
@@ -72,6 +72,13 @@ use_dashless_uuids = false
 textures_server_skin_url_template = "{textures_server}/texture/{texture_id}"
 # The template to use for the player cape textures URL.
 textures_server_cape_url_template = "{textures_server}/texture/{texture_id}"
+
+# If you are self-hosting an instance that you run in production, you should fill this information.
+# This is used to provide contact information in the headers of outgoing requests to the various APIs.
+# The contact information will be appended to the User-Agent header with the following format:
+# "NMSR-as-a-Service/{version} ({contact_info})"
+# Where {version} is the git commit hash of the running instance, and {contact_info} is the contact information you provide here
+# contact_info = ""
 
 # Rendering configuration.
 # This is used when setting up the rendering engine.

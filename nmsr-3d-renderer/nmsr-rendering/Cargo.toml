@@ -18,7 +18,7 @@ itertools = { workspace = true }
 tracing = { workspace = true }
 deadpool = { workspace = true, optional = true }
 async-trait = { workspace = true }
-derive_more = { workspace = true }
+derive_more = { workspace = true, features = ["deref", "debug", "from", "deref_mut"] }
 smaa = { git = "https://github.com/NickAcPT/smaa-rs", branch = "nmsr", optional = true }
 
 [features]

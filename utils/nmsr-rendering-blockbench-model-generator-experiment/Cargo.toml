@@ -13,14 +13,14 @@ nmsr-rendering = { version = "0.1.0", path = "../../nmsr-3d-renderer/nmsr-render
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde-wasm-bindgen = { version = "0.6.5", optional = true }
-wasm-bindgen = { version = "0.2.93", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
 clap = { version = "4", features = ["derive"] }
-derive_more = { version = "1.0.0", features = ["deref", "debug"] }
+derive_more = { workspace = true, features = ["deref", "debug"] }
 ears-rs = { workspace = true }
-uuid = { version = "1.10", features = ["serde", "v4"] }
+uuid = { workspace = true, features = ["serde", "v4"]}
 glam = { workspace = true, features = ["serde"] }
-base64 = "0.22"
-xxhash-rust = { version = "0.8", features = ["xxh3"] }
+base64 = { workspace = true }
+xxhash-rust = { workspace = true, features = ["xxh3"] }
 
 [features]
 default = ["nmsr-rendering/part_tracker"]

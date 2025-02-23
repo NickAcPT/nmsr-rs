@@ -49,7 +49,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
 
         let (ang, swing) = if tail_mode == TailMode::Down {
             (30, 40)
-        } else if tail_mode == TailMode::Back {
+        } else if matches!(tail_mode, TailMode::Back | TailMode::Cross | TailMode::CrossOverlap | TailMode::Star | TailMode::StarOverlap) {
             (if bend_0 != 0.0 { 90 } else { 80 }, 20)
         } else if tail_mode == TailMode::Up {
             (130, -20)
@@ -96,6 +96,12 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
             let seg_height = 12 / segments;
 
             for i in 0..segments {
+                let ofs = if i != 0 && matches!(tail_mode, TailMode::CrossOverlap | TailMode::StarOverlap) {
+                    4
+                } else {
+                    0
+                };
+                
                 b.rotate(angles[i], 0., 0.);
                 b.quad_back(
                     56,
@@ -106,6 +112,43 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
                     TextureFlip::Both,
                     format!("Tail Segment {}", i),
                 );
+                
+                if let TailMode::Cross | TailMode::CrossOverlap = tail_mode {
+                    b.stack(|b| {
+                        b.translate(4.0, 0., 0.);
+                        b.rotate(0., 90.0, 0.);
+                        b.translate(-4.0, -(ofs as f32), 0.0);
+                        
+                        b.quad_back(
+                            56,
+                            (16 + (i * seg_height).saturating_sub(ofs)) as u16,
+                            8,
+                            (seg_height + ofs) as u16,
+                            TextureRotation::None,
+                            TextureFlip::Both,
+                            format!("Tail Cross Segment {}", i),
+                        );
+                    });
+                } else if let TailMode::Star | TailMode::StarOverlap = tail_mode {
+                    for j in 0..4 {
+                        b.stack(|b| {
+                            b.translate(4.0, 0., 0.);
+                            b.rotate(0., 45.0 * (j + 1) as f32, 0.);
+                            b.translate(-4.0, -(ofs as f32), 0.0);
+                            
+                            b.quad_back(
+                                56,
+                                (16 + (i * seg_height).saturating_sub(ofs)) as u16,
+                                8,
+                                (seg_height + ofs) as u16,
+                                TextureRotation::None,
+                                TextureFlip::Both,
+                                format!("Tail Segment {} Star {}", i, j),
+                            );
+                        });
+                    }
+                }
+                
                 b.translate_i(0, seg_height as i32, 0);
             }
         });

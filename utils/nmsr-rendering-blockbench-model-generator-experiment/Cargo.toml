@@ -16,7 +16,7 @@ serde-wasm-bindgen = { version = "0.6.5", optional = true }
 wasm-bindgen = { version = "0.2.93", optional = true }
 clap = { version = "4", features = ["derive"] }
 derive_more = { version = "1.0.0", features = ["deref", "debug"] }
-ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
+ears-rs = { workspace = true }
 uuid = { version = "1.10", features = ["serde", "v4"] }
 glam = { workspace = true, features = ["serde"] }
 base64 = "0.22"

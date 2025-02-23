@@ -102,6 +102,41 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModWingsPartProvider<M> {
                         );
                     });
                 }
+                if wing_mode == WingMode::AsymmetricDual {
+                    b.stack(|b| {
+                        b.rotate(0.0, -120. + wiggle, 0.0);
+                        b.quad_back(
+                            10,
+                            0,
+                            10,
+                            16,
+                            TextureRotation::None,
+                            TextureFlip::None,
+                            "Wing (Asymmetric Left)",
+                        );
+                    });
+                    
+                    b.translate(4., 0., 0.);
+                
+                    b.stack(|b| {
+                        b.rotate(0.0, -60. + wiggle, 0.0);
+                        b.quad_back(
+                            0,
+                            0,
+                            10,
+                            16,
+                            TextureRotation::None,
+                            TextureFlip::None,
+                            "Wing (Asymmetric Right)",
+                        );
+                    });
+                }
+                if wing_mode == WingMode::Flat {
+                    b.translate(-8., 0., 0.75);
+                    b.stack(|b| {
+                        b.quad_back(0, 0, 20, 16, TextureRotation::None, TextureFlip::Horizontal, "Wing (Flat)");
+                    });
+                }
             });
         });
     }

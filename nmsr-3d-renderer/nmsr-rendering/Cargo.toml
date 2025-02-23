@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wgpu = { workspace = true, optional = true  }
+wgpu = { workspace = true, optional = true }
 wgpu-types = { workspace = true }
 bytemuck = { workspace = true }
 glam = { workspace = true }
@@ -13,12 +13,17 @@ thiserror = { workspace = true }
 strum = { workspace = true }
 nmsr-player-parts = { path = "../nmsr-player-parts" }
 image = { workspace = true, default-features = false }
-tokio = { workspace = true, default-features = false }
+tokio = { workspace = true, default-features = false, features = ["sync"] }
 itertools = { workspace = true }
 tracing = { workspace = true }
 deadpool = { workspace = true, optional = true }
 async-trait = { workspace = true }
-derive_more = { workspace = true, features = ["deref", "debug", "from", "deref_mut"] }
+derive_more = { workspace = true, features = [
+    "deref",
+    "debug",
+    "from",
+    "deref_mut",
+] }
 smaa = { git = "https://github.com/NickAcPT/smaa-rs", branch = "nmsr", optional = true }
 
 [features]

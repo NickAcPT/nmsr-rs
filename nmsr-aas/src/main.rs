@@ -88,10 +88,10 @@ async fn main() -> anyhow::Result<()> {
 
     // build our application with a route
     let router = Router::new()
-        .route("/:mode/:texture", get(render))
-        .route("/:mode/:texture", post(render_post_warning))
-        .route("/:mode", get(render_get_warning))
-        .route("/:mode", post(render))
+        .route("/{mode}/{texture}", get(render))
+        .route("/{mode}/{texture}", post(render_post_warning))
+        .route("/{mode}", get(render_get_warning))
+        .route("/{mode}", post(render))
         .with_state(state);
 
     let router = if let Some(path) = config.server.static_files_directory {
@@ -101,7 +101,7 @@ async fn main() -> anyhow::Result<()> {
             .call_fallback_on_method_not_allowed(true)
             .fallback(router.layer(NormalizePathLayer::trim_trailing_slash()));
 
-        Router::new().nest_service("/", serve_dir)
+        Router::new().fallback_service(serve_dir)
     } else {
         router.route("/", get(root))
     };

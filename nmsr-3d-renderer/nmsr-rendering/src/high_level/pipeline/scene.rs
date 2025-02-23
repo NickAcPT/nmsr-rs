@@ -406,15 +406,15 @@ where
                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
             encoder.copy_texture_to_buffer(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     aspect: wgpu::TextureAspect::All,
                     texture: &textures.output_texture.texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d::ZERO,
                 },
-                wgpu::ImageCopyBuffer {
+                wgpu::TexelCopyBufferInfo {
                     buffer: &textures.texture_output_buffer,
-                    layout: wgpu::ImageDataLayout {
+                    layout: wgpu::TexelCopyBufferLayout {
                         offset: 0,
                         bytes_per_row: Some(
                             textures

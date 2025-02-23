@@ -494,7 +494,7 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
                 .collect::<Vec<_>>()
         })
         .sorted_by_cached_key(|(x, y, _, _)| (*x, *y))
-        .group_by(|(x, y, _, _)| (*x, *y))
+        .chunk_by(|(x, y, _, _)| (*x, *y))
         .into_iter()
         .flat_map(|(_, group)| {
             let pixels = group
@@ -519,7 +519,7 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
                 // Find groups of opaque pixels and drop all but the last one
                 pixels = pixels
                     .into_iter()
-                    .group_by(|(_, _, is_opaque)| *is_opaque)
+                    .chunk_by(|(_, _, is_opaque)| *is_opaque)
                     .into_iter()
                     .flat_map(|(is_opaque, group)| {
                         let group_pixels = group.collect::<Vec<_>>();

@@ -8,7 +8,6 @@ use crate::{
         entry::RenderRequestEntry, RenderRequest, RenderRequestExtraSettings, RenderRequestMode,
     },
 };
-use async_trait::async_trait;
 use axum::{
     extract::{FromRequest, Path, Query, Request},
     RequestExt,
@@ -19,7 +18,6 @@ use is_empty::IsEmpty;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-#[async_trait]
 impl<S> FromRequest<S> for RenderRequest
 where
     S: Send + Sync + RenderRequestValidator,

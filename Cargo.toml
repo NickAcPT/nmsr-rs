@@ -2,9 +2,7 @@
 resolver = "2"
 
 package.license = "MIT OR Apache-2.0"
-package.authors = [
-    "NickAcPT"
-]
+package.authors = ["NickAcPT"]
 
 package.homepage = "https://github.com/NickAcPT/nmsr-rs"
 
@@ -13,58 +11,99 @@ members = [
     #"nmsr-jni",
     "nmsr-aas",
     "utils/nmsr-skin-template-generator-experiment",
-    
+
     "utils/nmsr-rendering-blockbench-model-generator-experiment",
     #"utils/nmsr-rendering-blockbench-model-generator-experiment-wasm",
     "utils/nmsr-rendering-blockbench-model-generator-experiment-cli",
-    
+
     "utils/nmsr-rendering-parts-generator-experiment",
     "utils/nmsr-rendering-parts-generator-experiment-cli",
-    
+
     "utils/nmsr-rendering-palette-extractor",
-    
+
     "utils/nmsr-multi-parts-organizer",
     "utils/nmsr-backfaces-optimizer",
-    
+
     "utils/nmsr-software-rasterizer",
-    
+
     "nmsr-3d-renderer/nmsr-player-parts",
     "nmsr-3d-renderer/nmsr-rendering",
 ]
 
 [workspace.dependencies]
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
-thiserror = "1.0"
-strum = { version = "0.26", features = ["derive"] }
-itertools = { version = "0.13" }
+thiserror = "2.0"
+strum = { version = "0.27", features = ["derive"] }
+itertools = { version = "0.14" }
 paste = "1.0"
-wgpu = "22.1"
-wgpu-types = "22.0"
-bytemuck = { version = "1.19", features = ["derive"] }
-glam = { version = "0.29", features = ["bytemuck"] }
-image = { version = "0.25.2", default-features = false, features = ["png"] }
+wgpu = "24.0"
+wgpu-types = "24.0"
+bytemuck = { version = "1.21", features = ["derive"] }
+glam = { version = "0.30", features = ["bytemuck"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
 
-deadpool = { version = "0.12.1" }
+axum = { version = "0.8" }
+axum-extra = { version = "0.10" }
+http-body-util = "0.1"
 
-tokio = { version = "1.40", features = ["sync"], default-features = false }
+deadpool = { version = "0.12" }
 
-tracing = "0.1"
-async-trait = "0.1"
+tokio = { version = "1.43", default-features = false }
 
-derive_more = { version = "1.0.0", features = [
-    "deref",
-    "deref_mut",
-    "from",
-    "debug",
-], default-features = false }
+base64 = { version = "0.22" }
+twelf = { version = "0.15", default-features = false }
 
-anyhow = "1.0"
+# Hyper - HTTP client
+hyper = { version = "1.5", features = ["client"] }
+hyper-util = { version = "0.1" }
+hyper-tls = { version = "0.6" }
+url = { version = "2.5" }
+
+tracing = { version = "0.1" }
+async-trait = { version = "0.1" }
+
+derive_more = { version = "2.0", default-features = false }
+
+anyhow = { version = "1.0" }
 
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde_json = { version = "1.0" }
 
-xxhash-rust = { version = "0.8.12", features = ["xxh3"] }
-uuid = { version = "1.10", features = ["serde"] }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+uuid = { version = "1.14", features = ["serde"] }
+
+symlink = { version = "0.1" }
+async-scoped = { version = "0.9", features = ["use-tokio"] }
+humantime-serde = { version = "1.1" }
+serde_with = { version = "3.11" }
+
+tower = { version = "0.5" }
+tower-http = { version = "0.6" }
+
+# Tracing subscriber - Composing Tracing subscribers
+tracing-subscriber = { version = "0.3" }
+
+# OpenTelemetry - Tracing framework
+opentelemetry = { version = "0.26" }
+opentelemetry_sdk = { version = "0.26" }
+opentelemetry-otlp = { version = "0.26" }
+
+# Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
+tracing-opentelemetry = { version = "0.27" }
+
+http = { version = "1.1" }
+
+enumset = { version = "1.1" }
+
+chrono = { version = "0.4"}
+tokio-stream = { version = "0.1", features = ["fs"] }
+sync_wrapper = { version = "1.0"}
+
+indoc = { version = "2"}
+
+is_empty = { version = "0.2"}
+
+urlencoding = { version = "2.1.3"}
 
 [profile.dev.package.image]
 opt-level = 3

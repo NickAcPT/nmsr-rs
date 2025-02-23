@@ -162,15 +162,21 @@ impl<'a> GraphicsContext<'a> {
         descriptor: GraphicsContextDescriptor<'a>,
         shader: ShaderSource<'_>,
     ) -> Result<Self> {
-        let backends = wgpu::util::backend_bits_from_env()
+        let backends = wgpu::Backends::from_env()
             .or(descriptor.backends)
             .ok_or(NMSRRenderingError::NoBackendFound)?;
 
-        let dx12_shader_compiler = wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default();
-
-        let instance = Instance::new(wgpu::InstanceDescriptor {
+        let instance = Instance::new(&wgpu::InstanceDescriptor {
             backends,
-            dx12_shader_compiler,
+            backend_options: wgpu::BackendOptions {
+                dx12: wgpu::Dx12BackendOptions {
+                    shader_compiler: wgpu::Dx12Compiler::from_env().unwrap_or_default(),
+                },
+                gl: wgpu::GlBackendOptions {
+                    gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
+                },
+            },
+            flags: wgpu::InstanceFlags::empty(),
             ..Default::default()
         });
 
@@ -320,7 +326,7 @@ impl<'a> GraphicsContext<'a> {
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Option::Some("vs_main"),
                 compilation_options: Default::default(),
                 buffers: &[vertex_buffer_layout],
             },
@@ -343,7 +349,7 @@ impl<'a> GraphicsContext<'a> {
             },
             fragment: Some(FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Option::Some("fs_main"),
                 compilation_options: Default::default(),
                 targets: &[Some(ColorTargetState {
                     format: texture_format,

@@ -3,7 +3,7 @@ use axum::{
     http::{header::USER_AGENT, Request},
     http::{HeaderMap, HeaderName},
 };
-use derive_more::Debug;
+use derive_more::with_trait::Debug;
 use opentelemetry::{global, propagation::Extractor, trace::TraceContextExt};
 use std::net::SocketAddr;
 use tower_http::{
@@ -26,7 +26,7 @@ const X_REQUEST_ID: HeaderName = HeaderName::from_static("x-request-id");
 const REFERER: HeaderName = HeaderName::from_static("referer");
 
 pub struct NmsrTracing<B> {
-    _phantom: std::marker::PhantomData<B>,
+    _phantom: std::marker::PhantomData<fn() -> B>,
 }
 
 impl<B> NmsrTracing<B> {

@@ -9,7 +9,7 @@ homepage.workspace = true
 [dependencies]
 image = { workspace = true, default-features = false, features = ["png"]}
 qoi = "0.4"
-thiserror = "1.0"
+thiserror = { workspace = true }
 ears-rs = { workspace = true }
 rayon = { version = "1.10", optional = true }
 vfs = { version = "0.12" }

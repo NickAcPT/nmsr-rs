@@ -29,6 +29,8 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::{render, render_get_warning, render_post_warning};
+#[cfg(feature = "renderdoc")]
+use {renderdoc::{RenderDoc, V141}, tokio::sync::Mutex};
 use std::{borrow::Cow, sync::Arc, time::Duration};
 use strum::IntoEnumIterator;
 use tracing::{info, info_span, instrument, Instrument, Span};
@@ -48,6 +50,8 @@ pub struct NMSRState<'a> {
     pools: Arc<GraphicsContextPools<'a>>,
     cache_config: ModelCacheConfiguration,
     features_config: FeaturesConfiguration,
+    #[cfg(feature = "renderdoc")]
+    pub render_doc: Arc<Mutex<RenderDoc<V141>>>,
 }
 
 impl<'a> RenderRequestValidator for NMSRState<'a> {
@@ -90,6 +94,14 @@ impl<'a> NMSRState<'a> {
 
         let resolver = RenderRequestResolver::new(model_cache, Arc::new(mojang_client));
 
+        #[cfg(feature = "renderdoc")]
+        let mut rd: RenderDoc<V141> = RenderDoc::new()?;
+
+        #[cfg(feature = "renderdoc")]
+        {
+            rd.set_capture_file_path_template("captures/nmsr");
+        }
+
         let graphics_context = GraphicsContext::new(GraphicsContextDescriptor {
             backends: Some(Backends::all()),
             surface_provider: Box::new(|_| None),
@@ -126,6 +138,8 @@ impl<'a> NMSRState<'a> {
             cache_config: config.caching.clone(),
             armor_manager,
             features_config: config.features.clone().unwrap_or_default(),
+            #[cfg(feature = "renderdoc")]
+            render_doc: Arc::new(Mutex::new(rd)),
         })
     }
 

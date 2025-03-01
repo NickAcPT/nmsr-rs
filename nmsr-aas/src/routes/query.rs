@@ -102,6 +102,9 @@ pub struct RenderRequestQueryParams {
     pub leggings: Option<VanillaMinecraftArmorMaterialData>,
     #[serde_as(as = "Option<TryFromInto<String>>")]
     pub boots: Option<VanillaMinecraftArmorMaterialData>,
+    
+    #[cfg(feature = "renderdoc")]
+    pub capture: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -117,6 +120,13 @@ impl RenderRequestQueryParams {
     pub fn get_excluded_features(&self) -> EnumSet<RenderRequestFeatures> {
         let mut excluded = self.exclude.unwrap_or(EnumSet::empty());
 
+        #[cfg(feature = "renderdoc")]
+        {
+            if self.capture.is_some() {
+                excluded.remove(RenderRequestFeatures::SkipRenderDocFrameCapture);
+            }
+        }
+        
         if self.nolayers.is_some() {
             excluded |= RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer;
         }

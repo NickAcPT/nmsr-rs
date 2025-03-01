@@ -31,6 +31,10 @@ pub enum NMSRaaSError {
         #[from]
         nmsr_rendering_blockbench_model_generator_experiment::error::BlockbenchGeneratorError,
     ),
+    
+    #[cfg(feature = "renderdoc")]
+    #[error("RenderDoc error: {0}")]
+    RenderDocError(#[from] renderdoc::Error),
 }
 
 #[derive(Error, Debug)]

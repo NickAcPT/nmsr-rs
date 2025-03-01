@@ -26,6 +26,23 @@ pub(crate) async fn internal_render_model<'a>(
     state: &NMSRState<'a>,
     resolved: &ResolvedRenderRequest,
 ) -> Result<Vec<u8>> {
+    #[cfg(feature = "renderdoc")]
+    let mut rd = if !request
+        .features
+        .contains(RenderRequestFeatures::SkipRenderDocFrameCapture)
+    {
+        Some(state.render_doc.lock().await)
+    } else {
+        None
+    };
+
+    #[cfg(feature = "renderdoc")]
+    {
+        if let Some(rd) = &mut rd {
+            rd.start_frame_capture(std::ptr::null(), std::ptr::null());
+        }
+    }
+
     let scene_context = state.create_scene_context().await?;
 
     let mode = request.mode;
@@ -78,6 +95,13 @@ pub(crate) async fn internal_render_model<'a>(
         .copy_output_texture(&state.graphics_context, true)
         .await?;
     let render_bytes = create_png_from_bytes((size.width, size.height), &render)?;
+
+    #[cfg(feature = "renderdoc")]
+    {
+        if let Some(rd) = &mut rd {
+            rd.end_frame_capture(std::ptr::null(), std::ptr::null());
+        }
+    }
 
     Ok(render_bytes)
 }

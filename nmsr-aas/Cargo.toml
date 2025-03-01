@@ -88,7 +88,13 @@ uuid = { workspace = true }
 thiserror = { workspace = true }
 
 # Derive More - More derive macros because Rust's standard library doesn't have enough
-derive_more = { workspace = true, features = ["debug", "deref", "from", "deref_mut", "std"]}
+derive_more = { workspace = true, features = [
+    "debug",
+    "deref",
+    "from",
+    "deref_mut",
+    "std",
+] }
 
 # Tower - Service framework
 tower = { workspace = true, features = [
@@ -127,8 +133,11 @@ is_empty = { workspace = true }
 
 urlencoding = { workspace = true }
 
+renderdoc = { workspace = true, features = ["ci"], optional = true }
+
 [features]
 default = []
+renderdoc = ["dep:renderdoc"]
 ears = [
     "nmsr-rendering/ears",
     "nmsr-rendering-blockbench-model-generator-experiment/ears",

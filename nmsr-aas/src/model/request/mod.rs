@@ -46,6 +46,8 @@ pub enum RenderRequestFeatures {
     Custom,
     #[cfg(feature = "ears")]
     Ears,
+    #[cfg(feature = "renderdoc")]
+    SkipRenderDocFrameCapture,
 }
 
 fn is_false(value: &bool) -> bool {

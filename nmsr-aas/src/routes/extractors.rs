@@ -120,7 +120,7 @@ where
 
             show_back: query.back.is_some(),
 
-            arm_rotation: query.arms,
+            custom_arm_rotation: query.arms,
             distance: query.distance,
 
             x_pos: query.x_pos,
@@ -131,6 +131,9 @@ where
             chestplate: query.chestplate,
             leggings: query.leggings,
             boots: query.boots,
+            
+            time: query.time,
+            limb_swing: query.limb_swing,
         })
         .filter(|s| !s.is_empty());
 

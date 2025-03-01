@@ -66,7 +66,7 @@ pub struct RenderRequestExtraSettings {
     pub width: Option<u32>,
     pub height: Option<u32>,
 
-    pub arm_rotation: Option<f32>,
+    pub custom_arm_rotation: Option<f32>,
     pub distance: Option<f32>,
 
     pub x_pos: Option<f32>,
@@ -77,6 +77,9 @@ pub struct RenderRequestExtraSettings {
     pub chestplate: Option<VanillaMinecraftArmorMaterialData>,
     pub leggings: Option<VanillaMinecraftArmorMaterialData>,
     pub boots: Option<VanillaMinecraftArmorMaterialData>,
+
+    pub time: Option<f32>,
+    pub limb_swing: Option<f32>,
 }
 
 impl RenderRequestExtraSettings {
@@ -263,13 +266,19 @@ impl RenderRequest {
         SunInformation::new(front_lighting, 2.0, 0.621)
     }
 
-    pub(crate) const fn get_arm_rotation(&self) -> f32 {
+    pub(crate) const fn get_arm_rotation(&self) -> Option<f32> {
+        // Only apply our default rotation when:
+        // - Custom rotation has been specified
+        // - Custom time is not defined
         if let Some(settings) = &self.extra_settings {
-            if let Some(rotation) = settings.arm_rotation {
-                return rotation;
-            }
+            if settings.custom_arm_rotation.is_some() {
+                return settings.custom_arm_rotation;
+            } else if settings.time.is_some() {
+                return None;
+            };
         }
-        self.mode.get_arm_rotation()
+
+        return Some(self.mode.get_arm_rotation());
     }
 
     pub(crate) fn get_shadow_y_pos(&self) -> Option<f32> {

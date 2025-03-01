@@ -220,5 +220,5 @@ parts/**
 
 utils/nmsr-rendering-blockbench-model-generator-experiment-wasm/pkg/**
 utils/nmsr-rendering-blockbench-model-generator-experiment-wasm/pkg
-cache
+/cache/
 config.toml

@@ -45,10 +45,11 @@ fn main() {
         has_cape: false,
         has_deadmau5_ears: false,
         is_flipped_upside_down: false,
-        arm_rotation: 10.0,
+        custom_arm_rotation_z: Some(10.0),
         shadow_y_pos: None,
         shadow_is_square: false,
         armor_slots: None,
+        movement: Default::default(),
         #[cfg(feature = "ears")]
         ears_features: ears_rs::parser::EarsParser::parse(&texture).expect("Yes"),
     };

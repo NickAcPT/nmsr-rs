@@ -410,10 +410,11 @@ async fn process_group_logic(
         has_cape: false,
         has_deadmau5_ears: false,
         is_flipped_upside_down: false,
-        arm_rotation,
+        custom_arm_rotation_z: Some(arm_rotation),
         shadow_y_pos,
         shadow_is_square: false,
         armor_slots: None,
+        movement: Default::default(),
         #[cfg(feature = "ears")]
         ears_features: None,
     };
@@ -465,7 +466,7 @@ async fn process_group_logic(
         &RgbaImage::new(64, 64),
     );
 
-    scene.rebuild_parts(&part_provider, parts);
+    scene.rebuild_parts(&part_provider, &parts);
 
     scene.render(&graphics_context)?;
 

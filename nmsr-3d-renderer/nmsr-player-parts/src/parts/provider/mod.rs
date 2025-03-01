@@ -41,12 +41,31 @@ where
     pub has_cape: bool,
     pub has_deadmau5_ears: bool,
     pub is_flipped_upside_down: bool,
-    pub arm_rotation: f32,
+    pub custom_arm_rotation_z: Option<f32>,
     pub shadow_y_pos: Option<f32>,
     pub shadow_is_square: bool,
     pub armor_slots: Option<PlayerArmorSlots<M>>,
+    pub movement: PlayerMovementContext,
+    
     #[cfg(feature = "ears")]
     pub ears_features: Option<EarsFeatures>,
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+pub struct PlayerMovementContext {
+    pub time: f32,
+    
+    pub limb_swing: f32,
+    pub stride: f32,
+    pub body_yaw: f32,
+    
+    pub location: Vec3,
+    pub cape_location: Vec3,
+    pub horizontal_speed: f32,
+    
+    pub is_flying: bool,
+    pub is_creative_flying: bool,
+    pub is_gliding: bool,
 }
 
 impl<M> PlayerPartProviderContext<M>
@@ -141,7 +160,7 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
                     body_part.get_non_layer_part(),
                     part,
                     context.model.is_slim_arms(),
-                    context.arm_rotation,
+                    &context,
                 );
             }
 

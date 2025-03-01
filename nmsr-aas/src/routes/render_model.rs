@@ -4,7 +4,7 @@ use nmsr_rendering::{
     errors::NMSRRenderingError,
     high_level::{
         model::{PlayerArmorSlots, PlayerModel},
-        parts::provider::PlayerPartProviderContext,
+        parts::provider::{PlayerMovementContext, PlayerPartProviderContext},
         pipeline::{pools::SceneContextPoolManager, scene::Scene},
     },
 };
@@ -177,7 +177,7 @@ pub(crate) fn create_part_context(
     request: &mut RenderRequest,
     resolved: &ResolvedRenderRequest,
 ) -> PlayerPartProviderContext<VanillaMinecraftArmorMaterialData> {
-    let arm_rotation = request.get_arm_rotation();
+    let custom_arm_rotation_z = request.get_arm_rotation();
 
     let final_model = request.model.unwrap_or(resolved.model);
 
@@ -235,6 +235,12 @@ pub(crate) fn create_part_context(
             .as_ref()
             .and_then(|x| x.boots.clone()),
     };
+    
+    let movement = PlayerMovementContext {
+        time: request.extra_settings.as_ref().and_then(|x| x.time).unwrap_or(0f32),
+        limb_swing: request.extra_settings.as_ref().and_then(|x| x.limb_swing).unwrap_or(0f32),
+        ..Default::default()
+    };
 
     #[cfg_attr(not(feature = "ears"), allow(unused_mut))]
     let mut context = PlayerPartProviderContext::<VanillaMinecraftArmorMaterialData> {
@@ -244,10 +250,11 @@ pub(crate) fn create_part_context(
         has_deadmau5_ears,
         is_flipped_upside_down,
         has_cape,
-        arm_rotation,
+        custom_arm_rotation_z,
         shadow_y_pos,
         shadow_is_square: request.mode.is_head() || request.mode.is_head_iso(),
         armor_slots: Some(player_armor_slots),
+        movement,
         #[cfg(feature = "ears")]
         ears_features: None,
     };

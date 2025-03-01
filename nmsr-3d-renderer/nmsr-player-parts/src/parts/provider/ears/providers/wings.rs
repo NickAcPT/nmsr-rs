@@ -51,7 +51,18 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModWingsPartProvider<M> {
 
             b.stack(|b| {
                 let wiggle = if wing.animated {
-                    f32::sin(8.0 / 12.0) * 2.0
+                    let g = context.movement.is_gliding;
+                    let f = context.movement.is_creative_flying;
+
+                    if g {
+                        -40.0
+                    } else {
+                        let speed_1 = if f { 2.0 } else { 12.0 };
+                        let speed_2 = if f { 20. } else { 2.0 };
+
+                        (f32::sin((context.movement.time + 8.0) / speed_1) * speed_2)
+                            + (context.movement.limb_swing * 10.0)
+                    }
                 } else {
                     0.0
                 };
@@ -115,9 +126,9 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModWingsPartProvider<M> {
                             "Wing (Asymmetric Left)",
                         );
                     });
-                    
+
                     b.translate(4., 0., 0.);
-                
+
                     b.stack(|b| {
                         b.rotate(0.0, -60. + wiggle, 0.0);
                         b.quad_back(
@@ -134,7 +145,15 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModWingsPartProvider<M> {
                 if wing_mode == WingMode::Flat {
                     b.translate(-8., 0., 0.75);
                     b.stack(|b| {
-                        b.quad_back(0, 0, 20, 16, TextureRotation::None, TextureFlip::Horizontal, "Wing (Flat)");
+                        b.quad_back(
+                            0,
+                            0,
+                            20,
+                            16,
+                            TextureRotation::None,
+                            TextureFlip::Horizontal,
+                            "Wing (Flat)",
+                        );
                     });
                 }
             });

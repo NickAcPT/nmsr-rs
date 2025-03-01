@@ -103,6 +103,11 @@ pub struct RenderRequestQueryParams {
     #[serde_as(as = "Option<TryFromInto<String>>")]
     pub boots: Option<VanillaMinecraftArmorMaterialData>,
     
+    #[serde(alias = "t")]
+    pub time: Option<f32>,
+    #[serde(alias = "swing")]
+    pub limb_swing: Option<f32>,
+    
     #[cfg(feature = "renderdoc")]
     pub capture: Option<String>,
 }

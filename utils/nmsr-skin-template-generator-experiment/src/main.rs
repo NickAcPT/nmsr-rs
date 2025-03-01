@@ -128,10 +128,11 @@ fn main() -> anyhow::Result<()> {
         has_cape: false,
         is_flipped_upside_down: false,
         has_deadmau5_ears: false,
-        arm_rotation: 0f32,
+        custom_arm_rotation_z: Some(0f32),
         shadow_y_pos: None,
         shadow_is_square: false,
         armor_slots: None,
+        movement: Default::default(),
         #[cfg(feature = "ears")]
         ears_features: Some(ears_features),
     };
@@ -140,6 +141,7 @@ fn main() -> anyhow::Result<()> {
     let parts = { [PlayerPartsProvider::Ears] };
     #[cfg(not(feature = "ears"))]
     let parts = { [PlayerPartsProvider::Minecraft] };
+
     //TODO: Migrate to new PlayerPartProviderContext#get_all_parts
     let parts = parts
         .iter()

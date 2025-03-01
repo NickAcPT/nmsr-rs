@@ -282,10 +282,20 @@ impl RenderRequestResolver {
 
         match &entry {
             RenderRequestEntry::MojangPlayerName(name) => {
-                let id = self
-                    .mojang_requests_client
-                    .resolve_name_to_uuid(name)
-                    .await?;
+                let cached_id = self.model_cache.get_cached_resolved_name(name).await?;
+
+                let id = if let Some(id) = cached_id {
+                    id
+                } else {
+                    let id = self
+                        .mojang_requests_client
+                        .resolve_name_to_uuid(name)
+                        .await?;
+
+                    self.model_cache.cache_resolved_name(name, id).await?;
+
+                    id
+                };
 
                 return Box::pin(
                     self.resolve_entry_textures(&RenderRequestEntry::MojangPlayerUuid(id)),

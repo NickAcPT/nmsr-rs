@@ -39,10 +39,11 @@ fn bench(c: &mut Criterion) {
         is_flipped_upside_down: false,
         has_deadmau5_ears: false,
         has_cape: false,
-        arm_rotation: 10.0,
+        custom_arm_rotation_z: Some(10.0),
         shadow_y_pos: None,
         shadow_is_square: false,
         armor_slots: None,
+        movement: Default::default(),
         #[cfg(feature = "ears")]
         ears_features: EarsParser::parse(&texture).expect("Yes"),
     };

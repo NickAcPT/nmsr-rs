@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{f32::consts::PI, marker::PhantomData};
 
 use glam::Vec3;
 use itertools::Itertools;
@@ -253,27 +253,43 @@ pub fn compute_base_part(non_layer_body_part_type: PlayerBodyPartType, is_slim_a
     }
 }
 
-pub(crate) fn perform_arm_part_rotation(
+fn compute_arm_part_rotation<M: ArmorMaterial>(
+    non_layer_body_part_type: PlayerBodyPartType,
+    context: &PlayerPartProviderContext<M>,
+) -> f32 {
+    let arm_rotation_angle = context.custom_arm_rotation_z;
+
+    if let Some(angle) = context.custom_arm_rotation_z {
+        angle
+    } else {
+        let rotation = PI * 0.02;
+        let t = context.movement.time / 10.0;
+        
+        ((t).cos() * 0.03 + rotation).to_degrees()
+    }
+}
+
+pub(crate) fn perform_arm_part_rotation<M: ArmorMaterial>(
     non_layer_body_part_type: PlayerBodyPartType,
     part: &mut Part,
     is_slim_arms: bool,
-    arm_rotation_angle: f32,
+    context: &PlayerPartProviderContext<M>,
 ) {
     let normal_part = compute_base_part(non_layer_body_part_type, is_slim_arms);
     let normal_part_size = normal_part.get_size();
 
+    let arm_rotation_z = compute_arm_part_rotation(non_layer_body_part_type, context);
+
     if non_layer_body_part_type == LeftArm {
         let anchor = normal_part.get_position() + normal_part_size * Vec3::new(1.0, 1.0, 0.5);
-
         part.rotate(
-            [0.0, 0.0, -arm_rotation_angle].into(),
+            [0.0, 0.0, -arm_rotation_z].into(),
             Some(PartAnchorInfo::new_rotation_anchor_position(anchor)),
         );
     } else if non_layer_body_part_type == RightArm {
         let anchor = normal_part.get_position() + normal_part_size * Vec3::new(0.0, 1.0, 0.5);
-
         part.rotate(
-            [0.0, 0.0, arm_rotation_angle].into(),
+            [0.0, 0.0, arm_rotation_z].into(),
             Some(PartAnchorInfo::new_rotation_anchor_position(anchor)),
         );
     }

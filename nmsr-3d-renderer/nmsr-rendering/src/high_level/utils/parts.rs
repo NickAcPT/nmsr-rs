@@ -79,12 +79,18 @@ fn uv(face_uvs: &FaceUv, texture_size: (u32, u32)) -> [Vec2; 4] {
     let mut bottom_left = face_uvs.bottom_left.to_uv(texture_size);
     let mut bottom_right = face_uvs.bottom_right.to_uv(texture_size);
 
-    let small_offset = 0.000; //Vec2::ONE / texture_size / 32.0;//001;
-
-    top_left += small_offset;
-    top_right += Vec2::new(-small_offset, small_offset);
-    bottom_right -= small_offset;
-    bottom_left += Vec2::new(small_offset, -small_offset);
-
+    let small_offset: Option<Vec2> = None;//Vec2::ZERO; //Vec2::ONE / texture_size / 16.0;
+    
+    if let Some(small_offset) = small_offset {
+        // Apply offset inward from each edge to prevent texture bleeding
+        // Move each coordinate slightly toward the center of the UV quad
+        let center = (top_left + top_right + bottom_left + bottom_right) / 4.0;
+        
+        top_left = top_left + (center - top_left).normalize() * small_offset;
+        top_right = top_right + (center - top_right).normalize() * small_offset;
+        bottom_left = bottom_left + (center - bottom_left).normalize() * small_offset;
+        bottom_right = bottom_right + (center - bottom_right).normalize() * small_offset;
+    }
+    
     [top_left, top_right, bottom_left, bottom_right]
 }

@@ -47,6 +47,12 @@ pub struct ModelCacheConfiguration {
     #[serde(with = "humantime_serde")]
     pub resolve_cache_duration: Duration,
 
+    /// The duration of time to keep a resolved player name in the cache.
+    /// This is effectively for how long to cache the player's name -> UUID.
+    /// When given a player name, we will resolve it with Mojang's API and cache the result.
+    #[serde(with = "humantime_serde")]
+    pub username_cache_duration: Duration,
+
     /// The duration of time to keep a texture in the cache.
     /// This is effectively for how long to cache the player's skin, cape and other textures
     /// even if the player's UUID wasn't requested for some time.
@@ -64,6 +70,7 @@ impl Default for ModelCacheConfiguration {
     fn default() -> Self {
         Self {
             cleanup_interval: Duration::from_secs(60 * 60),
+            username_cache_duration: Duration::from_secs(60 * 60),
             resolve_cache_duration: Duration::from_secs(60 * 60 * 15),
             texture_cache_duration: Duration::from_secs(60 * 60 * 24 * 2),
             cache_biases: HashMap::new(),

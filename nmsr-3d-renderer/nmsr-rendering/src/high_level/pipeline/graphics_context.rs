@@ -166,6 +166,12 @@ impl<'a> GraphicsContext<'a> {
             .or(descriptor.backends)
             .ok_or(NMSRRenderingError::NoBackendFound)?;
 
+        #[cfg(debug_assertions)]
+        let instance_flags = wgpu::InstanceFlags::debugging();
+        
+        #[cfg(not(debug_assertions))]
+        let instance_flags = wgpu::InstanceFlags::empty();
+        
         let instance = Instance::new(&wgpu::InstanceDescriptor {
             backends,
             backend_options: wgpu::BackendOptions {
@@ -176,7 +182,7 @@ impl<'a> GraphicsContext<'a> {
                     gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
                 },
             },
-            flags: wgpu::InstanceFlags::empty(),
+            flags: instance_flags,
             ..Default::default()
         });
 

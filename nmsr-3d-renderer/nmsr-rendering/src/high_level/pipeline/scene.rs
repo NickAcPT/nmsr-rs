@@ -497,9 +497,9 @@ where
     pub fn rebuild_parts(
         &mut self,
         part_context: &PlayerPartProviderContext,
-        body_parts: Vec<PlayerBodyPartType>,
+        body_parts: &[PlayerBodyPartType],
     ) -> &[Part] {
-        self.computed_body_parts = Self::collect_player_parts(part_context, &body_parts);
+        self.computed_body_parts = Self::collect_player_parts(part_context, body_parts);
 
         self.parts()
     }

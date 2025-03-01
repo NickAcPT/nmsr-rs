@@ -182,7 +182,7 @@ mod tests {
             .expect("Failed to build request");
 
         let app: Router = Router::new()
-            .route("/:mode/:entry", get(test_handler))
+            .route("/{mode}/{entry}", get(test_handler))
             .with_state(tx);
 
         app.oneshot(request).await.expect("Failed to send request");

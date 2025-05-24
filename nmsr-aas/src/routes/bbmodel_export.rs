@@ -30,7 +30,7 @@ use crate::{
     utils::png::create_png_from_bytes,
 };
 
-use super::{render_model::load_image, NMSRState};
+use super::{render_model::load_image_raw, NMSRState};
 
 const APPLICATION_JSON_MIME: &str = "application/json";
 
@@ -41,7 +41,7 @@ impl ModelProjectImageIO for NMSRaaSImageIO {
         &self,
         image: &[u8],
     ) -> std::result::Result<image::RgbaImage, BlockbenchGeneratorError> {
-        load_image(image).map_err(|e| {
+        load_image_raw(image).map_err(|e| {
             BlockbenchGeneratorError::ExplainedError(format!("Failed to load png: {}", e))
         })
     }
@@ -82,13 +82,13 @@ pub(crate) async fn internal_bbmodel_export(
     let mut textures = HashMap::new();
 
     for (texture_type, texture_bytes) in resolved.textures {
-        textures.insert(texture_type.into(), load_image(&texture_bytes)?);
+        textures.insert(texture_type.into(), load_image_raw(&texture_bytes)?);
     }
 
     if request.features.contains(RenderRequestFeatures::Shadow) {
         textures.insert(
             PlayerPartTextureType::Shadow,
-            load_image(Scene::<SceneContextWrapper>::get_shadow_bytes(
+            load_image_raw(Scene::<SceneContextWrapper>::get_shadow_bytes(
                 part_context.shadow_is_square,
             ))?,
         );

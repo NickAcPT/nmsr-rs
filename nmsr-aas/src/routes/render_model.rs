@@ -6,6 +6,7 @@ use nmsr_rendering::{
         model::{PlayerArmorSlots, PlayerModel},
         parts::provider::{PlayerMovementContext, PlayerPartProviderContext},
         pipeline::{pools::SceneContextPoolManager, scene::Scene},
+        types::PlayerPartTextureType,
     },
 };
 use tracing::instrument;
@@ -112,10 +113,57 @@ fn load_ears_features(
     resolved: &ResolvedRenderRequest,
 ) {
     if let Some(skin_bytes) = resolved.textures.get(&ResolvedRenderEntryTextureType::Skin) {
-        if let Ok(skin_image) = load_image(skin_bytes) {
+        if let Ok(skin_image) = load_image_raw(skin_bytes) {
             if let Ok(features) = ears_rs::parser::EarsParser::parse(&skin_image) {
                 part_context.ears_features = features;
+                cleanup_invalid_ears_data(&skin_image, part_context);
             }
+        }
+    }
+}
+
+#[cfg(feature = "ears")]
+fn cleanup_invalid_ears_data(
+    skin_image: &RgbaImage,
+    part_context: &mut PlayerPartProviderContext<VanillaMinecraftArmorMaterialData>,
+) -> () {
+    use ears_rs::alfalfa::read_alfalfa;
+
+    if let Some(features) = part_context.ears_features.as_mut() {
+        let alfalfa = read_alfalfa(&skin_image);
+
+        if let Ok(alfalfa) = alfalfa {
+            // If features has wings but the alfalfa data does not contain wings, remove the wings
+            if features.wing.is_some()
+                && alfalfa
+                    .as_ref()
+                    .and_then(|a| a.get_data(ears_rs::alfalfa::AlfalfaDataKey::Wings))
+                    .is_none()
+            {
+                features.wing.take();
+            }
+
+            // If features has cape but the alfalfa data does not contain cape, remove the cape
+            if features.cape_enabled
+                && alfalfa
+                    .as_ref()
+                    .and_then(|a| a.get_data(ears_rs::alfalfa::AlfalfaDataKey::Cape))
+                    .is_none()
+            {
+                features.cape_enabled = false;
+                part_context.has_cape = false;
+            }
+        }
+
+        // If features has emissives, but palette is empty, remove the emissives
+
+        if features.emissive
+            && ears_rs::utils::extract_emissive_palette(&skin_image)
+                .ok()
+                .flatten()
+                .is_none()
+        {
+            features.emissive = false;
         }
     }
 }
@@ -129,9 +177,11 @@ async fn load_textures<'a>(
     scene: &mut Scene<Object<SceneContextPoolManager<'a>>>,
 ) -> Result<()> {
     for (&texture_type, texture_bytes) in &resolved.textures {
-        let mut image_buffer = load_image(texture_bytes)?;
+        let expected_size = PlayerPartTextureType::from(texture_type).get_texture_size();
 
         let is_skin_texture = texture_type == ResolvedRenderEntryTextureType::Skin;
+
+        let mut image_buffer = load_image(texture_bytes, expected_size, !is_skin_texture)?;
 
         #[cfg(feature = "ears")]
         let is_skin_texture = is_skin_texture || texture_type == ResolvedRenderEntryTextureType::Ears(crate::model::resolver::ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin);
@@ -167,10 +217,24 @@ async fn load_textures<'a>(
     Ok(())
 }
 
-pub(crate) fn load_image(texture: &[u8]) -> Result<RgbaImage> {
+pub(crate) fn load_image_raw(texture: &[u8]) -> Result<RgbaImage> {
     let img = image::load_from_memory_with_format(texture, ImageFormat::Png)
         .map_err(NMSRRenderingError::ImageFromRawError)?;
     Ok(img.into_rgba8())
+}
+
+pub(crate) fn load_image(
+    texture: &[u8],
+    expected_size: (u32, u32),
+    swallow_errors: bool,
+) -> Result<RgbaImage> {
+    let result = load_image_raw(texture);
+
+    if let (Err(_), true) = (&result, swallow_errors) {
+        return Ok(RgbaImage::new(expected_size.0, expected_size.1));
+    }
+
+    return result;
 }
 
 pub(crate) fn create_part_context(
@@ -235,10 +299,18 @@ pub(crate) fn create_part_context(
             .as_ref()
             .and_then(|x| x.boots.clone()),
     };
-    
+
     let movement = PlayerMovementContext {
-        time: request.extra_settings.as_ref().and_then(|x| x.time).unwrap_or(0f32),
-        limb_swing: request.extra_settings.as_ref().and_then(|x| x.limb_swing).unwrap_or(0f32),
+        time: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.time)
+            .unwrap_or(0f32),
+        limb_swing: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.limb_swing)
+            .unwrap_or(0f32),
         ..Default::default()
     };
 

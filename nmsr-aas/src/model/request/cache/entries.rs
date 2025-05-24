@@ -54,9 +54,7 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             .unwrap_or_default()
             .to_string();
 
-        let entry = RenderRequestEntry::try_from(file_name)?;
-
-        Ok(Some(Cow::Owned(entry)))
+        Ok(RenderRequestEntry::try_from(file_name).map(|e| Cow::Owned(e)).ok())
     }
 
     fn is_expired(

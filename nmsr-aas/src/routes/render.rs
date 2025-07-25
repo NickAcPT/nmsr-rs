@@ -10,6 +10,7 @@ use axum::{
     http::HeaderValue,
     response::{IntoResponse, Response},
 };
+use http::HeaderName;
 use hyper::{
     header::{CACHE_CONTROL, CONTENT_TYPE},
     Method,
@@ -29,6 +30,9 @@ pub async fn render_get_warning() -> Result<Response> {
     return Err(RenderRequestError::WrongHttpMethodError("GET", "POST").into());
 }
 
+const NMSR_FALLBACK_HEADER: HeaderName = HeaderName::from_static("x-nmsr-fallback");
+const NMSR_FALLBACK_TRUE_VALUE: HeaderValue = HeaderValue::from_static("True");
+
 #[axum::debug_handler]
 #[instrument(skip(state, method))]
 pub async fn render(
@@ -37,6 +41,7 @@ pub async fn render(
     mut request: RenderRequest,
 ) -> Result<Response> {
     let resolved = state.resolver.resolve(&request).await?;
+    let is_fallback_textures = resolved.is_fallback_textures;
 
     if request.mode.is_blockbench_export() {
         // Blockbench export handles HEAD requests for itself, hence why it's before the HEAD method check
@@ -59,6 +64,10 @@ pub async fn render(
 
     if let Ok(etag_value) = HeaderValue::from_str(&format!("{hash:x}")) {
         res.headers_mut().insert("Etag", etag_value);
+    }
+    
+    if is_fallback_textures {
+        res.headers_mut().insert(NMSR_FALLBACK_HEADER, NMSR_FALLBACK_TRUE_VALUE);
     }
 
     Ok(res)

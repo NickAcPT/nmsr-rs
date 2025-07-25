@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use axum::response::IntoResponse;
+use http::{HeaderName, HeaderValue};
 use hyper::StatusCode;
 use thiserror::Error;
 use tower_http::BoxError;
@@ -215,6 +216,8 @@ impl Clone for NmsrErrorExtension {
     }
 }
 
+const NMSR_VERSION_HEADER: HeaderName = HeaderName::from_static("x-nmsr-version");
+
 impl IntoResponse for NMSRaaSError {
     fn into_response(self) -> axum::response::Response {
         let mut res = axum::response::IntoResponse::into_response(self.to_string());
@@ -240,7 +243,12 @@ impl IntoResponse for NMSRaaSError {
         } else {
             StatusCode::INTERNAL_SERVER_ERROR
         };
-
+        
+        
+        if let Ok(version_header_value) = HeaderValue::from_str(env!("VERGEN_IS_LITERALLY_TRASH__IT_DOES_NOT_WORK_AND_IT_ACTUALLY_BREAKS_EVERY_TIME_I_UPDATE_IT__LIKE_SERIOUSLY_HOW_IS_THAT_POSSIBLE___STOP_CHANGING_THE_DAMN_IMPLEMENTATION___I_JUST_WANT_A_STUPID_GIT_HASH")) {
+            res.headers_mut().insert(NMSR_VERSION_HEADER, version_header_value);
+        }
+        
         *res.status_mut() = error;
 
         res.extensions_mut().insert(NmsrErrorExtension(self));

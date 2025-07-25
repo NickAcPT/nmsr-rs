@@ -585,6 +585,7 @@ impl RenderRequestResolver {
                     } else {
                         RenderRequestEntryModel::Steve
                     };
+                    result.is_fallback_textures = true;
 
                     return Ok(result);
                 }
@@ -629,6 +630,7 @@ impl RenderRequestResolver {
         Ok(ResolvedRenderRequest {
             model: final_model,
             textures,
+            is_fallback_textures: false
         })
     }
 
@@ -643,4 +645,5 @@ pub struct ResolvedRenderRequest {
     pub model: RenderRequestEntryModel,
     #[debug(skip)]
     pub textures: BTreeMap<ResolvedRenderEntryTextureType, Vec<u8>>,
+    pub is_fallback_textures: bool
 }

@@ -8,8 +8,8 @@ A speedy and fairly-accurate Minecraft avatar renderer service.
     <a href="https://ko-fi.com/H2H6KGD8W"><img alt="ko-fi" src="https://img.shields.io/badge/support_me-on_kofi-red?style=for-the-badge&logo=kofi" height="28" /></a>
 </div>
 <div>
-    <img alt="Built with Love" src="https://forthebadge.com/images/featured/featured-built-with-love.svg" height="28" />
-    <img alt="Works on my machine" src="https://forthebadge.com/images/badges/works-on-my-machine.svg" height="28"/>
+    <img alt="Built with Love" src="https://forthebadge.com/badges/built-with-love.svg" height="28" />
+    <img alt="Works on my machine" src="https://forthebadge.com/badges/works-on-my-machine.svg" height="28"/>
 </div>
 
 

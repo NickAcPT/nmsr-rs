@@ -11,7 +11,7 @@ homepage.workspace = true
 
 [dependencies]
 anyhow = "1.0"
-bytemuck = "1.18"
+bytemuck = "1.24"
 image = { workspace = true, default-features = false }
 qoi = "0.4"
 itertools = "0.13"

@@ -354,6 +354,7 @@ where
                         load: load_op,
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
                     view: &textures.depth_texture.view,

@@ -11,11 +11,11 @@ image = { workspace = true, default-features = false, features = ["png"]}
 qoi = "0.4"
 thiserror = { workspace = true }
 ears-rs = { workspace = true }
-rayon = { version = "1.10", optional = true }
+rayon = { version = "1.11", optional = true }
 vfs = { version = "0.12" }
 serde = { version = "1.0", features = ["derive"], optional = true }
-rkyv = { version = "0.8.3", optional = true }
-either = "1.13"
+rkyv = { version = "0.8.12", optional = true }
+either = "1.15"
 tracing = "0.1"
 
 [lib]

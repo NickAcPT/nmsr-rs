@@ -3,12 +3,7 @@ use std::{borrow::Cow, env, mem, sync::Arc};
 use deadpool::managed::{Object, Pool};
 use smaa::SmaaMode;
 use wgpu::{
-    vertex_attr_array, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingType, BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites,
-    CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
-    PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
-    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages,
-    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
+    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState, ExperimentalFeatures, FragmentState, FrontFace, MultisampleState, PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState, vertex_attr_array
 };
 pub use wgpu::{
     Adapter, Backends, BlendState, Device, Features, Instance, Limits, Queue, ShaderSource,
@@ -177,10 +172,13 @@ impl<'a> GraphicsContext<'a> {
             backend_options: wgpu::BackendOptions {
                 dx12: wgpu::Dx12BackendOptions {
                     shader_compiler: wgpu::Dx12Compiler::from_env().unwrap_or_default(),
+                    ..Default::default()
                 },
                 gl: wgpu::GlBackendOptions {
                     gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
+                    ..Default::default()
                 },
+                noop: wgpu::NoopBackendOptions { enable: false }
             },
             flags: instance_flags,
             ..Default::default()
@@ -190,8 +188,7 @@ impl<'a> GraphicsContext<'a> {
 
         let adapter =
             wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
-                .await
-                .ok_or(NMSRRenderingError::NoAdapterFound)?;
+                .await?;
 
         let (device, queue) = adapter
             .request_device(
@@ -200,8 +197,9 @@ impl<'a> GraphicsContext<'a> {
                     required_features: descriptor.features,
                     required_limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default()),
                     memory_hints: Default::default(),
-                },
-                None,
+                    experimental_features: ExperimentalFeatures::disabled(),
+                    trace: wgpu::Trace::Off
+                }
             )
             .await?;
 
@@ -238,8 +236,7 @@ impl<'a> GraphicsContext<'a> {
 
         let adapter =
             wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
-                .await
-                .ok_or(NMSRRenderingError::WgpuAdapterRequestError)?;
+                .await?;
 
         // Create a bind group layout for storing the transformation matrix in a uniform
         let transform_bind_group_layout =

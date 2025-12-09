@@ -6,15 +6,15 @@ use tokio::sync::oneshot::error::RecvError;
 pub enum NMSRRenderingError {
     #[error("Unable to find a suitable backend. Either pass in a backend or set the WGPU_BACKEND environment variable")]
     NoBackendFound,
-    #[error("Unable to find a suitable adapter")]
-    NoAdapterFound,
     #[cfg(feature = "pipeline")]
     #[error("Unable to create a device: {0}")]
     WgpuRequestDeviceError(#[from] wgpu::RequestDeviceError),
     #[error("Surface is not supported by the adapter")]
     SurfaceNotSupported,
-    #[error("Unable to request adapter")]
-    WgpuAdapterRequestError,
+    #[error("Unable to request adapter: {0}")]
+    WgpuAdapterRequestError(#[from] wgpu::RequestAdapterError),
+    #[error("Unable to request adapter: {0}")]
+    WgpuResultPollError(#[from] wgpu::PollError),
     #[error("SceneContext textures not initialized")]
     SceneContextTexturesNotInitialized,
     #[error("SceneContext Texture not set: {0}")]

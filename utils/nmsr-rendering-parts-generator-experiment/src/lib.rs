@@ -500,7 +500,7 @@ fn process_render_outputs(to_process: Vec<PartRenderOutput>) -> HashMap<Point, V
         .flat_map(|(_, group)| {
             let pixels = group
                 .map(|(x, y, pixel, is_opaque)| (Point::from((x, y)), pixel, is_opaque))
-                .sorted_by_key(|(_, pixel, _)| (get_depth(pixel) as i32))
+                .sorted_by_key(|(_, pixel, _)| get_depth(pixel) as i32)
                 .collect::<Vec<_>>();
 
             let opaque_count = pixels.iter().filter(|(_, _, is_opaque)| *is_opaque).count();

@@ -1,6 +1,6 @@
 use crate::{
-    errors::Result,
-    high_level::pipeline::textures::{unmultiply_alpha, BufferDimensions},
+    errors::{NMSRRenderingError, Result},
+    high_level::pipeline::textures::{BufferDimensions, unmultiply_alpha},
 };
 
 use bytemuck::Pod;
@@ -46,7 +46,7 @@ async fn wait_for_buffer_slice<'a>(
     buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
         tx.send(result).unwrap();
     });
-    device.poll(wgpu::Maintain::Wait);
+    device.poll(wgpu_types::PollType::Wait { submission_index: None, timeout: None }).map_err(NMSRRenderingError::WgpuResultPollError)?;
     rx.await??;
     Ok(buffer_slice)
 }

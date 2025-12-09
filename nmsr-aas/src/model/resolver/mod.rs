@@ -7,11 +7,12 @@ use super::request::{
     entry::{RenderRequestEntry, RenderRequestEntryModel},
     RenderRequest,
 };
+#[cfg(feature = "ears")]
+use crate::model::request::RenderRequestFeatures;
 use crate::{
     error::{MojangRequestError, RenderRequestError, Result},
-    model::{
-        request::RenderRequestFeatures,
-        resolver::{default_skins::DefaultSkinResolver, mojang::client::MojangTextureRequestType},
+    model::resolver::{
+        default_skins::DefaultSkinResolver, mojang::client::MojangTextureRequestType,
     },
 };
 use derive_more::Debug;
@@ -630,7 +631,7 @@ impl RenderRequestResolver {
         Ok(ResolvedRenderRequest {
             model: final_model,
             textures,
-            is_fallback_textures: false
+            is_fallback_textures: false,
         })
     }
 
@@ -645,5 +646,5 @@ pub struct ResolvedRenderRequest {
     pub model: RenderRequestEntryModel,
     #[debug(skip)]
     pub textures: BTreeMap<ResolvedRenderEntryTextureType, Vec<u8>>,
-    pub is_fallback_textures: bool
+    pub is_fallback_textures: bool,
 }

@@ -36,25 +36,25 @@ thiserror = "2.0"
 strum = { version = "0.27", features = ["derive"] }
 itertools = { version = "0.14" }
 paste = "1.0"
-wgpu = "24.0"
-wgpu-types = "24.0"
-bytemuck = { version = "1.21", features = ["derive"] }
+wgpu = "27.0"
+wgpu-types = "27.0"
+bytemuck = { version = "1.24", features = ["derive"] }
 glam = { version = "0.30", features = ["bytemuck"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 
 axum = { version = "0.8" }
-axum-extra = { version = "0.10" }
+axum-extra = { version = "0.12" }
 http-body-util = "0.1"
 
 deadpool = { version = "0.12" }
 
-tokio = { version = "1.43", default-features = false }
+tokio = { version = "1.48", default-features = false }
 
 base64 = { version = "0.22" }
 twelf = { version = "0.15", default-features = false }
 
 # Hyper - HTTP client
-hyper = { version = "1.5", features = ["client"] }
+hyper = { version = "1.8", features = ["client"] }
 hyper-util = { version = "0.1" }
 hyper-tls = { version = "0.6" }
 url = { version = "2.5" }
@@ -62,7 +62,7 @@ url = { version = "2.5" }
 tracing = { version = "0.1" }
 async-trait = { version = "0.1" }
 
-derive_more = { version = "2.0" }
+derive_more = { version = "2.1" }
 
 anyhow = { version = "1.0" }
 
@@ -70,12 +70,12 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
-uuid = { version = "1.14", features = ["serde"] }
+uuid = { version = "1.19", features = ["serde"] }
 
 symlink = { version = "0.1" }
 async-scoped = { version = "0.9", features = ["use-tokio"] }
 humantime-serde = { version = "1.1" }
-serde_with = { version = "3.11" }
+serde_with = { version = "3.16" }
 
 tower = { version = "0.5" }
 tower-http = { version = "0.6" }
@@ -91,7 +91,7 @@ opentelemetry-otlp = { version = "0.26" }
 # Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
 tracing-opentelemetry = { version = "0.27" }
 
-http = { version = "1.1" }
+http = { version = "1.4" }
 
 enumset = { version = "1.1" }
 
@@ -101,7 +101,7 @@ sync_wrapper = { version = "1.0" }
 
 indoc = { version = "2" }
 
-is_empty = { version = "0.2" }
+is_empty = { version = "0.3" }
 
 urlencoding = { version = "2.1.3" }
 

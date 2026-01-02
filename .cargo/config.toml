@@ -1,5 +1,5 @@
 [target.aarch64-apple-darwin]
-rustflags = ["-Cembed-bitcode=no", "-C lto=no"]
+rustflags = ["-Cembed-bitcode=no", "-Clto=no"]
 
 [target.x86_64-apple-darwin]
-rustflags = ["-Cembed-bitcode=no", "-C lto=no"]
+rustflags = ["-Cembed-bitcode=no", "-Clto=no"]

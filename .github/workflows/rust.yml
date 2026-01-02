@@ -55,17 +55,11 @@ jobs:
           rustflags: ""
           target: ${{ matrix.target }}
           
-      - name: Set up Homebrew (macOS only)
-        if: runner.os == 'macOS'
-        id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-
-      - name: Install LLVM 21 (macOS only)
+      - name: Remove LTO (macOS only)
         if: runner.os == 'macOS'
         run: |
-          brew install llvm@21
-          echo "$(brew --prefix llvm@21)/bin" >> $GITHUB_PATH
-          
+          sed -i '' '/lto = true/d' Cargo.toml
+
       - name: Build
         run: cargo build --target ${{ matrix.target }} --release --bin=nmsr-aas --package=nmsr-aas --features=ears
         

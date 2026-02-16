@@ -1,0 +1,101 @@
+name: Build and Deploy NMSR
+
+on:
+  pull_request:
+    types:
+      - closed
+      - edited
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+  
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: live-ads-c783             # e.g., my-gcp-project
+  GKE_CLUSTER: live-oma1-ads-k8s-ads          # e.g., my-cluster
+  GKE_ZONE: us-central1                     # e.g., us-central1-a
+  DEPLOYMENT_NAME: nmsr-aas                 # Matches metadata.name in your k8s yaml
+  CONTAINER_NAME: nmsr-aas                  # Matches spec.template.spec.containers.name
+  IMAGE: "us-central1-docker.pkg.dev/live-ads-c783/nmsr-repo/nmsr-aas"
+  NAMESPACE: "default"                      # The namespace where you deployed Step 3
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    # This ensures the job only runs if the PR was merged OR if manually triggered
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Add IMAGE_TAG env
+      run: |
+        echo "Base ref is: $GITHUB_BASE_REF"
+        echo "Head ref is: $GITHUB_HEAD_REF"
+        echo "IMAGE_TAG=dev-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+    # Setup gcloud CLI
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+
+    - uses: google-github-actions/setup-gcloud@v1
+      name: 'Setup gcloud'
+
+    # Configure Docker to use the gcloud command-line tool
+    - run: gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
+      name: 'Configure Docker Auth'
+
+    # Get the GKE credentials
+    - uses: google-github-actions/get-gke-credentials@v1
+      name: 'Authenticate to GKE cluster'
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+        # Assuming you use the same credentials, otherwise swap for specific secret
+        credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha,enable=true,format=short,prefix=dev-,suffix=
+    
+    - name: Build and push image
+      id: docker_build_push
+      uses: docker/build-push-action@v3
+      with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+    # Deploy the processor to the GKE cluster
+    - name: Deploy NMSR
+      env:
+        # Example: Setting Rust Log level via Env (optional)
+        RUST_LOG: "info" 
+      run: |-
+        # Update the image in the deployment
+        kubectl set image deployment/$DEPLOYMENT_NAME $CONTAINER_NAME="$IMAGE:${{ env.IMAGE_TAG }}" -n $NAMESPACE
+        
+        # Update environment variables (Optional: NMSR mostly uses config.toml)
+        kubectl set env deployment/$DEPLOYMENT_NAME -n $NAMESPACE \
+          RUST_LOG=$RUST_LOG
+        
+        # Force a rollout restart to ensure new config/image is picked up immediately
+        kubectl rollout status deployment/$DEPLOYMENT_NAME -n $NAMESPACE

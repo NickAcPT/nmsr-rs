@@ -135,6 +135,10 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             ResolvedRenderEntryTextureType::Cape,
             ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Wings),
             ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::Cape),
+            ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::DisplacedSkin),
+            ResolvedRenderEntryTextureType::Ears(
+                ResolvedRenderEntryEarsTextureType::EmissiveDisplacedSkin,
+            ),
             ResolvedRenderEntryTextureType::Ears(
                 ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin,
             ),

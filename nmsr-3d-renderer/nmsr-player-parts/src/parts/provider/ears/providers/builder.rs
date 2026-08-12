@@ -1,4 +1,4 @@
-use glam::{Affine3A, Quat, Vec3};
+use glam::{Affine3A, Mat3, Quat, Vec3};
 
 use crate::{
     model::ArmorMaterial,
@@ -278,6 +278,36 @@ impl<'a, M: ArmorMaterial> EarsModPartBuilder<'a, M> {
         name.push_str(" (Back)");
 
         return self.quad(u, v, width, height, rot, flip, false, name);
+    }
+
+    pub(crate) fn quad_front_skew(
+        &mut self,
+        u: u16,
+        v: u16,
+        width: u16,
+        height: u16,
+        x_skew: f32,
+        y_skew: f32,
+        z_skew: f32,
+        rot: TextureRotation,
+        flip: TextureFlip,
+        name: impl Into<String>,
+    ) {
+        let width = width as f32;
+        let height = height as f32;
+        let skew = Affine3A::from_mat3_translation(
+            Mat3::from_cols(
+                Vec3::new(1.0, 2.0 * y_skew / width, 0.0),
+                Vec3::new(2.0 * x_skew / height, 1.0, 2.0 * z_skew / height),
+                Vec3::Z,
+            ),
+            Vec3::new(-x_skew, -y_skew, -z_skew),
+        );
+
+        self.stack(|b| {
+            *b.last_transformation_mut() *= skew;
+            b.quad_front(u, v, width as u16, height as u16, rot, flip, name);
+        });
     }
 
     pub(crate) fn quad(

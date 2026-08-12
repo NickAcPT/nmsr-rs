@@ -1,4 +1,7 @@
-use ears_rs::features::{data::wing::WingMode, EarsFeatures};
+use ears_rs::features::{
+    data::wing::{WingAnimationMode, WingMode},
+    EarsFeatures,
+};
 
 use crate::{
     model::ArmorMaterial,
@@ -50,15 +53,20 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModWingsPartProvider<M> {
             let wing_mode = wing.mode;
 
             b.stack(|b| {
-                let wiggle = if wing.animated {
-                    let g = context.movement.is_gliding;
-                    let f = context.movement.is_creative_flying;
+                let animated = wing.animation_mode != WingAnimationMode::None;
+                let wiggle = if animated {
+                    let mut gliding = context.movement.is_gliding;
+                    let mut flying = context.movement.is_creative_flying;
+                    if wing.animation_mode == WingAnimationMode::NoFlight {
+                        gliding = false;
+                        flying = false;
+                    }
 
-                    if g {
+                    if gliding {
                         -40.0
                     } else {
-                        let speed_1 = if f { 2.0 } else { 12.0 };
-                        let speed_2 = if f { 20. } else { 2.0 };
+                        let speed_1 = if flying { 2.0 } else { 12.0 };
+                        let speed_2 = if flying { 20. } else { 2.0 };
 
                         (f32::sin((context.movement.time + 8.0) / speed_1) * speed_2)
                             + (context.movement.limb_swing * 10.0)
@@ -130,7 +138,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModWingsPartProvider<M> {
                     b.translate(4., 0., 0.);
 
                     b.stack(|b| {
-                        b.rotate(0.0, -60. + wiggle, 0.0);
+                        b.rotate(0.0, -60. - wiggle, 0.0);
                         b.quad_back(
                             0,
                             0,

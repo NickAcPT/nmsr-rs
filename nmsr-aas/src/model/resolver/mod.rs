@@ -60,6 +60,8 @@ impl From<ResolvedRenderEntryTextureType> for &'static str {
 pub enum ResolvedRenderEntryEarsTextureType {
     Cape,
     Wings,
+    DisplacedSkin,
+    EmissiveDisplacedSkin,
     /// The non-emissive remaining part of the skin texture.
     EmissiveProcessedSkin,
     /// The non-emissive remaining part of the wings texture.
@@ -77,6 +79,10 @@ impl From<ResolvedRenderEntryEarsTextureType> for PlayerPartEarsTextureType {
             ResolvedRenderEntryEarsTextureType::Cape => Self::Cape,
             ResolvedRenderEntryEarsTextureType::Wings => Self::Wings,
             ResolvedRenderEntryEarsTextureType::EmissiveSkin => Self::EmissiveSkin,
+            ResolvedRenderEntryEarsTextureType::DisplacedSkin => Self::DisplacedSkin,
+            ResolvedRenderEntryEarsTextureType::EmissiveDisplacedSkin => {
+                Self::EmissiveDisplacedSkin
+            }
             ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin => {
                 Self::EmissiveProcessedSkin
             }
@@ -94,7 +100,9 @@ impl ResolvedRenderEntryEarsTextureType {
         match self {
             Self::Cape => Some(AlfalfaDataKey::Cape),
             Self::Wings => Some(AlfalfaDataKey::Wings),
-            Self::EmissiveSkin
+            Self::DisplacedSkin
+            | Self::EmissiveDisplacedSkin
+            | Self::EmissiveSkin
             | Self::EmissiveProcessedSkin
             | Self::EmissiveProcessedWings
             | Self::EmissiveWings => None,
@@ -399,7 +407,9 @@ impl RenderRequestResolver {
             #[cfg(feature = "ears")]
             Self::resolve_ears_textures(&skin_texture, &mut textures);
 
-            textures.insert(ResolvedRenderEntryTextureType::Skin, skin_texture);
+            textures
+                .entry(ResolvedRenderEntryTextureType::Skin)
+                .or_insert(skin_texture);
         }
 
         let result = ResolvedRenderEntryTextures::new(textures, model);
@@ -422,9 +432,9 @@ impl RenderRequestResolver {
         use std::borrow::Cow;
         use xxhash_rust::xxh3::xxh3_128;
 
-        let skin_image = image::load_from_memory(skin_texture.data()).ok()?;
-        let skin_image = skin_image.into_rgba8();
-
+        let skin_image = image::load_from_memory(skin_texture.data())
+            .ok()?
+            .into_rgba8();
         let features = EarsParser::parse(&skin_image).ok().flatten()?;
         let alfalfa = ears_rs::alfalfa::read_alfalfa(&skin_image).ok().flatten();
 
@@ -460,15 +470,39 @@ impl RenderRequestResolver {
             }
         }
 
+        if let Some(displaced_skin) =
+            ears_rs::utils::extract_displaced_skin(&skin_image, &features)
+        {
+            textures.insert(
+                ResolvedRenderEntryTextureType::Ears(
+                    ResolvedRenderEntryEarsTextureType::DisplacedSkin,
+                ),
+                MojangTexture::new_unnamed_hashed(
+                    create_png_from_bytes(
+                        (displaced_skin.width(), displaced_skin.height()),
+                        &displaced_skin,
+                    )
+                    .ok()?,
+                ),
+            );
+        }
+
         if features.emissive {
             let emissive_map = [
                 (
                     ResolvedRenderEntryTextureType::Skin,
-                    Some(ResolvedRenderEntryTextureType::Ears(
-                        ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin,
-                    )),
+                    Some(ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin,)),
                     ResolvedRenderEntryTextureType::Ears(
                         ResolvedRenderEntryEarsTextureType::EmissiveSkin,
+                    ),
+                ),
+                (
+                    ResolvedRenderEntryTextureType::Ears(
+                        ResolvedRenderEntryEarsTextureType::DisplacedSkin,
+                    ),
+                    None,
+                    ResolvedRenderEntryTextureType::Ears(
+                        ResolvedRenderEntryEarsTextureType::EmissiveDisplacedSkin,
                     ),
                 ),
                 (

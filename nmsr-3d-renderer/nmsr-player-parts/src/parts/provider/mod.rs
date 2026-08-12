@@ -66,6 +66,7 @@ pub struct PlayerMovementContext {
     pub is_flying: bool,
     pub is_creative_flying: bool,
     pub is_gliding: bool,
+    pub is_swimming: bool,
 }
 
 impl<M> PlayerPartProviderContext<M>

@@ -14,9 +14,9 @@ use crate::{
         provider::{
             ears::providers::{
                 builder::EarsModPartBuilder, chest::EarsModChestPartProvider,
-                ears::EarsModEarsPartProvider, protrusions::EarsModProtrusionsPartProvider,
-                snouts::EarsModSnoutsPartProvider, tails::EarsModTailsPartProvider,
-                wings::EarsModWingsPartProvider,
+                ears::EarsModEarsPartProvider, legs::EarsModLegsPartProvider,
+                protrusions::EarsModProtrusionsPartProvider, snouts::EarsModSnoutsPartProvider,
+                tails::EarsModTailsPartProvider, wings::EarsModWingsPartProvider,
             },
             minecraft::MinecraftPlayerPartsProvider,
             PartsProvider,
@@ -92,11 +92,14 @@ fn handle_emissive<M: ArmorMaterial>(
     body_part: PlayerBodyPartType,
 ) {
     let wing_texture = PlayerPartEarsTextureType::Wings.into();
+    let displaced_skin_texture = PlayerPartEarsTextureType::DisplacedSkin.into();
     let emissive_parts = parts
         .iter()
         // First, we take the parts we know we can change
         .filter(|p| {
-            p.get_texture() == PlayerPartTextureType::Skin || p.get_texture() == wing_texture
+            p.get_texture() == PlayerPartTextureType::Skin
+                || p.get_texture() == wing_texture
+                || p.get_texture() == displaced_skin_texture
         })
         // Then we clone them to take ownership of them (so we can mutate later)
         .cloned()
@@ -110,6 +113,8 @@ fn handle_emissive<M: ArmorMaterial>(
             Some(PlayerPartEarsTextureType::EmissiveSkin)
         } else if emissive_part.get_texture() == wing_texture {
             Some(PlayerPartEarsTextureType::EmissiveWings)
+        } else if emissive_part.get_texture() == displaced_skin_texture {
+            Some(PlayerPartEarsTextureType::EmissiveDisplacedSkin)
         } else {
             None
         };
@@ -125,6 +130,7 @@ fn handle_emissive<M: ArmorMaterial>(
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, EnumIter, IntoStaticStr)]
 enum EarsModPartStaticDispatch<M: ArmorMaterial> {
     Ears(PhantomData<M>),
+    Legs(PhantomData<M>),
     Protrusions(PhantomData<M>),
     Snout(PhantomData<M>),
     Tail(PhantomData<M>),
@@ -136,6 +142,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
     fn provides_for_part(&self, body_part: PlayerBodyPartType) -> bool {
         match self {
             Self::Ears(_) => EarsModEarsPartProvider::<M>::default().provides_for_part(body_part),
+            Self::Legs(_) => EarsModLegsPartProvider::<M>::default().provides_for_part(body_part),
             Self::Protrusions(_) => {
                 EarsModProtrusionsPartProvider::<M>::default().provides_for_part(body_part)
             }
@@ -156,6 +163,9 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
         match self {
             Self::Ears(_) => {
                 EarsModEarsPartProvider::<M>::default().provides_for_feature(feature, context)
+            }
+            Self::Legs(_) => {
+                EarsModLegsPartProvider::<M>::default().provides_for_feature(feature, context)
             }
             Self::Protrusions(_) => EarsModProtrusionsPartProvider::<M>::default()
                 .provides_for_feature(feature, context),
@@ -185,6 +195,8 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModPartStaticDispatch<M> {
 
         builder.stack_group(name, |builder| match self {
             Self::Ears(_) => EarsModEarsPartProvider::<M>::default()
+                .provide_parts(feature, context, builder, body_part),
+            Self::Legs(_) => EarsModLegsPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
             Self::Protrusions(_) => EarsModProtrusionsPartProvider::<M>::default()
                 .provide_parts(feature, context, builder, body_part),
@@ -218,12 +230,13 @@ trait EarsModPartProvider<M: ArmorMaterial> {
     );
 }
 
-// TODO : Move this to a more appropriate place
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PlayerPartEarsTextureType {
     Cape,
     Wings,
+    DisplacedSkin,
+    EmissiveDisplacedSkin,
     /// The non-emissive remaining part of the skin texture.
     EmissiveProcessedSkin,
     /// The non-emissive remaining part of the wings texture.
@@ -240,7 +253,10 @@ impl PlayerPartEarsTextureType {
             Self::Cape | Self::Wings | Self::EmissiveProcessedWings | Self::EmissiveWings => {
                 (20, 16)
             }
-            Self::EmissiveSkin | Self::EmissiveProcessedSkin => (64, 64),
+            Self::DisplacedSkin
+            | Self::EmissiveDisplacedSkin
+            | Self::EmissiveSkin
+            | Self::EmissiveProcessedSkin => (64, 64),
         }
     }
 
@@ -248,6 +264,8 @@ impl PlayerPartEarsTextureType {
         match self {
             Self::Cape => "ears_cape",
             Self::Wings => "ears_wings",
+            Self::DisplacedSkin => "ears_displaced_skin",
+            Self::EmissiveDisplacedSkin => "ears_emissive_displaced_skin",
             Self::EmissiveProcessedSkin => "ears_emissive_processed_skin",
             Self::EmissiveProcessedWings => "ears_emissive_processed_wings",
             Self::EmissiveSkin => "ears_emissive_skin",
@@ -256,7 +274,10 @@ impl PlayerPartEarsTextureType {
     }
 
     pub fn is_emissive(&self) -> bool {
-        matches!(self, Self::EmissiveSkin | Self::EmissiveWings)
+        matches!(
+            self,
+            Self::EmissiveDisplacedSkin | Self::EmissiveSkin | Self::EmissiveWings
+        )
     }
 }
 
@@ -274,5 +295,30 @@ impl From<PlayerPartEarsTextureType> for PlayerPartTextureType {
                 is_emissive: ears.is_emissive(),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ears_rs::features::data::leg::LegMode;
+
+    use super::*;
+
+    #[test]
+    fn digitigrade_legs_use_the_displaced_skin_texture() {
+        let context = PlayerPartProviderContext::<()> {
+            ears_features: Some(EarsFeatures {
+                leg_mode: LegMode::DigitigradeFull,
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        let parts = EarsPlayerPartsProvider.get_parts(&context, PlayerBodyPartType::LeftLeg);
+
+        assert!(!parts.is_empty());
+        assert!(parts
+            .iter()
+            .all(|part| { part.get_texture() == PlayerPartEarsTextureType::DisplacedSkin.into() }));
     }
 }

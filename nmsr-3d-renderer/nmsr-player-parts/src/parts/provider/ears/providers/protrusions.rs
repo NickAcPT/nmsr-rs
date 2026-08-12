@@ -1,4 +1,7 @@
-use ears_rs::features::EarsFeatures;
+use ears_rs::features::{
+    data::{leg::LegMode, protrusions::Protrusions},
+    EarsFeatures,
+};
 
 use crate::{
     model::ArmorMaterial,
@@ -40,7 +43,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModProtrusionsPartProvider
         features: &EarsFeatures,
         context: &PlayerPartProviderContext<M>,
     ) -> bool {
-        features.claws || features.horn
+        features.protrusions != Protrusions::None
     }
 
     fn provide_parts(
@@ -51,7 +54,8 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModProtrusionsPartProvider
         body_part: PlayerBodyPartType,
     ) {
         claws(features, context, builder, body_part);
-        horn(features, context, builder, body_part);
+        horn(features, builder, body_part);
+        halo(features, builder, body_part);
     }
 }
 
@@ -61,7 +65,13 @@ fn claws<M: ArmorMaterial>(
     builder: &mut EarsModPartBuilder<'_, M>,
     body_part: PlayerBodyPartType,
 ) {
-    if !features.claws {
+    if !matches!(
+        features.protrusions,
+        Protrusions::Claws
+            | Protrusions::ClawsAndHorn
+            | Protrusions::ClawsAndHalo
+            | Protrusions::ClawsAndDoubleHalo
+    ) {
         return;
     }
 
@@ -69,6 +79,12 @@ fn claws<M: ArmorMaterial>(
         if matches!(body_part, PlayerBodyPartType::LeftLeg) {
             builder.stack(|b| {
                 b.anchor_to(PlayerBodyPartType::LeftLeg);
+                let offset = match features.leg_mode {
+                    LegMode::DigitigradeFull => -1.5,
+                    LegMode::DigitigradePartial => -1.0,
+                    LegMode::Plantigrade => 0.0,
+                };
+                b.translate(0.0, 0.0, -4.0 + offset);
                 b.rotate_i(-90, 1, 0, 0);
                 b.quad_double_sided(
                     16,
@@ -85,7 +101,12 @@ fn claws<M: ArmorMaterial>(
         if matches!(body_part, PlayerBodyPartType::RightLeg) {
             builder.stack(|b| {
                 b.anchor_to(PlayerBodyPartType::RightLeg);
-                b.translate_i(0, 0, 0);
+                let offset = match features.leg_mode {
+                    LegMode::DigitigradeFull => -1.5,
+                    LegMode::DigitigradePartial => -1.0,
+                    LegMode::Plantigrade => 0.0,
+                };
+                b.translate(0.0, 0.0, -4.0 + offset);
                 b.rotate_i(-90, 1, 0, 0);
                 b.quad_double_sided(
                     0,
@@ -137,11 +158,15 @@ fn claws<M: ArmorMaterial>(
 
 fn horn<M: ArmorMaterial>(
     features: &EarsFeatures,
-    context: &PlayerPartProviderContext<M>,
     builder: &mut EarsModPartBuilder<'_, M>,
     body_part: PlayerBodyPartType,
 ) {
-    if !matches!(body_part, PlayerBodyPartType::Head) || !features.horn {
+    if !matches!(body_part, PlayerBodyPartType::Head)
+        || !matches!(
+            features.protrusions,
+            Protrusions::Horn | Protrusions::ClawsAndHorn
+        )
+    {
         return;
     }
 
@@ -159,5 +184,54 @@ fn horn<M: ArmorMaterial>(
             TextureFlip::Horizontal,
             "Horn",
         );
+    });
+}
+
+fn halo<M: ArmorMaterial>(
+    features: &EarsFeatures,
+    builder: &mut EarsModPartBuilder<'_, M>,
+    body_part: PlayerBodyPartType,
+) {
+    if body_part != PlayerBodyPartType::Head {
+        return;
+    }
+
+    let double = match features.protrusions {
+        Protrusions::Halo | Protrusions::ClawsAndHalo => false,
+        Protrusions::DoubleHalo | Protrusions::ClawsAndDoubleHalo => true,
+        _ => return,
+    };
+
+    builder.stack(|b| {
+        b.anchor_to(PlayerBodyPartType::Head);
+        b.rotate_i(180, 0, 1, 0);
+        b.translate_i(-8, if double { 10 } else { 12 }, 0);
+        b.rotate_i(90, 1, 0, 0);
+        if double {
+            for _ in 0..2 {
+                b.translate_i(4, 4, 0);
+                b.rotate_i(45, 0, 0, 1);
+                b.translate_i(-4, -4, 2);
+                b.quad_double_sided(
+                    56,
+                    0,
+                    8,
+                    8,
+                    TextureRotation::None,
+                    TextureFlip::None,
+                    "Double Halo",
+                );
+            }
+        } else {
+            b.quad_double_sided(
+                56,
+                0,
+                8,
+                8,
+                TextureRotation::None,
+                TextureFlip::None,
+                "Halo",
+            );
+        }
     });
 }

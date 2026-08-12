@@ -47,7 +47,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
         let tail_mode = tail.mode;
         let [bend_0, bend_1, bend_2, bend_3] = tail.bends;
 
-        let (mut ang, swing) = if tail_mode == TailMode::Down {
+        let (mut ang, mut swing) = if tail_mode == TailMode::Down {
             (30, 40)
         } else if matches!(
             tail_mode,
@@ -66,12 +66,12 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
 
         let mut base_angle = tail.bends[0];
 
-        if context.movement.is_gliding {
+        if !tail.animate {
+            swing = 0;
+        } else if context.movement.is_gliding || context.movement.is_swimming {
             base_angle = -30.0;
             ang = 0;
         }
-
-        let swing_amount = context.movement.limb_swing;
 
         builder.stack(|b| {
             b.anchor_to(PlayerBodyPartType::Body);
@@ -80,8 +80,12 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
             b.rotate_i(180, 0, 0, 1);
             b.translate_i(-8, 0, 0);
 
-            let swing_rot = swing_amount * (swing as f32);
-            let time_offset = f32::sin(context.movement.time / 12.) * 4.;
+            let swing_rot = context.movement.limb_swing * swing as f32;
+            let time_offset = if tail.animate {
+                f32::sin(context.movement.time / 12.) * 4.
+            } else {
+                0.0
+            };
 
             b.rotate_i(ang, 1, 0, 0);
             b.rotate(swing_rot + time_offset, 0., 0.);
@@ -122,7 +126,7 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModTailsPartProvider<M> {
                     0
                 };
 
-                b.rotate(angles[i] * (1. - (swing_amount / 2.0)), 0., 0.);
+                b.rotate(angles[i], 0., 0.);
                 b.quad_back(
                     56,
                     (16 + (i * seg_height)) as u16,

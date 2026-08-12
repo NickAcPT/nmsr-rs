@@ -335,10 +335,16 @@ impl RenderRequest {
 
     fn cleanup_request(mut request: Self) -> Self {
         if request.mode.is_skin() {
-            // If we're rendering a skin, keep just the unprocessed skin feature
+            #[cfg(feature="ears")] 
+            let valid_skin_features = enum_set!(RenderRequestFeatures::UnProcessedSkin | RenderRequestFeatures::Ears);
+            
+            #[cfg(not(feature="ears"))] 
+            let valid_skin_features = enum_set!(RenderRequestFeatures::UnProcessedSkin);
+            
+            // If we're rendering a skin, keep just the unprocessed skin feature and ears
             request.features = request
                 .features
-                .intersection(enum_set!(RenderRequestFeatures::UnProcessedSkin));
+                .intersection(valid_skin_features);
         } else {
             // Otherwise, remove the unprocessed skin feature
             request

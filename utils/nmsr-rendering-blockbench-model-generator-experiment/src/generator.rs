@@ -51,7 +51,7 @@ impl ModelProjectImageIO for DefaultImageIO {
 
 pub struct ModelGenerationProject<M: ArmorMaterial, I: ModelProjectImageIO> {
     providers: Vec<PlayerPartsProvider>,
-    part_context: PlayerPartProviderContext<M>,
+    pub part_context: PlayerPartProviderContext<M>,
     textures: HashMap<PlayerPartTextureType, RgbaImage>,
     warnings: Vec<String>,
     max_resolution: Vec2,

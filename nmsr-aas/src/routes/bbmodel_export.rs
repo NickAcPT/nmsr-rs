@@ -110,12 +110,18 @@ pub(crate) async fn internal_bbmodel_export(
         }
     }
 
+
     let mut blockbench_project =
         ModelGenerationProject::new_with_part_context(NMSRaaSImageIO, part_context);
 
     for (texture_type, mut texture) in textures {
         if texture_type == PlayerPartTextureType::Skin {
-            texture = NMSRState::process_skin(texture, request.features)?;
+            texture = NMSRState::process_skin(
+                texture,
+                request.features,
+                #[cfg(feature = "ears")]
+                blockbench_project.part_context.ears_features.as_ref(),
+            )?;
         }
 
         blockbench_project.add_texture(texture_type, texture, false)?;

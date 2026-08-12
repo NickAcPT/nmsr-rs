@@ -265,6 +265,7 @@
         </div>
 
         <button id="apply-button">Apply</button>
+        <button id="bbmodel-button">Download as BBModel</button>
     </div>
 
     <script type="module">
@@ -272,6 +273,7 @@
         let textureInput = document.getElementById('texture');
         let featuresGroup = document.getElementById('features-group');
         let applyButton = document.getElementById('apply-button');
+        let bbmodelButton = document.getElementById('bbmodel-button');
         let imagePreview = document.getElementById('preview-image');
         let imageError = document.getElementById('image-error');
         let skinUpload = document.getElementById('skin-upload');
@@ -320,6 +322,7 @@
         let validMinecraftName = /^[a-zA-Z0-9_]{2,16}$/;
 
         applyButton.addEventListener('click', updateImage);
+        bbmodelButton.addEventListener('click', downloadBBModel);
 
         updateImage();
 
@@ -451,6 +454,122 @@
                 clearTimeout(timer);
                 timer = setTimeout(() => { func.apply(this, args); }, timeout);
             };
+        }
+
+        async function downloadBBModel() {
+            const params = new URLSearchParams();
+            const modeSelect = document.getElementById('mode');
+            const modelSelect = document.getElementById('model');
+            const armsInput = document.getElementById('arms');
+            const distanceInput = document.getElementById('distance');
+            const widthInput = document.getElementById('width');
+            const heightInput = document.getElementById('height');
+            const yawInput = document.getElementById('yaw');
+            const pitchInput = document.getElementById('pitch');
+            const rollInput = document.getElementById('roll');
+            const xposInput = document.getElementById('xpos');
+            const yposInput = document.getElementById('ypos');
+            const zposInput = document.getElementById('zpos');
+            const helmetSelect = document.getElementById('helmet');
+            const chestplateSelect = document.getElementById('chestplate');
+            const leggingsSelect = document.getElementById('leggings');
+            const bootsSelect = document.getElementById('boots');
+
+            if (modelSelect.value) params.append('model', modelSelect.value);
+            if (armsInput.value) params.append('arms', armsInput.value);
+            if (distanceInput.value) params.append('d', distanceInput.value);
+            if (widthInput.value) params.append('w', widthInput.value);
+            if (heightInput.value) params.append('h', heightInput.value);
+            if (yawInput.value) params.append('y', yawInput.value);
+            if (pitchInput.value) params.append('p', pitchInput.value);
+            if (rollInput.value) params.append('r', rollInput.value);
+            if (xposInput.value) params.append('xpos', xposInput.value);
+            if (yposInput.value) params.append('ypos', yposInput.value);
+            if (zposInput.value) params.append('zpos', zposInput.value);
+            if (helmetSelect.value) params.append('helmet', helmetSelect.value);
+            if (chestplateSelect.value) params.append('chestplate', chestplateSelect.value);
+            if (leggingsSelect.value) params.append('leggings', leggingsSelect.value);
+            if (bootsSelect.value) params.append('boots', bootsSelect.value);
+
+            const features = Array.from(document.querySelectorAll('.feature')).filter(f => f.checked).map(f => f.value);
+            const excluded = Array.from(document.querySelectorAll('.feature')).filter(f => !f.checked).map(f => f.value);
+            if (features.length > 0) params.append('f', features.join(','));
+            if (excluded.length > 0) params.append('no', excluded.join(','));
+            
+            if (document.getElementById('back-chk').checked) {
+                params.append('back', '');
+            }
+            
+            if (document.getElementById('deadmau5ears').checked) {
+                params.append('deadmau5ears', '');
+            }
+
+            if (document.getElementById('upsidedown').checked) {
+                params.append('upside_down', '');
+            }
+
+            const url = `http://localhost:8621`;
+
+            if (uploadedSkin && !textureInput.value) {
+                // Use POST if a skin was uploaded
+                const formData = new FormData();
+
+                for (let name of params.keys()) {
+                    formData.append(name, params.get(name));
+                }
+
+                formData.append('skin', uploadedSkin);
+                if (uploadedCape) formData.append('cape', uploadedCape);
+
+                try {
+                    const response = await fetch(`${url}/bbmodel`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+
+                    const blob = await response.blob();
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = 'model.bbmodel';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(downloadUrl);
+                } catch (error) {
+                    console.error('Error downloading bbmodel:', error);
+                    imageError.style.display = 'block';
+                    imageError.textContent = 'Error downloading bbmodel: ' + error;
+                }
+            } else {
+                let resolvedTexture = await tryResolveName(textureInput.value);
+                let downloadUrl = `${url}/bbmodel/${resolvedTexture}?${params.toString()}`;
+                
+                try {
+                    const response = await fetch(downloadUrl);
+                    if (!response.ok) {
+                        throw new Error(await response.text());
+                    }
+                    
+                    const blob = await response.blob();
+                    const objUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = objUrl;
+                    a.download = 'model.bbmodel';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(objUrl);
+                } catch (error) {
+                    console.error('Error downloading bbmodel:', error);
+                    imageError.style.display = 'block';
+                    imageError.textContent = 'Error downloading bbmodel: ' + error;
+                }
+            }
         }
 
     </script>

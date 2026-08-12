@@ -61,15 +61,17 @@ impl<M: ArmorMaterial> EarsModPartProvider<M> for EarsModLegsPartProvider<M> {
         };
         let enabled = !context.is_wearing_leggings();
 
-        builder.stack_texture(PlayerPartEarsTextureType::DisplacedSkin.into(), |b| {
-            b.anchor_to(leg);
-            if full && enabled {
-                b.translate(0.0, 0.0, -0.5);
-            }
-            if full {
-                draw_digitigrade_leg(b, u, v, grow, enabled, false, true, side);
-            }
-            draw_digitigrade_leg(b, u, v, grow, enabled, true, !full, side);
+        builder.stack_mesh(format!("Digitigrade Leg {body_part:?}"), |b| {
+            b.stack_texture(PlayerPartEarsTextureType::DisplacedSkin.into(), |b| {
+                b.anchor_to(leg);
+                if full && enabled {
+                    b.translate(0.0, 0.0, -0.5);
+                }
+                if full {
+                    draw_digitigrade_leg(b, u, v, grow, enabled, false, true, side);
+                }
+                draw_digitigrade_leg(b, u, v, grow, enabled, true, !full, side);
+            });
         });
     }
 }
@@ -86,55 +88,26 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
 ) {
     let grow_twice = grow * 2.0;
     builder.stack(|b| {
-        b.translate(2.0, 6.0, 2.0);
+        b.translate(2.0, -6.0, 2.0);
+        if grow > 0.0 {
+            b.translate(0.0, -grow_twice, 0.0);
+        }
         b.scale(
             (4.0 + grow_twice) / 4.0,
             (12.0 + grow_twice) / 12.0,
             (4.0 + grow_twice) / 4.0,
         );
-        b.translate(-2.0, -6.0, -2.0);
+        b.translate(-2.0, 6.0, -2.0);
 
         let skew = f32::from(enabled);
         let vo = if bottom { 10 } else { 4 };
         let section = if bottom { "Bottom" } else { "Top" };
 
         b.stack(|b| {
-            b.translate_i(0, if bottom { -6 } else { -12 }, 0);
+            b.translate_i(0, if bottom { 0 } else { 6 }, 0);
             draw_side(
                 b,
                 u + 4,
-                v + vo,
-                0.0,
-                0.0,
-                -skew,
-                enabled,
-                bottom,
-                mend,
-                side,
-                section,
-                "Front",
-            );
-            b.rotate_i(-90, 0, 1, 0);
-            b.translate_i(0, 0, -4);
-            draw_side(
-                b,
-                u + 8,
-                v + vo,
-                -skew,
-                0.0,
-                0.0,
-                enabled,
-                bottom,
-                mend,
-                side,
-                section,
-                "Left",
-            );
-            b.rotate_i(-90, 0, 1, 0);
-            b.translate_i(0, 0, -4);
-            draw_side(
-                b,
-                u + 12,
                 v + vo,
                 0.0,
                 0.0,
@@ -144,7 +117,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                 mend,
                 side,
                 section,
-                "Back",
+                "Front",
             );
             b.rotate_i(-90, 0, 1, 0);
             b.translate_i(0, 0, -4);
@@ -162,12 +135,45 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                 section,
                 "Right",
             );
+            b.rotate_i(-90, 0, 1, 0);
+            b.translate_i(0, 0, -4);
+            draw_side(
+                b,
+                u + 12,
+                v + vo,
+                0.0,
+                0.0,
+                -skew,
+                enabled,
+                bottom,
+                mend,
+                side,
+                section,
+                "Back",
+            );
+            b.rotate_i(-90, 0, 1, 0);
+            b.translate_i(0, 0, -4);
+            draw_side(
+                b,
+                u + 8,
+                v + vo,
+                -skew,
+                0.0,
+                0.0,
+                enabled,
+                bottom,
+                mend,
+                side,
+                section,
+                "Left",
+            );
         });
 
         b.stack(|b| {
-            b.rotate_i(90, 1, 0, 0);
+            b.rotate_i(-90, 1, 0, 0);
+            b.translate_i(0, -4, 0);
             if bottom {
-                b.translate(0.0, -skew, 0.0);
+                b.translate(0.0, skew, 0.0);
                 b.quad_front(
                     u + 8,
                     v,
@@ -178,7 +184,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                     format!("Digitigrade {side} Leg {section} Bottom"),
                 );
             } else {
-                b.translate(0.0, skew, 12.0);
+                b.translate(0.0, -skew, 12.0);
                 b.quad_back(
                     u + 8,
                     v,
@@ -190,7 +196,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                 );
             }
             if enabled && mend && bottom {
-                b.translate_i(0, 0, 6);
+                b.translate_i(0, 1, 6);
                 b.quad_front(
                     u + 4,
                     v + vo,
@@ -200,7 +206,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                     TextureFlip::None,
                     format!("Digitigrade {side} Leg {section} Front Fill"),
                 );
-                b.translate_i(0, 4, 0);
+                b.translate_i(0, -3, 0);
                 b.quad_back(
                     u + 12,
                     v + vo,
@@ -233,7 +239,7 @@ fn draw_side<M: ArmorMaterial>(
     let suffix = format!("Digitigrade {side} Leg {section} {face}");
     if enabled && !mend && bottom {
         builder.stack(|b| {
-            b.translate_i(0, 2, 0);
+            b.translate_i(0, 0, 0);
             b.quad_front_skew(
                 u,
                 v + 2,
@@ -263,7 +269,7 @@ fn draw_side<M: ArmorMaterial>(
     }
     if enabled && mend && !bottom {
         builder.stack(|b| {
-            b.translate_i(0, 6, 0);
+            b.translate_i(0, -2, 0);
             b.quad_front_skew(
                 u,
                 v + 6,

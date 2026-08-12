@@ -84,7 +84,7 @@ fn claws<M: ArmorMaterial>(
                     LegMode::DigitigradePartial => -1.0,
                     LegMode::Plantigrade => 0.0,
                 };
-                b.translate(0.0, 0.0, -4.0 + offset);
+                b.translate(0.0, 0.0, offset);
                 b.rotate_i(-90, 1, 0, 0);
                 b.quad_double_sided(
                     16,
@@ -106,7 +106,7 @@ fn claws<M: ArmorMaterial>(
                     LegMode::DigitigradePartial => -1.0,
                     LegMode::Plantigrade => 0.0,
                 };
-                b.translate(0.0, 0.0, -4.0 + offset);
+                b.translate(0.0, 0.0, offset);
                 b.rotate_i(-90, 1, 0, 0);
                 b.quad_double_sided(
                     0,

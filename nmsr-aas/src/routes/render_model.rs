@@ -187,7 +187,12 @@ async fn load_textures<'a>(
         let is_skin_texture = is_skin_texture || texture_type == ResolvedRenderEntryTextureType::Ears(crate::model::resolver::ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin);
 
         if is_skin_texture {
-            image_buffer = NMSRState::process_skin(image_buffer, request.features)?;
+            image_buffer = NMSRState::process_skin(
+                image_buffer,
+                request.features,
+                #[cfg(feature = "ears")]
+                part_provider.ears_features.as_ref(),
+            )?;
         }
 
         scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);

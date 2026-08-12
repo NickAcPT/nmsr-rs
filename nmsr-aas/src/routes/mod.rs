@@ -155,6 +155,7 @@ impl<'a> NMSRState<'a> {
     pub fn process_skin(
         skin_image: RgbaImage,
         features: EnumSet<RenderRequestFeatures>,
+        #[cfg(feature = "ears")] ears_features: Option<&ears_rs::features::EarsFeatures>,
     ) -> Result<RgbaImage> {
         let mut skin_image = ears_rs::utils::upgrade_skin_if_needed(skin_image);
 
@@ -165,6 +166,15 @@ impl<'a> NMSRState<'a> {
             }
         }
 
+        #[cfg(feature = "ears")]
+        {
+            ears_rs::utils::strip_alpha_for_features(&mut skin_image, ears_features);
+            if let Some(features) = ears_features {
+                ears_rs::utils::apply_erase_displaced_regions(&mut skin_image, features)?;
+            }
+        }
+
+        #[cfg(not(feature = "ears"))]
         ears_rs::utils::strip_alpha(&mut skin_image);
 
         Ok(skin_image)
@@ -401,5 +411,55 @@ impl<'a> NMSRState<'a> {
         let max_age = max_age_duration.as_secs();
 
         format!("public, max-age={max_age}{immutable}").into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use image::{Rgba, RgbaImage};
+
+    use super::*;
+
+    #[cfg(feature = "ears")]
+    #[test]
+    fn process_skin_preserves_digitigrade_leg_pixels_when_ears_are_enabled() {
+        use ears_rs::{
+            features::{data::leg::LegMode, EarsFeatures},
+            parser::{v0::writer::EarsWriterV0, EarsFeaturesWriter},
+        };
+
+        let mut skin = RgbaImage::new(64, 64);
+        EarsWriterV0::write(
+            &mut skin,
+            &EarsFeatures {
+                leg_mode: LegMode::DigitigradeFull,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        skin.put_pixel(4, 20, Rgba([0, 0, 0, 0]));
+
+        let processed = NMSRState::process_skin(
+            skin,
+            EnumSet::only(RenderRequestFeatures::Ears),
+            Some(&EarsFeatures {
+                leg_mode: LegMode::DigitigradeFull,
+                ..Default::default()
+            }),
+        )
+        .unwrap();
+
+        assert_eq!(processed.get_pixel(4, 20).0[3], 0);
+    }
+
+    #[cfg(not(feature = "ears"))]
+    #[test]
+    fn process_skin_strips_alpha_without_ears() {
+        let mut skin = RgbaImage::new(64, 64);
+        skin.put_pixel(4, 20, Rgba([0, 0, 0, 0]));
+
+        let processed = NMSRState::process_skin(skin, EnumSet::new()).unwrap();
+
+        assert_eq!(processed.get_pixel(4, 20).0[3], 255);
     }
 }

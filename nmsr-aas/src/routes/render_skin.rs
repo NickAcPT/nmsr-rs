@@ -50,7 +50,20 @@ pub(crate) async fn internal_render_skin_or_cape(
             .map_err(NMSRRenderingError::ImageFromRawError)?
             .into_rgba8();
 
-        let processed = NMSRState::process_skin(skin_image, request.features)?;
+        #[cfg(feature = "ears")]
+        let ears_features = request
+            .features
+            .contains(RenderRequestFeatures::Ears)
+            .then(|| ears_rs::parser::EarsParser::parse(&skin_image))
+            .transpose()?
+            .flatten();
+
+        let processed = NMSRState::process_skin(
+            skin_image,
+            request.features,
+            #[cfg(feature = "ears")]
+            ears_features.as_ref(),
+        )?;
 
         create_png_from_bytes((processed.width(), processed.height()), &processed)?
     } else {

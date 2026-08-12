@@ -470,8 +470,7 @@ impl RenderRequestResolver {
             }
         }
 
-        if let Some(displaced_skin) =
-            ears_rs::utils::extract_displaced_skin(&skin_image, &features)
+        if let Some(displaced_skin) = ears_rs::utils::extract_displaced_skin(&skin_image, &features)
         {
             textures.insert(
                 ResolvedRenderEntryTextureType::Ears(
@@ -491,7 +490,9 @@ impl RenderRequestResolver {
             let emissive_map = [
                 (
                     ResolvedRenderEntryTextureType::Skin,
-                    Some(ResolvedRenderEntryTextureType::Ears(ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin,)),
+                    Some(ResolvedRenderEntryTextureType::Ears(
+                        ResolvedRenderEntryEarsTextureType::EmissiveProcessedSkin,
+                    )),
                     ResolvedRenderEntryTextureType::Ears(
                         ResolvedRenderEntryEarsTextureType::EmissiveSkin,
                     ),

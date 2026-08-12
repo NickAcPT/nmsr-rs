@@ -167,7 +167,7 @@ impl<'a> GraphicsContext<'a> {
         #[cfg(not(debug_assertions))]
         let instance_flags = wgpu::InstanceFlags::empty();
         
-        let instance = Instance::new(&wgpu::InstanceDescriptor {
+        let instance = Instance::new(wgpu::InstanceDescriptor {
             backends,
             backend_options: wgpu::BackendOptions {
                 dx12: wgpu::Dx12BackendOptions {
@@ -178,10 +178,11 @@ impl<'a> GraphicsContext<'a> {
                     gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
                     ..Default::default()
                 },
-                noop: wgpu::NoopBackendOptions { enable: false }
+                noop: wgpu::NoopBackendOptions { enable: false, ..Default::default() }
             },
             flags: instance_flags,
-            ..Default::default()
+            display: None,
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
 
         let mut surface = (descriptor.surface_provider)(&instance);
@@ -294,11 +295,11 @@ impl<'a> GraphicsContext<'a> {
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: Some("Scene Pipeline Layout"),
             bind_group_layouts: &[
-                &transform_bind_group_layout,
-                &skin_bind_group_layout,
-                &sun_bind_group_layout,
+                Some(&transform_bind_group_layout),
+                Some(&skin_bind_group_layout),
+                Some(&sun_bind_group_layout),
             ],
-            push_constant_ranges: &[],
+            immediate_size: 0,
         });
 
         let shader = device.create_shader_module(ShaderModuleDescriptor {
@@ -331,7 +332,7 @@ impl<'a> GraphicsContext<'a> {
                 module: &shader,
                 entry_point: Option::Some("vs_main"),
                 compilation_options: Default::default(),
-                buffers: &[vertex_buffer_layout],
+                buffers: &[Some(vertex_buffer_layout)],
             },
             primitive: PrimitiveState {
                 cull_mode: None,
@@ -340,8 +341,8 @@ impl<'a> GraphicsContext<'a> {
             },
             depth_stencil: Some(DepthStencilState {
                 format: Self::DEPTH_TEXTURE_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: CompareFunction::LessEqual,
+                depth_write_enabled: Some(true),
+                depth_compare: Some(CompareFunction::LessEqual),
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
@@ -360,7 +361,7 @@ impl<'a> GraphicsContext<'a> {
                     write_mask: ColorWrites::ALL,
                 })],
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 

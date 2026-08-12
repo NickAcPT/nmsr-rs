@@ -60,7 +60,7 @@ pub async fn read_buffer(
 ) -> Result<Vec<u8>> {
     let buffer_slice = wait_for_buffer_slice(output_buffer, device).await?;
 
-    let data = buffer_slice.get_mapped_range();
+    let data = buffer_slice.get_mapped_range()?;
 
     trace_span!("image_from_buffer").in_scope(|| {
         let mut bytes = Vec::with_capacity(dimensions.height * dimensions.unpadded_bytes_per_row);

@@ -33,28 +33,28 @@ members = [
 [workspace.dependencies]
 ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
 thiserror = "2.0"
-strum = { version = "0.27", features = ["derive"] }
-itertools = { version = "0.14" }
+strum = { version = "0.28", features = ["derive"] }
+itertools = { version = "0.15" }
 paste = "1.0"
-wgpu = "27.0"
-wgpu-types = "27.0"
-bytemuck = { version = "1.24", features = ["derive"] }
-glam = { version = "0.30", features = ["bytemuck"] }
+wgpu = "30.0.0"
+wgpu-types = "30.0.0"
+bytemuck = { version = "1.25", features = ["derive"] }
+glam = { version = "0.33", features = ["bytemuck"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 
 axum = { version = "0.8" }
 axum-extra = { version = "0.12" }
 http-body-util = "0.1"
 
-deadpool = { version = "0.12" }
+deadpool = { version = "0.13" }
 
 tokio = { version = "1.48", default-features = false }
 
-base64 = { version = "0.22" }
+base64 = { version = "0.23" }
 twelf = { version = "0.15", default-features = false }
 
 # Hyper - HTTP client
-hyper = { version = "1.8", features = ["client"] }
+hyper = { version = "1.11", features = ["client"] }
 hyper-util = { version = "0.1" }
 hyper-tls = { version = "0.6" }
 url = { version = "2.5" }
@@ -78,18 +78,18 @@ humantime-serde = { version = "1.1" }
 serde_with = { version = "3.16" }
 
 tower = { version = "0.5" }
-tower-http = { version = "0.6" }
+tower-http = { version = "0.7" }
 
 # Tracing subscriber - Composing Tracing subscribers
 tracing-subscriber = { version = "0.3" }
 
 # OpenTelemetry - Tracing framework
-opentelemetry = { version = "0.26" }
-opentelemetry_sdk = { version = "0.26" }
-opentelemetry-otlp = { version = "0.26" }
+opentelemetry = { version = "0.32" }
+opentelemetry_sdk = { version = "0.32" }
+opentelemetry-otlp = { version = "0.32" }
 
 # Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
-tracing-opentelemetry = { version = "0.27" }
+tracing-opentelemetry = { version = "0.33" }
 
 http = { version = "1.4" }
 

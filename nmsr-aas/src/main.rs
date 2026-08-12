@@ -29,11 +29,10 @@ use axum::routing::post;
 use axum::{routing::get, Router};
 use http::HeaderName;
 use opentelemetry::trace::TracerProvider;
-use opentelemetry::StringValue;
-use opentelemetry::{global, KeyValue};
-use opentelemetry_otlp::{new_exporter, WithExportConfig};
+use opentelemetry::global;
+use opentelemetry_otlp::{SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
-    propagation::TraceContextPropagator, trace::Config as TracingConfig, Resource,
+    propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource,
 };
 use std::{net::SocketAddr, path::PathBuf};
 use tokio::{main, signal};
@@ -69,7 +68,7 @@ async fn main() -> anyhow::Result<()> {
 
     let config = NmsrConfiguration::with_layers(&layers).context("Unable to load configuration")?;
 
-    setup_tracing(config.tracing.as_ref())?;
+    let tracer_provider = setup_tracing(config.tracing.as_ref())?;
 
     info!("NickAc's Minecraft Skin Renderer - Git Commit {}", env!("VERGEN_IS_LITERALLY_TRASH__IT_DOES_NOT_WORK_AND_IT_ACTUALLY_BREAKS_EVERY_TIME_I_UPDATE_IT__LIKE_SERIOUSLY_HOW_IS_THAT_POSSIBLE___STOP_CHANGING_THE_DAMN_IMPLEMENTATION___I_JUST_WANT_A_STUPID_GIT_HASH"));
     info!("Loaded configuration: {:#?}", config);
@@ -147,10 +146,16 @@ async fn main() -> anyhow::Result<()> {
     .with_graceful_shutdown(shutdown_signal())
     .await?;
 
+    if let Some(tracer_provider) = tracer_provider {
+        tracer_provider.shutdown()?;
+    }
+
     Ok(())
 }
 
-fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
+fn setup_tracing(
+    tracing: Option<&TracingConfiguration>,
+) -> anyhow::Result<Option<SdkTracerProvider>> {
     let base_filter = "info,h2=off,wgpu_core=warn,wgpu_hal=error,naga=warn";
     let otel_filter = format!("{base_filter},nmsr_aas=trace,nmsr_rendering=trace,tower_http=trace");
 
@@ -169,18 +174,21 @@ fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
 
     let registry = tracing_subscriber::registry().with(fmt_layer);
 
-    if let Some(tracing) = tracing {
-        let tracer = opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_exporter(new_exporter().tonic().with_endpoint(&tracing.endpoint))
-            .with_trace_config(TracingConfig::default().with_resource(Resource::new(vec![
-                KeyValue::new(
-                    "service.name",
-                    Into::<StringValue>::into(tracing.service_name.clone()),
-                ),
-            ])))
-            .install_batch(opentelemetry_sdk::runtime::Tokio)?
-            .tracer("nmsr-aas");
+    let tracer_provider = if let Some(tracing) = tracing {
+        let exporter = SpanExporter::builder()
+            .with_tonic()
+            .with_endpoint(&tracing.endpoint)
+            .build()?;
+        let tracer_provider = SdkTracerProvider::builder()
+            .with_resource(
+                Resource::builder()
+                    .with_service_name(tracing.service_name.clone())
+                    .build(),
+            )
+            .with_batch_exporter(exporter)
+            .build();
+        global::set_tracer_provider(tracer_provider.clone());
+        let tracer = tracer_provider.tracer("nmsr-aas");
 
         let otel_layer = tracing_subscriber::Layer::with_filter(
             tracing_opentelemetry::layer().with_tracer(tracer),
@@ -188,11 +196,13 @@ fn setup_tracing(tracing: Option<&TracingConfiguration>) -> anyhow::Result<()> {
         );
 
         registry.with(otel_layer).init();
+        Some(tracer_provider)
     } else {
         registry.init();
-    }
+        None
+    };
 
-    Ok(())
+    Ok(tracer_provider)
 }
 
 #[allow(dead_code)] // TODO: Replace when axum supports this again
@@ -221,7 +231,6 @@ async fn shutdown_signal() {
 
     info!("Received shutdown signal... Shutting down.");
 
-    global::shutdown_tracer_provider();
 }
 
 // basic handler that responds with a static string

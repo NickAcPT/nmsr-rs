@@ -23,10 +23,7 @@ use std::{
 };
 use tracing::{instrument, trace_span};
 use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    AddressMode, BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, Extent3d, FilterMode,
-    IndexFormat, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
-    SamplerDescriptor, StoreOp, TextureView,
+    AddressMode, BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, CurrentSurfaceTexture, Extent3d, FilterMode, IndexFormat, LoadOp, MipmapFilterMode, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment, SamplerDescriptor, StoreOp, TextureView, util::{BufferInitDescriptor, DeviceExt},
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
@@ -237,7 +234,7 @@ where
         let surface_texture = graphics_context
             .surface
             .as_ref()
-            .and_then(|s| s.get_current_texture().ok());
+            .and_then(|s| get_successful_surface_texture(s.get_current_texture()));
 
         let surface_texture_view = surface_texture.as_ref().map(|t| {
             t.texture
@@ -278,10 +275,10 @@ where
                 .ok_or(NMSRRenderingError::SceneContextTextureNotSet(texture))?
                 .view;
 
-            let filter = if texture.is_shadow() {
-                FilterMode::Linear
+            let (filter, mipmap_filter) = if texture.is_shadow() {
+                (FilterMode::Linear, MipmapFilterMode::Linear)
             } else {
-                FilterMode::Nearest
+                (FilterMode::Nearest, MipmapFilterMode::Nearest)
             };
 
             let texture_sampler = device.create_sampler(&SamplerDescriptor {
@@ -291,7 +288,7 @@ where
                 address_mode_w: AddressMode::ClampToEdge,
                 mag_filter: filter,
                 min_filter: filter,
-                mipmap_filter: filter,
+                mipmap_filter: mipmap_filter,
                 lod_min_clamp: 0.0,
                 lod_max_clamp: 0.0,
                 compare: None,
@@ -366,6 +363,7 @@ where
                 }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
 
             rpass.set_pipeline(pipeline);
@@ -453,7 +451,7 @@ where
 
         if let Some(surface_texture) = surface_texture {
             let _pass_span = trace_span!("present").entered();
-            surface_texture.present();
+            queue.present(surface_texture);
         }
 
         self.scene_context.smaa_target = Some(smaa_target);
@@ -503,5 +501,13 @@ where
         self.computed_body_parts = Self::collect_player_parts(part_context, body_parts);
 
         self.parts()
+    }
+}
+
+fn get_successful_surface_texture(get_current_texture: CurrentSurfaceTexture) -> Option<wgpu::SurfaceTexture> {
+    match get_current_texture {
+        CurrentSurfaceTexture::Success(surface_texture) => Some(surface_texture),
+        CurrentSurfaceTexture::Suboptimal(surface_texture) => Some(surface_texture),
+        _ => None,
     }
 }

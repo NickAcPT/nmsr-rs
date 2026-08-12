@@ -72,7 +72,9 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 # OpenTelemetry - Tracing framework
 opentelemetry = { workspace = true, features = [] }
 opentelemetry_sdk = { workspace = true, features = ["rt-tokio"] }
-opentelemetry-otlp = { workspace = true, default-features = true }
+opentelemetry-otlp = { workspace = true, default-features = true, features = [
+    "grpc-tonic",
+] }
 
 # Tracing OpenTelemetry - Tracing subscriber for OpenTelemetry
 tracing-opentelemetry = { workspace = true }

@@ -32,6 +32,9 @@ pub enum NMSRRenderingError {
     #[cfg(feature = "pipeline")]
     #[error("Pool Build error: {0}")]
     PoolBuildError(#[from] deadpool::managed::BuildError),
+    #[cfg(feature = "pipeline")]
+    #[error("Map range error: {0}")]
+    MapRangeError(#[from] wgpu::MapRangeError),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, NMSRRenderingError>;

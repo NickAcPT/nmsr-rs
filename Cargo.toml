@@ -31,7 +31,7 @@ members = [
 ]
 
 [workspace.dependencies]
-ears-rs = { path = "../ears-rs" }
+ears-rs = { git = "https://github.com/NickAcPT/ears-rs" }
 thiserror = "2.0"
 strum = { version = "0.28", features = ["derive"] }
 itertools = { version = "0.15" }

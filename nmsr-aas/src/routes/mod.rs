@@ -29,11 +29,14 @@ use nmsr_rendering::high_level::pipeline::{
     GraphicsContextPools,
 };
 pub use render::{render, render_get_warning, render_post_warning};
-#[cfg(feature = "renderdoc")]
-use {renderdoc::{RenderDoc, V141}, tokio::sync::Mutex};
 use std::{borrow::Cow, sync::Arc, time::Duration};
 use strum::IntoEnumIterator;
 use tracing::{info, info_span, instrument, Instrument, Span};
+#[cfg(feature = "renderdoc")]
+use {
+    renderdoc::{RenderDoc, V141},
+    tokio::sync::Mutex,
+};
 
 pub trait RenderRequestValidator {
     fn validate_mode(&self, mode: &RenderRequestMode) -> bool;

@@ -23,7 +23,11 @@ use std::{
 };
 use tracing::{instrument, trace_span};
 use wgpu::{
-    AddressMode, BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, CurrentSurfaceTexture, Extent3d, FilterMode, IndexFormat, LoadOp, MipmapFilterMode, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment, SamplerDescriptor, StoreOp, TextureView, util::{BufferInitDescriptor, DeviceExt},
+    util::{BufferInitDescriptor, DeviceExt},
+    AddressMode, BindGroupDescriptor, BindGroupEntry, Color, CommandEncoder, CurrentSurfaceTexture,
+    Extent3d, FilterMode, IndexFormat, LoadOp, MipmapFilterMode, Operations,
+    RenderPassColorAttachment, RenderPassDepthStencilAttachment, SamplerDescriptor, StoreOp,
+    TextureView,
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
@@ -504,7 +508,9 @@ where
     }
 }
 
-fn get_successful_surface_texture(get_current_texture: CurrentSurfaceTexture) -> Option<wgpu::SurfaceTexture> {
+fn get_successful_surface_texture(
+    get_current_texture: CurrentSurfaceTexture,
+) -> Option<wgpu::SurfaceTexture> {
     match get_current_texture {
         CurrentSurfaceTexture::Success(surface_texture) => Some(surface_texture),
         CurrentSurfaceTexture::Suboptimal(surface_texture) => Some(surface_texture),

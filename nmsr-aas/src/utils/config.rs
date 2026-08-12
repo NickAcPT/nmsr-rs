@@ -130,7 +130,7 @@ pub struct MojankConfiguration {
 
     /// The outgoing addresses for load-balancing requests to Mojang servers.
     pub outgoing_addresses: Vec<IpAddr>,
-    
+
     /// Extra useful contact information for outgoing requests
     pub contact_info: Option<String>,
 }
@@ -163,7 +163,7 @@ impl Default for MojankConfiguration {
                 .to_string(),
 
             outgoing_addresses: Vec::new(),
-            
+
             contact_info: None,
         }
     }

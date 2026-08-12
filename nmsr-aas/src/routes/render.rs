@@ -65,9 +65,10 @@ pub async fn render(
     if let Ok(etag_value) = HeaderValue::from_str(&format!("{hash:x}")) {
         res.headers_mut().insert("Etag", etag_value);
     }
-    
+
     if is_fallback_textures {
-        res.headers_mut().insert(NMSR_FALLBACK_HEADER, NMSR_FALLBACK_TRUE_VALUE);
+        res.headers_mut()
+            .insert(NMSR_FALLBACK_HEADER, NMSR_FALLBACK_TRUE_VALUE);
     }
 
     Ok(res)

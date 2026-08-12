@@ -131,7 +131,7 @@ where
             chestplate: query.chestplate,
             leggings: query.leggings,
             boots: query.boots,
-            
+
             time: query.time,
             limb_swing: query.limb_swing,
         })

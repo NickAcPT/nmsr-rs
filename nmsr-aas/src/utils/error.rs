@@ -32,7 +32,7 @@ pub enum NMSRaaSError {
         #[from]
         nmsr_rendering_blockbench_model_generator_experiment::error::BlockbenchGeneratorError,
     ),
-    
+
     #[cfg(feature = "renderdoc")]
     #[error("RenderDoc error: {0}")]
     RenderDocError(#[from] renderdoc::Error),
@@ -243,12 +243,11 @@ impl IntoResponse for NMSRaaSError {
         } else {
             StatusCode::INTERNAL_SERVER_ERROR
         };
-        
-        
+
         if let Ok(version_header_value) = HeaderValue::from_str(env!("VERGEN_IS_LITERALLY_TRASH__IT_DOES_NOT_WORK_AND_IT_ACTUALLY_BREAKS_EVERY_TIME_I_UPDATE_IT__LIKE_SERIOUSLY_HOW_IS_THAT_POSSIBLE___STOP_CHANGING_THE_DAMN_IMPLEMENTATION___I_JUST_WANT_A_STUPID_GIT_HASH")) {
             res.headers_mut().insert(NMSR_VERSION_HEADER, version_header_value);
         }
-        
+
         *res.status_mut() = error;
 
         res.extensions_mut().insert(NmsrErrorExtension(self));

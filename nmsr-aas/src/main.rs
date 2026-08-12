@@ -28,12 +28,10 @@ use anyhow::Context;
 use axum::routing::post;
 use axum::{routing::get, Router};
 use http::HeaderName;
-use opentelemetry::trace::TracerProvider;
 use opentelemetry::global;
+use opentelemetry::trace::TracerProvider;
 use opentelemetry_otlp::{SpanExporter, WithExportConfig};
-use opentelemetry_sdk::{
-    propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource,
-};
+use opentelemetry_sdk::{propagation::TraceContextPropagator, trace::SdkTracerProvider, Resource};
 use std::{net::SocketAddr, path::PathBuf};
 use tokio::{main, signal};
 use tower_http::request_id::MakeRequestUuid;
@@ -230,7 +228,6 @@ async fn shutdown_signal() {
     }
 
     info!("Received shutdown signal... Shutting down.");
-
 }
 
 // basic handler that responds with a static string

@@ -102,12 +102,12 @@ pub struct RenderRequestQueryParams {
     pub leggings: Option<VanillaMinecraftArmorMaterialData>,
     #[serde_as(as = "Option<TryFromInto<String>>")]
     pub boots: Option<VanillaMinecraftArmorMaterialData>,
-    
+
     #[serde(alias = "t")]
     pub time: Option<f32>,
     #[serde(alias = "swing")]
     pub limb_swing: Option<f32>,
-    
+
     #[cfg(feature = "renderdoc")]
     pub capture: Option<String>,
 }
@@ -131,7 +131,7 @@ impl RenderRequestQueryParams {
                 excluded.remove(RenderRequestFeatures::SkipRenderDocFrameCapture);
             }
         }
-        
+
         if self.nolayers.is_some() {
             excluded |= RenderRequestFeatures::BodyLayers | RenderRequestFeatures::HatLayer;
         }

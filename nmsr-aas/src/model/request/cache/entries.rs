@@ -54,7 +54,9 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
             .unwrap_or_default()
             .to_string();
 
-        Ok(RenderRequestEntry::try_from(file_name).map(|e| Cow::Owned(e)).ok())
+        Ok(RenderRequestEntry::try_from(file_name)
+            .map(|e| Cow::Owned(e))
+            .ok())
     }
 
     fn is_expired(
@@ -95,9 +97,11 @@ impl CacheHandler<RenderRequestEntry, ResolvedRenderEntryTextures, ModelCacheCon
                         "Unable to canonicalize cache path for texture {texture_hash:?} for {entry:?}"
                     ))?;
 
-                    if let Err(e) = symlink::symlink_file(&cache_path, &texture_path).explain(format!(
-                        "Unable to create symlink for texture {texture_hash:?} for {entry:?}"
-                    )) {
+                    if let Err(e) =
+                        symlink::symlink_file(&cache_path, &texture_path).explain(format!(
+                            "Unable to create symlink for texture {texture_hash:?} for {entry:?}"
+                        ))
+                    {
                         trace!("Falling back to copying texture file due to error: {e}");
                         fs::copy(&cache_path, &texture_path).await.explain(format!(
                             "Unable to copy texture file for texture {texture_hash:?} for {entry:?}"

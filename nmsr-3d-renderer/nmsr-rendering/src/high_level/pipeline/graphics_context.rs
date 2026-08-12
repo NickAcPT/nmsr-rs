@@ -3,7 +3,12 @@ use std::{borrow::Cow, env, mem, sync::Arc};
 use deadpool::managed::{Object, Pool};
 use smaa::SmaaMode;
 use wgpu::{
-    BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState, ExperimentalFeatures, FragmentState, FrontFace, MultisampleState, PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages, TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState, vertex_attr_array
+    vertex_attr_array, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
+    BindingType, BufferAddress, BufferBindingType, BufferSize, ColorTargetState, ColorWrites,
+    CompareFunction, DepthStencilState, ExperimentalFeatures, FragmentState, FrontFace,
+    MultisampleState, PipelineLayoutDescriptor, PresentMode, PrimitiveState, RenderPipeline,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, ShaderStages,
+    TextureSampleType, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 pub use wgpu::{
     Adapter, Backends, BlendState, Device, Features, Instance, Limits, Queue, ShaderSource,
@@ -163,10 +168,10 @@ impl<'a> GraphicsContext<'a> {
 
         #[cfg(debug_assertions)]
         let instance_flags = wgpu::InstanceFlags::debugging();
-        
+
         #[cfg(not(debug_assertions))]
         let instance_flags = wgpu::InstanceFlags::empty();
-        
+
         let instance = Instance::new(wgpu::InstanceDescriptor {
             backends,
             backend_options: wgpu::BackendOptions {
@@ -178,7 +183,10 @@ impl<'a> GraphicsContext<'a> {
                     gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
                     ..Default::default()
                 },
-                noop: wgpu::NoopBackendOptions { enable: false, ..Default::default() }
+                noop: wgpu::NoopBackendOptions {
+                    enable: false,
+                    ..Default::default()
+                },
             },
             flags: instance_flags,
             display: None,
@@ -188,20 +196,17 @@ impl<'a> GraphicsContext<'a> {
         let mut surface = (descriptor.surface_provider)(&instance);
 
         let adapter =
-            wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
-                .await?;
+            wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref()).await?;
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    required_features: descriptor.features,
-                    required_limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default()),
-                    memory_hints: Default::default(),
-                    experimental_features: ExperimentalFeatures::disabled(),
-                    trace: wgpu::Trace::Off
-                }
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: None,
+                required_features: descriptor.features,
+                required_limits: descriptor.limits.unwrap_or_else(|| wgpu::Limits::default()),
+                memory_hints: Default::default(),
+                experimental_features: ExperimentalFeatures::disabled(),
+                trace: wgpu::Trace::Off,
+            })
             .await?;
 
         let (default_width, default_height) = descriptor.default_size;
@@ -236,8 +241,7 @@ impl<'a> GraphicsContext<'a> {
             .unwrap_or(Self::DEFAULT_TEXTURE_FORMAT);
 
         let adapter =
-            wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref())
-                .await?;
+            wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.as_ref()).await?;
 
         // Create a bind group layout for storing the transformation matrix in a uniform
         let transform_bind_group_layout =

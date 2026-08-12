@@ -264,7 +264,7 @@ fn compute_arm_part_rotation<M: ArmorMaterial>(
     } else {
         let rotation = PI * 0.02;
         let t = context.movement.time / 10.0;
-        
+
         ((t).cos() * 0.03 + rotation).to_degrees()
     }
 }

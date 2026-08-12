@@ -4,10 +4,14 @@ use async_trait::async_trait;
 use tokio::fs;
 use tracing::trace;
 
-use crate::{caching::{CacheHandler, CacheSystem}, config::ModelCacheConfiguration, error::{ExplainableExt, Result}, model::{request::entry::RenderRequestEntry, resolver::MojangTexture}};
+use crate::{
+    caching::{CacheHandler, CacheSystem},
+    config::ModelCacheConfiguration,
+    error::{ExplainableExt, Result},
+    model::{request::entry::RenderRequestEntry, resolver::MojangTexture},
+};
 
 pub struct MojangTextureCacheHandler;
-
 
 #[async_trait]
 #[allow(unused_variables)]

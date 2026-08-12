@@ -67,13 +67,14 @@ pub enum NmsrHttpClient {
         inner: HttpClientInnerService,
     },
     LoadBalanced {
-        inner: Buffer<
-            Request<SyncBody>,
-            <Balance<
-            PeakEwmaDiscover<ServiceList<Vec<HttpClientInnerService>>>,
+        inner:
+            Buffer<
                 Request<SyncBody>,
-            > as Service<Request<SyncBody>>>::Future,
-        >,
+                <Balance<
+                    PeakEwmaDiscover<ServiceList<Vec<HttpClientInnerService>>>,
+                    Request<SyncBody>,
+                > as Service<Request<SyncBody>>>::Future,
+            >,
     },
 }
 
@@ -197,7 +198,12 @@ fn create_http_client(
             .collect::<Vec<_>>();
 
         let discover = ServiceList::new(clients);
-        let load = PeakEwmaDiscover::new(discover, Duration::from_secs(1), Duration::from_millis(50), CompleteOnResponse::default());
+        let load = PeakEwmaDiscover::new(
+            discover,
+            Duration::from_secs(1),
+            Duration::from_millis(50),
+            CompleteOnResponse::default(),
+        );
         let balanced = Balance::new(load);
 
         let balanced = ServiceBuilder::new()
@@ -232,7 +238,7 @@ fn create_http_client_internal(
 
     let tracing = TraceLayer::new_for_http().on_body_chunk(()).on_eos(());
     let ip_layer = LogRequestIpLayer::new(client_ip);
-    
+
     let service = ServiceBuilder::new()
         .buffer(rate_limit_per_second.saturating_mul(2) as usize)
         .rate_limit(rate_limit_per_second, Duration::from_secs(1))
@@ -245,7 +251,8 @@ fn create_http_client_internal(
         .layer(tracing)
         .layer(SetRequestHeaderLayer::overriding(
             HeaderName::from_static("user-agent"),
-            HeaderValue::from_str(user_agent.unwrap_or(USER_AGENT)).expect("Expected user-agent to be valid"),
+            HeaderValue::from_str(user_agent.unwrap_or(USER_AGENT))
+                .expect("Expected user-agent to be valid"),
         ))
         .layer(ip_layer)
         .check_clone()
@@ -329,7 +336,6 @@ where
     }
 }
 
-
 #[derive(Clone, Debug, Copy)]
 pub struct LogRequestIpLayer {
     ip: Option<IpAddr>,
@@ -366,7 +372,10 @@ where
     type Error = S::Error;
     type Future = S::Future;
 
-    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &mut self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
     }
 

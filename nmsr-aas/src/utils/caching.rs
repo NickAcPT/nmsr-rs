@@ -1,9 +1,12 @@
 use std::{
-    borrow::Cow, fs::Metadata, marker::PhantomData, path::{Path, PathBuf}
+    borrow::Cow,
+    fs::Metadata,
+    marker::PhantomData,
+    path::{Path, PathBuf},
 };
 
-use derive_more::with_trait::Debug;
 use async_trait::async_trait;
+use derive_more::with_trait::Debug;
 use tokio::fs;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use tracing::{instrument, trace, trace_span, Instrument, Span};

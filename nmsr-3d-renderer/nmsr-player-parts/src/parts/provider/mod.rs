@@ -46,7 +46,7 @@ where
     pub shadow_is_square: bool,
     pub armor_slots: Option<PlayerArmorSlots<M>>,
     pub movement: PlayerMovementContext,
-    
+
     #[cfg(feature = "ears")]
     pub ears_features: Option<EarsFeatures>,
 }
@@ -54,15 +54,15 @@ where
 #[derive(Debug, Copy, Clone, Default)]
 pub struct PlayerMovementContext {
     pub time: f32,
-    
+
     pub limb_swing: f32,
     pub stride: f32,
     pub body_yaw: f32,
-    
+
     pub location: Vec3,
     pub cape_location: Vec3,
     pub horizontal_speed: f32,
-    
+
     pub is_flying: bool,
     pub is_creative_flying: bool,
     pub is_gliding: bool,

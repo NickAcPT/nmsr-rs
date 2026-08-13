@@ -11,13 +11,16 @@ pub enum NMSRRenderingError {
     WgpuRequestDeviceError(#[from] wgpu::RequestDeviceError),
     #[error("Surface is not supported by the adapter")]
     SurfaceNotSupported,
+    #[cfg(feature = "pipeline")]
     #[error("Unable to request adapter: {0}")]
     WgpuAdapterRequestError(#[from] wgpu::RequestAdapterError),
-    #[error("Unable to request adapter: {0}")]
+    #[cfg(feature = "pipeline")]
+    #[error("Unable to poll the device: {0}")]
     WgpuResultPollError(#[from] wgpu::PollError),
+    #[cfg(feature = "pipeline")]
     #[error("SceneContext textures not initialized")]
     SceneContextTexturesNotInitialized,
-    #[error("SceneContext Texture not set: {0}")]
+    #[error("SceneContext texture not set: {0}")]
     SceneContextTextureNotSet(PlayerPartTextureType),
     #[cfg(feature = "pipeline")]
     #[error("Buffer Async error: {0}")]

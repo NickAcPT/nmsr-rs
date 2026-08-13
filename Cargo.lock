@@ -856,7 +856,7 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 [[package]]
 name = "ears-rs"
 version = "0.2.1"
-source = "git+https://github.com/NickAcPT/ears-rs#add0f53f2e67fee91ca57acd8c02c262fe345d5b"
+source = "git+https://github.com/NickAcPT/ears-rs#0f7c471e3d2b61ea1ad55682d19f8dcc3e52bcd9"
 dependencies = [
  "byteorder",
  "enum-ordinalize",

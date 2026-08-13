@@ -110,7 +110,6 @@ pub(crate) async fn internal_bbmodel_export(
         }
     }
 
-
     let mut blockbench_project =
         ModelGenerationProject::new_with_part_context(NMSRaaSImageIO, part_context);
 

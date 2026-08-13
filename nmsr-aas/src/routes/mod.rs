@@ -172,6 +172,11 @@ impl<'a> NMSRState<'a> {
             if let Some(features) = ears_features {
                 ears_rs::utils::apply_erase_displaced_regions(&mut skin_image, features)?;
             }
+            if ears_features
+                .is_some_and(|features| features.tail.is_some_and(|tail| tail.swap_jacket_back))
+            {
+                ears_rs::utils::swap_jacket_back_and_tail(&mut skin_image);
+            }
         }
 
         #[cfg(not(feature = "ears"))]

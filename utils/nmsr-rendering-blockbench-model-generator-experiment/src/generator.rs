@@ -124,7 +124,21 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
 
                 if texture_type == PlayerPartTextureType::Skin {
                     let alfalfa = ears_rs::alfalfa::read_alfalfa(&texture);
-                    if let Ok(Some(ref alfalfa)) = alfalfa {
+                    let mut features = EarsParser::parse(&texture)?;
+
+                    if let Some(features) = features {
+                        if let Some(displaced_skin) =
+                            ears_rs::utils::extract_displaced_skin(&texture, &features)
+                        {
+                            self.add_texture(
+                                PlayerPartEarsTextureType::DisplacedSkin.into(),
+                                displaced_skin,
+                                false,
+                            )?;
+                        }
+                    }
+
+                    if let Ok(Some(alfalfa)) = &alfalfa {
                         if let Some(wings) = alfalfa.get_data(AlfalfaDataKey::Wings) {
                             self.load_texture(
                                 PlayerPartEarsTextureType::Wings.into(),
@@ -141,8 +155,6 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                             )?;
                         }
                     }
-
-                    let mut features = EarsParser::parse(&texture)?;
 
                     if let (Some(features), Ok(None)) = (features, alfalfa) {
                         let wings_enabled = features.wing.is_some();
@@ -165,8 +177,8 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
                         }
                     }
 
-                    if let Some(ref mut features) = features {
-                        // Harcode emissives to false - I believe blockbench supports emissive textures,
+                    if let Some(features) = &mut features {
+                        // Hardcode emissives to false - I believe blockbench supports emissive textures,
                         // but Ears skins' emissives aren't separate textures, and instead are based off of specific colors.
                         features.emissive = false;
                     }
@@ -182,6 +194,21 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
             }
 
             if texture_type == PlayerPartTextureType::Skin {
+                #[cfg(feature = "ears")]
+                {
+                    let features = self.part_context.ears_features.as_ref();
+                    ears_rs::utils::strip_alpha_for_features(&mut texture, features);
+                    if let Some(features) = features {
+                        ears_rs::utils::apply_erase_displaced_regions(&mut texture, features)?;
+                    }
+                    if features.is_some_and(|features| {
+                        features.tail.is_some_and(|tail| tail.swap_jacket_back)
+                    }) {
+                        ears_rs::utils::swap_jacket_back_and_tail(&mut texture);
+                    }
+                }
+
+                #[cfg(not(feature = "ears"))]
                 ears_rs::utils::strip_alpha(&mut texture);
             } else if texture_type == PlayerPartTextureType::Cape {
                 self.part_context.has_cape = true;
@@ -318,5 +345,43 @@ impl<M: ArmorMaterial, I: ModelProjectImageIO> ModelGenerationProject<M, I> {
 
     pub fn warnings(&self) -> &[String] {
         &self.warnings
+    }
+}
+
+#[cfg(all(test, feature = "ears"))]
+mod tests {
+    use ears_rs::{
+        features::{data::leg::LegMode, EarsFeatures},
+        parser::{v0::writer::EarsWriterV0, EarsFeaturesWriter},
+    };
+    use image::RgbaImage;
+    use nmsr_rendering::high_level::{
+        parts::provider::ears::PlayerPartEarsTextureType, types::PlayerPartTextureType,
+    };
+
+    use super::{new_model_generator_without_part_context, DefaultImageIO, PlayerModel};
+
+    #[test]
+    fn digitigrade_skin_includes_displaced_texture() {
+        let mut skin = RgbaImage::new(64, 64);
+        EarsWriterV0::write(
+            &mut skin,
+            &EarsFeatures {
+                leg_mode: LegMode::DigitigradeFull,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let mut project =
+            new_model_generator_without_part_context(PlayerModel::Steve, false, DefaultImageIO);
+        project
+            .add_texture(PlayerPartTextureType::Skin, skin, true)
+            .unwrap();
+
+        project
+            .get_texture_id(PlayerPartEarsTextureType::DisplacedSkin.into())
+            .unwrap();
+        crate::blockbench::generate_project(project).unwrap();
     }
 }

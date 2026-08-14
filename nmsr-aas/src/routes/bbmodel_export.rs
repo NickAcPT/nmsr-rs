@@ -114,8 +114,12 @@ pub(crate) async fn internal_bbmodel_export(
         ModelGenerationProject::new_with_part_context(NMSRaaSImageIO, part_context);
 
     for (texture_type, mut texture) in textures {
+        #[cfg(feature = "ears")]
         let do_ears_processing = texture_type == PlayerPartTextureType::Skin
             && request.features.contains(RenderRequestFeatures::Ears);
+
+        #[cfg(not(feature = "ears"))]
+        let do_ears_processing = false;
 
         if texture_type == PlayerPartTextureType::Skin && !do_ears_processing {
             texture = NMSRState::process_skin(

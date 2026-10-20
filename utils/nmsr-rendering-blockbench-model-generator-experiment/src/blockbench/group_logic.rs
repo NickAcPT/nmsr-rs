@@ -10,6 +10,7 @@ pub enum BlockbenchGroupEntry {
     },
     Group {
         name: String,
+        uuid: Uuid,
         origin: Vec3,
         rotation: Vec3,
         elements: HashMap<String, BlockbenchGroupEntry>,
@@ -31,11 +32,13 @@ impl BlockbenchGroupEntry {
             }
             BlockbenchGroupEntry::Group {
                 name,
+                uuid,
                 elements,
                 origin,
                 rotation,
             } => json!({
                 "name": name,
+                "uuid": uuid,
                 "origin": origin,
                 "rotation": rotation,
                 "children": elements.iter().map(|(_, e)| e.to_value()).collect::<Vec<_>>(),
@@ -52,6 +55,7 @@ impl BlockbenchGroupEntry {
     pub fn new_group(name: impl Into<String>) -> Self {
         Self::Group {
             name: name.into(),
+            uuid: Uuid::new_v4(),
             elements: HashMap::new(),
             origin: Vec3::ZERO,
             rotation: Vec3::ZERO,

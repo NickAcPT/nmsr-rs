@@ -110,6 +110,9 @@ where
 
         let model = query.get_model();
 
+        let part_rotations = query.get_part_rotations();
+        let part_offsets = query.get_part_offsets();
+
         let extra_settings = Some(RenderRequestExtraSettings {
             width: query.width,
             height: query.height,
@@ -134,6 +137,9 @@ where
 
             time: query.time,
             limb_swing: query.limb_swing,
+
+            part_rotations,
+            part_offsets,
         })
         .filter(|s| !s.is_empty());
 

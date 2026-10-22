@@ -118,6 +118,36 @@ Moving off from a different avatar service? _We've got you covered._ Self-hostin
 > 
 > This is used to provide contact information in the headers of outgoing requests to the various APIs, just in case they need to contact you.
 
+### Custom render settings
+Settings are passed as query parameters, e.g. `/fullbody/<player>?yaw=30&larm=-45,0,0`.
+
+| Parameter | Aliases | Value | Description |
+| --- | --- | --- | --- |
+| `yaw` | `y` | -180 to 180 | Camera yaw |
+| `pitch` | `p` | -90 to 90 | Camera pitch |
+| `roll` | `r` | -180 to 360 | Camera roll |
+| `distance` | `d` | -15 to 50 | Camera distance |
+| `width` | `w` | pixels | Image width |
+| `height` | `h` | pixels | Image height |
+| `xpos` / `ypos` / `zpos` | `x_pos` / `y_pos` / `z_pos` | -50 to 50 | Camera position (Custom mode only) |
+| `pos` | | `x,y,z` | Camera position (Custom mode only) |
+| `model` | | `steve`, `alex`, `wide`, `slim` | Player model |
+| `alex` / `steve` | | flag | Same as `model`, for old URLs |
+| `back` | | flag | Render from the back |
+| `nolayers` | | flag | Hide skin overlay layers |
+| `noshading` | | flag | Disable shading |
+| `exclude` | `no` | comma-separated list | Hide features: `layers` (or `overlay`), `hat` (or `helmet`), `deadmau5_ears`, `upside_down`, `shadow`, `shading`, `cape`, `ears` (with the `ears` feature) |
+| `process` | | flag | Process the skin (upgrade to 1.8 format, strip alpha from the body, apply erase regions with `ears`) |
+| `deadmau5ears` | `deadmau5_ears` | flag | Add deadmau5 ears |
+| `upsidedown` | `upside_down` | flag | Flip the player upside down |
+| `arms` | `arm` | 0 to 180 | Arm rotation |
+| `helmet`, `chestplate`, `leggings`, `boots` | | `material[_trim_trimmaterial]...[_dye]` | Armor piece, with optional trims and dye colour |
+| `time` | `t` | number | Animation time |
+| `limb_swing` | `swing` | number | Limb swing amount |
+| `head`, `body` | | `x,y,z` | Rotation of that part, in degrees |
+| `larm`, `rarm`, `lleg`, `rleg` | `left_arm`, `right_arm`, `left_leg`, `right_leg` | `x,y,z` | Rotation of that limb, in degrees |
+| `headpos`, `bodypos` | `head_pos`, `body_pos` | `x,y,z` | Move that part |
+| `larmpos`, `rarmpos`, `llegpos`, `rlegpos` | `left_arm_pos`, `right_arm_pos`, `left_leg_pos`, `right_leg_pos` | `x,y,z` | Move that limb |
 
 ## Crates
 

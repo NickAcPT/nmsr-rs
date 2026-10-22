@@ -1,4 +1,6 @@
-use self::minecraft::{perform_arm_part_rotation, MinecraftPlayerPartsProvider};
+use self::minecraft::{
+    perform_arm_part_rotation, perform_pose_part_rotation, MinecraftPlayerPartsProvider,
+};
 use crate::model::{ArmorMaterial, PlayerArmorSlots, PlayerModel};
 
 #[cfg(feature = "part_tracker")]
@@ -42,6 +44,8 @@ where
     pub has_deadmau5_ears: bool,
     pub is_flipped_upside_down: bool,
     pub custom_arm_rotation_z: Option<f32>,
+    pub part_rotations: PlayerPartRotations,
+    pub part_offsets: PlayerPartOffsets,
     pub shadow_y_pos: Option<f32>,
     pub shadow_is_square: bool,
     pub armor_slots: Option<PlayerArmorSlots<M>>,
@@ -49,6 +53,32 @@ where
 
     #[cfg(feature = "ears")]
     pub ears_features: Option<EarsFeatures>,
+}
+
+#[derive(Debug, Copy, Clone, Default, PartialEq)]
+pub struct PlayerPartRotations {
+    pub head: Vec3,
+    pub body: Vec3,
+    pub left_arm: Vec3,
+    pub right_arm: Vec3,
+    pub left_leg: Vec3,
+    pub right_leg: Vec3,
+}
+
+pub type PlayerPartOffsets = PlayerPartRotations;
+
+impl PlayerPartRotations {
+    pub fn get(&self, body_part: PlayerBodyPartType) -> Vec3 {
+        match body_part.get_non_layer_part() {
+            PlayerBodyPartType::Head => self.head,
+            PlayerBodyPartType::Body => self.body,
+            PlayerBodyPartType::LeftArm => self.left_arm,
+            PlayerBodyPartType::RightArm => self.right_arm,
+            PlayerBodyPartType::LeftLeg => self.left_leg,
+            PlayerBodyPartType::RightLeg => self.right_leg,
+            _ => Vec3::ZERO,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Default)]
@@ -156,6 +186,8 @@ impl<M: ArmorMaterial> PartsProvider<M> for PlayerPartsProvider {
         };
 
         for part in &mut parts {
+            perform_pose_part_rotation(body_part.get_non_layer_part(), part, &context);
+
             if body_part.is_arm() {
                 perform_arm_part_rotation(
                     body_part.get_non_layer_part(),

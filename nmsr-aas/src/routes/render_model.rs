@@ -328,6 +328,16 @@ pub(crate) fn create_part_context(
         is_flipped_upside_down,
         has_cape,
         custom_arm_rotation_z,
+        part_rotations: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.part_rotations)
+            .unwrap_or_default(),
+        part_offsets: request
+            .extra_settings
+            .as_ref()
+            .and_then(|x| x.part_offsets)
+            .unwrap_or_default(),
         shadow_y_pos,
         shadow_is_square: request.mode.is_head() || request.mode.is_head_iso(),
         armor_slots: Some(player_armor_slots),

@@ -206,22 +206,22 @@ fn halo<M: ArmorMaterial>(
         b.translate_i(0, 4, 8);
         b.anchor_to(PlayerBodyPartType::Head);
         b.rotate_i(180, 0, 1, 0);
-        b.translate_i(-8, if double { 10 } else { 8 }, 0);
+        b.translate_i(-8, if double { 6 } else { 8 }, 0);
         b.rotate_i(90, 1, 0, 0);
         if double {
             for _ in 0..2 {
+                b.translate_i(4, 4, 0);
+                b.rotate_i(-45, 0, 0, 1);
+                b.translate_i(-4, -4, -2);
                 b.quad_double_sided(
                     56,
                     0,
                     8,
                     8,
                     TextureRotation::None,
-                    TextureFlip::None,
+                    TextureFlip::Horizontal,
                     "Double Halo",
                 );
-                b.translate_i(4, 4, 0);
-                b.rotate_i(45, 0, 0, 1);
-                b.translate_i(-4, -4, 2);
             }
         } else {
             b.quad_double_sided(
@@ -230,7 +230,7 @@ fn halo<M: ArmorMaterial>(
                 8,
                 8,
                 TextureRotation::None,
-                TextureFlip::None,
+                TextureFlip::Horizontal,
                 "Halo",
             );
         }

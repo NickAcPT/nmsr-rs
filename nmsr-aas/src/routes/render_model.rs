@@ -195,6 +195,13 @@ async fn load_textures<'a>(
             )?;
         }
 
+        #[cfg(feature = "ears")]
+        if texture_type == ResolvedRenderEntryTextureType::Ears(crate::model::resolver::ResolvedRenderEntryEarsTextureType::EmissiveSkin) {
+            if let Some(features) = part_provider.ears_features.as_ref() {
+                ears_rs::utils::apply_erase_displaced_regions(&mut image_buffer, features)?;
+            }
+        }
+
         scene.set_texture(&state.graphics_context, texture_type.into(), &image_buffer);
     }
 

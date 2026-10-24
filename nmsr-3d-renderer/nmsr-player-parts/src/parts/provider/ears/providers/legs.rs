@@ -109,6 +109,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                 b,
                 u + 4,
                 v + vo,
+                6,
                 0.0,
                 0.0,
                 skew,
@@ -125,6 +126,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                 b,
                 u,
                 v + vo,
+                6,
                 skew,
                 0.0,
                 0.0,
@@ -141,6 +143,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                 b,
                 u + 12,
                 v + vo,
+                5,
                 0.0,
                 0.0,
                 -skew,
@@ -157,6 +160,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                 b,
                 u + 8,
                 v + vo,
+                6,
                 -skew,
                 0.0,
                 0.0,
@@ -186,7 +190,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
             } else {
                 b.translate(0.0, -skew, 12.0);
                 b.quad_back(
-                    u + 8,
+                    u + 4,
                     v,
                     4,
                     4,
@@ -196,7 +200,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                 );
             }
             if enabled && mend && bottom {
-                b.translate_i(0, 1, 6);
+                b.translate_i(0, 2, 6);
                 b.quad_front(
                     u + 4,
                     v + vo,
@@ -206,7 +210,7 @@ fn draw_digitigrade_leg<M: ArmorMaterial>(
                     TextureFlip::None,
                     format!("Digitigrade {side} Leg {section} Front Fill"),
                 );
-                b.translate_i(0, -3, 0);
+                b.translate_i(0, -4, 0);
                 b.quad_back(
                     u + 12,
                     v + vo,
@@ -226,6 +230,7 @@ fn draw_side<M: ArmorMaterial>(
     builder: &mut EarsModPartBuilder<'_, M>,
     u: u16,
     v: u16,
+    mend_v_offset: u16,
     x_skew: f32,
     y_skew: f32,
     z_skew: f32,
@@ -272,7 +277,7 @@ fn draw_side<M: ArmorMaterial>(
             b.translate_i(0, -2, 0);
             b.quad_front_skew(
                 u,
-                v + 6,
+                v + mend_v_offset,
                 4,
                 2,
                 -x_skew,
